@@ -15,7 +15,7 @@ var (
 type StarWarsChar struct {
 	Id         string
 	Name       string
-	Friends    []string
+	Friends    []StarWarsChar
 	AppearsIn  []int
 	HomePlanet string
 }
@@ -24,36 +24,36 @@ func init() {
 	Luke = StarWarsChar{
 		Id:         "1000",
 		Name:       "Luke Skywalker",
-		Friends:    []string{"1002", "1003", "2000", "2001"},
 		AppearsIn:  []int{4, 5, 6},
 		HomePlanet: "Tatooine",
 	}
 	Vader = StarWarsChar{
 		Id:         "1001",
 		Name:       "Darth Vader",
-		Friends:    []string{"1004"},
 		AppearsIn:  []int{4, 5, 6},
 		HomePlanet: "Tatooine",
 	}
 	Han = StarWarsChar{
 		Id:        "1002",
 		Name:      "Han Solo",
-		Friends:   []string{"1000", "1003", "2001"},
 		AppearsIn: []int{4, 5, 6},
 	}
 	Leia = StarWarsChar{
 		Id:         "1003",
 		Name:       "Leia Organa",
-		Friends:    []string{"1000", "1002", "2000", "2001"},
 		AppearsIn:  []int{4, 5, 6},
 		HomePlanet: "Alderaa",
 	}
 	Tarkin = StarWarsChar{
 		Id:        "1004",
 		Name:      "Wilhuff Tarkin",
-		Friends:   []string{"1001"},
 		AppearsIn: []int{4},
 	}
+	Luke.Friends = append(Luke.Friends, []StarWarsChar{Han, Leia}...)
+	Vader.Friends = append(Luke.Friends, []StarWarsChar{Tarkin}...)
+	Han.Friends = append(Han.Friends, []StarWarsChar{Leia}...)
+	Leia.Friends = append(Leia.Friends, []StarWarsChar{Han}...)
+	Tarkin.Friends = append(Tarkin.Friends, []StarWarsChar{Vader}...)
 	HumanData = map[int]StarWarsChar{
 		1000: Luke,
 		1001: Vader,

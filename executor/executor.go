@@ -1,8 +1,6 @@
 package executor
 
 import (
-	"reflect"
-
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/types"
@@ -59,10 +57,52 @@ type ExecuteOperationParams struct {
 }
 
 func executeOperation(p ExecuteOperationParams, r chan types.GraphQLResult) {
+	//TODO: mutation operation
 	var result types.GraphQLResult
-	mutable := reflect.ValueOf(p.ExecutionContext.Result).Elem()
-	mutable.FieldByName("Name").SetString("R2-D2")
+	//mutable := reflect.ValueOf(p.ExecutionContext.Result).Elem()
+	//mutable.FieldByName("Name").SetString("R2-D2")
+	operationType := getOperationRootType(p.ExecutionContext.Schema, p.Operation)
+	collectFieldsParams := CollectFieldsParams{
+		ExeContext:    p.ExecutionContext,
+		OperationType: operationType,
+		SelectionSet:  p.Operation.SelectionSet,
+	}
+	fields := collectFields(collectFieldsParams)
+	executeFieldsParams := ExecuteFieldsParams{
+		ExeContext: p.ExecutionContext,
+		ParentType: operationType,
+		Source:     p.Root,
+		Fields:     fields,
+	}
+	executeFields(executeFieldsParams)
 	r <- result
+}
+
+func getOperationRootType(schema types.GraphQLSchema, operation ast.OperationDefinition) (r types.GraphQLObjectType) {
+	return r
+}
+
+type CollectFieldsParams struct {
+	ExeContext           ExecutionContext
+	OperationType        types.GraphQLObjectType
+	SelectionSet         ast.SelectionSet
+	Fields               map[string][]ast.Field
+	VisitedFragmentNames map[string]bool
+}
+
+func collectFields(p CollectFieldsParams) (r map[string][]ast.Field) {
+	return r
+}
+
+type ExecuteFieldsParams struct {
+	ExeContext ExecutionContext
+	ParentType types.GraphQLObjectType
+	Source     map[string]interface{}
+	Fields     map[string][]ast.Field
+}
+
+func executeFields(p ExecuteFieldsParams) (r map[string]interface{}) {
+	return r
 }
 
 type BuildExecutionCtxParams struct {

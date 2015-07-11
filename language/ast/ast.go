@@ -17,6 +17,35 @@ func NewName() *Name {
 	}
 }
 
+type Argument struct {
+	Kind  string
+	Loc   Location
+	Name  Name
+	Value Value
+}
+
+func NewArgument() *Name {
+	return &Name{
+		Kind: "Argument",
+	}
+}
+
+type Field struct {
+	Kind         string
+	Loc          Location
+	Alias        Name
+	Name         Name
+	Arguments    []Argument
+	Directives   []Directive
+	SelectionSet SelectionSet
+}
+
+func NewField() *Name {
+	return &Name{
+		Kind: "Field",
+	}
+}
+
 type SelectionSet struct {
 	Kind       string
 	Location   Location
@@ -71,4 +100,44 @@ type Document struct {
 	Definitions []Definition
 }
 
-type OperationDefinition interface{}
+type Variable struct {
+	Kind string
+	Loc  Location
+	Name Name
+}
+
+func NewVariable() *Variable {
+	return &Variable{
+		Kind: "Variable",
+	}
+}
+
+type VariableDefinition struct {
+	Kind         string
+	Loc          Location
+	Variable     Variable
+	Type         interface{}
+	DefaultValue Value
+}
+
+func NewVariableDefinition() *VariableDefinition {
+	return &VariableDefinition{
+		Kind: "VariableDefinition",
+	}
+}
+
+type OperationDefinition struct {
+	Kind                string
+	Loc                 Location
+	Operation           string
+	Name                Name
+	VariableDefinitions []VariableDefinition
+	Directives          []Directive
+	SelectionSet        SelectionSet
+}
+
+func NewOperationDefinition() *OperationDefinition {
+	return &OperationDefinition{
+		Kind: "OperationDefinition",
+	}
+}

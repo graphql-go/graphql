@@ -46,7 +46,19 @@ var (
 			`,
 			Schema: testutil.StarWarsSchema,
 			Expected: &testutil.StarWarsChar{
+				Id:   "2001",
 				Name: "R2-D2",
+				Friends: []testutil.StarWarsChar{
+					testutil.StarWarsChar{
+						Name: "Luke Skywalker",
+					},
+					testutil.StarWarsChar{
+						Name: "Han Solo",
+					},
+					testutil.StarWarsChar{
+						Name: "Leia Organa",
+					},
+				},
 			},
 			Result: &testutil.StarWarsChar{},
 		},
