@@ -1,6 +1,7 @@
 package gql
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/chris-ramon/graphql-go/types"
@@ -8,28 +9,69 @@ import (
 	"./testutil"
 )
 
+type T struct {
+	Query    string
+	Schema   types.GraphQLSchema
+	Expected interface{}
+	Result   interface{}
+}
+
+var (
+	Tests = []T{
+		T{
+			Query: `
+				query HeroNameQuery {
+					hero {
+						name
+					}
+				}
+			`,
+			Schema: testutil.StarWarsSchema,
+			Expected: &testutil.StarWarsChar{
+				Name: "R2-D2",
+			},
+			Result: &testutil.StarWarsChar{},
+		},
+		T{
+			Query: `
+				query HeroNameAndFriendsQuery {
+				  hero {
+					id
+					name
+					friends {
+					  name
+					}
+				  }
+				}
+			`,
+			Schema: testutil.StarWarsSchema,
+			Expected: &testutil.StarWarsChar{
+				Name: "R2-D2",
+			},
+			Result: &testutil.StarWarsChar{},
+		},
+	}
+)
+
 func TestQuery(t *testing.T) {
-	var query string
-	query = `
-		query HeroNameQuery {
-			hero {
-				name
-			}
+	for _, test := range Tests {
+		graphqlParams := GraphqlParams{
+			Schema:        test.Schema,
+			RequestString: test.Query,
+			Result:        test.Result,
+		}
+		testGraphql(test, graphqlParams, t)
 	}
-	`
-	expected := testutil.StarWarsChar{
-		Name: "R2-D2",
-	}
-	graphqlParams := GraphqlParams{
-		Schema:        testutil.StarWarsSchema,
-		RequestString: query,
-	}
+}
+
+func testGraphql(test T, p GraphqlParams, t *testing.T) {
 	resultChannel := make(chan types.GraphQLResult)
-	Graphql(graphqlParams, resultChannel)
+	go Graphql(p, resultChannel)
 	graphqlResult := <-resultChannel
-	hero := graphqlResult.Data["hero"].(map[string]interface{})
-	close(resultChannel)
-	if expected.Name != hero["name"] {
-		t.Errorf("wrong result, query: %v, graphql result: %v", query, graphqlResult)
+	if len(graphqlResult.Errors) > 0 {
+		t.Errorf("wrong result, unexpected errors: %v", graphqlResult.Errors)
+	}
+	if !reflect.DeepEqual(test.Result, test.Expected) {
+		t.Errorf("wrong result, query: %v, graphql result: %v, expected: %v", test.Query, test.Result, test.Expected)
 	}
 }

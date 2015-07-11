@@ -5,7 +5,7 @@ import "github.com/chris-ramon/graphql-go/errors"
 type Schema interface{}
 
 type GraphQLResult struct {
-	Data   map[string]interface{}
+	Data   interface{}
 	Errors []errors.GraphQLFormattedError
 }
 

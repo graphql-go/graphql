@@ -11,6 +11,7 @@ import (
 type GraphqlParams struct {
 	Schema         types.GraphQLSchema
 	RequestString  string
+	Result         interface{}
 	RootObject     map[string]interface{}
 	VariableValues map[string]string
 	OperationName  string
@@ -29,6 +30,7 @@ func Graphql(p GraphqlParams, resultChannel chan types.GraphQLResult) {
 	} else {
 		ep := executor.ExecuteParams{
 			Schema:        p.Schema,
+			Result:        p.Result,
 			Root:          p.RootObject,
 			AST:           AST,
 			OperationName: p.OperationName,

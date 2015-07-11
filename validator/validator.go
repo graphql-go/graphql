@@ -12,5 +12,6 @@ type ValidationResult struct {
 }
 
 func ValidateDocument(schema types.GraphQLSchema, ast ast.Document) (vr ValidationResult) {
+	vr.IsValid = true
 	return vr
 }
