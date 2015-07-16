@@ -13,7 +13,7 @@ type T struct {
 	Query    string
 	Schema   types.GraphQLSchema
 	Expected interface{}
-	Result   interface{}
+	Result   types.GraphQLResult
 }
 
 var (
@@ -30,7 +30,9 @@ var (
 			Expected: &testutil.StarWarsChar{
 				Name: "R2-D2",
 			},
-			Result: &testutil.StarWarsChar{},
+			Result: types.GraphQLResult{
+				Data: &testutil.StarWarsChar{},
+			},
 		},
 		T{
 			Query: `
@@ -60,7 +62,9 @@ var (
 					},
 				},
 			},
-			Result: &testutil.StarWarsChar{},
+			Result: types.GraphQLResult{
+				Data: &testutil.StarWarsChar{},
+			},
 		},
 	}
 )
@@ -83,7 +87,7 @@ func testGraphql(test T, p GraphqlParams, t *testing.T) {
 	if len(graphqlResult.Errors) > 0 {
 		t.Errorf("wrong result, unexpected errors: %v", graphqlResult.Errors)
 	}
-	if !reflect.DeepEqual(test.Result, test.Expected) {
+	if !reflect.DeepEqual(test.Result.Data, test.Expected) {
 		t.Errorf("wrong result, query: %v, graphql result: %v, expected: %v", test.Query, test.Result, test.Expected)
 	}
 }

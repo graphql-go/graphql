@@ -2,9 +2,6 @@ package ast
 
 import "github.com/chris-ramon/graphql-go/language/source"
 
-type Definition interface {
-}
-
 type Name struct {
 	Kind  string
 	Loc   Location
@@ -15,6 +12,28 @@ func NewName() *Name {
 	return &Name{
 		Kind: "Name",
 	}
+}
+
+type SelectionSet struct {
+	Kind       string
+	Location   Location
+	Selections []interface{}
+}
+
+func NewSelectionSet() *SelectionSet {
+	return &SelectionSet{
+		Kind: "SelectionSet",
+	}
+}
+
+type Definition interface {
+	GetKind() string
+	GetLoc() Location
+	GetOperation() string
+	GetName() Name
+	GetVariableDefinitions() []VariableDefinition
+	GetDirectives() []Directive
+	GetSelectionSet() SelectionSet
 }
 
 type Argument struct {
@@ -43,18 +62,6 @@ type Field struct {
 func NewField() *Name {
 	return &Name{
 		Kind: "Field",
-	}
-}
-
-type SelectionSet struct {
-	Kind       string
-	Location   Location
-	Selections []interface{}
-}
-
-func NewSelectionSet() *SelectionSet {
-	return &SelectionSet{
-		Kind: "SelectionSet",
 	}
 }
 
@@ -123,21 +130,5 @@ type VariableDefinition struct {
 func NewVariableDefinition() *VariableDefinition {
 	return &VariableDefinition{
 		Kind: "VariableDefinition",
-	}
-}
-
-type OperationDefinition struct {
-	Kind                string
-	Loc                 Location
-	Operation           string
-	Name                Name
-	VariableDefinitions []VariableDefinition
-	Directives          []Directive
-	SelectionSet        SelectionSet
-}
-
-func NewOperationDefinition() *OperationDefinition {
-	return &OperationDefinition{
-		Kind: "OperationDefinition",
 	}
 }

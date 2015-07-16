@@ -11,7 +11,7 @@ import (
 type GraphqlParams struct {
 	Schema         types.GraphQLSchema
 	RequestString  string
-	Result         interface{}
+	Result         types.GraphQLResult
 	RootObject     map[string]interface{}
 	VariableValues map[string]string
 	OperationName  string
