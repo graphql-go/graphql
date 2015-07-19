@@ -10,6 +10,7 @@ type OperationDefinition struct {
 	Operation           string
 	Name                Name
 	VariableDefinitions []VariableDefinition
+	TypeCondition       Name
 	Directives          []Directive
 	SelectionSet        SelectionSet
 }
@@ -28,6 +29,10 @@ func GetOperation(op *OperationDefinition) string {
 
 func GetName(op *OperationDefinition) Name {
 	return op.Name
+}
+
+func GetTypeCondition(op *OperationDefinition) Name {
+	return op.TypeCondition
 }
 
 func GetVariableDefinitions(op *OperationDefinition) []VariableDefinition {

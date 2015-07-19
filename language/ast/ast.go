@@ -32,6 +32,7 @@ type Definition interface {
 	GetOperation() string
 	GetName() Name
 	GetVariableDefinitions() []VariableDefinition
+	GetTypeCondition() Name
 	GetDirectives() []Directive
 	GetSelectionSet() SelectionSet
 }
@@ -77,21 +78,6 @@ type Directive struct {
 func NewDirective() *Directive {
 	return &Directive{
 		Kind: "Directive",
-	}
-}
-
-type FragmentDefinition struct {
-	Kind          string
-	Loc           Location
-	Name          Name
-	TypeCondition Name
-	Directives    []Directive
-	SelectionSet  SelectionSet
-}
-
-func NewFragmentDefinition() *FragmentDefinition {
-	return &FragmentDefinition{
-		Kind: "FragmentDefinition",
 	}
 }
 

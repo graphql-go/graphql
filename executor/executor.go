@@ -5,6 +5,7 @@ import (
 
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
+	"github.com/chris-ramon/graphql-go/language/fd"
 	"github.com/chris-ramon/graphql-go/language/kinds"
 	"github.com/chris-ramon/graphql-go/language/od"
 	"github.com/chris-ramon/graphql-go/types"
@@ -47,7 +48,7 @@ func Execute(p ExecuteParams, r chan types.GraphQLResult) {
 type ExecutionContext struct {
 	Schema    types.GraphQLSchema
 	Result    types.GraphQLResult
-	Fragments map[string]ast.FragmentDefinition
+	Fragments map[string]fd.FragmentDefinition
 	Root      map[string]interface{}
 	Operation od.OperationDefinition
 	Variables map[string]interface{}
@@ -144,5 +145,24 @@ func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
 		})
 		return eCtx
 	}
+	var opName string
+	if p.OperationName == "" {
+		var i int
+		for k, _ := range operations {
+			opName = k
+			if i == 0 {
+				break
+			}
+		}
+		p.OperationName = opName
+	}
+	//TODO: validate if operations[opName] is an empty struct
+	//var operation ast.Definition
+	//if (operations[opName].(od.OperationDefinition) == od.OperationDefinition{}) || (operations[opName].(fd.FragmentDefinition) == fd.FragmentDefinition{}) {
+	//p.Result.Errors = append(p.Result.Errors, errors.GraphQLFormattedError{
+	//Message: fmt.Sprintf("Unknown operation name: %s", opName),
+	//})
+	//return eCtx
+	//}
 	return eCtx
 }
