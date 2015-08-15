@@ -66,7 +66,11 @@ func NewField() *Name {
 	}
 }
 
-type Value interface{}
+type Value interface {
+	GetKind() string
+	GetLoc() Location
+	GetName() Name
+}
 
 type Directive struct {
 	Kind  string
