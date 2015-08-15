@@ -11,13 +11,12 @@ import (
 type GraphqlParams struct {
 	Schema         types.GraphQLSchema
 	RequestString  string
-	Result         types.GraphQLResult
 	RootObject     map[string]interface{}
 	VariableValues map[string]string
 	OperationName  string
 }
 
-func Graphql(p GraphqlParams, resultChannel chan types.GraphQLResult) {
+func Graphql(p GraphqlParams, resultChannel chan *types.GraphQLResult) {
 	source := source.NewSource(p.RequestString, "GraphQL request")
 	AST := parser.Parse(source, parser.ParseOptions{})
 	validationResult := validator.ValidateDocument(p.Schema, AST)
@@ -25,12 +24,11 @@ func Graphql(p GraphqlParams, resultChannel chan types.GraphQLResult) {
 		result := types.GraphQLResult{
 			Errors: validationResult.Errors,
 		}
-		resultChannel <- result
+		resultChannel <- &result
 		return
 	} else {
 		ep := executor.ExecuteParams{
 			Schema:        p.Schema,
-			Result:        p.Result,
 			Root:          p.RootObject,
 			AST:           AST,
 			OperationName: p.OperationName,
