@@ -16,9 +16,11 @@ func NewName() *Name {
 
 type SelectionSet struct {
 	Kind       string
-	Location   Location
+	Loc        Location
 	Selections []interface{}
 }
+
+type Selection interface{}
 
 func NewSelectionSet() *SelectionSet {
 	return &SelectionSet{
@@ -27,14 +29,14 @@ func NewSelectionSet() *SelectionSet {
 }
 
 type Definition interface {
-	GetKind() string
-	GetLoc() Location
-	GetOperation() string
-	GetName() Name
-	GetVariableDefinitions() []VariableDefinition
-	GetTypeCondition() Name
-	GetDirectives() []Directive
-	GetSelectionSet() SelectionSet
+	//GetKind() string
+	//GetLoc() Location
+	//GetOperation() string
+	//GetName() Name
+	//GetVariableDefinitions() []VariableDefinition
+	//GetTypeCondition() Name
+	//GetDirectives() []Directive
+	//GetSelectionSet() SelectionSet
 }
 
 type Argument struct {
@@ -67,9 +69,9 @@ func NewField() *Name {
 }
 
 type Value interface {
-	GetKind() string
-	GetLoc() Location
-	GetName() Name
+	//GetKind() string
+	//GetLoc() Location
+	//GetName() Name
 }
 
 type Directive struct {
@@ -88,7 +90,7 @@ func NewDirective() *Directive {
 type Location struct {
 	Start  int
 	End    int
-	Source source.Source
+	Source *source.Source
 }
 
 type Document struct {
@@ -121,4 +123,39 @@ func NewVariableDefinition() *VariableDefinition {
 	return &VariableDefinition{
 		Kind: "VariableDefinition",
 	}
+}
+
+type Type interface{}
+
+type ListType struct {
+	Kind string
+	Loc  Location
+	Type Type
+}
+
+type NonNullType struct {
+	Kind string
+	Loc  Location
+	Type Type
+}
+
+type ArrayValue struct {
+	Kind   string
+	Loc    Location
+	Values []Value
+}
+
+type InlineFragment struct {
+	Kind          string
+	Loc           Location
+	TypeCondition Name
+	Directives    []Directive
+	SelectionSet  SelectionSet
+}
+
+type FragmentSpread struct {
+	Kind       string
+	Loc        Location
+	Name       Name
+	Directives []Directive
 }
