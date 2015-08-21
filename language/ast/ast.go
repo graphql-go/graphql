@@ -29,14 +29,14 @@ func NewSelectionSet() *SelectionSet {
 }
 
 type Definition interface {
-	//GetKind() string
-	//GetLoc() Location
-	//GetOperation() string
-	//GetName() Name
-	//GetVariableDefinitions() []VariableDefinition
-	//GetTypeCondition() Name
-	//GetDirectives() []Directive
-	//GetSelectionSet() SelectionSet
+	GetKind() string
+	GetLoc() Location
+	GetOperation() string
+	GetName() Name
+	GetVariableDefinitions() []VariableDefinition
+	GetTypeCondition() Name
+	GetDirectives() []Directive
+	GetSelectionSet() SelectionSet
 }
 
 type Argument struct {

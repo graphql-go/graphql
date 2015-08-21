@@ -2,6 +2,7 @@ package od
 
 import (
 	. "github.com/chris-ramon/graphql-go/language/ast"
+	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
 type OperationDefinition struct {
@@ -49,6 +50,6 @@ func GetSelectionSet(op *OperationDefinition) SelectionSet {
 
 func NewOperationDefinition() *OperationDefinition {
 	return &OperationDefinition{
-		Kind: "OperationDefinition",
+		Kind: kinds.OperationDefinition,
 	}
 }

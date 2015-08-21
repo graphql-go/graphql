@@ -3,7 +3,6 @@ package parser
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/errors"
@@ -76,30 +75,30 @@ func makeParser(s *source.Source, opts ParseOptions) (p Parser) {
 // Implements the parsing rules in the Document section.
 func parseDocument(parser Parser) (ast.Document, error) {
 	start := parser.Token.Start
-	var definitions []ast.Definition
+	var iDefinitions []interface{}
 	for {
 		if skip(parser, lexer.TokenKind[lexer.EOF]) {
 			break
 		}
 		if peek(parser, lexer.TokenKind[lexer.BRACE_L]) {
-			definition, err := parseOperationDefinition(parser)
+			oDef, err := parseOperationDefinition(parser)
 			if err != nil {
 				return ast.Document{}, err
 			}
-			definitions = append(definitions, &definition)
+			iDefinitions = append(iDefinitions, oDef)
 		} else if peek(parser, lexer.TokenKind[lexer.NAME]) {
 			if parser.Token.Value == "query" || parser.Token.Value == "mutation" {
-				definition, err := parseOperationDefinition(parser)
+				oDef, err := parseOperationDefinition(parser)
 				if err != nil {
 					return ast.Document{}, err
 				}
-				definitions = append(definitions, definition)
+				iDefinitions = append(iDefinitions, oDef)
 			} else if parser.Token.Value == "fragment" {
-				definition, err := parseFragmentDefinition(parser)
+				fDef, err := parseFragmentDefinition(parser)
 				if err != nil {
 					return ast.Document{}, err
 				}
-				definitions = append(definitions, definition)
+				iDefinitions = append(iDefinitions, fDef)
 			} else {
 				if err := unexpected(parser, lexer.Token{}); err != nil {
 					return ast.Document{}, err
@@ -107,7 +106,10 @@ func parseDocument(parser Parser) (ast.Document, error) {
 			}
 		}
 	}
-	log.Printf("definitions: %v", definitions)
+	var definitions []ast.Definition
+	for i, iDef := range iDefinitions {
+		definitions[i] = iDef.(ast.Definition)
+	}
 	return ast.Document{
 		Kind:        kinds.Document,
 		Definitions: definitions,
@@ -138,82 +140,90 @@ func peek(parser Parser, Kind int) bool {
 }
 
 // Implements the parsing rules in the Operations section.
-func parseOperationDefinition(parser Parser) (od.OperationDefinition, error) {
+func parseOperationDefinition(parser Parser) (*od.OperationDefinition, error) {
 	start := parser.Token.Start
 	selectionSet, err := parseSelectionSet(parser)
 	if err != nil {
-		return od.OperationDefinition{}, err
+		oDef := od.NewOperationDefinition()
+		return oDef, err
 	}
 	if peek(parser, lexer.TokenKind[lexer.BRACE_L]) {
-		return od.OperationDefinition{
-			Kind:         kinds.OperationDefinition,
-			Operation:    "query",
-			SelectionSet: selectionSet,
-			Loc:          loc(parser, start),
-		}, nil
+		oDef := od.NewOperationDefinition()
+		oDef.Operation = "query"
+		oDef.SelectionSet = selectionSet
+		oDef.Loc = loc(parser, start)
+		return oDef, err
 	}
 	operationToken, err := expect(parser, lexer.TokenKind[lexer.NAME])
 	if err != nil {
-		return od.OperationDefinition{}, err
+		oDef := od.NewOperationDefinition()
+		return oDef, err
 	}
 	operation := operationToken.Value
 	name, err := parseName(parser)
 	if err != nil {
-		return od.OperationDefinition{}, err
+		oDef := od.NewOperationDefinition()
+		return oDef, err
 	}
 	variableDefinitions, err := parseVariableDefinitions(parser)
 	if err != nil {
-		return od.OperationDefinition{}, err
+		oDef := od.NewOperationDefinition()
+		return oDef, err
 	}
 	directives, err := parseDirectives(parser)
 	if err != nil {
-		return od.OperationDefinition{}, err
+		oDef := od.NewOperationDefinition()
+		return oDef, err
 	}
-	return od.OperationDefinition{
-		Kind:                kinds.OperationDefinition,
-		Operation:           operation,
-		Name:                name,
-		VariableDefinitions: variableDefinitions,
-		Directives:          directives,
-		SelectionSet:        selectionSet,
-		Loc:                 loc(parser, start),
-	}, nil
+	oDef := od.NewOperationDefinition()
+	oDef.Operation = operation
+	oDef.Name = name
+	oDef.VariableDefinitions = variableDefinitions
+	oDef.Directives = directives
+	oDef.SelectionSet = selectionSet
+	oDef.Loc = loc(parser, start)
+	return oDef, nil
 }
 
-func parseFragmentDefinition(parser Parser) (fd.FragmentDefinition, error) {
+func parseFragmentDefinition(parser Parser) (*fd.FragmentDefinition, error) {
 	start := parser.Token.Start
 	_, errFragment := expectKeyWord(parser, "fragment")
 	if errFragment != nil {
-		return fd.FragmentDefinition{}, errFragment
+		fDef := fd.NewFragmentDefinition()
+		return fDef, errFragment
 	}
 	name, errName := parseName(parser)
 	if errName != nil {
-		return fd.FragmentDefinition{}, errName
+		fDef := fd.NewFragmentDefinition()
+		return fDef, errName
 	}
 	_, errOn := expectKeyWord(parser, "on")
 	if errOn != nil {
-		return fd.FragmentDefinition{}, errOn
+		fDef := fd.NewFragmentDefinition()
+		return fDef, errOn
 	}
 	typeCondition, errTypeCondition := parseName(parser)
 	if errTypeCondition != nil {
-		return fd.FragmentDefinition{}, errTypeCondition
+		fDef := fd.NewFragmentDefinition()
+		return fDef, errTypeCondition
 	}
 	selectionSet, errSelectionSet := parseSelectionSet(parser)
 	if errSelectionSet != nil {
-		return fd.FragmentDefinition{}, errSelectionSet
+		fDef := fd.NewFragmentDefinition()
+		return fDef, errSelectionSet
 	}
 	directives, errDirectives := parseDirectives(parser)
 	if errDirectives != nil {
-		return fd.FragmentDefinition{}, errDirectives
+		fDef := fd.NewFragmentDefinition()
+		return fDef, errDirectives
 	}
-	return fd.FragmentDefinition{
-		Kind:          kinds.FragmentDefinition,
-		Name:          name,
-		TypeCondition: typeCondition,
-		Directives:    directives,
-		SelectionSet:  selectionSet,
-		Loc:           loc(parser, start),
-	}, nil
+	fDef := fd.NewFragmentDefinition()
+	fDef.Name = name
+	fDef.TypeCondition = typeCondition
+	fDef.Directives = directives
+	fDef.SelectionSet = selectionSet
+	fDef.Loc = loc(parser, start)
+	return fDef, nil
 }
 
 func expectKeyWord(parser Parser, value string) (lexer.Token, error) {

@@ -2,6 +2,7 @@ package fd
 
 import (
 	. "github.com/chris-ramon/graphql-go/language/ast"
+	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
 type FragmentDefinition struct {
@@ -17,7 +18,7 @@ type FragmentDefinition struct {
 
 func NewFragmentDefinition() *FragmentDefinition {
 	return &FragmentDefinition{
-		Kind: "FragmentDefinition",
+		Kind: kinds.FragmentDefinition,
 	}
 }
 
