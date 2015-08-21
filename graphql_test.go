@@ -57,13 +57,13 @@ var (
 )
 
 func TestQuery(t *testing.T) {
-	for _, test := range Tests {
-		graphqlParams := GraphqlParams{
-			Schema:        test.Schema,
-			RequestString: test.Query,
-		}
-		//testGraphql(test, graphqlParams, t)
-	}
+	//for _, test := range Tests {
+	//graphqlParams := GraphqlParams{
+	//Schema:        test.Schema,
+	//RequestString: test.Query,
+	//}
+	//testGraphql(test, graphqlParams, t)
+	//}
 }
 
 func testGraphql(test T, p GraphqlParams, t *testing.T) {
