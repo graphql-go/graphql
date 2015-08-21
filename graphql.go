@@ -1,6 +1,7 @@
 package gql
 
 import (
+	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/executor"
 	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/language/source"
@@ -18,7 +19,14 @@ type GraphqlParams struct {
 
 func Graphql(p GraphqlParams, resultChannel chan *types.GraphQLResult) {
 	source := source.NewSource(p.RequestString, "GraphQL request")
-	AST := parser.Parse(source, parser.ParseOptions{})
+	AST, err := parser.Parse(parser.ParseParams{Source: source})
+	if err != nil {
+		result := types.GraphQLResult{
+			Errors: []errors.GraphQLFormattedError{errors.GraphQLFormattedError{Message: err.Error()}},
+		}
+		resultChannel <- &result
+		return
+	}
 	validationResult := validator.ValidateDocument(p.Schema, AST)
 	if !validationResult.IsValid {
 		result := types.GraphQLResult{
