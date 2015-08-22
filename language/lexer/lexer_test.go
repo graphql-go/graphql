@@ -12,7 +12,7 @@ type Expect struct {
 	Expected Token
 }
 
-func TestLex(t *testing.T) {
+func TestSkipsWhiteSpace(t *testing.T) {
 	expectations := []Expect{
 		Expect{
 			Body: `
@@ -34,6 +34,15 @@ func TestLex(t *testing.T) {
 				Kind:  TokenKind[NAME],
 				Start: 18,
 				End:   21,
+				Value: "foo",
+			},
+		},
+		Expect{
+			Body: `,,,foo,,,`,
+			Expected: Token{
+				Kind:  TokenKind[NAME],
+				Start: 3,
+				End:   6,
 				Value: "foo",
 			},
 		},
