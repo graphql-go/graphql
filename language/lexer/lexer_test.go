@@ -48,9 +48,26 @@ func TestSkipsWhiteSpace(t *testing.T) {
 		},
 	}
 	for _, e := range expectations {
-		token := Lex(&source.Source{Body: e.Body})(0)
+		token, err := Lex(&source.Source{Body: e.Body})(0)
+		if err != nil {
+			t.Fatalf("unexpected error, error: %v", err)
+		}
 		if !reflect.DeepEqual(token, e.Expected) {
 			t.Fatalf("unexpected token, expected: %v, got: %v", e.Expected, token)
 		}
+	}
+}
+
+func TestErrorsRespectWhitespace(t *testing.T) {
+	body := `
+
+    ?
+
+			`
+	source := source.NewSource(body, "")
+	_, err := Lex(source)(0)
+	expected := "Syntax Error GraphQL (3:5) Unexpected character \"?\".\n\n2: \n3:     ?\n       ^\n4: \n"
+	if err.Error() != expected {
+		t.Fatalf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", expected, err.Error())
 	}
 }
