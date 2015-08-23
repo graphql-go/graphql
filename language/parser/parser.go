@@ -45,10 +45,13 @@ func Parse(p ParseParams) (ast.Document, error) {
 	default:
 		return doc, errors.New("Unsupported source type")
 	}
-	parser := makeParser(sourceObj, p.Options)
-	doc, err := parseDocument(parser)
-	if err != nil {
-		return doc, err
+	parser, errMakeParser := makeParser(sourceObj, p.Options)
+	if errMakeParser != nil {
+		return doc, errMakeParser
+	}
+	doc, errParseDocument := parseDocument(parser)
+	if errParseDocument != nil {
+		return doc, errParseDocument
 	}
 	return doc, nil
 }
@@ -61,15 +64,19 @@ type Parser struct {
 	Token    lexer.Token
 }
 
-func makeParser(s *source.Source, opts ParseOptions) (p Parser) {
+func makeParser(s *source.Source, opts ParseOptions) (Parser, error) {
 	lexToken := lexer.Lex(s)
+	token, err := lexToken(0)
+	if err != nil {
+		return Parser{}, err
+	}
 	return Parser{
 		LexToken: lexToken,
 		Source:   s,
 		Options:  opts,
 		PrevEnd:  0,
-		Token:    lexToken(0),
-	}
+		Token:    token,
+	}, nil
 }
 
 // Implements the parsing rules in the Document section.
@@ -128,10 +135,15 @@ func skip(parser Parser, Kind int) bool {
 }
 
 // Moves the internal parser object to the next lexed token.
-func advance(parser Parser) {
+func advance(parser Parser) error {
 	prevEnd := parser.Token.End
 	parser.PrevEnd = prevEnd
-	parser.Token = parser.LexToken(prevEnd)
+	token, err := parser.LexToken(prevEnd)
+	if err != nil {
+		return err
+	}
+	parser.Token = token
+	return nil
 }
 
 // Determines if the next token is of a given kind
