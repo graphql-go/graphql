@@ -50,7 +50,7 @@ func TestSkipsWhiteSpace(t *testing.T) {
 	for _, e := range expectations {
 		token, err := Lex(&source.Source{Body: e.Body})(0)
 		if err != nil {
-			t.Fatalf("unexpected error, error: %v", err)
+			t.Fatalf("unexpected error: %v", err)
 		}
 		if !reflect.DeepEqual(token, e.Expected) {
 			t.Fatalf("unexpected token, expected: %v, got: %v", e.Expected, token)
