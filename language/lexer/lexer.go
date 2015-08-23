@@ -3,6 +3,7 @@ package lexer
 import (
 	"fmt"
 
+	"github.com/chris-ramon/graphql-go/language/errors"
 	"github.com/chris-ramon/graphql-go/language/source"
 )
 
@@ -81,17 +82,20 @@ type Token struct {
 	Value string
 }
 
-type Lexer func(resetPosition int) Token
+type Lexer func(resetPosition int) (Token, error)
 
 func Lex(s *source.Source) Lexer {
 	var prevPosition int
-	return func(resetPosition int) Token {
+	return func(resetPosition int) (Token, error) {
 		if resetPosition == 0 {
 			resetPosition = prevPosition
 		}
-		var token = readToken(s, resetPosition)
+		token, err := readToken(s, resetPosition)
+		if err != nil {
+			return token, err
+		}
 		prevPosition = token.End
-		return token
+		return token, nil
 	}
 }
 
@@ -120,40 +124,41 @@ func makeToken(kind int, start int, end int, value string) Token {
 	return Token{Kind: kind, Start: start, End: end, Value: value}
 }
 
-func readToken(s *source.Source, fromPosition int) Token {
+func readToken(s *source.Source, fromPosition int) (Token, error) {
 	body := s.Body
 	bodyLength := len(body)
 	position := positionAfterWhitespace(body, fromPosition)
 	code := charCodeAt(body, position)
 	if position >= bodyLength {
-		return makeToken(TokenKind[EOF], position, position, "")
+		return makeToken(TokenKind[EOF], position, position, ""), nil
 	}
 	switch code {
 	// !
 	case 33:
-		return makeToken(TokenKind[BANG], position, position+1, "")
+		return makeToken(TokenKind[BANG], position, position+1, ""), nil
 	// $
 	case 36:
-		return makeToken(TokenKind[DOLLAR], position, position+1, "")
+		return makeToken(TokenKind[DOLLAR], position, position+1, ""), nil
 	// (
 	case 40:
-		return makeToken(TokenKind[PAREN_L], position, position+1, "")
+		return makeToken(TokenKind[PAREN_L], position, position+1, ""), nil
 	// )
 	case 41:
-		return makeToken(TokenKind[PAREN_R], position, position+1, "")
+		return makeToken(TokenKind[PAREN_R], position, position+1, ""), nil
 	// .
 	case 46:
 		if charCodeAt(body, position+1) == 46 && charCodeAt(body, position+2) == 46 {
-			return makeToken(TokenKind[SPREAD], position, position+3, "")
+			return makeToken(TokenKind[SPREAD], position, position+3, ""), nil
 		}
-		return makeToken(TokenKind[PAREN_R], position, position+1, "")
+		return makeToken(TokenKind[PAREN_R], position, position+1, ""), nil
 	// a-z
 	case 97, 98, 99, 100, 101, 102, 103, 104, 122:
-		return readName(s, position)
+		return readName(s, position), nil
 	case 123:
-		return makeToken(TokenKind[BRACE_L], position, position+1, "")
+		return makeToken(TokenKind[BRACE_L], position, position+1, ""), nil
 	}
-	return Token{}
+	description := fmt.Sprintf("Unexpected character \"%c\"", code)
+	return Token{}, languageerrors.Error(s, position, description)
 }
 
 func charCodeAt(body string, position int) rune {
