@@ -198,8 +198,8 @@ func readDigits(s *source.Source, start int, firstCode rune) (int, error) {
 		return position, nil
 	}
 	var description string
-	if code == 0 {
-		description = fmt.Sprintf("Invalid number, expected digit but got: %c.", code)
+	if code != 0 {
+		description = fmt.Sprintf("Invalid number, expected digit but got: \"%c\".", code)
 	} else {
 		description = fmt.Sprintf("Invalid number, expected digit but got: EOF.")
 	}
@@ -332,7 +332,7 @@ func readToken(s *source.Source, fromPosition int) (Token, error) {
 		if charCodeAt(body, position+1) == 46 && charCodeAt(body, position+2) == 46 {
 			return makeToken(TokenKind[SPREAD], position, position+3, ""), nil
 		}
-		return makeToken(TokenKind[PAREN_R], position, position+1, ""), nil
+		break
 	// :
 	case 58:
 		return makeToken(TokenKind[COLON], position, position+1, ""), nil
