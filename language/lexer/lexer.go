@@ -120,6 +120,102 @@ func readName(source *source.Source, position int) Token {
 	return makeToken(TokenKind[NAME], position, end, body[position:end])
 }
 
+func readString(s *source.Source, start int) (Token, error) {
+	body := s.Body
+	position := start + 1
+	chunkStart := position
+	var code rune
+	var value string
+	for {
+		code = charCodeAt(body, position)
+		if position < len(body) && code != 34 && code != 10 && code != 13 && code != 0x2028 && code != 0x2029 {
+			position += 1
+			if code == 92 { // \
+				value += body[chunkStart : position-1]
+				code = charCodeAt(body, position)
+				switch code {
+				case 34:
+					value += "\""
+					break
+				case 47:
+					value += "\\/"
+					break
+				case 92:
+					value += "\\"
+					break
+				case 98:
+					value += "\b"
+					break
+				case 102:
+					value += "\f"
+					break
+				case 110:
+					value += "\n"
+					break
+				case 114:
+					value += "\r"
+					break
+				case 116:
+					value += "\t"
+					break
+				case 117:
+					charCode := uniCharCode(
+						charCodeAt(body, position+1),
+						charCodeAt(body, position+2),
+						charCodeAt(body, position+3),
+						charCodeAt(body, position+4),
+					)
+					if charCode < 0 {
+						return Token{}, languageerrors.Error(s, position, "Bad character escape sequence.")
+					}
+					value += fmt.Sprintf("%c", charCode)
+					position += 4
+					break
+				default:
+					return Token{}, languageerrors.Error(s, position, "Bad character escape sequence.")
+				}
+				position += 1
+				chunkStart = position
+			}
+			continue
+		} else {
+			break
+		}
+	}
+	if code != 34 {
+		return Token{}, languageerrors.Error(s, position, "Unterminated string.")
+	}
+	value += body[chunkStart:position]
+	return makeToken(TokenKind[STRING], start, position+1, value), nil
+}
+
+// Converts four hexidecimal chars to the integer that the
+// string represents. For example, uniCharCode('0','0','0','f')
+// will return 15, and uniCharCode('0','0','f','f') returns 255.
+// Returns a negative number on error, if a char was invalid.
+// This is implemented by noting that char2hex() returns -1 on error,
+// which means the result of ORing the char2hex() will also be negative.
+func uniCharCode(a, b, c, d rune) rune {
+	return rune(char2hex(a)<<12 | char2hex(b)<<8 | char2hex(c)<<4 | char2hex(d))
+}
+
+// Converts a hex character to its integer value.
+// '0' becomes 0, '9' becomes 9
+// 'A' becomes 10, 'F' becomes 15
+// 'a' becomes 10, 'f' becomes 15
+// Returns -1 on error.
+func char2hex(a rune) int {
+	if a >= 48 && a <= 57 { // 0-9
+		return int(a) - 48
+	} else if a >= 65 && a <= 70 { // A-F
+		return int(a) - 55
+	} else if a >= 97 && a <= 102 { // a-f
+		return int(a) - 87
+	} else {
+		return -1
+	}
+}
+
 func makeToken(kind int, start int, end int, value string) Token {
 	return Token{Kind: kind, Start: start, End: end, Value: value}
 }
@@ -151,11 +247,54 @@ func readToken(s *source.Source, fromPosition int) (Token, error) {
 			return makeToken(TokenKind[SPREAD], position, position+3, ""), nil
 		}
 		return makeToken(TokenKind[PAREN_R], position, position+1, ""), nil
-	// a-z
-	case 97, 98, 99, 100, 101, 102, 103, 104, 122:
-		return readName(s, position), nil
+	// :
+	case 58:
+		return makeToken(TokenKind[COLON], position, position+1, ""), nil
+	// =
+	case 61:
+		return makeToken(TokenKind[EQUALS], position, position+1, ""), nil
+	// @
+	case 64:
+		return makeToken(TokenKind[AT], position, position+1, ""), nil
+	// [
+	case 91:
+		return makeToken(TokenKind[BRACKET_L], position, position+1, ""), nil
+	// ]
+	case 93:
+		return makeToken(TokenKind[BRACKET_R], position, position+1, ""), nil
+	// {
 	case 123:
 		return makeToken(TokenKind[BRACE_L], position, position+1, ""), nil
+	// |
+	case 124:
+		return makeToken(TokenKind[PIPE], position, position+1, ""), nil
+	// }
+	case 125:
+		return makeToken(TokenKind[BRACE_R], position, position+1, ""), nil
+	// A-Z
+	case 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
+		82, 83, 84, 85, 86, 87, 88, 89, 90:
+		return readName(s, position), nil
+	// _
+	case 95:
+		return readName(s, position), nil
+	// a-z
+	case 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110,
+		111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122:
+		return readName(s, position), nil
+	// -
+	case 45:
+		return readName(s, position), nil
+	// 0-9
+	case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
+		return readName(s, position), nil
+	// "
+	case 34:
+		token, err := readString(s, position)
+		if err != nil {
+			return token, err
+		}
+		return token, nil
 	}
 	description := fmt.Sprintf("Unexpected character \"%c\"", code)
 	return Token{}, languageerrors.Error(s, position, description)
