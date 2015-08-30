@@ -11,7 +11,7 @@ import (
 
 func Error(s *source.Source, position int, description string) error {
 	l := location.GetLocation(s, position)
-	err := fmt.Sprintf("Syntax Error %s (%d:%d) %s.\n\n%s", s.Name, l.Line, l.Column, description, highlightSourceAtLocation(s, l))
+	err := fmt.Sprintf("Syntax Error %s (%d:%d) %s\n\n%s", s.Name, l.Line, l.Column, description, highlightSourceAtLocation(s, l))
 	return errors.New(err)
 }
 
