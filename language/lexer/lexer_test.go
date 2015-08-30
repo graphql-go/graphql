@@ -410,3 +410,79 @@ func TestLexesNumbers(t *testing.T) {
 		}
 	}
 }
+
+func TestLexReportsUsefulNumbeErrors(t *testing.T) {
+	tests := []Test{
+		Test{
+			Body: "00",
+			Expected: `Syntax Error GraphQL (1:2) Invalid number, unexpected digit after 0: "0".
+
+1: 00
+    ^
+`,
+		},
+		Test{
+			Body: "+1",
+			Expected: `Syntax Error GraphQL (1:1) Unexpected character "+".
+
+1: +1
+   ^
+`,
+		},
+		Test{
+			Body: "1.",
+			Expected: `Syntax Error GraphQL (1:3) Invalid number, expected digit but got: EOF.
+
+1: 1.
+     ^
+`,
+		},
+		Test{
+			Body: ".123",
+			Expected: `Syntax Error GraphQL (1:1) Unexpected character ".".
+
+1: .123
+   ^
+`,
+		},
+		Test{
+			Body: "1.A",
+			Expected: `Syntax Error GraphQL (1:3) Invalid number, expected digit but got: "A".
+
+1: 1.A
+     ^
+`,
+		},
+		Test{
+			Body: "-A",
+			Expected: `Syntax Error GraphQL (1:2) Invalid number, expected digit but got: "A".
+
+1: -A
+    ^
+`,
+		},
+		Test{
+			Body: "1.0e",
+			Expected: `Syntax Error GraphQL (1:5) Invalid number, expected digit but got: EOF.
+
+1: 1.0e
+       ^
+`,
+		},
+		Test{
+			Body: "1.0eA",
+			Expected: `Syntax Error GraphQL (1:5) Invalid number, expected digit but got: "A".
+
+1: 1.0eA
+       ^
+`,
+		},
+
+	}
+	for _, test := range tests {
+		_, err := Lex(source.NewSource(test.Body, ""))(0)
+		if err.Error() != test.Expected {
+			t.Fatalf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", test.Expected, err.Error())
+		}
+	}
+}
