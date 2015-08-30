@@ -1,4 +1,4 @@
-graphql-go [![Build Status](https://travis-ci.org/chris-ramon/graphql-go.svg)](https://travis-ci.org/chris-ramon/graphql-go)
+graphql-go [![Build Status](https://travis-ci.org/chris-ramon/graphql-go.svg)](https://travis-ci.org/chris-ramon/graphql-go) [![GoDoc](https://godoc.org/graphql.co/graphql?status.svg)](https://godoc.org/github.com/chris-ramon/graphql-go)
 =====
 An *work in progress* implementation of GraphQL for Go
 
@@ -6,7 +6,6 @@ An *work in progress* implementation of GraphQL for Go
 - [ ] Lexer
 - [ ] Parser
 - [ ] Executor
-- [ ] Documentation basic usage
-- [ ] Documentation Godoc
+- [ ] Basic usage
 - [ ] Relay/React example
 - [ ] Release v0.1
