@@ -120,6 +120,92 @@ func readName(source *source.Source, position int) Token {
 	return makeToken(TokenKind[NAME], position, end, body[position:end])
 }
 
+// Reads a number token from the source file, either a float
+// or an int depending on whether a decimal point appears.
+// Int:   -?(0|[1-9][0-9]*)
+// Float: -?(0|[1-9][0-9]*)(\.[0-9]+)?((E|e)(+|-)?[0-9]+)?
+func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
+	code := firstCode
+	body := s.Body
+	position := start
+	isFloat := false
+	if code == 45 { // -
+		position += 1
+		code = charCodeAt(body, position)
+	}
+	if code == 48 { // 0
+		position += 1
+		code = charCodeAt(body, position)
+		if code >= 48 && code <= 57 {
+			description := fmt.Sprintf("Invalid number, unexpected digit after 0: \"%c\".", code)
+			return Token{}, languageerrors.Error(s, position, description)
+		}
+	} else {
+		p, err := readDigits(s, position, code)
+		if err != nil {
+			return Token{}, err
+		}
+		position = p
+		code = charCodeAt(body, position)
+	}
+	if code == 46 { // .
+		isFloat = true
+		position += 1
+		code = charCodeAt(body, position)
+		p, err := readDigits(s, position, code)
+		if err != nil {
+			return Token{}, err
+		}
+		position = p
+		code = charCodeAt(body, position)
+	}
+	if code == 69 || code == 101 { // E e
+		isFloat = true
+		position += 1
+		code = charCodeAt(body, position)
+		if code == 43 || code == 45 { // + -
+			position += 1
+			code = charCodeAt(body, position)
+		}
+		p, err := readDigits(s, position, code)
+		if err != nil {
+			return Token{}, err
+		}
+		position = p
+	}
+	kind := TokenKind[INT]
+	if isFloat {
+		kind = TokenKind[FLOAT]
+	}
+	return makeToken(kind, start, position, body[start:position]), nil
+}
+
+// Returns the new position in the source after reading digits.
+func readDigits(s *source.Source, start int, firstCode rune) (int, error) {
+	body := s.Body
+	position := start
+	code := firstCode
+	if code >= 48 && code <= 57 { // 0 - 9
+		for {
+			if code >= 48 && code <= 57 { // 0 - 9
+				position += 1
+				code = charCodeAt(body, position)
+				continue
+			} else {
+				break
+			}
+		}
+		return position, nil
+	}
+	var description string
+	if code == 0 {
+		description = fmt.Sprintf("Invalid number, expected digit but got: %c.", code)
+	} else {
+		description = fmt.Sprintf("Invalid number, expected digit but got: EOF.")
+	}
+	return position, languageerrors.Error(s, position, description)
+}
+
 func readString(s *source.Source, start int) (Token, error) {
 	body := s.Body
 	position := start + 1
@@ -283,11 +369,14 @@ func readToken(s *source.Source, fromPosition int) (Token, error) {
 		111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122:
 		return readName(s, position), nil
 	// -
-	case 45:
-		return readName(s, position), nil
 	// 0-9
-	case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
-		return readName(s, position), nil
+	case 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
+		token, err := readNumber(s, position, code)
+		if err != nil {
+			return token, err
+		} else {
+			return token, nil
+		}
 	// "
 	case 34:
 		token, err := readString(s, position)
@@ -296,12 +385,17 @@ func readToken(s *source.Source, fromPosition int) (Token, error) {
 		}
 		return token, nil
 	}
-	description := fmt.Sprintf("Unexpected character \"%c\"", code)
+	description := fmt.Sprintf("Unexpected character \"%c\".", code)
 	return Token{}, languageerrors.Error(s, position, description)
 }
 
 func charCodeAt(body string, position int) rune {
-	return []rune(body)[position]
+	r := []rune(body)
+	if len(r) > position {
+		return r[position]
+	} else {
+		return 0
+	}
 }
 
 // Reads from body starting at startPosition until it finds a non-whitespace
