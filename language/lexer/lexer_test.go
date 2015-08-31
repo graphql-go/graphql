@@ -651,3 +651,30 @@ func TestLexReportsUsefulUnknownCharacterError(t *testing.T) {
 		}
 	}
 }
+
+func TestLexRerportsUsefulInformationForDashesInNames(t *testing.T) {
+	q := "a-b"
+	lexer := Lex(source.NewSource(q, ""))
+	firstToken, err := lexer(0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	firstTokenExpected := Token{
+		Kind:  TokenKind[NAME],
+		Start: 0,
+		End:   1,
+		Value: "a",
+	}
+	if !reflect.DeepEqual(firstToken, firstTokenExpected) {
+		t.Fatalf("unexpected token, expected: %v, got: %v", firstTokenExpected, firstToken)
+	}
+	errExpected := `Syntax Error GraphQL (1:3) Invalid number, expected digit but got: "b".
+
+1: a-b
+     ^
+`
+	token, errSecondToken := lexer(0)
+	if errSecondToken.Error() != errExpected {
+		t.Fatalf("unexpected error, token:%v\nexpected:\n%v\n\ngot:\n%v", token, errExpected, errSecondToken)
+	}
+}
