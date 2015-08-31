@@ -616,3 +616,38 @@ func TestLexesPunctuation(t *testing.T) {
 		}
 	}
 }
+
+func TestLexReportsUsefulUnknownCharacterError(t *testing.T) {
+	tests := []Test{
+		Test{
+			Body: "..",
+			Expected: `Syntax Error GraphQL (1:1) Unexpected character ".".
+
+1: ..
+   ^
+`,
+		},
+		Test{
+			Body: "?",
+			Expected: `Syntax Error GraphQL (1:1) Unexpected character "?".
+
+1: ?
+   ^
+`,
+		},
+		Test{
+			Body: "\u203B",
+			Expected: `Syntax Error GraphQL (1:1) Unexpected character "※".
+
+1: ※
+   ^
+`,
+		},
+	}
+	for _, test := range tests {
+		_, err := Lex(source.NewSource(test.Body, ""))(0)
+		if err.Error() != test.Expected {
+			t.Fatalf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", test.Expected, err.Error())
+		}
+	}
+}
