@@ -3,7 +3,7 @@ graphql-go [![Build Status](https://travis-ci.org/chris-ramon/graphql-go.svg)](h
 An *work in progress* implementation of GraphQL for Go
 
 #### Roadmap
-- [ ] Lexer
+- [x] Lexer
 - [ ] Parser
 - [ ] Executor
 - [ ] Basic usage
