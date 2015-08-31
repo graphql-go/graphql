@@ -477,12 +477,142 @@ func TestLexReportsUsefulNumbeErrors(t *testing.T) {
        ^
 `,
 		},
-
 	}
 	for _, test := range tests {
 		_, err := Lex(source.NewSource(test.Body, ""))(0)
 		if err.Error() != test.Expected {
 			t.Fatalf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", test.Expected, err.Error())
+		}
+	}
+}
+
+func TestLexesPunctuation(t *testing.T) {
+	tests := []Test{
+		Test{
+			Body: "!",
+			Expected: Token{
+				Kind:  TokenKind[BANG],
+				Start: 0,
+				End:   1,
+				Value: "",
+			},
+		},
+		Test{
+			Body: "$",
+			Expected: Token{
+				Kind:  TokenKind[DOLLAR],
+				Start: 0,
+				End:   1,
+				Value: "",
+			},
+		},
+		Test{
+			Body: "(",
+			Expected: Token{
+				Kind:  TokenKind[PAREN_L],
+				Start: 0,
+				End:   1,
+				Value: "",
+			},
+		},
+		Test{
+			Body: ")",
+			Expected: Token{
+				Kind:  TokenKind[PAREN_R],
+				Start: 0,
+				End:   1,
+				Value: "",
+			},
+		},
+		Test{
+			Body: "...",
+			Expected: Token{
+				Kind:  TokenKind[SPREAD],
+				Start: 0,
+				End:   3,
+				Value: "",
+			},
+		},
+		Test{
+			Body: ":",
+			Expected: Token{
+				Kind:  TokenKind[COLON],
+				Start: 0,
+				End:   1,
+				Value: "",
+			},
+		},
+		Test{
+			Body: "=",
+			Expected: Token{
+				Kind:  TokenKind[EQUALS],
+				Start: 0,
+				End:   1,
+				Value: "",
+			},
+		},
+		Test{
+			Body: "@",
+			Expected: Token{
+				Kind:  TokenKind[AT],
+				Start: 0,
+				End:   1,
+				Value: "",
+			},
+		},
+		Test{
+			Body: "[",
+			Expected: Token{
+				Kind:  TokenKind[BRACKET_L],
+				Start: 0,
+				End:   1,
+				Value: "",
+			},
+		},
+		Test{
+			Body: "]",
+			Expected: Token{
+				Kind:  TokenKind[BRACKET_R],
+				Start: 0,
+				End:   1,
+				Value: "",
+			},
+		},
+		Test{
+			Body: "{",
+			Expected: Token{
+				Kind:  TokenKind[BRACE_L],
+				Start: 0,
+				End:   1,
+				Value: "",
+			},
+		},
+		Test{
+			Body: "|",
+			Expected: Token{
+				Kind:  TokenKind[PIPE],
+				Start: 0,
+				End:   1,
+				Value: "",
+			},
+		},
+		Test{
+			Body: "}",
+			Expected: Token{
+				Kind:  TokenKind[BRACE_R],
+				Start: 0,
+				End:   1,
+				Value: "",
+			},
+		},
+	}
+	for _, test := range tests {
+		token, err := Lex(source.NewSource(test.Body, ""))(0)
+		if err != nil {
+			t.Fatalf("unexpected error :%v, test: %v", err, test)
+		}
+		if !reflect.DeepEqual(token, test.Expected) {
+			t.Fatalf("unexpected token, expected: %v, got: %v, test: %v", test.Expected, token, test)
 		}
 	}
 }
