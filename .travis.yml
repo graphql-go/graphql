@@ -4,4 +4,4 @@ go:
   - 1.4
 
 script:
-  - go test ./language/lexer
+  - go test ./...
