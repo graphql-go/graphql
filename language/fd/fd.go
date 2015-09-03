@@ -22,34 +22,34 @@ func NewFragmentDefinition() *FragmentDefinition {
 	}
 }
 
-func GetKind(fd *FragmentDefinition) string {
+func (fd *FragmentDefinition) GetKind() string {
 	return fd.Kind
 }
 
-func GetLoc(fd *FragmentDefinition) Location {
+func (fd *FragmentDefinition) GetLoc() Location {
 	return fd.Loc
 }
 
-func GetOperation(fd *FragmentDefinition) string {
+func (fd *FragmentDefinition) GetOperation() string {
 	return fd.Operation
 }
 
-func GetName(fd *FragmentDefinition) Name {
+func (fd *FragmentDefinition) GetName() Name {
 	return fd.Name
 }
 
-func GetTypeCondition(fd *FragmentDefinition) Name {
+func (fd *FragmentDefinition) GetTypeCondition() Name {
 	return fd.TypeCondition
 }
 
-func GetVariableDefinitions(fd *FragmentDefinition) []VariableDefinition {
+func (fd *FragmentDefinition) GetVariableDefinitions() []VariableDefinition {
 	return fd.VariableDefinitions
 }
 
-func GetDirectives(fd *FragmentDefinition) []Directive {
+func (fd *FragmentDefinition) GetDirectives() []Directive {
 	return fd.Directives
 }
 
-func GetSelectionSet(fd *FragmentDefinition) SelectionSet {
+func (fd *FragmentDefinition) GetSelectionSet() SelectionSet {
 	return fd.SelectionSet
 }

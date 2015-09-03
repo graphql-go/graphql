@@ -16,35 +16,35 @@ type OperationDefinition struct {
 	SelectionSet        SelectionSet
 }
 
-func GetKind(op *OperationDefinition) string {
+func (op *OperationDefinition) GetKind() string {
 	return op.Kind
 }
 
-func GetLoc(op *OperationDefinition) Location {
+func (op *OperationDefinition) GetLoc() Location {
 	return op.Loc
 }
 
-func GetOperation(op *OperationDefinition) string {
+func (op *OperationDefinition) GetOperation() string {
 	return op.Operation
 }
 
-func GetName(op *OperationDefinition) Name {
+func (op *OperationDefinition) GetName() Name {
 	return op.Name
 }
 
-func GetTypeCondition(op *OperationDefinition) Name {
+func (op *OperationDefinition) GetTypeCondition() Name {
 	return op.TypeCondition
 }
 
-func GetVariableDefinitions(op *OperationDefinition) []VariableDefinition {
+func (op *OperationDefinition) GetVariableDefinitions() []VariableDefinition {
 	return op.VariableDefinitions
 }
 
-func GetDirectives(op *OperationDefinition) []Directive {
+func (op *OperationDefinition) GetDirectives() []Directive {
 	return op.Directives
 }
 
-func GetSelectionSet(op *OperationDefinition) SelectionSet {
+func (op *OperationDefinition) GetSelectionSet() SelectionSet {
 	return op.SelectionSet
 }
 
