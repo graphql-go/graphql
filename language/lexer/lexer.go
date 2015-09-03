@@ -65,9 +65,9 @@ func init() {
 	tokenDescription[TokenKind[AT]] = "@"
 	tokenDescription[TokenKind[BRACKET_L]] = "["
 	tokenDescription[TokenKind[BRACKET_R]] = "]"
-	tokenDescription[TokenKind[BRACE_L]] = "}"
+	tokenDescription[TokenKind[BRACE_L]] = "{"
 	tokenDescription[TokenKind[PIPE]] = "|"
-	tokenDescription[TokenKind[BRACE_R]] = "{"
+	tokenDescription[TokenKind[BRACE_R]] = "}"
 	tokenDescription[TokenKind[NAME]] = "Name"
 	tokenDescription[TokenKind[VARIABLE]] = "Variable"
 	tokenDescription[TokenKind[INT]] = "Int"
@@ -80,6 +80,10 @@ type Token struct {
 	Start int
 	End   int
 	Value string
+}
+
+func (t *Token) String() string {
+	return fmt.Sprintf("%s", tokenDescription[t.Kind])
 }
 
 type Lexer func(resetPosition int) (Token, error)
