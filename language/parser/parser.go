@@ -13,7 +13,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/source"
 )
 
-func unexpected(parser Parser, atToken lexer.Token) error {
+func unexpected(parser *Parser, atToken lexer.Token) error {
 	var token lexer.Token
 	if (atToken == lexer.Token{}) {
 		token = parser.Token
@@ -64,13 +64,13 @@ type Parser struct {
 	Token    lexer.Token
 }
 
-func makeParser(s *source.Source, opts ParseOptions) (Parser, error) {
+func makeParser(s *source.Source, opts ParseOptions) (*Parser, error) {
 	lexToken := lexer.Lex(s)
 	token, err := lexToken(0)
 	if err != nil {
-		return Parser{}, err
+		return &Parser{}, err
 	}
-	return Parser{
+	return &Parser{
 		LexToken: lexToken,
 		Source:   s,
 		Options:  opts,
@@ -80,9 +80,9 @@ func makeParser(s *source.Source, opts ParseOptions) (Parser, error) {
 }
 
 // Implements the parsing rules in the Document section.
-func parseDocument(parser Parser) (ast.Document, error) {
+func parseDocument(parser *Parser) (ast.Document, error) {
 	start := parser.Token.Start
-	var iDefinitions []interface{}
+	var definitions []ast.Definition
 	for {
 		if skip(parser, lexer.TokenKind[lexer.EOF]) {
 			break
@@ -92,20 +92,20 @@ func parseDocument(parser Parser) (ast.Document, error) {
 			if err != nil {
 				return ast.Document{}, err
 			}
-			iDefinitions = append(iDefinitions, oDef)
+			definitions = append(definitions, oDef)
 		} else if peek(parser, lexer.TokenKind[lexer.NAME]) {
 			if parser.Token.Value == "query" || parser.Token.Value == "mutation" {
 				oDef, err := parseOperationDefinition(parser)
 				if err != nil {
 					return ast.Document{}, err
 				}
-				iDefinitions = append(iDefinitions, oDef)
+				definitions = append(definitions, oDef)
 			} else if parser.Token.Value == "fragment" {
 				fDef, err := parseFragmentDefinition(parser)
 				if err != nil {
 					return ast.Document{}, err
 				}
-				iDefinitions = append(iDefinitions, fDef)
+				definitions = append(definitions, fDef)
 			} else {
 				if err := unexpected(parser, lexer.Token{}); err != nil {
 					return ast.Document{}, err
@@ -113,29 +113,26 @@ func parseDocument(parser Parser) (ast.Document, error) {
 			}
 		}
 	}
-	var definitions []ast.Definition
-	for i, iDef := range iDefinitions {
-		definitions[i] = iDef.(ast.Definition)
-	}
 	return ast.Document{
 		Kind:        kinds.Document,
-		Definitions: definitions,
 		Loc:         loc(parser, start),
+		Definitions: definitions,
 	}, nil
 }
 
 // If the next token is of the given kind, return true after advancing
 // the parser. Otherwise, do not change the parser state and return false.
-func skip(parser Parser, Kind int) bool {
+func skip(parser *Parser, Kind int) bool {
 	if parser.Token.Kind == Kind {
 		advance(parser)
 		return true
+	} else {
+		return false
 	}
-	return false
 }
 
 // Moves the internal parser object to the next lexed token.
-func advance(parser Parser) error {
+func advance(parser *Parser) error {
 	prevEnd := parser.Token.End
 	parser.PrevEnd = prevEnd
 	token, err := parser.LexToken(prevEnd)
@@ -147,21 +144,22 @@ func advance(parser Parser) error {
 }
 
 // Determines if the next token is of a given kind
-func peek(parser Parser, Kind int) bool {
+func peek(parser *Parser, Kind int) bool {
 	return parser.Token.Kind == Kind
 }
 
 // Implements the parsing rules in the Operations section.
-func parseOperationDefinition(parser Parser) (*od.OperationDefinition, error) {
+func parseOperationDefinition(parser *Parser) (*od.OperationDefinition, error) {
 	start := parser.Token.Start
-	selectionSet, err := parseSelectionSet(parser)
-	if err != nil {
-		oDef := od.NewOperationDefinition()
-		return oDef, err
-	}
 	if peek(parser, lexer.TokenKind[lexer.BRACE_L]) {
+		selectionSet, err := parseSelectionSet(parser)
+		if err != nil {
+			oDef := od.NewOperationDefinition()
+			return oDef, err
+		}
 		oDef := od.NewOperationDefinition()
 		oDef.Operation = "query"
+		oDef.Directives = []ast.Directive{}
 		oDef.SelectionSet = selectionSet
 		oDef.Loc = loc(parser, start)
 		return oDef, err
@@ -187,6 +185,11 @@ func parseOperationDefinition(parser Parser) (*od.OperationDefinition, error) {
 		oDef := od.NewOperationDefinition()
 		return oDef, err
 	}
+	selectionSet, err := parseSelectionSet(parser)
+	if err != nil {
+		oDef := od.NewOperationDefinition()
+		return oDef, err
+	}
 	oDef := od.NewOperationDefinition()
 	oDef.Operation = operation
 	oDef.Name = name
@@ -197,7 +200,7 @@ func parseOperationDefinition(parser Parser) (*od.OperationDefinition, error) {
 	return oDef, nil
 }
 
-func parseFragmentDefinition(parser Parser) (*fd.FragmentDefinition, error) {
+func parseFragmentDefinition(parser *Parser) (*fd.FragmentDefinition, error) {
 	start := parser.Token.Start
 	_, errFragment := expectKeyWord(parser, "fragment")
 	if errFragment != nil {
@@ -238,7 +241,7 @@ func parseFragmentDefinition(parser Parser) (*fd.FragmentDefinition, error) {
 	return fDef, nil
 }
 
-func expectKeyWord(parser Parser, value string) (lexer.Token, error) {
+func expectKeyWord(parser *Parser, value string) (lexer.Token, error) {
 	token := parser.Token
 	if token.Kind == lexer.TokenKind[lexer.NAME] && token.Value == value {
 		advance(parser)
@@ -248,7 +251,7 @@ func expectKeyWord(parser Parser, value string) (lexer.Token, error) {
 	return token, languageerrors.Error(parser.Source, token.Start, descp)
 }
 
-func parseSelectionSet(parser Parser) (ast.SelectionSet, error) {
+func parseSelectionSet(parser *Parser) (ast.SelectionSet, error) {
 	start := parser.Token.Start
 	selections, err := many(parser, lexer.TokenKind[lexer.BRACE_L], parseSelection, lexer.TokenKind[lexer.BRACE_R])
 	if err != nil {
@@ -261,7 +264,7 @@ func parseSelectionSet(parser Parser) (ast.SelectionSet, error) {
 	}, nil
 }
 
-func parseSelection(parser Parser) (interface{}, error) {
+func parseSelection(parser *Parser) (interface{}, error) {
 	if peek(parser, lexer.TokenKind[lexer.SPREAD]) {
 		r, err := parseFragment(parser)
 		if err != nil {
@@ -273,7 +276,7 @@ func parseSelection(parser Parser) (interface{}, error) {
 	}
 }
 
-func loc(parser Parser, start int) ast.Location {
+func loc(parser *Parser, start int) ast.Location {
 	if parser.Options.NoLocation {
 		return ast.Location{}
 	}
@@ -290,7 +293,7 @@ func loc(parser Parser, start int) ast.Location {
 	}
 }
 
-func expect(parser Parser, kind int) (lexer.Token, error) {
+func expect(parser *Parser, kind int) (lexer.Token, error) {
 	token := parser.Token
 	if token.Kind == kind {
 		advance(parser)
@@ -301,7 +304,7 @@ func expect(parser Parser, kind int) (lexer.Token, error) {
 }
 
 // Converts a name lex token into a name parse node.
-func parseName(parser Parser) (ast.Name, error) {
+func parseName(parser *Parser) (ast.Name, error) {
 	token, err := expect(parser, lexer.TokenKind[lexer.NAME])
 	if err != nil {
 		return ast.Name{}, err
@@ -313,7 +316,7 @@ func parseName(parser Parser) (ast.Name, error) {
 	}, nil
 }
 
-func parseVariableDefinitions(parser Parser) ([]ast.VariableDefinition, error) {
+func parseVariableDefinitions(parser *Parser) ([]ast.VariableDefinition, error) {
 	if peek(parser, lexer.TokenKind[lexer.PAREN_L]) {
 		vdefs, err := many(parser, lexer.TokenKind[lexer.PAREN_L], parseVariableDefinition, lexer.TokenKind[lexer.PAREN_R])
 		var variableDefinitions []ast.VariableDefinition
@@ -330,8 +333,8 @@ func parseVariableDefinitions(parser Parser) ([]ast.VariableDefinition, error) {
 	}
 }
 
-func parseDirectives(parser Parser) ([]ast.Directive, error) {
-	var directives []ast.Directive
+func parseDirectives(parser *Parser) ([]ast.Directive, error) {
+	directives := []ast.Directive{}
 	for {
 		if !peek(parser, lexer.TokenKind[lexer.AT]) {
 			break
@@ -345,7 +348,7 @@ func parseDirectives(parser Parser) ([]ast.Directive, error) {
 	return directives, nil
 }
 
-func parseDirective(parser Parser) (ast.Directive, error) {
+func parseDirective(parser *Parser) (ast.Directive, error) {
 	start := parser.Token.Start
 	_, err := expect(parser, lexer.TokenKind[lexer.AT])
 	if err != nil {
@@ -371,7 +374,7 @@ func parseDirective(parser Parser) (ast.Directive, error) {
 	}, nil
 }
 
-func parseVariableDefinition(parser Parser) (interface{}, error) {
+func parseVariableDefinition(parser *Parser) (interface{}, error) {
 	start := parser.Token.Start
 	var defaultValue ast.Value
 	if skip(parser, lexer.TokenKind[lexer.EQUALS]) {
@@ -402,7 +405,7 @@ func parseVariableDefinition(parser Parser) (interface{}, error) {
 	}, nil
 }
 
-func parseVariable(parser Parser) (ast.Variable, error) {
+func parseVariable(parser *Parser) (ast.Variable, error) {
 	start := parser.Token.Start
 	_, err := expect(parser, lexer.TokenKind[lexer.DOLLAR])
 	if err != nil {
@@ -419,7 +422,7 @@ func parseVariable(parser Parser) (ast.Variable, error) {
 	}, nil
 }
 
-func parseType(parser Parser) (ast.Type, error) {
+func parseType(parser *Parser) (ast.Type, error) {
 	start := parser.Token.Start
 	var ttype ast.Type
 	if skip(parser, lexer.TokenKind[lexer.BRACE_L]) {
@@ -455,7 +458,7 @@ func parseType(parser Parser) (ast.Type, error) {
 	return ttype, nil
 }
 
-func parseValue(parser Parser, isConst bool) (ast.Value, error) {
+func parseValue(parser *Parser, isConst bool) (ast.Value, error) {
 	token := parser.Token
 	switch token.Kind {
 	case lexer.TokenKind[lexer.BRACE_L]:
@@ -471,9 +474,9 @@ func parseValue(parser Parser, isConst bool) (ast.Value, error) {
 	return nil, nil
 }
 
-type parseFn func(parser Parser) (interface{}, error)
+type parseFn func(parser *Parser) (interface{}, error)
 
-func many(parser Parser, openKind int, parseFn parseFn, closeKind int) ([]interface{}, error) {
+func many(parser *Parser, openKind int, parseFn parseFn, closeKind int) ([]interface{}, error) {
 	_, err := expect(parser, openKind)
 	if err != nil {
 		return nil, err
@@ -497,7 +500,7 @@ func many(parser Parser, openKind int, parseFn parseFn, closeKind int) ([]interf
 	return nodes, nil
 }
 
-func parseFragment(parser Parser) (interface{}, error) {
+func parseFragment(parser *Parser) (interface{}, error) {
 	start := parser.Token.Start
 	_, err := expect(parser, lexer.TokenKind[lexer.SPREAD])
 	if err != nil {
@@ -537,7 +540,7 @@ func parseFragment(parser Parser) (interface{}, error) {
 	}, nil
 }
 
-func parseField(parser Parser) (ast.Field, error) {
+func parseField(parser *Parser) (ast.Field, error) {
 	start := parser.Token.Start
 	nameOrAlias, err := parseName(parser)
 	if err != nil {
@@ -584,7 +587,7 @@ func parseField(parser Parser) (ast.Field, error) {
 	}, nil
 }
 
-func parseArray(parser Parser, isConst bool) (ast.ArrayValue, error) {
+func parseArray(parser *Parser, isConst bool) (ast.ArrayValue, error) {
 	start := parser.Token.Start
 	var item parseFn
 	if isConst {
@@ -607,7 +610,7 @@ func parseArray(parser Parser, isConst bool) (ast.ArrayValue, error) {
 	}, nil
 }
 
-func any(parser Parser, openKind int, parseFn parseFn, closeKind int) ([]interface{}, error) {
+func any(parser *Parser, openKind int, parseFn parseFn, closeKind int) ([]interface{}, error) {
 	var nodes []interface{}
 	_, err := expect(parser, openKind)
 	if err != nil {
@@ -626,7 +629,7 @@ func any(parser Parser, openKind int, parseFn parseFn, closeKind int) ([]interfa
 	return nodes, nil
 }
 
-func parseArguments(parser Parser) ([]ast.Argument, error) {
+func parseArguments(parser *Parser) ([]ast.Argument, error) {
 	if peek(parser, lexer.TokenKind[lexer.PAREN_L]) {
 		iArguments, err := many(parser, lexer.TokenKind[lexer.PAREN_L], parseArgument, lexer.TokenKind[lexer.PAREN_R])
 		var arguments []ast.Argument
@@ -642,7 +645,7 @@ func parseArguments(parser Parser) ([]ast.Argument, error) {
 	}
 }
 
-func parseArgument(parser Parser) (interface{}, error) {
+func parseArgument(parser *Parser) (interface{}, error) {
 	start := parser.Token.Start
 	name, err := parseName(parser)
 	if err != nil {
@@ -664,7 +667,7 @@ func parseArgument(parser Parser) (interface{}, error) {
 	}, nil
 }
 
-func parseConstValue(parser Parser) (interface{}, error) {
+func parseConstValue(parser *Parser) (interface{}, error) {
 	value, err := parseValue(parser, true)
 	if err != nil {
 		return value, err
@@ -672,7 +675,7 @@ func parseConstValue(parser Parser) (interface{}, error) {
 	return value, nil
 }
 
-func parseVariableValue(parser Parser) (interface{}, error) {
+func parseVariableValue(parser *Parser) (interface{}, error) {
 	value, err := parseValue(parser, false)
 	if err != nil {
 		return value, err
