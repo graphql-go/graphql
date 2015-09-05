@@ -17,7 +17,7 @@ func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
 		Options: opts,
 	}
 	document, err := Parse(params)
-	if err != nil {
+	if err.Error != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	oDef := od.OperationDefinition{
@@ -60,5 +60,24 @@ func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
 	}
 	if !reflect.DeepEqual(document, expectedDocument) {
 		t.Fatalf("unexpected document, expected: %v, got: %v", expectedDocument, document)
+	}
+}
+
+func TestParseProvidesUsefulErrors(t *testing.T) {
+	opts := ParseOptions{
+		NoSource: true,
+	}
+	params := ParseParams{
+		Source:  "{",
+		Options: opts,
+	}
+	_, err := Parse(params)
+	expectedError := `Syntax Error GraphQL (1:2) Expected Name, found EOF
+
+1: {
+    ^
+`
+	if err.Error.Error() != expectedError {
+		t.Fatalf("unexpected error. \n\n expected: \n %v \n\n got: \n %v", expectedError, err)
 	}
 }
