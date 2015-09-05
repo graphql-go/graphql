@@ -93,6 +93,9 @@ type Location struct {
 	Source *source.Source
 }
 
+type Node interface {
+}
+
 type Document struct {
 	Kind        string
 	Loc         Location
