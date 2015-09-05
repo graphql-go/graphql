@@ -3,6 +3,7 @@ package lexer
 import (
 	"fmt"
 
+	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/errors"
 	"github.com/chris-ramon/graphql-go/language/source"
 )
@@ -86,20 +87,20 @@ func (t *Token) String() string {
 	return fmt.Sprintf("%s", tokenDescription[t.Kind])
 }
 
-type Lexer func(resetPosition int) (Token, error)
+type Lexer func(resetPosition int) (Token, graphqlerrors.GraphQLError)
 
 func Lex(s *source.Source) Lexer {
 	var prevPosition int
-	return func(resetPosition int) (Token, error) {
+	return func(resetPosition int) (Token, graphqlerrors.GraphQLError) {
 		if resetPosition == 0 {
 			resetPosition = prevPosition
 		}
 		token, err := readToken(s, resetPosition)
-		if err != nil {
+		if err.Error != nil {
 			return token, err
 		}
 		prevPosition = token.End
-		return token, nil
+		return token, graphqlerrors.GraphQLError{}
 	}
 }
 
@@ -128,7 +129,7 @@ func readName(source *source.Source, position int) Token {
 // or an int depending on whether a decimal point appears.
 // Int:   -?(0|[1-9][0-9]*)
 // Float: -?(0|[1-9][0-9]*)(\.[0-9]+)?((E|e)(+|-)?[0-9]+)?
-func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
+func readNumber(s *source.Source, start int, firstCode rune) (Token, graphqlerrors.GraphQLError) {
 	code := firstCode
 	body := s.Body
 	position := start
@@ -146,7 +147,7 @@ func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 		}
 	} else {
 		p, err := readDigits(s, position, code)
-		if err != nil {
+		if err.Error != nil {
 			return Token{}, err
 		}
 		position = p
@@ -157,7 +158,7 @@ func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 		position += 1
 		code = charCodeAt(body, position)
 		p, err := readDigits(s, position, code)
-		if err != nil {
+		if err.Error != nil {
 			return Token{}, err
 		}
 		position = p
@@ -172,7 +173,7 @@ func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 			code = charCodeAt(body, position)
 		}
 		p, err := readDigits(s, position, code)
-		if err != nil {
+		if err.Error != nil {
 			return Token{}, err
 		}
 		position = p
@@ -181,11 +182,11 @@ func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 	if isFloat {
 		kind = TokenKind[FLOAT]
 	}
-	return makeToken(kind, start, position, body[start:position]), nil
+	return makeToken(kind, start, position, body[start:position]), graphqlerrors.GraphQLError{}
 }
 
 // Returns the new position in the source after reading digits.
-func readDigits(s *source.Source, start int, firstCode rune) (int, error) {
+func readDigits(s *source.Source, start int, firstCode rune) (int, graphqlerrors.GraphQLError) {
 	body := s.Body
 	position := start
 	code := firstCode
@@ -199,7 +200,7 @@ func readDigits(s *source.Source, start int, firstCode rune) (int, error) {
 				break
 			}
 		}
-		return position, nil
+		return position, graphqlerrors.GraphQLError{}
 	}
 	var description string
 	if code != 0 {
@@ -210,7 +211,7 @@ func readDigits(s *source.Source, start int, firstCode rune) (int, error) {
 	return position, languageerrors.Error(s, position, description)
 }
 
-func readString(s *source.Source, start int) (Token, error) {
+func readString(s *source.Source, start int) (Token, graphqlerrors.GraphQLError) {
 	body := s.Body
 	position := start + 1
 	chunkStart := position
@@ -276,7 +277,7 @@ func readString(s *source.Source, start int) (Token, error) {
 		return Token{}, languageerrors.Error(s, position, "Unterminated string.")
 	}
 	value += body[chunkStart:position]
-	return makeToken(TokenKind[STRING], start, position+1, value), nil
+	return makeToken(TokenKind[STRING], start, position+1, value), graphqlerrors.GraphQLError{}
 }
 
 // Converts four hexidecimal chars to the integer that the
@@ -310,82 +311,82 @@ func makeToken(kind int, start int, end int, value string) Token {
 	return Token{Kind: kind, Start: start, End: end, Value: value}
 }
 
-func readToken(s *source.Source, fromPosition int) (Token, error) {
+func readToken(s *source.Source, fromPosition int) (Token, graphqlerrors.GraphQLError) {
 	body := s.Body
 	bodyLength := len(body)
 	position := positionAfterWhitespace(body, fromPosition)
 	code := charCodeAt(body, position)
 	if position >= bodyLength {
-		return makeToken(TokenKind[EOF], position, position, ""), nil
+		return makeToken(TokenKind[EOF], position, position, ""), graphqlerrors.GraphQLError{}
 	}
 	switch code {
 	// !
 	case 33:
-		return makeToken(TokenKind[BANG], position, position+1, ""), nil
+		return makeToken(TokenKind[BANG], position, position+1, ""), graphqlerrors.GraphQLError{}
 	// $
 	case 36:
-		return makeToken(TokenKind[DOLLAR], position, position+1, ""), nil
+		return makeToken(TokenKind[DOLLAR], position, position+1, ""), graphqlerrors.GraphQLError{}
 	// (
 	case 40:
-		return makeToken(TokenKind[PAREN_L], position, position+1, ""), nil
+		return makeToken(TokenKind[PAREN_L], position, position+1, ""), graphqlerrors.GraphQLError{}
 	// )
 	case 41:
-		return makeToken(TokenKind[PAREN_R], position, position+1, ""), nil
+		return makeToken(TokenKind[PAREN_R], position, position+1, ""), graphqlerrors.GraphQLError{}
 	// .
 	case 46:
 		if charCodeAt(body, position+1) == 46 && charCodeAt(body, position+2) == 46 {
-			return makeToken(TokenKind[SPREAD], position, position+3, ""), nil
+			return makeToken(TokenKind[SPREAD], position, position+3, ""), graphqlerrors.GraphQLError{}
 		}
 		break
 	// :
 	case 58:
-		return makeToken(TokenKind[COLON], position, position+1, ""), nil
+		return makeToken(TokenKind[COLON], position, position+1, ""), graphqlerrors.GraphQLError{}
 	// =
 	case 61:
-		return makeToken(TokenKind[EQUALS], position, position+1, ""), nil
+		return makeToken(TokenKind[EQUALS], position, position+1, ""), graphqlerrors.GraphQLError{}
 	// @
 	case 64:
-		return makeToken(TokenKind[AT], position, position+1, ""), nil
+		return makeToken(TokenKind[AT], position, position+1, ""), graphqlerrors.GraphQLError{}
 	// [
 	case 91:
-		return makeToken(TokenKind[BRACKET_L], position, position+1, ""), nil
+		return makeToken(TokenKind[BRACKET_L], position, position+1, ""), graphqlerrors.GraphQLError{}
 	// ]
 	case 93:
-		return makeToken(TokenKind[BRACKET_R], position, position+1, ""), nil
+		return makeToken(TokenKind[BRACKET_R], position, position+1, ""), graphqlerrors.GraphQLError{}
 	// {
 	case 123:
-		return makeToken(TokenKind[BRACE_L], position, position+1, ""), nil
+		return makeToken(TokenKind[BRACE_L], position, position+1, ""), graphqlerrors.GraphQLError{}
 	// |
 	case 124:
-		return makeToken(TokenKind[PIPE], position, position+1, ""), nil
+		return makeToken(TokenKind[PIPE], position, position+1, ""), graphqlerrors.GraphQLError{}
 	// }
 	case 125:
-		return makeToken(TokenKind[BRACE_R], position, position+1, ""), nil
+		return makeToken(TokenKind[BRACE_R], position, position+1, ""), graphqlerrors.GraphQLError{}
 	// A-Z
 	case 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
 		82, 83, 84, 85, 86, 87, 88, 89, 90:
-		return readName(s, position), nil
+		return readName(s, position), graphqlerrors.GraphQLError{}
 	// _
 	// a-z
 	case 95, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110,
 		111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122:
-		return readName(s, position), nil
+		return readName(s, position), graphqlerrors.GraphQLError{}
 	// -
 	// 0-9
 	case 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
 		token, err := readNumber(s, position, code)
-		if err != nil {
+		if err.Error != nil {
 			return token, err
 		} else {
-			return token, nil
+			return token, graphqlerrors.GraphQLError{}
 		}
 	// "
 	case 34:
 		token, err := readString(s, position)
-		if err != nil {
+		if err.Error != nil {
 			return token, err
 		}
-		return token, nil
+		return token, graphqlerrors.GraphQLError{}
 	}
 	description := fmt.Sprintf("Unexpected character \"%c\".", code)
 	return Token{}, languageerrors.Error(s, position, description)
