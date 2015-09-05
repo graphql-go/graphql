@@ -8,7 +8,7 @@ import (
 
 type ValidationResult struct {
 	IsValid bool
-	Errors  []errors.GraphQLFormattedError
+	Errors  []graphqlerrors.GraphQLFormattedError
 }
 
 func ValidateDocument(schema types.GraphQLSchema, ast ast.Document) (vr ValidationResult) {

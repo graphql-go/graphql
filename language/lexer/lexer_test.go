@@ -51,7 +51,7 @@ func TestSkipsWhiteSpace(t *testing.T) {
 	}
 	for _, test := range tests {
 		token, err := Lex(&source.Source{Body: test.Body})(0)
-		if err != nil {
+		if err.Error != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if !reflect.DeepEqual(token, test.Expected) {
@@ -69,8 +69,8 @@ func TestErrorsRespectWhitespace(t *testing.T) {
 	source := source.NewSource(body, "")
 	_, err := Lex(source)(0)
 	expected := "Syntax Error GraphQL (3:5) Unexpected character \"?\".\n\n2: \n3:     ?\n       ^\n4: \n"
-	if err.Error() != expected {
-		t.Fatalf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", expected, err.Error())
+	if err.Error.Error() != expected {
+		t.Fatalf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", expected, err.Error.Error())
 	}
 }
 
@@ -133,7 +133,7 @@ func TestLexesStrings(t *testing.T) {
 	}
 	for _, test := range tests {
 		token, err := Lex(&source.Source{Body: test.Body})(0)
-		if err != nil {
+		if err.Error != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if !reflect.DeepEqual(token, test.Expected) {
@@ -247,8 +247,8 @@ func TestLexReportsUsefulStringErrors(t *testing.T) {
 	}
 	for _, test := range tests {
 		_, err := Lex(source.NewSource(test.Body, ""))(0)
-		if err.Error() != test.Expected {
-			t.Fatalf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", test.Expected, err.Error())
+		if err.Error.Error() != test.Expected {
+			t.Fatalf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", test.Expected, err.Error.Error())
 		}
 	}
 }
@@ -402,7 +402,7 @@ func TestLexesNumbers(t *testing.T) {
 	}
 	for _, test := range tests {
 		token, err := Lex(source.NewSource(test.Body, ""))(0)
-		if err != nil {
+		if err.Error != nil {
 			t.Fatalf("unexpected error: %v, test: %s", err, test)
 		}
 		if !reflect.DeepEqual(token, test.Expected) {
@@ -480,8 +480,8 @@ func TestLexReportsUsefulNumbeErrors(t *testing.T) {
 	}
 	for _, test := range tests {
 		_, err := Lex(source.NewSource(test.Body, ""))(0)
-		if err.Error() != test.Expected {
-			t.Fatalf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", test.Expected, err.Error())
+		if err.Error.Error() != test.Expected {
+			t.Fatalf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", test.Expected, err.Error.Error())
 		}
 	}
 }
@@ -608,7 +608,7 @@ func TestLexesPunctuation(t *testing.T) {
 	}
 	for _, test := range tests {
 		token, err := Lex(source.NewSource(test.Body, ""))(0)
-		if err != nil {
+		if err.Error != nil {
 			t.Fatalf("unexpected error :%v, test: %v", err, test)
 		}
 		if !reflect.DeepEqual(token, test.Expected) {
@@ -646,8 +646,8 @@ func TestLexReportsUsefulUnknownCharacterError(t *testing.T) {
 	}
 	for _, test := range tests {
 		_, err := Lex(source.NewSource(test.Body, ""))(0)
-		if err.Error() != test.Expected {
-			t.Fatalf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", test.Expected, err.Error())
+		if err.Error.Error() != test.Expected {
+			t.Fatalf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", test.Expected, err.Error.Error())
 		}
 	}
 }
@@ -656,7 +656,7 @@ func TestLexRerportsUsefulInformationForDashesInNames(t *testing.T) {
 	q := "a-b"
 	lexer := Lex(source.NewSource(q, ""))
 	firstToken, err := lexer(0)
-	if err != nil {
+	if err.Error != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	firstTokenExpected := Token{
@@ -674,7 +674,7 @@ func TestLexRerportsUsefulInformationForDashesInNames(t *testing.T) {
      ^
 `
 	token, errSecondToken := lexer(0)
-	if errSecondToken.Error() != errExpected {
+	if errSecondToken.Error.Error() != errExpected {
 		t.Fatalf("unexpected error, token:%v\nexpected:\n%v\n\ngot:\n%v", token, errExpected, errSecondToken)
 	}
 }

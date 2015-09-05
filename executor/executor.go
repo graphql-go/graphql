@@ -75,7 +75,7 @@ func getOperationRootType(schema types.GraphQLSchema, operation ast.Definition, 
 		mutationType := schema.GetMutationType()
 		if mutationType.Name != "" {
 			var result types.GraphQLResult
-			result.Errors = append(result.Errors, errors.GraphQLFormattedError{
+			result.Errors = append(result.Errors, graphqlerrors.GraphQLFormattedError{
 				Message: "Schema is not configured for mutations",
 			})
 			r <- &result
@@ -84,7 +84,7 @@ func getOperationRootType(schema types.GraphQLSchema, operation ast.Definition, 
 		return mutationType
 	default:
 		var result types.GraphQLResult
-		result.Errors = append(result.Errors, errors.GraphQLFormattedError{
+		result.Errors = append(result.Errors, graphqlerrors.GraphQLFormattedError{
 			Message: "Can only execute queries and mutations",
 		})
 		r <- &result
@@ -162,7 +162,7 @@ func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
 	}
 	log.Printf("debug - operations: %v", operations)
 	if (p.OperationName == "") && (len(operations) != 1) {
-		p.Result.Errors = append(p.Result.Errors, errors.GraphQLFormattedError{
+		p.Result.Errors = append(p.Result.Errors, graphqlerrors.GraphQLFormattedError{
 			Message: "Must provide operation name if query contains multiple operations",
 		})
 		p.ResultChan <- p.Result
@@ -178,7 +178,7 @@ func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
 	operation, found := operations[opName]
 	if !found {
 		var result types.GraphQLResult
-		result.Errors = append(result.Errors, errors.GraphQLFormattedError{
+		result.Errors = append(result.Errors, graphqlerrors.GraphQLFormattedError{
 			Message: fmt.Sprintf("Unknown operation name: %s", opName),
 		})
 		return eCtx
