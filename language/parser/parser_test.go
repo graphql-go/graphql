@@ -296,7 +296,7 @@ func TestParserCreatesAst(t *testing.T) {
 								},
 								Value: "id",
 							},
-							Value: ast.Name{ // todo: incorrect value struct
+							Value: ast.IntValue{
 								Kind: "IntValue",
 								Loc: ast.Location{
 									Start: 13, End: 14,
