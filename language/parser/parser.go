@@ -667,14 +667,6 @@ func parseField(parser *Parser) (ast.Field, error) {
 	} else {
 		name = nameOrAlias
 	}
-	var selectionSet ast.SelectionSet
-	if peek(parser, lexer.TokenKind[lexer.BRACE_L]) {
-		sSet, err := parseSelectionSet(parser)
-		if err != nil {
-			return ast.Field{}, err
-		}
-		selectionSet = sSet
-	}
 	arguments, err := parseArguments(parser)
 	if err != nil {
 		return ast.Field{}, err
@@ -682,6 +674,14 @@ func parseField(parser *Parser) (ast.Field, error) {
 	directives, err := parseDirectives(parser)
 	if err != nil {
 		return ast.Field{}, err
+	}
+	var selectionSet ast.SelectionSet
+	if peek(parser, lexer.TokenKind[lexer.BRACE_L]) {
+		sSet, err := parseSelectionSet(parser)
+		if err != nil {
+			return ast.Field{}, err
+		}
+		selectionSet = sSet
 	}
 	return ast.Field{
 		Kind:         kinds.Field,
