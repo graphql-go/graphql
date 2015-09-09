@@ -11,7 +11,7 @@ type FragmentDefinition struct {
 	Operation           string
 	Name                Name
 	VariableDefinitions []VariableDefinition
-	TypeCondition       Name
+	TypeCondition       NamedType
 	Directives          []Directive
 	SelectionSet        SelectionSet
 }
@@ -38,7 +38,7 @@ func (fd *FragmentDefinition) GetName() Name {
 	return fd.Name
 }
 
-func (fd *FragmentDefinition) GetTypeCondition() Name {
+func (fd *FragmentDefinition) GetTypeCondition() NamedType {
 	return fd.TypeCondition
 }
 

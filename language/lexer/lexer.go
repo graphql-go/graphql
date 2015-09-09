@@ -41,7 +41,7 @@ func init() {
 	TokenKind[PAREN_L] = PAREN_L
 	TokenKind[PAREN_R] = PAREN_R
 	TokenKind[SPREAD] = SPREAD
-	TokenKind[COLON] = SPREAD
+	TokenKind[COLON] = COLON
 	TokenKind[EQUALS] = EQUALS
 	TokenKind[AT] = AT
 	TokenKind[BRACKET_L] = BRACKET_L

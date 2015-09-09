@@ -34,7 +34,7 @@ type Definition interface {
 	GetOperation() string
 	GetName() Name
 	GetVariableDefinitions() []VariableDefinition
-	GetTypeCondition() Name
+	GetTypeCondition() NamedType
 	GetDirectives() []Directive
 	GetSelectionSet() SelectionSet
 }
@@ -130,6 +130,13 @@ func NewVariableDefinition() *VariableDefinition {
 
 type Type interface{}
 
+type NamedType struct {
+	Kind string
+	Loc  Location
+	Name  Name
+	Type Type
+}
+
 type ListType struct {
 	Kind string
 	Loc  Location
@@ -151,7 +158,7 @@ type ArrayValue struct {
 type InlineFragment struct {
 	Kind          string
 	Loc           Location
-	TypeCondition Name
+	TypeCondition NamedType
 	Directives    []Directive
 	SelectionSet  SelectionSet
 }

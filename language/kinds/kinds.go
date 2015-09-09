@@ -9,6 +9,7 @@ const (
 	Directive           = "Directive"
 	VariableDefinition  = "VariableDefinition"
 	Variable            = "Variable"
+	NamedType           = "NamedType"
 	ListType            = "ListType"
 	NonNullType         = "NonNullType"
 	InlineFragment      = "InlineFragment"

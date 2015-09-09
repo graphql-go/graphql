@@ -11,7 +11,7 @@ type OperationDefinition struct {
 	Operation           string
 	Name                Name
 	VariableDefinitions []VariableDefinition
-	TypeCondition       Name
+	TypeCondition       NamedType
 	Directives          []Directive
 	SelectionSet        SelectionSet
 }
@@ -32,7 +32,7 @@ func (op *OperationDefinition) GetName() Name {
 	return op.Name
 }
 
-func (op *OperationDefinition) GetTypeCondition() Name {
+func (op *OperationDefinition) GetTypeCondition() NamedType {
 	return op.TypeCondition
 }
 

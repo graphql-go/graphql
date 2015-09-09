@@ -19,7 +19,8 @@ func unexpected(parser *Parser, atToken lexer.Token) error {
 	} else {
 		token = parser.Token
 	}
-	return graphqlerrors.NewSyntaxError(parser.Source, token.Start, lexer.GetTokenDesc(token))
+	description := fmt.Sprintf("Unexpected %v", lexer.GetTokenDesc(token))
+	return graphqlerrors.NewSyntaxError(parser.Source, token.Start, description)
 }
 
 type ParseOptions struct {
@@ -36,7 +37,7 @@ func Parse(p ParseParams) (ast.Document, error) {
 	var doc ast.Document
 	var sourceObj *source.Source
 	switch p.Source.(type) {
-	case source.Source:
+	case *source.Source:
 		sourceObj = p.Source.(*source.Source)
 	default:
 		s, _ := p.Source.(string)
@@ -107,6 +108,11 @@ func parseDocument(parser *Parser) (ast.Document, error) {
 				if err := unexpected(parser, lexer.Token{}); err != nil {
 					return ast.Document{}, err
 				}
+			}
+
+		} else {
+			if err := unexpected(parser, lexer.Token{}); err != nil {
+				return ast.Document{}, err
 			}
 		}
 	}
@@ -204,7 +210,7 @@ func parseFragmentDefinition(parser *Parser) (*fd.FragmentDefinition, error) {
 		fDef := fd.NewFragmentDefinition()
 		return fDef, err
 	}
-	name, err := parseName(parser)
+	name, err := parseFragmentName(parser)
 	if err != nil {
 		fDef := fd.NewFragmentDefinition()
 		return fDef, err
@@ -214,7 +220,7 @@ func parseFragmentDefinition(parser *Parser) (*fd.FragmentDefinition, error) {
 		fDef := fd.NewFragmentDefinition()
 		return fDef, err
 	}
-	typeCondition, err := parseName(parser)
+	typeCondition, err := parseNamedType(parser)
 	if err != nil {
 		fDef := fd.NewFragmentDefinition()
 		return fDef, err
@@ -264,10 +270,7 @@ func parseSelectionSet(parser *Parser) (ast.SelectionSet, error) {
 func parseSelection(parser *Parser) (interface{}, error) {
 	if peek(parser, lexer.TokenKind[lexer.SPREAD]) {
 		r, err := parseFragment(parser)
-		if err != nil {
-			return r, err
-		}
-		return r, nil
+		return r, err
 	} else {
 		return parseField(parser)
 	}
@@ -312,6 +315,27 @@ func parseName(parser *Parser) (ast.Name, error) {
 		Loc:   loc(parser, token.Start),
 	}, nil
 }
+
+func parseNamedType(parser *Parser) (ast.NamedType, error) {
+	start := parser.Token.Start
+	name, err := parseName(parser)
+	if err != nil {
+		return ast.NamedType{}, err
+	}
+	return ast.NamedType{
+		Kind: kinds.NamedType,
+		Name: name,
+		Loc:  loc(parser, start),
+	}, nil
+}
+
+func parseFragmentName(parser *Parser) (ast.Name, error) {
+	if parser.Token.Value == "on" {
+		return ast.Name{}, unexpected(parser, lexer.Token{})
+	}
+	return parseName(parser)
+}
+
 
 func parseVariableDefinitions(parser *Parser) ([]ast.VariableDefinition, error) {
 	if peek(parser, lexer.TokenKind[lexer.PAREN_L]) {
@@ -438,7 +462,7 @@ func parseType(parser *Parser) (ast.Type, error) {
 			Loc:  loc(parser, start),
 		}
 	} else {
-		name, err := parseName(parser)
+		name, err := parseNamedType(parser)
 		if err != nil {
 			return ttype, err
 		}
@@ -503,17 +527,17 @@ func parseFragment(parser *Parser) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	name, err := parseName(parser)
-	if err != nil {
-		return nil, err
-	}
 	if parser.Token.Value == "on" {
 		advance(parser)
-		selectionSet, err := parseSelectionSet(parser)
+		name, err := parseNamedType(parser)
 		if err != nil {
 			return ast.InlineFragment{}, err
 		}
 		directives, err := parseDirectives(parser)
+		if err != nil {
+			return ast.InlineFragment{}, err
+		}
+		selectionSet, err := parseSelectionSet(parser)
 		if err != nil {
 			return ast.InlineFragment{}, err
 		}
@@ -525,9 +549,13 @@ func parseFragment(parser *Parser) (interface{}, error) {
 			Loc:           loc(parser, start),
 		}, nil
 	}
+	name, err := parseFragmentName(parser)
+	if err != nil {
+		return ast.FragmentSpread{}, err
+	}
 	directives, err := parseDirectives(parser)
 	if err != nil {
-		return ast.InlineFragment{}, err
+		return ast.FragmentSpread{}, err
 	}
 	return ast.FragmentSpread{
 		Kind:       kinds.FragmentSpread,
