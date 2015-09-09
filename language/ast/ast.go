@@ -1,6 +1,19 @@
 package ast
 
-import "github.com/chris-ramon/graphql-go/language/source"
+import (
+	"github.com/chris-ramon/graphql-go/language/source"
+)
+
+type Location struct {
+	Start  int
+	End    int
+	Source *source.Source
+}
+
+type Node interface {
+}
+
+// Name
 
 type Name struct {
 	Kind  string
@@ -11,6 +24,63 @@ type Name struct {
 func NewName() *Name {
 	return &Name{
 		Kind: "Name",
+	}
+}
+
+// Document
+
+type Document struct {
+	Kind        string
+	Loc         Location
+	Definitions []Definition
+}
+
+type Definition interface {
+	GetKind() string
+	GetLoc() Location
+	//	GetOperation() string
+	GetName() Name
+	//	GetVariableDefinitions() []VariableDefinition
+	//	GetTypeCondition() NamedType
+	//	GetDirectives() []Directive
+	//	GetSelectionSet() SelectionSet
+
+}
+
+//
+//type OperationDefinition struct {
+//	Kind               string
+//	Loc                Location
+//	Operation          string
+//	Name               Name
+//	VariableDefinition []VariableDefinition
+//	Directives         []Directive
+//	SelectionSet       SelectionSet
+//}
+
+type VariableDefinition struct {
+	Kind         string
+	Loc          Location
+	Variable     Variable
+	Type         interface{}
+	DefaultValue Value
+}
+
+func NewVariableDefinition() *VariableDefinition {
+	return &VariableDefinition{
+		Kind: "VariableDefinition",
+	}
+}
+
+type Variable struct {
+	Kind string
+	Loc  Location
+	Name Name
+}
+
+func NewVariable() *Variable {
+	return &Variable{
+		Kind: "Variable",
 	}
 }
 
@@ -25,30 +95,6 @@ type Selection interface{}
 func NewSelectionSet() *SelectionSet {
 	return &SelectionSet{
 		Kind: "SelectionSet",
-	}
-}
-
-type Definition interface {
-	GetKind() string
-	GetLoc() Location
-	GetOperation() string
-	GetName() Name
-	GetVariableDefinitions() []VariableDefinition
-	GetTypeCondition() NamedType
-	GetDirectives() []Directive
-	GetSelectionSet() SelectionSet
-}
-
-type Argument struct {
-	Kind  string
-	Loc   Location
-	Name  Name
-	Value Value
-}
-
-func NewArgument() *Name {
-	return &Name{
-		Kind: "Argument",
 	}
 }
 
@@ -68,17 +114,124 @@ func NewField() *Name {
 	}
 }
 
+type Argument struct {
+	Kind  string
+	Loc   Location
+	Name  Name
+	Value Value
+}
+
+func NewArgument() *Name {
+	return &Name{
+		Kind: "Argument",
+	}
+}
+
+// Fragments
+
+type FragmentSpread struct {
+	Kind       string
+	Loc        Location
+	Name       Name
+	Directives []Directive
+}
+
+type InlineFragment struct {
+	Kind          string
+	Loc           Location
+	TypeCondition NamedType
+	Directives    []Directive
+	SelectionSet  SelectionSet
+}
+
+//type FragmentDefinition struct {
+//	Kind          string
+//	Loc           Location
+//	Name          Name
+//	TypeCondition NamedType
+//	Directives    []Directive
+//	SelectionSet  SelectionSet
+//}
+
+// Values
+
 type Value interface {
 	//GetKind() string
 	//GetLoc() Location
 	//GetName() Name
 }
 
-type Directive struct {
+type IntValue struct {
 	Kind  string
 	Loc   Location
+	Value string
+}
+
+type FloatValue struct {
+	Kind  string
+	Loc   Location
+	Value string
+}
+
+type StringValue struct {
+	Kind  string
+	Loc   Location
+	Value string
+}
+
+type BooleanValue struct {
+	Kind  string
+	Loc   Location
+	Value bool
+}
+
+type EnumValue struct {
+	Kind  string
+	Loc   Location
+	Value string
+}
+
+type ListValue struct {
+	Kind   string
+	Loc    Location
+	Values []Value
+}
+
+type ObjectValue struct {
+	Kind   string
+	Loc    Location
+	Fields []ObjectField
+}
+
+type ObjectField struct {
+	Kind  string
 	Name  Name
+	Loc   Location
 	Value Value
+}
+
+// Type does not exists in graphql-js ast
+type ArrayValue struct {
+	Kind   string
+	Loc    Location
+	Values []Value
+}
+
+// Directives
+
+// why?
+//type Directive struct {
+//	Kind  string
+//	Loc   Location
+//	Name  Name
+//	Value Value
+//}
+
+type Directive struct {
+	Kind      string
+	Loc       Location
+	Name      Name
+	Arguments []Argument
 }
 
 func NewDirective() *Directive {
@@ -87,53 +240,14 @@ func NewDirective() *Directive {
 	}
 }
 
-type Location struct {
-	Start  int
-	End    int
-	Source *source.Source
-}
-
-type Node interface {
-}
-
-type Document struct {
-	Kind        string
-	Loc         Location
-	Definitions []Definition
-}
-
-type Variable struct {
-	Kind string
-	Loc  Location
-	Name Name
-}
-
-func NewVariable() *Variable {
-	return &Variable{
-		Kind: "Variable",
-	}
-}
-
-type VariableDefinition struct {
-	Kind         string
-	Loc          Location
-	Variable     Variable
-	Type         interface{}
-	DefaultValue Value
-}
-
-func NewVariableDefinition() *VariableDefinition {
-	return &VariableDefinition{
-		Kind: "VariableDefinition",
-	}
-}
+// Type Reference
 
 type Type interface{}
 
 type NamedType struct {
 	Kind string
 	Loc  Location
-	Name  Name
+	Name Name
 	Type Type
 }
 
@@ -149,23 +263,67 @@ type NonNullType struct {
 	Type Type
 }
 
-type ArrayValue struct {
+// TODO: Type Definition
+
+type TypeDefinition interface{}
+
+type FieldDefinition struct {
+	Kind      string
+	Loc       Location
+	Name      Name
+	Arguments []InputValueDefinition
+	Type      Type
+}
+
+type InputValueDefinition struct {
+	Kind         string
+	Loc          Location
+	Name         Name
+	Type         Type
+	DefaultValue Value
+}
+
+type InterfaceTypeDefinition struct {
 	Kind   string
 	Loc    Location
-	Values []Value
+	Name   Name
+	Fields []FieldDefinition
 }
 
-type InlineFragment struct {
-	Kind          string
-	Loc           Location
-	TypeCondition NamedType
-	Directives    []Directive
-	SelectionSet  SelectionSet
+type UnionTypeDefinition struct {
+	Kind  string
+	Loc   Location
+	Name  Name
+	Types []NamedType
 }
 
-type FragmentSpread struct {
+type ScalarTypeDefinition struct {
+	Kind string
+	Loc  Location
+	Name Name
+}
+
+type EnumTypeDefinition struct {
+	Kind   string
+	Loc    Location
+	Name   Name
+	Values []EnumValueDefinition
+}
+
+type EnumValueDefinition struct {
+	Kind string
+	Loc  Location
+	Name Name
+}
+type InputObjectTypeDefinition struct {
+	Kind   string
+	Loc    Location
+	Name   Name
+	Fields []InputValueDefinition
+}
+
+type TypeExtensionDefinition struct {
 	Kind       string
 	Loc        Location
-	Name       Name
-	Directives []Directive
+	Definition ObjectTypeDefinition
 }

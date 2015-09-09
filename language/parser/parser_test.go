@@ -4,14 +4,14 @@ import (
 	"reflect"
 	"testing"
 
+	"fmt"
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/language/od"
-	"strings"
 	"github.com/chris-ramon/graphql-go/language/source"
 	"io/ioutil"
-	"fmt"
+	"strings"
 )
 
 func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
@@ -287,7 +287,7 @@ func TestParserCreatesAst(t *testing.T) {
 						},
 						Value: "node",
 					},
-					Arguments:  []ast.Argument{
+					Arguments: []ast.Argument{
 						{
 							Kind: "Argument",
 							Name: ast.Name{
@@ -297,7 +297,7 @@ func TestParserCreatesAst(t *testing.T) {
 								},
 								Value: "id",
 							},
-							Value: ast.Name{// todo: incorrect value struct
+							Value: ast.Name{ // todo: incorrect value struct
 								Kind: "IntValue",
 								Loc: ast.Location{
 									Start: 13, End: 14,
@@ -328,8 +328,8 @@ func TestParserCreatesAst(t *testing.T) {
 									},
 									Value: "id",
 								},
-								Arguments:  []ast.Argument{},
-								Directives: []ast.Directive{},
+								Arguments:    []ast.Argument{},
+								Directives:   []ast.Directive{},
 								SelectionSet: ast.SelectionSet{},
 							},
 							ast.Field{
@@ -344,8 +344,8 @@ func TestParserCreatesAst(t *testing.T) {
 									},
 									Value: "name",
 								},
-								Arguments:  []ast.Argument{},
-								Directives: []ast.Directive{},
+								Arguments:    []ast.Argument{},
+								Directives:   []ast.Directive{},
 								SelectionSet: ast.SelectionSet{},
 							},
 						},
@@ -366,6 +366,7 @@ func TestParserCreatesAst(t *testing.T) {
 	}
 
 }
+
 type errorMessageTest struct {
 	source          interface{}
 	expectedMessage string
