@@ -393,8 +393,7 @@ func parseVariableDefinitions(parser *Parser) ([]ast.VariableDefinition, error) 
 		}
 		return variableDefinitions, nil
 	} else {
-		var vd []ast.VariableDefinition
-		return vd, nil
+		return []ast.VariableDefinition{}, nil
 	}
 }
 
@@ -437,6 +436,18 @@ func parseDirective(parser *Parser) (ast.Directive, error) {
 
 func parseVariableDefinition(parser *Parser) (interface{}, error) {
 	start := parser.Token.Start
+	variable, err := parseVariable(parser)
+	if err != nil {
+		return ast.VariableDefinition{}, err
+	}
+	_, err = expect(parser, lexer.TokenKind[lexer.COLON])
+	if err != nil {
+		return ast.VariableDefinition{}, err
+	}
+	ttype, err := parseType(parser)
+	if err != nil {
+		return ast.VariableDefinition{}, err
+	}
 	var defaultValue ast.Value
 	if skip(parser, lexer.TokenKind[lexer.EQUALS]) {
 		dv, err := parseValueLiteral(parser, true)
@@ -444,18 +455,6 @@ func parseVariableDefinition(parser *Parser) (interface{}, error) {
 			return dv, err
 		}
 		defaultValue = dv
-	}
-	_, err := expect(parser, lexer.TokenKind[lexer.COLON])
-	if err != nil {
-		return ast.VariableDefinition{}, err
-	}
-	variable, err := parseVariable(parser)
-	if err != nil {
-		return ast.VariableDefinition{}, err
-	}
-	ttype, err := parseType(parser)
-	if err != nil {
-		return ast.VariableDefinition{}, err
 	}
 	return ast.VariableDefinition{
 		Kind:         kinds.VariableDefinition,
