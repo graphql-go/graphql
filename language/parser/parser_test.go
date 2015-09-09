@@ -8,7 +8,6 @@ import (
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/location"
-	"github.com/chris-ramon/graphql-go/language/od"
 	"github.com/chris-ramon/graphql-go/language/source"
 	"io/ioutil"
 	"strings"
@@ -26,7 +25,7 @@ func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	oDef := od.OperationDefinition{
+	oDef := ast.OperationDefinition{
 		Kind: "OperationDefinition",
 		Loc: ast.Location{
 			Start: 0, End: 9,
@@ -262,7 +261,7 @@ func TestParserCreatesAst(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	oDef := od.OperationDefinition{
+	oDef := ast.OperationDefinition{
 		Kind: "OperationDefinition",
 		Loc: ast.Location{
 			Start: 0, End: 40,

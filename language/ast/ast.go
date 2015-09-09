@@ -263,7 +263,7 @@ type NonNullType struct {
 	Type Type
 }
 
-// TODO: Type Definition
+// TODO: Type Definitions
 
 type TypeDefinition interface{}
 
@@ -283,47 +283,8 @@ type InputValueDefinition struct {
 	DefaultValue Value
 }
 
-type InterfaceTypeDefinition struct {
-	Kind   string
-	Loc    Location
-	Name   Name
-	Fields []FieldDefinition
-}
-
-type UnionTypeDefinition struct {
-	Kind  string
-	Loc   Location
-	Name  Name
-	Types []NamedType
-}
-
-type ScalarTypeDefinition struct {
-	Kind string
-	Loc  Location
-	Name Name
-}
-
-type EnumTypeDefinition struct {
-	Kind   string
-	Loc    Location
-	Name   Name
-	Values []EnumValueDefinition
-}
-
 type EnumValueDefinition struct {
 	Kind string
 	Loc  Location
 	Name Name
-}
-type InputObjectTypeDefinition struct {
-	Kind   string
-	Loc    Location
-	Name   Name
-	Fields []InputValueDefinition
-}
-
-type TypeExtensionDefinition struct {
-	Kind       string
-	Loc        Location
-	Definition ObjectTypeDefinition
 }
