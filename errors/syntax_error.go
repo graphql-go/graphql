@@ -1,23 +1,23 @@
-package languageerrors
+package graphqlerrors
 
 import (
-	"errors"
 	"fmt"
+	"go/ast"
 	"regexp"
 
-	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/language/source"
 )
 
-func Error(s *source.Source, position int, description string) graphqlerrors.GraphQLError {
+func NewSyntaxError(s *source.Source, position int, description string) *GraphQLError {
 	l := location.GetLocation(s, position)
-	err := errors.New(fmt.Sprintf("Syntax Error %s (%d:%d) %s\n\n%s", s.Name, l.Line, l.Column, description, highlightSourceAtLocation(s, l)))
-	return graphqlerrors.GraphQLError{
-		Error:     err,
-		Source:    s,
-		Positions: []int{position},
-	}
+	return NewGraphQLError(
+		fmt.Sprintf("Syntax Error %s (%d:%d) %s\n\n%s", s.Name, l.Line, l.Column, description, highlightSourceAtLocation(s, l)),
+		[]ast.Node{},
+		"",
+		s,
+		[]int{position},
+	)
 }
 
 func highlightSourceAtLocation(s *source.Source, l location.SourceLocation) string {

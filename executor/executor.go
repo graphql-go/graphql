@@ -75,18 +75,16 @@ func getOperationRootType(schema types.GraphQLSchema, operation ast.Definition, 
 		mutationType := schema.GetMutationType()
 		if mutationType.Name != "" {
 			var result types.GraphQLResult
-			result.Errors = append(result.Errors, graphqlerrors.GraphQLFormattedError{
-				Message: "Schema is not configured for mutations",
-			})
+			err := graphqlerrors.NewGraphQLFormattedError("Schema is not configured for mutations")
+			result.Errors = append(result.Errors, err)
 			r <- &result
 			return objType
 		}
 		return mutationType
 	default:
 		var result types.GraphQLResult
-		result.Errors = append(result.Errors, graphqlerrors.GraphQLFormattedError{
-			Message: "Can only execute queries and mutations",
-		})
+		err := graphqlerrors.NewGraphQLFormattedError("Can only execute queries and mutations")
+		result.Errors = append(result.Errors, err)
 		r <- &result
 		return objType
 	}
@@ -162,9 +160,8 @@ func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
 	}
 	log.Printf("debug - operations: %v", operations)
 	if (p.OperationName == "") && (len(operations) != 1) {
-		p.Result.Errors = append(p.Result.Errors, graphqlerrors.GraphQLFormattedError{
-			Message: "Must provide operation name if query contains multiple operations",
-		})
+		err := graphqlerrors.NewGraphQLFormattedError("Must provide operation name if query contains multiple operations")
+		p.Result.Errors = append(p.Result.Errors, err)
 		p.ResultChan <- p.Result
 		return eCtx
 	}
@@ -178,9 +175,8 @@ func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
 	operation, found := operations[opName]
 	if !found {
 		var result types.GraphQLResult
-		result.Errors = append(result.Errors, graphqlerrors.GraphQLFormattedError{
-			Message: fmt.Sprintf("Unknown operation name: %s", opName),
-		})
+		err := graphqlerrors.NewGraphQLFormattedError(fmt.Sprintf("Unknown operation name: %s", opName))
+		result.Errors = append(result.Errors, err)
 		return eCtx
 	}
 	variables := GetVariableValues(p.Schema, operation.GetVariableDefinitions(), p.Args)
