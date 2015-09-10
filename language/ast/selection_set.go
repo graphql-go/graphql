@@ -16,8 +16,8 @@ func NewSelectionSet(v *SelectionSet) *SelectionSet {
 		v = &SelectionSet{}
 	}
 	return &SelectionSet{
-		Kind: kinds.SelectionSet,
-		Loc:  v.Loc,
+		Kind:       kinds.SelectionSet,
+		Loc:        v.Loc,
 		Selections: v.Selections,
 	}
 }

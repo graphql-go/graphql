@@ -38,7 +38,7 @@ func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
 				Start: 0, End: 9,
 			},
 			Selections: []ast.Selection{
-				ast.Field{
+				&ast.Field{
 					Kind: "Field",
 					Loc: ast.Location{
 						Start: 2, End: 7,
@@ -273,7 +273,7 @@ func TestParseCreatesAst(t *testing.T) {
 				Start: 0, End: 40,
 			},
 			Selections: []ast.Selection{
-				ast.Field{
+				&ast.Field{
 					Kind: "Field",
 					Loc: ast.Location{
 						Start: 4, End: 38,
@@ -314,7 +314,7 @@ func TestParseCreatesAst(t *testing.T) {
 							Start: 16, End: 38,
 						},
 						Selections: []ast.Selection{
-							ast.Field{
+							&ast.Field{
 								Kind: "Field",
 								Loc: ast.Location{
 									Start: 22, End: 24,
@@ -330,7 +330,7 @@ func TestParseCreatesAst(t *testing.T) {
 								Directives:   []ast.Directive{},
 								SelectionSet: nil,
 							},
-							ast.Field{
+							&ast.Field{
 								Kind: "Field",
 								Loc: ast.Location{
 									Start: 30, End: 34,

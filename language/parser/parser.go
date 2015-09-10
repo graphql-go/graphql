@@ -278,7 +278,6 @@ func parseVariableDefinition(parser *Parser) (interface{}, error) {
 		defaultValue = dv
 	}
 	return ast.NewVariableDefinition(&ast.VariableDefinition{
-		Kind:         kinds.VariableDefinition,
 		Variable:     variable,
 		Type:         ttype,
 		DefaultValue: defaultValue,
@@ -297,7 +296,6 @@ func parseVariable(parser *Parser) (*ast.Variable, error) {
 		return nil, err
 	}
 	return ast.NewVariable(&ast.Variable{
-		Kind: kinds.Variable,
 		Name: name,
 		Loc:  loc(parser, start),
 	}), nil
@@ -318,7 +316,6 @@ func parseSelectionSet(parser *Parser) (*ast.SelectionSet, error) {
 	}
 
 	return ast.NewSelectionSet(&ast.SelectionSet{
-		Kind:       kinds.SelectionSet,
 		Selections: selections,
 		Loc:        loc(parser, start),
 	}), nil
@@ -333,11 +330,11 @@ func parseSelection(parser *Parser) (interface{}, error) {
 	}
 }
 
-func parseField(parser *Parser) (ast.Field, error) {
+func parseField(parser *Parser) (*ast.Field, error) {
 	start := parser.Token.Start
 	nameOrAlias, err := parseName(parser)
 	if err != nil {
-		return ast.Field{}, err
+		return nil, err
 	}
 	var (
 		name  *ast.Name
@@ -347,7 +344,7 @@ func parseField(parser *Parser) (ast.Field, error) {
 		alias = nameOrAlias
 		n, err := parseName(parser)
 		if err != nil {
-			return ast.Field{}, err
+			return nil, err
 		}
 		name = n
 	} else {
@@ -355,29 +352,28 @@ func parseField(parser *Parser) (ast.Field, error) {
 	}
 	arguments, err := parseArguments(parser)
 	if err != nil {
-		return ast.Field{}, err
+		return nil, err
 	}
 	directives, err := parseDirectives(parser)
 	if err != nil {
-		return ast.Field{}, err
+		return nil, err
 	}
 	var selectionSet *ast.SelectionSet
 	if peek(parser, lexer.TokenKind[lexer.BRACE_L]) {
 		sSet, err := parseSelectionSet(parser)
 		if err != nil {
-			return ast.Field{}, err
+			return nil, err
 		}
 		selectionSet = sSet
 	}
-	return ast.Field{
-		Kind:         kinds.Field,
+	return ast.NewField(&ast.Field{
 		Alias:        alias,
 		Name:         name,
 		Arguments:    arguments,
 		Directives:   directives,
 		SelectionSet: selectionSet,
 		Loc:          loc(parser, start),
-	}, nil
+	}), nil
 }
 
 func parseArguments(parser *Parser) ([]ast.Argument, error) {
@@ -430,38 +426,36 @@ func parseFragment(parser *Parser) (interface{}, error) {
 		advance(parser)
 		name, err := parseNamedType(parser)
 		if err != nil {
-			return ast.InlineFragment{}, err
+			return nil, err
 		}
 		directives, err := parseDirectives(parser)
 		if err != nil {
-			return ast.InlineFragment{}, err
+			return nil, err
 		}
 		selectionSet, err := parseSelectionSet(parser)
 		if err != nil {
-			return ast.InlineFragment{}, err
+			return nil, err
 		}
-		return ast.InlineFragment{
-			Kind:          kinds.InlineFragment,
+		return ast.NewInlineFragment(&ast.InlineFragment{
 			TypeCondition: name,
 			Directives:    directives,
 			SelectionSet:  selectionSet,
 			Loc:           loc(parser, start),
-		}, nil
+		}), nil
 	}
 	name, err := parseFragmentName(parser)
 	if err != nil {
-		return ast.FragmentSpread{}, err
+		return nil, err
 	}
 	directives, err := parseDirectives(parser)
 	if err != nil {
-		return ast.FragmentSpread{}, err
+		return nil, err
 	}
-	return ast.FragmentSpread{
-		Kind:       kinds.FragmentSpread,
+	return ast.NewFragmentSpread(&ast.FragmentSpread{
 		Name:       name,
 		Directives: directives,
 		Loc:        loc(parser, start),
-	}, nil
+	}), nil
 }
 
 func parseFragmentDefinition(parser *Parser) (*ast.FragmentDefinition, error) {
