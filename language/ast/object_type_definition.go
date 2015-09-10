@@ -50,5 +50,3 @@ func (def *ObjectTypeDefinition) GetSelectionSet() SelectionSet {
 func (def *ObjectTypeDefinition) GetOperation() string {
 	return ""
 }
-
-

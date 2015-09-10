@@ -49,4 +49,3 @@ func (def *InterfaceTypeDefinition) GetSelectionSet() SelectionSet {
 func (def *InterfaceTypeDefinition) GetOperation() string {
 	return ""
 }
-

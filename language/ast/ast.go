@@ -48,9 +48,7 @@ type Definition interface {
 	GetTypeCondition() NamedType
 	GetDirectives() []Directive
 	GetSelectionSet() SelectionSet
-
 }
-
 
 type VariableDefinition struct {
 	Kind         string

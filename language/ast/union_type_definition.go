@@ -30,7 +30,6 @@ func (def *UnionTypeDefinition) GetName() Name {
 	return def.Name
 }
 
-
 func (def *UnionTypeDefinition) GetTypeCondition() NamedType {
 	return NamedType{}
 }
