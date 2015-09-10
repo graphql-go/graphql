@@ -51,16 +51,6 @@ type Definition interface {
 
 }
 
-//
-//type OperationDefinition struct {
-//	Kind               string
-//	Loc                Location
-//	Operation          string
-//	Name               Name
-//	VariableDefinition []VariableDefinition
-//	Directives         []Directive
-//	SelectionSet       SelectionSet
-//}
 
 type VariableDefinition struct {
 	Kind         string
@@ -147,15 +137,6 @@ type InlineFragment struct {
 	Directives    []Directive
 	SelectionSet  SelectionSet
 }
-
-//type FragmentDefinition struct {
-//	Kind          string
-//	Loc           Location
-//	Name          Name
-//	TypeCondition NamedType
-//	Directives    []Directive
-//	SelectionSet  SelectionSet
-//}
 
 // Values
 
