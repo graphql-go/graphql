@@ -61,7 +61,7 @@ func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
 		Loc: ast.Location{
 			Start: 0, End: 9,
 		},
-		Definitions: []ast.Definition{&oDef},
+		Definitions: []ast.Node{&oDef},
 	}
 	if !reflect.DeepEqual(document, expectedDocument) {
 		t.Fatalf("unexpected document, expected: %v, got: %v", expectedDocument, document)
@@ -358,7 +358,7 @@ func TestParseCreatesAst(t *testing.T) {
 		Loc: ast.Location{
 			Start: 0, End: 41,
 		},
-		Definitions: []ast.Definition{&oDef},
+		Definitions: []ast.Node{&oDef},
 	}
 	if !reflect.DeepEqual(document, expectedDocument) {
 		t.Fatalf("unexpected document, expected: %v, got: %v", expectedDocument, document)

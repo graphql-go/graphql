@@ -11,6 +11,8 @@ type Location struct {
 }
 
 type Node interface {
+	GetKind() string
+	GetLoc()  Location
 }
 
 // Name
@@ -32,7 +34,7 @@ func NewName() *Name {
 type Document struct {
 	Kind        string
 	Loc         Location
-	Definitions []Definition
+	Definitions []Node
 }
 
 type Definition interface {

@@ -78,17 +78,17 @@ func makeParser(s *source.Source, opts ParseOptions) (*Parser, error) {
 // Implements the parsing rules in the Document section.
 func parseDocument(parser *Parser) (ast.Document, error) {
 	start := parser.Token.Start
-	var definitions []ast.Definition
+	var nodes []ast.Node
 	for {
 		if skip(parser, lexer.TokenKind[lexer.EOF]) {
 			break
 		}
 		if peek(parser, lexer.TokenKind[lexer.BRACE_L]) {
-			oDef, err := parseOperationDefinition(parser)
+			node, err := parseOperationDefinition(parser)
 			if err != nil {
 				return ast.Document{}, err
 			}
-			definitions = append(definitions, oDef)
+			nodes = append(nodes, node)
 		} else if peek(parser, lexer.TokenKind[lexer.NAME]) {
 			switch parser.Token.Value {
 			case "query":
@@ -96,59 +96,59 @@ func parseDocument(parser *Parser) (ast.Document, error) {
 			case "mutation":
 				fallthrough
 			case "subscription": // Note: subscription is an experimental non-spec addition.
-				oDef, err := parseOperationDefinition(parser)
+				node, err := parseOperationDefinition(parser)
 				if err != nil {
 					return ast.Document{}, err
 				}
-				definitions = append(definitions, oDef)
+				nodes = append(nodes, node)
 			case "fragment":
-				fDef, err := parseFragmentDefinition(parser)
+				node, err := parseFragmentDefinition(parser)
 				if err != nil {
 					return ast.Document{}, err
 				}
-				definitions = append(definitions, fDef)
+				nodes = append(nodes, node)
 			case "type":
-				def, err := parseObjectTypeDefinition(parser)
+				node, err := parseObjectTypeDefinition(parser)
 				if err != nil {
 					return ast.Document{}, err
 				}
-				definitions = append(definitions, def)
+				nodes = append(nodes, node)
 			case "interface":
-				def, err := parseInterfaceTypeDefinition(parser)
+				node, err := parseInterfaceTypeDefinition(parser)
 				if err != nil {
 					return ast.Document{}, err
 				}
-				definitions = append(definitions, def)
+				nodes = append(nodes, node)
 			case "union":
-				def, err := parseUnionTypeDefinition(parser)
+				node, err := parseUnionTypeDefinition(parser)
 				if err != nil {
 					return ast.Document{}, err
 				}
-				definitions = append(definitions, def)
+				nodes = append(nodes, node)
 			case "scalar":
-				def, err := parseScalarTypeDefinition(parser)
+				node, err := parseScalarTypeDefinition(parser)
 				if err != nil {
 					return ast.Document{}, err
 				}
-				definitions = append(definitions, def)
+				nodes = append(nodes, node)
 			case "enum":
-				def, err := parseEnumTypeDefinition(parser)
+				node, err := parseEnumTypeDefinition(parser)
 				if err != nil {
 					return ast.Document{}, err
 				}
-				definitions = append(definitions, def)
+				nodes = append(nodes, node)
 			case "input":
-				def, err := parseInputObjectTypeDefinition(parser)
+				node, err := parseInputObjectTypeDefinition(parser)
 				if err != nil {
 					return ast.Document{}, err
 				}
-				definitions = append(definitions, def)
+				nodes = append(nodes, node)
 			case "extend":
-				def, err := parseTypeExtensionDefinition(parser)
+				node, err := parseTypeExtensionDefinition(parser)
 				if err != nil {
 					return ast.Document{}, err
 				}
-				definitions = append(definitions, def)
+				nodes = append(nodes, node)
 			default:
 				if err := unexpected(parser, lexer.Token{}); err != nil {
 					return ast.Document{}, err
@@ -163,7 +163,7 @@ func parseDocument(parser *Parser) (ast.Document, error) {
 	return ast.Document{
 		Kind:        kinds.Document,
 		Loc:         loc(parser, start),
-		Definitions: definitions,
+		Definitions: nodes,
 	}, nil
 }
 
