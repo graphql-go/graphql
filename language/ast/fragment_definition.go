@@ -1,7 +1,6 @@
-package fd
+package ast
 
 import (
-	. "github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
@@ -11,7 +10,7 @@ type FragmentDefinition struct {
 	Operation           string
 	Name                Name
 	VariableDefinitions []VariableDefinition
-	TypeCondition       Name
+	TypeCondition       NamedType
 	Directives          []Directive
 	SelectionSet        SelectionSet
 }
@@ -38,7 +37,7 @@ func (fd *FragmentDefinition) GetName() Name {
 	return fd.Name
 }
 
-func (fd *FragmentDefinition) GetTypeCondition() Name {
+func (fd *FragmentDefinition) GetTypeCondition() NamedType {
 	return fd.TypeCondition
 }
 

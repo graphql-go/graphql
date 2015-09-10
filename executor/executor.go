@@ -6,7 +6,6 @@ import (
 
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/chris-ramon/graphql-go/language/kinds"
 	"github.com/chris-ramon/graphql-go/types"
 )
 
@@ -141,18 +140,18 @@ func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
 	operations := make(map[string]ast.Definition)
 	fragments := make(map[string]ast.Definition)
 	for _, statement := range p.AST.Definitions {
-		switch statement.GetKind() {
-		case kinds.OperationDefinition:
+		switch stm := statement.(type) {
+		case *ast.OperationDefinition:
 			log.Println("kinds.OperationDefinition")
 			key := ""
-			if statement.GetName().Value != "" {
-				key = statement.GetName().Value
+			if stm.GetName().Value != "" {
+				key = stm.GetName().Value
 			}
-			operations[key] = statement
+			operations[key] = stm
 			break
-		case kinds.FragmentDefinition:
+		case *ast.FragmentDefinition:
 			log.Println("kinds.FragmentDefinition")
-			fragments[statement.GetName().Value] = statement
+			fragments[stm.GetName().Value] = stm
 			break
 		default:
 			log.Println("default")
