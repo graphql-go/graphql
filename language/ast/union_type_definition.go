@@ -4,7 +4,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
-// UnionTypeDefinition implements Node, Definition
+// UnionTypeDefinition implements Node, TypeDefinition
 type UnionTypeDefinition struct {
 	Kind  string
 	Loc   Location
@@ -36,16 +36,8 @@ func (def *UnionTypeDefinition) GetName() *Name {
 	return def.Name
 }
 
-func (def *UnionTypeDefinition) GetTypeCondition() NamedType {
-	return NamedType{}
-}
-
 func (def *UnionTypeDefinition) GetVariableDefinitions() []VariableDefinition {
 	return []VariableDefinition{}
-}
-
-func (def *UnionTypeDefinition) GetDirectives() []Directive {
-	return []Directive{}
 }
 
 func (def *UnionTypeDefinition) GetSelectionSet() SelectionSet {

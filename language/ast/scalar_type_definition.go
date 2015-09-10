@@ -4,7 +4,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
-// ScalarTypeDefinition implements Node, Definition
+// ScalarTypeDefinition implements Node, TypeDefinition
 type ScalarTypeDefinition struct {
 	Kind string
 	Loc  Location
@@ -34,16 +34,8 @@ func (def *ScalarTypeDefinition) GetName() *Name {
 	return def.Name
 }
 
-func (def *ScalarTypeDefinition) GetTypeCondition() NamedType {
-	return NamedType{}
-}
-
 func (def *ScalarTypeDefinition) GetVariableDefinitions() []VariableDefinition {
 	return []VariableDefinition{}
-}
-
-func (def *ScalarTypeDefinition) GetDirectives() []Directive {
-	return []Directive{}
 }
 
 func (def *ScalarTypeDefinition) GetSelectionSet() SelectionSet {

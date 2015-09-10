@@ -4,7 +4,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
-// ObjectTypeDefinition implements Node, Definition
+// ObjectTypeDefinition implements Node, TypeDefinition
 type ObjectTypeDefinition struct {
 	Kind       string
 	Loc        Location
@@ -38,16 +38,8 @@ func (def *ObjectTypeDefinition) GetName() *Name {
 	return def.Name
 }
 
-func (def *ObjectTypeDefinition) GetTypeCondition() NamedType {
-	return NamedType{}
-}
-
 func (def *ObjectTypeDefinition) GetVariableDefinitions() []VariableDefinition {
 	return []VariableDefinition{}
-}
-
-func (def *ObjectTypeDefinition) GetDirectives() []Directive {
-	return []Directive{}
 }
 
 func (def *ObjectTypeDefinition) GetSelectionSet() SelectionSet {

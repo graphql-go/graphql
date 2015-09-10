@@ -10,16 +10,6 @@ type Location struct {
 	Source *source.Source
 }
 
-type Definition interface {
-	GetKind() string
-	GetLoc() Location
-	GetName() *Name
-	GetOperation() string
-	GetVariableDefinitions() []VariableDefinition
-	GetTypeCondition() NamedType
-	GetDirectives() []Directive
-	GetSelectionSet() SelectionSet
-}
 
 // Document
 //type Document struct {
@@ -225,8 +215,6 @@ type NonNullType struct {
 }
 
 // TODO: Type Definitions
-
-type TypeDefinition interface{}
 
 type FieldDefinition struct {
 	Kind      string

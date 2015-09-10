@@ -4,7 +4,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
-// EnumTypeDefinition implements Node, Definition
+// EnumTypeDefinition implements Node, TypeDefinition
 type EnumTypeDefinition struct {
 	Kind   string
 	Loc    Location
@@ -36,16 +36,8 @@ func (def *EnumTypeDefinition) GetName() *Name {
 	return def.Name
 }
 
-func (def *EnumTypeDefinition) GetTypeCondition() NamedType {
-	return NamedType{}
-}
-
 func (def *EnumTypeDefinition) GetVariableDefinitions() []VariableDefinition {
 	return []VariableDefinition{}
-}
-
-func (def *EnumTypeDefinition) GetDirectives() []Directive {
-	return []Directive{}
 }
 
 func (def *EnumTypeDefinition) GetSelectionSet() SelectionSet {

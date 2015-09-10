@@ -4,7 +4,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
-// InterfaceTypeDefinition implements Node, Definition
+// InterfaceTypeDefinition implements Node, TypeDefinition
 type InterfaceTypeDefinition struct {
 	Kind   string
 	Loc    Location
@@ -36,16 +36,8 @@ func (def *InterfaceTypeDefinition) GetName() *Name {
 	return def.Name
 }
 
-func (def *InterfaceTypeDefinition) GetTypeCondition() NamedType {
-	return NamedType{}
-}
-
 func (def *InterfaceTypeDefinition) GetVariableDefinitions() []VariableDefinition {
 	return []VariableDefinition{}
-}
-
-func (def *InterfaceTypeDefinition) GetDirectives() []Directive {
-	return []Directive{}
 }
 
 func (def *InterfaceTypeDefinition) GetSelectionSet() SelectionSet {

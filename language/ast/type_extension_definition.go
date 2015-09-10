@@ -4,7 +4,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
-// TypeExtensionDefinition implements Node, Definition
+// TypeExtensionDefinition implements Node, TypeDefinition
 type TypeExtensionDefinition struct {
 	Kind       string
 	Loc        Location
@@ -30,20 +30,8 @@ func (def *TypeExtensionDefinition) GetLoc() Location {
 	return def.Loc
 }
 
-func (def *TypeExtensionDefinition) GetName() *Name {
-	return NewName(nil)
-}
-
-func (def *TypeExtensionDefinition) GetTypeCondition() NamedType {
-	return NamedType{}
-}
-
 func (def *TypeExtensionDefinition) GetVariableDefinitions() []VariableDefinition {
 	return []VariableDefinition{}
-}
-
-func (def *TypeExtensionDefinition) GetDirectives() []Directive {
-	return []Directive{}
 }
 
 func (def *TypeExtensionDefinition) GetSelectionSet() SelectionSet {

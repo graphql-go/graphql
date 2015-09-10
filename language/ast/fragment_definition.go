@@ -48,16 +48,8 @@ func (fd *FragmentDefinition) GetName() *Name {
 	return fd.Name
 }
 
-func (fd *FragmentDefinition) GetTypeCondition() NamedType {
-	return fd.TypeCondition
-}
-
 func (fd *FragmentDefinition) GetVariableDefinitions() []VariableDefinition {
 	return fd.VariableDefinitions
-}
-
-func (fd *FragmentDefinition) GetDirectives() []Directive {
-	return fd.Directives
 }
 
 func (fd *FragmentDefinition) GetSelectionSet() SelectionSet {
