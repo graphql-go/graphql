@@ -16,9 +16,19 @@ type FragmentDefinition struct {
 	SelectionSet        SelectionSet
 }
 
-func NewFragmentDefinition() *FragmentDefinition {
+func NewFragmentDefinition(fd *FragmentDefinition) *FragmentDefinition {
+	if fd == nil {
+		fd = &FragmentDefinition{}
+	}
 	return &FragmentDefinition{
-		Kind: kinds.FragmentDefinition,
+		Kind:                kinds.FragmentDefinition,
+		Loc:                 fd.Loc,
+		Operation:           fd.Operation,
+		Name:                fd.Name,
+		VariableDefinitions: fd.VariableDefinitions,
+		TypeCondition:       fd.TypeCondition,
+		Directives:          fd.Directives,
+		SelectionSet:        fd.SelectionSet,
 	}
 }
 

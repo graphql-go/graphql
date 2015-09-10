@@ -13,9 +13,16 @@ type ObjectTypeDefinition struct {
 	Fields     []interface{}
 }
 
-func NewObjectTypeDefinition() *ObjectTypeDefinition {
+func NewObjectTypeDefinition(def *ObjectTypeDefinition) *ObjectTypeDefinition {
+	if def == nil {
+		def = &ObjectTypeDefinition{}
+	}
 	return &ObjectTypeDefinition{
-		Kind: kinds.ObjectTypeDefinition,
+		Kind:       kinds.ObjectTypeDefinition,
+		Loc:        def.Loc,
+		Name:       def.Name,
+		Interfaces: def.Interfaces,
+		Fields:     def.Fields,
 	}
 }
 

@@ -9,14 +9,14 @@ type Name struct {
 	Value string
 }
 
-func NewName(n *Name) *Name {
-	if n == nil {
-		n = &Name{}
+func NewName(node *Name) *Name {
+	if node == nil {
+		node = &Name{}
 	}
 	return &Name{
 		Kind:  kinds.Name,
-		Value: n.Value,
-		Loc:   n.Loc,
+		Value: node.Value,
+		Loc:   node.Loc,
 	}
 }
 

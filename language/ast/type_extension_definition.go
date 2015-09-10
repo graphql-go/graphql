@@ -8,12 +8,17 @@ import (
 type TypeExtensionDefinition struct {
 	Kind       string
 	Loc        Location
-	Definition ObjectTypeDefinition
+	Definition *ObjectTypeDefinition
 }
 
-func NewTypeExtensionDefinition() *TypeExtensionDefinition {
+func NewTypeExtensionDefinition(def *TypeExtensionDefinition) *TypeExtensionDefinition {
+	if def == nil {
+		def = &TypeExtensionDefinition{}
+	}
 	return &TypeExtensionDefinition{
-		Kind: kinds.TypeExtensionDefinition,
+		Kind:       kinds.TypeExtensionDefinition,
+		Loc:        def.Loc,
+		Definition: def.Definition,
 	}
 }
 

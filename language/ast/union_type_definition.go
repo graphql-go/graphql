@@ -12,9 +12,15 @@ type UnionTypeDefinition struct {
 	Types []NamedType
 }
 
-func NewUnionTypeDefinition() *UnionTypeDefinition {
+func NewUnionTypeDefinition(def *UnionTypeDefinition) *UnionTypeDefinition {
+	if def == nil {
+		def = &UnionTypeDefinition{}
+	}
 	return &UnionTypeDefinition{
-		Kind: kinds.UnionTypeDefinition,
+		Kind:  kinds.UnionTypeDefinition,
+		Loc:   def.Loc,
+		Name:  def.Name,
+		Types: def.Types,
 	}
 }
 

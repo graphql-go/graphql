@@ -12,9 +12,15 @@ type EnumTypeDefinition struct {
 	Values []interface{}
 }
 
-func NewEnumTypeDefinition() *EnumTypeDefinition {
+func NewEnumTypeDefinition(def *EnumTypeDefinition) *EnumTypeDefinition {
+	if def == nil {
+		def = &EnumTypeDefinition{}
+	}
 	return &EnumTypeDefinition{
-		Kind: kinds.EnumTypeDefinition,
+		Kind:   kinds.EnumTypeDefinition,
+		Loc:    def.Loc,
+		Name:   def.Name,
+		Values: def.Values,
 	}
 }
 

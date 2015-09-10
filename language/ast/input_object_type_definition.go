@@ -12,9 +12,15 @@ type InputObjectTypeDefinition struct {
 	Fields []interface{}
 }
 
-func NewInputObjectTypeDefinition() *InputObjectTypeDefinition {
+func NewInputObjectTypeDefinition(def *InputObjectTypeDefinition) *InputObjectTypeDefinition {
+	if def == nil {
+		def = &InputObjectTypeDefinition{}
+	}
 	return &InputObjectTypeDefinition{
-		Kind: kinds.InputObjectTypeDefinition,
+		Kind:   kinds.InputObjectTypeDefinition,
+		Loc:    def.Loc,
+		Name:   def.Name,
+		Fields: def.Fields,
 	}
 }
 

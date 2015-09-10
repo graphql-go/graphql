@@ -12,9 +12,15 @@ type InterfaceTypeDefinition struct {
 	Fields []interface{}
 }
 
-func NewInterfaceTypeDefinition() *InterfaceTypeDefinition {
+func NewInterfaceTypeDefinition(def *InterfaceTypeDefinition) *InterfaceTypeDefinition {
+	if def == nil {
+		def = &InterfaceTypeDefinition{}
+	}
 	return &InterfaceTypeDefinition{
-		Kind: kinds.InterfaceTypeDefinition,
+		Kind:   kinds.InterfaceTypeDefinition,
+		Loc:    def.Loc,
+		Name:   def.Name,
+		Fields: def.Fields,
 	}
 }
 

@@ -11,9 +11,14 @@ type ScalarTypeDefinition struct {
 	Name *Name
 }
 
-func NewScalarTypeDefinition() *ScalarTypeDefinition {
+func NewScalarTypeDefinition(def *ScalarTypeDefinition) *ScalarTypeDefinition {
+	if def == nil {
+		def = &ScalarTypeDefinition{}
+	}
 	return &ScalarTypeDefinition{
 		Kind: kinds.ScalarTypeDefinition,
+		Loc:  def.Loc,
+		Name: def.Name,
 	}
 }
 
