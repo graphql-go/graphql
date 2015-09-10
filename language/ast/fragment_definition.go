@@ -1,7 +1,6 @@
-package fd
+package ast
 
 import (
-	. "github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 

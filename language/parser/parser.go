@@ -5,7 +5,6 @@ import (
 
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/chris-ramon/graphql-go/language/fd"
 	"github.com/chris-ramon/graphql-go/language/kinds"
 	"github.com/chris-ramon/graphql-go/language/lexer"
 	"github.com/chris-ramon/graphql-go/language/source"
@@ -248,39 +247,39 @@ func parseOperationDefinition(parser *Parser) (*ast.OperationDefinition, error) 
 	return oDef, nil
 }
 
-func parseFragmentDefinition(parser *Parser) (*fd.FragmentDefinition, error) {
+func parseFragmentDefinition(parser *Parser) (*ast.FragmentDefinition, error) {
 	start := parser.Token.Start
 	_, err := expectKeyWord(parser, "fragment")
 	if err != nil {
-		fDef := fd.NewFragmentDefinition()
+		fDef := ast.NewFragmentDefinition()
 		return fDef, err
 	}
 	name, err := parseFragmentName(parser)
 	if err != nil {
-		fDef := fd.NewFragmentDefinition()
+		fDef := ast.NewFragmentDefinition()
 		return fDef, err
 	}
 	_, err = expectKeyWord(parser, "on")
 	if err != nil {
-		fDef := fd.NewFragmentDefinition()
+		fDef := ast.NewFragmentDefinition()
 		return fDef, err
 	}
 	typeCondition, err := parseNamedType(parser)
 	if err != nil {
-		fDef := fd.NewFragmentDefinition()
+		fDef := ast.NewFragmentDefinition()
 		return fDef, err
 	}
 	selectionSet, err := parseSelectionSet(parser)
 	if err != nil {
-		fDef := fd.NewFragmentDefinition()
+		fDef := ast.NewFragmentDefinition()
 		return fDef, err
 	}
 	directives, err := parseDirectives(parser)
 	if err != nil {
-		fDef := fd.NewFragmentDefinition()
+		fDef := ast.NewFragmentDefinition()
 		return fDef, err
 	}
-	fDef := fd.NewFragmentDefinition()
+	fDef := ast.NewFragmentDefinition()
 	fDef.Name = name
 	fDef.TypeCondition = typeCondition
 	fDef.Directives = directives
