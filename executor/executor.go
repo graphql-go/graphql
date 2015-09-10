@@ -12,7 +12,7 @@ import (
 type ExecuteParams struct {
 	Schema        types.GraphQLSchema
 	Root          map[string]interface{}
-	AST           ast.Document
+	AST           *ast.Document
 	OperationName string
 	Args          map[string]string
 }
@@ -119,7 +119,7 @@ func executeFields(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) 
 type BuildExecutionCtxParams struct {
 	Schema        types.GraphQLSchema
 	Root          map[string]interface{}
-	AST           ast.Document
+	AST           *ast.Document
 	OperationName string
 	Args          map[string]string
 	Errors        []error
