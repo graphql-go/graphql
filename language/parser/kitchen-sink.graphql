@@ -1,13 +1,8 @@
-# Copyright (c) 2015, Facebook, Inc.
-# All rights reserved.
-#
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
+# Filename: kitchen-sink.graphql
 
-query queryName($foo: ComplexType, $site: Site = MOBILE) {
-  whoever123is: node(id: [123, 456]) {
-    id ,
+query namedQuery($foo: ComplexFooType, $bar: Bar = DefaultBarValue) {
+  customUser: user(id: [987, 654]) {
+    id,
     ... on User @defer {
       field2 {
         id ,
@@ -20,19 +15,19 @@ query queryName($foo: ComplexType, $site: Site = MOBILE) {
   }
 }
 
-mutation likeStory {
-  like(story: 123) @defer {
-    story {
+mutation favPost {
+  fav(post: 123) @defer {
+    post {
       id
     }
   }
 }
 
-fragment frag on Friend {
+fragment frag on Follower {
   foo(size: $size, bar: $b, obj: {key: "value"})
 }
 
 {
-  unnamed(truthy: true, falsey: false),
+  unnamed(truthyVal: true, falseyVal: false),
   query
 }
