@@ -8,7 +8,7 @@ import (
 type ScalarTypeDefinition struct {
 	Kind string
 	Loc  Location
-	Name Name
+	Name *Name
 }
 
 func NewScalarTypeDefinition() *ScalarTypeDefinition {
@@ -25,7 +25,7 @@ func (def *ScalarTypeDefinition) GetLoc() Location {
 	return def.Loc
 }
 
-func (def *ScalarTypeDefinition) GetName() Name {
+func (def *ScalarTypeDefinition) GetName() *Name {
 	return def.Name
 }
 

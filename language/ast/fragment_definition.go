@@ -8,7 +8,7 @@ type FragmentDefinition struct {
 	Kind                string
 	Loc                 Location
 	Operation           string
-	Name                Name
+	Name                *Name
 	VariableDefinitions []VariableDefinition
 	TypeCondition       NamedType
 	Directives          []Directive
@@ -33,7 +33,7 @@ func (fd *FragmentDefinition) GetOperation() string {
 	return fd.Operation
 }
 
-func (fd *FragmentDefinition) GetName() Name {
+func (fd *FragmentDefinition) GetName() *Name {
 	return fd.Name
 }
 

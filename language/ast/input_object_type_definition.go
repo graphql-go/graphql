@@ -8,7 +8,7 @@ import (
 type InputObjectTypeDefinition struct {
 	Kind   string
 	Loc    Location
-	Name   Name
+	Name   *Name
 	Fields []interface{}
 }
 
@@ -26,7 +26,7 @@ func (def *InputObjectTypeDefinition) GetLoc() Location {
 	return def.Loc
 }
 
-func (def *InputObjectTypeDefinition) GetName() Name {
+func (def *InputObjectTypeDefinition) GetName() *Name {
 	return def.Name
 }
 func (def *InputObjectTypeDefinition) GetTypeCondition() NamedType {

@@ -10,47 +10,23 @@ type Location struct {
 	Source *source.Source
 }
 
-type Node interface {
-	GetKind() string
-	GetLoc()  Location
-}
-
-// Name
-
-type Name struct {
-	Kind  string
-	Loc   Location
-	Value string
-}
-
-func NewName() *Name {
-	return &Name{
-		Kind: "Name",
-	}
-}
-
-// Document
-
-type Document struct {
-	Kind        string
-	Loc         Location
-	Definitions []Node
-}
-
 type Definition interface {
-	// Most basic Definition interface
 	GetKind() string
 	GetLoc() Location
-
-	// Some implementation may or may not have properties for these following getters()
-	// But `executor` requires these getters().
-	GetName() Name
+	GetName() *Name
 	GetOperation() string
 	GetVariableDefinitions() []VariableDefinition
 	GetTypeCondition() NamedType
 	GetDirectives() []Directive
 	GetSelectionSet() SelectionSet
 }
+
+// Document
+//type Document struct {
+//	Kind        string
+//	Loc         Location
+//	Definitions []Node
+//}
 
 type VariableDefinition struct {
 	Kind         string
@@ -69,7 +45,7 @@ func NewVariableDefinition() *VariableDefinition {
 type Variable struct {
 	Kind string
 	Loc  Location
-	Name Name
+	Name *Name
 }
 
 func NewVariable() *Variable {
@@ -95,8 +71,8 @@ func NewSelectionSet() *SelectionSet {
 type Field struct {
 	Kind         string
 	Loc          Location
-	Alias        Name
-	Name         Name
+	Alias        *Name
+	Name         *Name
 	Arguments    []Argument
 	Directives   []Directive
 	SelectionSet SelectionSet
@@ -111,7 +87,7 @@ func NewField() *Name {
 type Argument struct {
 	Kind  string
 	Loc   Location
-	Name  Name
+	Name  *Name
 	Value Value
 }
 
@@ -126,7 +102,7 @@ func NewArgument() *Name {
 type FragmentSpread struct {
 	Kind       string
 	Loc        Location
-	Name       Name
+	Name       *Name
 	Directives []Directive
 }
 
@@ -190,7 +166,7 @@ type ObjectValue struct {
 
 type ObjectField struct {
 	Kind  string
-	Name  Name
+	Name  *Name
 	Loc   Location
 	Value Value
 }
@@ -215,7 +191,7 @@ type ArrayValue struct {
 type Directive struct {
 	Kind      string
 	Loc       Location
-	Name      Name
+	Name      *Name
 	Arguments []Argument
 }
 
@@ -232,7 +208,7 @@ type Type interface{}
 type NamedType struct {
 	Kind string
 	Loc  Location
-	Name Name
+	Name *Name
 	Type Type
 }
 
@@ -255,7 +231,7 @@ type TypeDefinition interface{}
 type FieldDefinition struct {
 	Kind      string
 	Loc       Location
-	Name      Name
+	Name      *Name
 	Arguments []InputValueDefinition
 	Type      Type
 }
@@ -263,7 +239,7 @@ type FieldDefinition struct {
 type InputValueDefinition struct {
 	Kind         string
 	Loc          Location
-	Name         Name
+	Name         *Name
 	Type         Type
 	DefaultValue Value
 }
@@ -271,5 +247,5 @@ type InputValueDefinition struct {
 type EnumValueDefinition struct {
 	Kind string
 	Loc  Location
-	Name Name
+	Name *Name
 }

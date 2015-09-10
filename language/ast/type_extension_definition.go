@@ -25,8 +25,8 @@ func (def *TypeExtensionDefinition) GetLoc() Location {
 	return def.Loc
 }
 
-func (def *TypeExtensionDefinition) GetName() Name {
-	return Name{}
+func (def *TypeExtensionDefinition) GetName() *Name {
+	return NewName(nil)
 }
 
 func (def *TypeExtensionDefinition) GetTypeCondition() NamedType {

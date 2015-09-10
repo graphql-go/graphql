@@ -8,7 +8,7 @@ import (
 type UnionTypeDefinition struct {
 	Kind  string
 	Loc   Location
-	Name  Name
+	Name  *Name
 	Types []NamedType
 }
 
@@ -26,7 +26,7 @@ func (def *UnionTypeDefinition) GetLoc() Location {
 	return def.Loc
 }
 
-func (def *UnionTypeDefinition) GetName() Name {
+func (def *UnionTypeDefinition) GetName() *Name {
 	return def.Name
 }
 

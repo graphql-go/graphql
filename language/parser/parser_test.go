@@ -43,7 +43,7 @@ func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
 					Loc: ast.Location{
 						Start: 2, End: 7,
 					},
-					Name: ast.Name{
+					Name: &ast.Name{
 						Kind: "Name",
 						Loc: ast.Location{
 							Start: 2, End: 7,
@@ -279,7 +279,7 @@ func TestParseCreatesAst(t *testing.T) {
 					Loc: ast.Location{
 						Start: 4, End: 38,
 					},
-					Name: ast.Name{
+					Name: &ast.Name{
 						Kind: "Name",
 						Loc: ast.Location{
 							Start: 4, End: 8,
@@ -289,7 +289,7 @@ func TestParseCreatesAst(t *testing.T) {
 					Arguments: []ast.Argument{
 						{
 							Kind: "Argument",
-							Name: ast.Name{
+							Name: &ast.Name{
 								Kind: "Name",
 								Loc: ast.Location{
 									Start: 9, End: 11,
@@ -320,7 +320,7 @@ func TestParseCreatesAst(t *testing.T) {
 								Loc: ast.Location{
 									Start: 22, End: 24,
 								},
-								Name: ast.Name{
+								Name: &ast.Name{
 									Kind: "Name",
 									Loc: ast.Location{
 										Start: 22, End: 24,
@@ -336,7 +336,7 @@ func TestParseCreatesAst(t *testing.T) {
 								Loc: ast.Location{
 									Start: 30, End: 34,
 								},
-								Name: ast.Name{
+								Name: &ast.Name{
 									Kind: "Name",
 									Loc: ast.Location{
 										Start: 30, End: 34,

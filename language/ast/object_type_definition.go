@@ -8,7 +8,7 @@ import (
 type ObjectTypeDefinition struct {
 	Kind       string
 	Loc        Location
-	Name       Name
+	Name       *Name
 	Interfaces []NamedType
 	Fields     []interface{}
 }
@@ -27,7 +27,7 @@ func (def *ObjectTypeDefinition) GetLoc() Location {
 	return def.Loc
 }
 
-func (def *ObjectTypeDefinition) GetName() Name {
+func (def *ObjectTypeDefinition) GetName() *Name {
 	return def.Name
 }
 

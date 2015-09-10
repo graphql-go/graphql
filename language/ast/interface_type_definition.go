@@ -8,7 +8,7 @@ import (
 type InterfaceTypeDefinition struct {
 	Kind   string
 	Loc    Location
-	Name   Name
+	Name   *Name
 	Fields []interface{}
 }
 
@@ -26,7 +26,7 @@ func (def *InterfaceTypeDefinition) GetLoc() Location {
 	return def.Loc
 }
 
-func (def *InterfaceTypeDefinition) GetName() Name {
+func (def *InterfaceTypeDefinition) GetName() *Name {
 	return def.Name
 }
 

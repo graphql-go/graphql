@@ -8,7 +8,7 @@ type OperationDefinition struct {
 	Kind                string
 	Loc                 Location
 	Operation           string
-	Name                Name
+	Name                *Name
 	VariableDefinitions []VariableDefinition
 	TypeCondition       NamedType
 	Directives          []Directive
@@ -27,7 +27,7 @@ func (op *OperationDefinition) GetOperation() string {
 	return op.Operation
 }
 
-func (op *OperationDefinition) GetName() Name {
+func (op *OperationDefinition) GetName() *Name {
 	return op.Name
 }
 

@@ -8,7 +8,7 @@ import (
 type EnumTypeDefinition struct {
 	Kind   string
 	Loc    Location
-	Name   Name
+	Name   *Name
 	Values []interface{}
 }
 
@@ -26,7 +26,7 @@ func (def *EnumTypeDefinition) GetLoc() Location {
 	return def.Loc
 }
 
-func (def *EnumTypeDefinition) GetName() Name {
+func (def *EnumTypeDefinition) GetName() *Name {
 	return def.Name
 }
 

@@ -74,16 +74,15 @@ func parseValue(p ParseParams) (ast.Value, error) {
 }
 
 // Converts a name lex token into a name parse node.
-func parseName(parser *Parser) (ast.Name, error) {
+func parseName(parser *Parser) (*ast.Name, error) {
 	token, err := expect(parser, lexer.TokenKind[lexer.NAME])
 	if err != nil {
-		return ast.Name{}, err
+		return nil, err
 	}
-	return ast.Name{
-		Kind:  kinds.Name,
+	return ast.NewName(&ast.Name{
 		Value: token.Value,
 		Loc:   loc(parser, token.Start),
-	}, nil
+	}), nil
 }
 
 func makeParser(s *source.Source, opts ParseOptions) (*Parser, error) {
@@ -340,8 +339,8 @@ func parseField(parser *Parser) (ast.Field, error) {
 		return ast.Field{}, err
 	}
 	var (
-		name  ast.Name
-		alias ast.Name
+		name  *ast.Name
+		alias *ast.Name
 	)
 	if skip(parser, lexer.TokenKind[lexer.COLON]) {
 		alias = nameOrAlias
@@ -505,9 +504,9 @@ func parseFragmentDefinition(parser *Parser) (*ast.FragmentDefinition, error) {
 	return fDef, nil
 }
 
-func parseFragmentName(parser *Parser) (ast.Name, error) {
+func parseFragmentName(parser *Parser) (*ast.Name, error) {
 	if parser.Token.Value == "on" {
-		return ast.Name{}, unexpected(parser, lexer.Token{})
+		return nil, unexpected(parser, lexer.Token{})
 	}
 	return parseName(parser)
 }
