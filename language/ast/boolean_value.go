@@ -7,7 +7,7 @@ import (
 // BooleanValue implements Node, Value
 type BooleanValue struct {
 	Kind  string
-	Loc   Location
+	Loc   *Location
 	Value bool
 }
 
@@ -26,6 +26,6 @@ func (v *BooleanValue) GetKind() string {
 	return v.Kind
 }
 
-func (v *BooleanValue) GetLoc() Location {
+func (v *BooleanValue) GetLoc() *Location {
 	return v.Loc
 }

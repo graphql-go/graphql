@@ -7,10 +7,10 @@ import (
 // ObjectTypeDefinition implements Node, TypeDefinition
 type ObjectTypeDefinition struct {
 	Kind       string
-	Loc        Location
+	Loc        *Location
 	Name       *Name
-	Interfaces []NamedType
-	Fields     []interface{}
+	Interfaces []*NamedType
+	Fields     []*FieldDefinition
 }
 
 func NewObjectTypeDefinition(def *ObjectTypeDefinition) *ObjectTypeDefinition {
@@ -30,7 +30,7 @@ func (def *ObjectTypeDefinition) GetKind() string {
 	return def.Kind
 }
 
-func (def *ObjectTypeDefinition) GetLoc() Location {
+func (def *ObjectTypeDefinition) GetLoc() *Location {
 	return def.Loc
 }
 

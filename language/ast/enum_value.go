@@ -7,7 +7,7 @@ import (
 // EnumValue implements Node, Value
 type EnumValue struct {
 	Kind  string
-	Loc   Location
+	Loc   *Location
 	Value string
 }
 
@@ -26,6 +26,6 @@ func (v *EnumValue) GetKind() string {
 	return v.Kind
 }
 
-func (v *EnumValue) GetLoc() Location {
+func (v *EnumValue) GetLoc() *Location {
 	return v.Loc
 }

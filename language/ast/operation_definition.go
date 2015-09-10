@@ -7,11 +7,11 @@ import (
 // OperationDefinition implements Node, Definition
 type OperationDefinition struct {
 	Kind                string
-	Loc                 Location
+	Loc                 *Location
 	Operation           string
 	Name                *Name
 	VariableDefinitions []*VariableDefinition
-	Directives          []Directive
+	Directives          []*Directive
 	SelectionSet        *SelectionSet
 }
 
@@ -34,7 +34,7 @@ func (op *OperationDefinition) GetKind() string {
 	return op.Kind
 }
 
-func (op *OperationDefinition) GetLoc() Location {
+func (op *OperationDefinition) GetLoc() *Location {
 	return op.Loc
 }
 
@@ -50,7 +50,7 @@ func (op *OperationDefinition) GetVariableDefinitions() []*VariableDefinition {
 	return op.VariableDefinitions
 }
 
-func (op *OperationDefinition) GetDirectives() []Directive {
+func (op *OperationDefinition) GetDirectives() []*Directive {
 	return op.Directives
 }
 

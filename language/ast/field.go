@@ -7,11 +7,11 @@ import (
 // Field implements Node, Selection
 type Field struct {
 	Kind         string
-	Loc          Location
+	Loc          *Location
 	Alias        *Name
 	Name         *Name
-	Arguments    []Argument
-	Directives   []Directive
+	Arguments    []*Argument
+	Directives   []*Directive
 	SelectionSet *SelectionSet
 }
 
@@ -34,6 +34,6 @@ func (f *Field) GetKind() string {
 	return f.Kind
 }
 
-func (f *Field) GetLoc() Location {
+func (f *Field) GetLoc() *Location {
 	return f.Loc
 }

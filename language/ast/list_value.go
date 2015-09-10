@@ -7,7 +7,7 @@ import (
 // ListValue implements Node, Value
 type ListValue struct {
 	Kind   string
-	Loc    Location
+	Loc    *Location
 	Values []Value
 }
 
@@ -26,6 +26,6 @@ func (v *ListValue) GetKind() string {
 	return v.Kind
 }
 
-func (v *ListValue) GetLoc() Location {
+func (v *ListValue) GetLoc() *Location {
 	return v.Loc
 }

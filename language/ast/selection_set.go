@@ -7,7 +7,7 @@ import (
 // SelectionSet implements Node
 type SelectionSet struct {
 	Kind       string
-	Loc        Location
+	Loc        *Location
 	Selections []Selection
 }
 
@@ -26,6 +26,6 @@ func (v *SelectionSet) GetKind() string {
 	return v.Kind
 }
 
-func (v *SelectionSet) GetLoc() Location {
+func (v *SelectionSet) GetLoc() *Location {
 	return v.Loc
 }

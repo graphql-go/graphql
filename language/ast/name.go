@@ -5,7 +5,7 @@ import "github.com/chris-ramon/graphql-go/language/kinds"
 // Name implements Node
 type Name struct {
 	Kind  string
-	Loc   Location
+	Loc   *Location
 	Value string
 }
 
@@ -24,6 +24,6 @@ func (node *Name) GetKind() string {
 	return node.Kind
 }
 
-func (node *Name) GetLoc() Location {
+func (node *Name) GetLoc() *Location {
 	return node.Loc
 }

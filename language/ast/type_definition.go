@@ -8,28 +8,6 @@ type TypeDefinition interface {
 	GetSelectionSet() *SelectionSet
 }
 
-type FieldDefinition struct {
-	Kind      string
-	Loc       Location
-	Name      *Name
-	Arguments []InputValueDefinition
-	Type      Type
-}
-
-type InputValueDefinition struct {
-	Kind         string
-	Loc          Location
-	Name         *Name
-	Type         Type
-	DefaultValue Value
-}
-
-type EnumValueDefinition struct {
-	Kind string
-	Loc  Location
-	Name *Name
-}
-
 // Ensure that all typeDefinition types implements TypeDefinition interface
 var _ TypeDefinition = (*ObjectTypeDefinition)(nil)
 var _ TypeDefinition = (*InterfaceTypeDefinition)(nil)

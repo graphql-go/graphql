@@ -7,9 +7,9 @@ import (
 // FragmentSpread implements Node, Selection
 type FragmentSpread struct {
 	Kind       string
-	Loc        Location
+	Loc        *Location
 	Name       *Name
-	Directives []Directive
+	Directives []*Directive
 }
 
 func NewFragmentSpread(fs *FragmentSpread) *FragmentSpread {
@@ -28,6 +28,6 @@ func (fs *FragmentSpread) GetKind() string {
 	return fs.Kind
 }
 
-func (fs *FragmentSpread) GetLoc() Location {
+func (fs *FragmentSpread) GetLoc() *Location {
 	return fs.Loc
 }

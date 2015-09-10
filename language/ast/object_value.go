@@ -7,7 +7,7 @@ import (
 // ObjectValue implements Node, Value
 type ObjectValue struct {
 	Kind   string
-	Loc    Location
+	Loc    *Location
 	Fields []*ObjectField
 }
 
@@ -26,6 +26,6 @@ func (v *ObjectValue) GetKind() string {
 	return v.Kind
 }
 
-func (v *ObjectValue) GetLoc() Location {
+func (v *ObjectValue) GetLoc() *Location {
 	return v.Loc
 }

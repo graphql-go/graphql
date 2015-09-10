@@ -27,37 +27,37 @@ func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
 	}
 	oDef := ast.OperationDefinition{
 		Kind: "OperationDefinition",
-		Loc: ast.Location{
+		Loc: &ast.Location{
 			Start: 0, End: 9,
 		},
 		Operation:  "query",
-		Directives: []ast.Directive{},
+		Directives: []*ast.Directive{},
 		SelectionSet: &ast.SelectionSet{
 			Kind: "SelectionSet",
-			Loc: ast.Location{
+			Loc: &ast.Location{
 				Start: 0, End: 9,
 			},
 			Selections: []ast.Selection{
 				&ast.Field{
 					Kind: "Field",
-					Loc: ast.Location{
+					Loc: &ast.Location{
 						Start: 2, End: 7,
 					},
 					Name: &ast.Name{
 						Kind: "Name",
-						Loc: ast.Location{
+						Loc: &ast.Location{
 							Start: 2, End: 7,
 						},
 						Value: "field",
 					},
-					Arguments:  []ast.Argument{},
-					Directives: []ast.Directive{},
+					Arguments:  []*ast.Argument{},
+					Directives: []*ast.Directive{},
 				},
 			},
 		},
 	}
 	expectedDocument := ast.NewDocument(&ast.Document{
-		Loc: ast.Location{
+		Loc: &ast.Location{
 			Start: 0, End: 9,
 		},
 		Definitions: []ast.Node{&oDef},
@@ -262,88 +262,88 @@ func TestParseCreatesAst(t *testing.T) {
 
 	oDef := ast.OperationDefinition{
 		Kind: "OperationDefinition",
-		Loc: ast.Location{
+		Loc: &ast.Location{
 			Start: 0, End: 40,
 		},
 		Operation:  "query",
-		Directives: []ast.Directive{},
+		Directives: []*ast.Directive{},
 		SelectionSet: &ast.SelectionSet{
 			Kind: "SelectionSet",
-			Loc: ast.Location{
+			Loc: &ast.Location{
 				Start: 0, End: 40,
 			},
 			Selections: []ast.Selection{
 				&ast.Field{
 					Kind: "Field",
-					Loc: ast.Location{
+					Loc: &ast.Location{
 						Start: 4, End: 38,
 					},
 					Name: &ast.Name{
 						Kind: "Name",
-						Loc: ast.Location{
+						Loc: &ast.Location{
 							Start: 4, End: 8,
 						},
 						Value: "node",
 					},
-					Arguments: []ast.Argument{
+					Arguments: []*ast.Argument{
 						{
 							Kind: "Argument",
 							Name: &ast.Name{
 								Kind: "Name",
-								Loc: ast.Location{
+								Loc: &ast.Location{
 									Start: 9, End: 11,
 								},
 								Value: "id",
 							},
 							Value: &ast.IntValue{
 								Kind: "IntValue",
-								Loc: ast.Location{
+								Loc: &ast.Location{
 									Start: 13, End: 14,
 								},
 								Value: "4",
 							},
-							Loc: ast.Location{
+							Loc: &ast.Location{
 								Start: 9, End: 14,
 							},
 						},
 					},
-					Directives: []ast.Directive{},
+					Directives: []*ast.Directive{},
 					SelectionSet: &ast.SelectionSet{
 						Kind: "SelectionSet",
-						Loc: ast.Location{
+						Loc: &ast.Location{
 							Start: 16, End: 38,
 						},
 						Selections: []ast.Selection{
 							&ast.Field{
 								Kind: "Field",
-								Loc: ast.Location{
+								Loc: &ast.Location{
 									Start: 22, End: 24,
 								},
 								Name: &ast.Name{
 									Kind: "Name",
-									Loc: ast.Location{
+									Loc: &ast.Location{
 										Start: 22, End: 24,
 									},
 									Value: "id",
 								},
-								Arguments:    []ast.Argument{},
-								Directives:   []ast.Directive{},
+								Arguments:    []*ast.Argument{},
+								Directives:   []*ast.Directive{},
 								SelectionSet: nil,
 							},
 							&ast.Field{
 								Kind: "Field",
-								Loc: ast.Location{
+								Loc: &ast.Location{
 									Start: 30, End: 34,
 								},
 								Name: &ast.Name{
 									Kind: "Name",
-									Loc: ast.Location{
+									Loc: &ast.Location{
 										Start: 30, End: 34,
 									},
 									Value: "name",
 								},
-								Arguments:    []ast.Argument{},
-								Directives:   []ast.Directive{},
+								Arguments:    []*ast.Argument{},
+								Directives:   []*ast.Directive{},
 								SelectionSet: nil,
 							},
 						},
@@ -353,7 +353,7 @@ func TestParseCreatesAst(t *testing.T) {
 		},
 	}
 	expectedDocument := ast.NewDocument(&ast.Document{
-		Loc: ast.Location{
+		Loc: &ast.Location{
 			Start: 0, End: 41,
 		},
 		Definitions: []ast.Node{&oDef},

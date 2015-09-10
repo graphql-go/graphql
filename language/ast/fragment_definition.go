@@ -7,12 +7,12 @@ import (
 // FragmentDefinition implements Node, Definition
 type FragmentDefinition struct {
 	Kind                string
-	Loc                 Location
+	Loc                 *Location
 	Operation           string
 	Name                *Name
 	VariableDefinitions []*VariableDefinition
-	TypeCondition       NamedType
-	Directives          []Directive
+	TypeCondition       *NamedType
+	Directives          []*Directive
 	SelectionSet        *SelectionSet
 }
 
@@ -36,7 +36,7 @@ func (fd *FragmentDefinition) GetKind() string {
 	return fd.Kind
 }
 
-func (fd *FragmentDefinition) GetLoc() Location {
+func (fd *FragmentDefinition) GetLoc() *Location {
 	return fd.Loc
 }
 

@@ -10,28 +10,13 @@ type Location struct {
 	Source *source.Source
 }
 
-type Argument struct {
-	Kind  string
-	Loc   Location
-	Name  *Name
-	Value Value
-}
-
-func NewArgument() *Name {
-	return &Name{
-		Kind: "Argument",
+func NewLocation(loc *Location) *Location {
+	if loc == nil {
+		loc = &Location{}
 	}
-}
-
-type Directive struct {
-	Kind      string
-	Loc       Location
-	Name      *Name
-	Arguments []Argument
-}
-
-func NewDirective() *Directive {
-	return &Directive{
-		Kind: "Directive",
+	return &Location{
+		Start:  loc.Start,
+		End:    loc.End,
+		Source: loc.Source,
 	}
 }

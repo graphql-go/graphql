@@ -7,9 +7,9 @@ import (
 // UnionTypeDefinition implements Node, TypeDefinition
 type UnionTypeDefinition struct {
 	Kind  string
-	Loc   Location
+	Loc   *Location
 	Name  *Name
-	Types []NamedType
+	Types []*NamedType
 }
 
 func NewUnionTypeDefinition(def *UnionTypeDefinition) *UnionTypeDefinition {
@@ -28,7 +28,7 @@ func (def *UnionTypeDefinition) GetKind() string {
 	return def.Kind
 }
 
-func (def *UnionTypeDefinition) GetLoc() Location {
+func (def *UnionTypeDefinition) GetLoc() *Location {
 	return def.Loc
 }
 

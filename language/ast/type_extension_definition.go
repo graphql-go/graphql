@@ -7,7 +7,7 @@ import (
 // TypeExtensionDefinition implements Node, TypeDefinition
 type TypeExtensionDefinition struct {
 	Kind       string
-	Loc        Location
+	Loc        *Location
 	Definition *ObjectTypeDefinition
 }
 
@@ -26,7 +26,7 @@ func (def *TypeExtensionDefinition) GetKind() string {
 	return def.Kind
 }
 
-func (def *TypeExtensionDefinition) GetLoc() Location {
+func (def *TypeExtensionDefinition) GetLoc() *Location {
 	return def.Loc
 }
 

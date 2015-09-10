@@ -7,7 +7,7 @@ import (
 // Variable implements Node, Value
 type Variable struct {
 	Kind string
-	Loc  Location
+	Loc  *Location
 	Name *Name
 }
 
@@ -26,6 +26,6 @@ func (v *Variable) GetKind() string {
 	return v.Kind
 }
 
-func (v *Variable) GetLoc() Location {
+func (v *Variable) GetLoc() *Location {
 	return v.Loc
 }

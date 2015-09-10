@@ -7,7 +7,7 @@ import (
 // ScalarTypeDefinition implements Node, TypeDefinition
 type ScalarTypeDefinition struct {
 	Kind string
-	Loc  Location
+	Loc  *Location
 	Name *Name
 }
 
@@ -26,7 +26,7 @@ func (def *ScalarTypeDefinition) GetKind() string {
 	return def.Kind
 }
 
-func (def *ScalarTypeDefinition) GetLoc() Location {
+func (def *ScalarTypeDefinition) GetLoc() *Location {
 	return def.Loc
 }
 

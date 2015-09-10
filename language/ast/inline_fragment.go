@@ -7,9 +7,9 @@ import (
 // InlineFragment implements Node, Selection
 type InlineFragment struct {
 	Kind          string
-	Loc           Location
-	TypeCondition NamedType
-	Directives    []Directive
+	Loc           *Location
+	TypeCondition *NamedType
+	Directives    []*Directive
 	SelectionSet  *SelectionSet
 }
 
@@ -30,6 +30,6 @@ func (f *InlineFragment) GetKind() string {
 	return f.Kind
 }
 
-func (f *InlineFragment) GetLoc() Location {
+func (f *InlineFragment) GetLoc() *Location {
 	return f.Loc
 }

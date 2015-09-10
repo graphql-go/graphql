@@ -7,7 +7,7 @@ import (
 // VariableDefinition implements Node
 type VariableDefinition struct {
 	Kind         string
-	Loc          Location
+	Loc          *Location
 	Variable     *Variable
 	Type         Type
 	DefaultValue Value
@@ -30,6 +30,6 @@ func (vdef *VariableDefinition) GetKind() string {
 	return vdef.Kind
 }
 
-func (vdef *VariableDefinition) GetLoc() Location {
+func (vdef *VariableDefinition) GetLoc() *Location {
 	return vdef.Loc
 }

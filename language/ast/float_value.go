@@ -7,7 +7,7 @@ import (
 // FloatValue implements Node, Value
 type FloatValue struct {
 	Kind  string
-	Loc   Location
+	Loc   *Location
 	Value string
 }
 
@@ -26,6 +26,6 @@ func (v *FloatValue) GetKind() string {
 	return v.Kind
 }
 
-func (v *FloatValue) GetLoc() Location {
+func (v *FloatValue) GetLoc() *Location {
 	return v.Loc
 }

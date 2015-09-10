@@ -8,7 +8,7 @@ import (
 type ObjectField struct {
 	Kind  string
 	Name  *Name
-	Loc   Location
+	Loc   *Location
 	Value Value
 }
 
@@ -28,6 +28,6 @@ func (f *ObjectField) GetKind() string {
 	return f.Kind
 }
 
-func (f *ObjectField) GetLoc() Location {
+func (f *ObjectField) GetLoc() *Location {
 	return f.Loc
 }

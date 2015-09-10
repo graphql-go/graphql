@@ -7,7 +7,7 @@ import (
 // InputObjectTypeDefinition implements Node, TypeDefinition
 type InputObjectTypeDefinition struct {
 	Kind   string
-	Loc    Location
+	Loc    *Location
 	Name   *Name
 	Fields []interface{}
 }
@@ -28,7 +28,7 @@ func (def *InputObjectTypeDefinition) GetKind() string {
 	return def.Kind
 }
 
-func (def *InputObjectTypeDefinition) GetLoc() Location {
+func (def *InputObjectTypeDefinition) GetLoc() *Location {
 	return def.Loc
 }
 

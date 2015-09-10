@@ -7,9 +7,9 @@ import (
 // EnumTypeDefinition implements Node, TypeDefinition
 type EnumTypeDefinition struct {
 	Kind   string
-	Loc    Location
+	Loc    *Location
 	Name   *Name
-	Values []interface{}
+	Values []*EnumValueDefinition
 }
 
 func NewEnumTypeDefinition(def *EnumTypeDefinition) *EnumTypeDefinition {
@@ -28,7 +28,7 @@ func (def *EnumTypeDefinition) GetKind() string {
 	return def.Kind
 }
 
-func (def *EnumTypeDefinition) GetLoc() Location {
+func (def *EnumTypeDefinition) GetLoc() *Location {
 	return def.Loc
 }
 

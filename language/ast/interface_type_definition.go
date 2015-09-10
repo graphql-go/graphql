@@ -7,9 +7,9 @@ import (
 // InterfaceTypeDefinition implements Node, TypeDefinition
 type InterfaceTypeDefinition struct {
 	Kind   string
-	Loc    Location
+	Loc    *Location
 	Name   *Name
-	Fields []interface{}
+	Fields []*FieldDefinition
 }
 
 func NewInterfaceTypeDefinition(def *InterfaceTypeDefinition) *InterfaceTypeDefinition {
@@ -28,7 +28,7 @@ func (def *InterfaceTypeDefinition) GetKind() string {
 	return def.Kind
 }
 
-func (def *InterfaceTypeDefinition) GetLoc() Location {
+func (def *InterfaceTypeDefinition) GetLoc() *Location {
 	return def.Loc
 }
 
