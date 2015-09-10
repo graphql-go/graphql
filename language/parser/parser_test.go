@@ -132,7 +132,7 @@ func TestParseProvidesUsefulErrorsWhenUsingSource(t *testing.T) {
 	testGraphQLErrorMessage(t, test)
 }
 
-func TestParseVariableInlineValues(t *testing.T) {
+func TestParsesVariableInlineValues(t *testing.T) {
 	source := `{ field(complex: { a: { b: [ $var ] } }) }`
 	// should not return error
 	_, err := Parse(ParseParams{Source: source})
@@ -141,7 +141,7 @@ func TestParseVariableInlineValues(t *testing.T) {
 	}
 }
 
-func TestParseConstantDefaultValues(t *testing.T) {
+func TestParsesConstantDefaultValues(t *testing.T) {
 	test := errorMessageTest{
 		`query Foo($x: Complex = { a: { b: [ $var ] } }) { field }`,
 		`Syntax Error GraphQL (1:37) Unexpected $`,
@@ -150,7 +150,7 @@ func TestParseConstantDefaultValues(t *testing.T) {
 	testGraphQLErrorMessage(t, test)
 }
 
-func TestParseDuplicatedKeysInInputObject(t *testing.T) {
+func TestDuplicatedKeysInInputObject(t *testing.T) {
 	test := errorMessageTest{
 		`{ field(arg: { a: 1, a: 2 }) }'`,
 		`Syntax Error GraphQL (1:22) Duplicate input object field a.`,
@@ -159,7 +159,7 @@ func TestParseDuplicatedKeysInInputObject(t *testing.T) {
 	testGraphQLErrorMessage(t, test)
 }
 
-func TestParseFragmentsNameOn(t *testing.T) {
+func TestDoesNotAcceptFragmentsNameOn(t *testing.T) {
 	test := errorMessageTest{
 		`fragment on on on { on }`,
 		`Syntax Error GraphQL (1:10) Unexpected Name "on"`,
@@ -168,7 +168,7 @@ func TestParseFragmentsNameOn(t *testing.T) {
 	testGraphQLErrorMessage(t, test)
 }
 
-func TestParseFragmentsSpreadOfOn(t *testing.T) {
+func TestDoesNotAcceptFragmentsSpreadOfOn(t *testing.T) {
 	test := errorMessageTest{
 		`{ ...on }'`,
 		`Syntax Error GraphQL (1:9) Expected Name, found }`,
@@ -177,7 +177,7 @@ func TestParseFragmentsSpreadOfOn(t *testing.T) {
 	testGraphQLErrorMessage(t, test)
 }
 
-func TestParserDoesNotAllowNullAsValue(t *testing.T) {
+func TestDoesNotAllowNullAsValue(t *testing.T) {
 	test := errorMessageTest{
 		`{ fieldWithNullableStringInput(input: null) }'`,
 		`Syntax Error GraphQL (1:39) Unexpected Name "null"`,
@@ -186,7 +186,7 @@ func TestParserDoesNotAllowNullAsValue(t *testing.T) {
 	testGraphQLErrorMessage(t, test)
 }
 
-func TestParserParsesKitchenSink(t *testing.T) {
+func TestParsesKitchenSink(t *testing.T) {
 	b, err := ioutil.ReadFile("./kitchen-sink.graphql")
 	if err != nil {
 		t.Fatalf("unable to load kitchen-sink.graphql")
@@ -198,7 +198,7 @@ func TestParserParsesKitchenSink(t *testing.T) {
 	}
 }
 
-func TestParserAllowsNonKeywordsAnywhereNameIsAllowed(t *testing.T) {
+func TestAllowsNonKeywordsAnywhereNameIsAllowed(t *testing.T) {
 	nonKeywords := []string{
 		"on",
 		"fragment",
@@ -228,7 +228,7 @@ func TestParserAllowsNonKeywordsAnywhereNameIsAllowed(t *testing.T) {
 	}
 }
 
-func TestParserParsesExperimentalSubscriptionFeature(t *testing.T) {
+func TestParsesExperimentalSubscriptionFeature(t *testing.T) {
 	source := `
       subscription Foo {
         subscriptionField
@@ -240,7 +240,7 @@ func TestParserParsesExperimentalSubscriptionFeature(t *testing.T) {
 	}
 }
 
-func TestParserCreatesAst(t *testing.T) {
+func TestParseCreatesAst(t *testing.T) {
 	source := source.NewSource(`{
   node(id: 4) {
     id,
