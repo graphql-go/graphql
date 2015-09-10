@@ -4,7 +4,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
-// Variable implements Node
+// Variable implements Node, Value
 type Variable struct {
 	Kind string
 	Loc  Location

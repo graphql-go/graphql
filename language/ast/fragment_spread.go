@@ -17,10 +17,10 @@ func NewFragmentSpread(fs *FragmentSpread) *FragmentSpread {
 		fs = &FragmentSpread{}
 	}
 	return &FragmentSpread{
-		Kind:         kinds.FragmentSpread,
-		Loc:          fs.Loc,
-		Name:         fs.Name,
-		Directives:   fs.Directives,
+		Kind:       kinds.FragmentSpread,
+		Loc:        fs.Loc,
+		Name:       fs.Name,
+		Directives: fs.Directives,
 	}
 }
 

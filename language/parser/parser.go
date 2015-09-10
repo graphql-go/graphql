@@ -511,25 +511,22 @@ func parseValueLiteral(parser *Parser, isConst bool) (ast.Value, error) {
 		return parseObject(parser, isConst)
 	case lexer.TokenKind[lexer.INT]:
 		advance(parser)
-		return ast.IntValue{
-			Kind:  kinds.IntValue,
+		return ast.NewIntValue(&ast.IntValue{
 			Value: token.Value,
 			Loc:   loc(parser, token.Start),
-		}, nil
+		}), nil
 	case lexer.TokenKind[lexer.FLOAT]:
 		advance(parser)
-		return ast.FloatValue{
-			Kind:  kinds.FloatValue,
+		return ast.NewFloatValue(&ast.FloatValue{
 			Value: token.Value,
 			Loc:   loc(parser, token.Start),
-		}, nil
+		}), nil
 	case lexer.TokenKind[lexer.STRING]:
 		advance(parser)
-		return ast.StringValue{
-			Kind:  kinds.StringValue,
+		return ast.NewStringValue(&ast.StringValue{
 			Value: token.Value,
 			Loc:   loc(parser, token.Start),
-		}, nil
+		}), nil
 	case lexer.TokenKind[lexer.NAME]:
 		if token.Value == "true" || token.Value == "false" {
 			advance(parser)
@@ -537,18 +534,16 @@ func parseValueLiteral(parser *Parser, isConst bool) (ast.Value, error) {
 			if token.Value == "false" {
 				value = false
 			}
-			return ast.BooleanValue{
-				Kind:  kinds.BooleanValue,
+			return ast.NewBooleanValue(&ast.BooleanValue{
 				Value: value,
 				Loc:   loc(parser, token.Start),
-			}, nil
+			}), nil
 		} else if token.Value != "null" {
 			advance(parser)
-			return ast.EnumValue{
-				Kind:  kinds.EnumValue,
+			return ast.NewEnumValue(&ast.EnumValue{
 				Value: token.Value,
 				Loc:   loc(parser, token.Start),
-			}, nil
+			}), nil
 		}
 	case lexer.TokenKind[lexer.DOLLAR]:
 		if !isConst {
@@ -573,7 +568,7 @@ func parseValueValue(parser *Parser) (interface{}, error) {
 	return parseValueLiteral(parser, false)
 }
 
-func parseList(parser *Parser, isConst bool) (ast.ListValue, error) {
+func parseList(parser *Parser, isConst bool) (*ast.ListValue, error) {
 	start := parser.Token.Start
 	var item parseFn
 	if isConst {
@@ -583,26 +578,25 @@ func parseList(parser *Parser, isConst bool) (ast.ListValue, error) {
 	}
 	iValues, err := any(parser, lexer.TokenKind[lexer.BRACKET_L], item, lexer.TokenKind[lexer.BRACKET_R])
 	if err != nil {
-		return ast.ListValue{}, err
+		return nil, err
 	}
 	values := []ast.Value{}
 	for _, iValue := range iValues {
 		values = append(values, iValue.(ast.Value))
 	}
-	return ast.ListValue{
-		Kind:   kinds.ListValue,
+	return ast.NewListValue(&ast.ListValue{
 		Values: values,
 		Loc:    loc(parser, start),
-	}, nil
+	}), nil
 }
 
-func parseObject(parser *Parser, isConst bool) (ast.ObjectValue, error) {
+func parseObject(parser *Parser, isConst bool) (*ast.ObjectValue, error) {
 	start := parser.Token.Start
 	_, err := expect(parser, lexer.TokenKind[lexer.BRACE_L])
 	if err != nil {
-		return ast.ObjectValue{}, err
+		return nil, err
 	}
-	fields := []ast.ObjectField{}
+	fields := []*ast.ObjectField{}
 	fieldNames := map[string]bool{}
 	for {
 		if skip(parser, lexer.TokenKind[lexer.BRACE_R]) {
@@ -610,43 +604,41 @@ func parseObject(parser *Parser, isConst bool) (ast.ObjectValue, error) {
 		}
 		field, fieldName, err := parseObjectField(parser, isConst, fieldNames)
 		if err != nil {
-			return ast.ObjectValue{}, err
+			return nil, err
 		}
 		fieldNames[fieldName] = true
 		fields = append(fields, field)
 	}
-	return ast.ObjectValue{
-		Kind:   kinds.ObjectValue,
+	return ast.NewObjectValue(&ast.ObjectValue{
 		Fields: fields,
 		Loc:    loc(parser, start),
-	}, nil
+	}), nil
 }
 
-func parseObjectField(parser *Parser, isConst bool, fieldNames map[string]bool) (ast.ObjectField, string, error) {
+func parseObjectField(parser *Parser, isConst bool, fieldNames map[string]bool) (*ast.ObjectField, string, error) {
 	start := parser.Token.Start
 	name, err := parseName(parser)
 	if err != nil {
-		return ast.ObjectField{}, "", err
+		return nil, "", err
 	}
 	fieldName := name.Value
 	if _, ok := fieldNames[fieldName]; ok {
 		descp := fmt.Sprintf("Duplicate input object field %v.", fieldName)
-		return ast.ObjectField{}, "", graphqlerrors.NewSyntaxError(parser.Source, start, descp)
+		return nil, "", graphqlerrors.NewSyntaxError(parser.Source, start, descp)
 	}
 	_, err = expect(parser, lexer.TokenKind[lexer.COLON])
 	if err != nil {
-		return ast.ObjectField{}, "", err
+		return nil, "", err
 	}
 	value, err := parseValueLiteral(parser, isConst)
 	if err != nil {
-		return ast.ObjectField{}, "", err
+		return nil, "", err
 	}
-	return ast.ObjectField{
-		Kind:  kinds.ObjectField,
+	return ast.NewObjectField(&ast.ObjectField{
 		Name:  name,
 		Value: value,
 		Loc:   loc(parser, start),
-	}, fieldName, nil
+	}), fieldName, nil
 }
 
 /* Implements the parsing rules in the Directives section. */

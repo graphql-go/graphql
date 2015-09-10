@@ -295,7 +295,7 @@ func TestParseCreatesAst(t *testing.T) {
 								},
 								Value: "id",
 							},
-							Value: ast.IntValue{
+							Value: &ast.IntValue{
 								Kind: "IntValue",
 								Loc: ast.Location{
 									Start: 13, End: 14,

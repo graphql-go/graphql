@@ -18,11 +18,11 @@ func NewInlineFragment(f *InlineFragment) *InlineFragment {
 		f = &InlineFragment{}
 	}
 	return &InlineFragment{
-		Kind:         kinds.InlineFragment,
-		Loc:          f.Loc,
-		TypeCondition:          f.TypeCondition,
-		Directives:   f.Directives,
-		SelectionSet:   f.SelectionSet,
+		Kind:          kinds.InlineFragment,
+		Loc:           f.Loc,
+		TypeCondition: f.TypeCondition,
+		Directives:    f.Directives,
+		SelectionSet:  f.SelectionSet,
 	}
 }
 
