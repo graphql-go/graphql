@@ -4,6 +4,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
+// FragmentDefinition implements Node, Definition
 type FragmentDefinition struct {
 	Kind                string
 	Loc                 Location

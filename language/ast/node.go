@@ -9,7 +9,6 @@ type Node interface {
 // The list of all possible AST node types.
 // Ensure that all node types implements Node interface
 var _ Node = (*Name)(nil)
-
 var _ Node = (*Document)(nil)
 var _ Node = (*OperationDefinition)(nil)
 

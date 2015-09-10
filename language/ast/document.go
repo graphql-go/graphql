@@ -16,8 +16,8 @@ func NewDocument(d *Document) *Document {
 		d = &Document{}
 	}
 	return &Document{
-		Kind: kinds.Document,
-		Loc: d.Loc,
+		Kind:        kinds.Document,
+		Loc:         d.Loc,
 		Definitions: d.Definitions,
 	}
 }

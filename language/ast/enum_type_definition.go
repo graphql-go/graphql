@@ -4,7 +4,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
-// EnumTypeDefinition implements Definition
+// EnumTypeDefinition implements Node, Definition
 type EnumTypeDefinition struct {
 	Kind   string
 	Loc    Location

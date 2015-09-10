@@ -4,7 +4,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
-// InterfaceTypeDefinition implements Definition
+// InterfaceTypeDefinition implements Node, Definition
 type InterfaceTypeDefinition struct {
 	Kind   string
 	Loc    Location

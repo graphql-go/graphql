@@ -4,6 +4,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
+// OperationDefinition implements Node, Definition
 type OperationDefinition struct {
 	Kind                string
 	Loc                 Location

@@ -4,7 +4,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
-// ScalarTypeDefinition implements Definition
+// ScalarTypeDefinition implements Node, Definition
 type ScalarTypeDefinition struct {
 	Kind string
 	Loc  Location

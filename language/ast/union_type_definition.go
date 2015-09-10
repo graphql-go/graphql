@@ -4,7 +4,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
-// UnionTypeDefinition implements Definition
+// UnionTypeDefinition implements Node, Definition
 type UnionTypeDefinition struct {
 	Kind  string
 	Loc   Location

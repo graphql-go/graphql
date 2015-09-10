@@ -4,7 +4,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
-// InputObjectTypeDefinition implements Definition
+// InputObjectTypeDefinition implements Node, Definition
 type InputObjectTypeDefinition struct {
 	Kind   string
 	Loc    Location

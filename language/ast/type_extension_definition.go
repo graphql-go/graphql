@@ -4,7 +4,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
-// TypeExtensionDefinition implements Definition
+// TypeExtensionDefinition implements Node, Definition
 type TypeExtensionDefinition struct {
 	Kind       string
 	Loc        Location
