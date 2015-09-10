@@ -28,3 +28,23 @@ func (def *ScalarTypeDefinition) GetLoc() Location {
 func (def *ScalarTypeDefinition) GetName() Name {
 	return def.Name
 }
+
+func (def *ScalarTypeDefinition) GetTypeCondition() NamedType {
+	return NamedType{}
+}
+
+func (def *ScalarTypeDefinition) GetVariableDefinitions() []VariableDefinition {
+	return []VariableDefinition{}
+}
+
+func (def *ScalarTypeDefinition) GetDirectives() []Directive {
+	return []Directive{}
+}
+
+func (def *ScalarTypeDefinition) GetSelectionSet() SelectionSet {
+	return SelectionSet{}
+}
+
+func (def *ScalarTypeDefinition) GetOperation() string {
+	return ""
+}

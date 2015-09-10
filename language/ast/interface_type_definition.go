@@ -29,3 +29,24 @@ func (def *InterfaceTypeDefinition) GetLoc() Location {
 func (def *InterfaceTypeDefinition) GetName() Name {
 	return def.Name
 }
+
+func (def *InterfaceTypeDefinition) GetTypeCondition() NamedType {
+	return NamedType{}
+}
+
+func (def *InterfaceTypeDefinition) GetVariableDefinitions() []VariableDefinition {
+	return []VariableDefinition{}
+}
+
+func (def *InterfaceTypeDefinition) GetDirectives() []Directive {
+	return []Directive{}
+}
+
+func (def *InterfaceTypeDefinition) GetSelectionSet() SelectionSet {
+	return SelectionSet{}
+}
+
+func (def *InterfaceTypeDefinition) GetOperation() string {
+	return ""
+}
+

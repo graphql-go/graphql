@@ -30,3 +30,25 @@ func (def *ObjectTypeDefinition) GetLoc() Location {
 func (def *ObjectTypeDefinition) GetName() Name {
 	return def.Name
 }
+
+func (def *ObjectTypeDefinition) GetTypeCondition() NamedType {
+	return NamedType{}
+}
+
+func (def *ObjectTypeDefinition) GetVariableDefinitions() []VariableDefinition {
+	return []VariableDefinition{}
+}
+
+func (def *ObjectTypeDefinition) GetDirectives() []Directive {
+	return []Directive{}
+}
+
+func (def *ObjectTypeDefinition) GetSelectionSet() SelectionSet {
+	return SelectionSet{}
+}
+
+func (def *ObjectTypeDefinition) GetOperation() string {
+	return ""
+}
+
+

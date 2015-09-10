@@ -36,14 +36,18 @@ type Document struct {
 }
 
 type Definition interface {
+	// Most basic Definition interface
 	GetKind() string
 	GetLoc() Location
-	//	GetOperation() string
+
+	// Some implementation may or may not have properties for these following getters()
+	// But `executor` requires these getters().
 	GetName() Name
-	//	GetVariableDefinitions() []VariableDefinition
-	//	GetTypeCondition() NamedType
-	//	GetDirectives() []Directive
-	//	GetSelectionSet() SelectionSet
+	GetOperation() string
+	GetVariableDefinitions() []VariableDefinition
+	GetTypeCondition() NamedType
+	GetDirectives() []Directive
+	GetSelectionSet() SelectionSet
 
 }
 

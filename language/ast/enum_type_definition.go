@@ -29,3 +29,23 @@ func (def *EnumTypeDefinition) GetLoc() Location {
 func (def *EnumTypeDefinition) GetName() Name {
 	return def.Name
 }
+
+func (def *EnumTypeDefinition) GetTypeCondition() NamedType {
+	return NamedType{}
+}
+
+func (def *EnumTypeDefinition) GetVariableDefinitions() []VariableDefinition {
+	return []VariableDefinition{}
+}
+
+func (def *EnumTypeDefinition) GetDirectives() []Directive {
+	return []Directive{}
+}
+
+func (def *EnumTypeDefinition) GetSelectionSet() SelectionSet {
+	return SelectionSet{}
+}
+
+func (def *EnumTypeDefinition) GetOperation() string {
+	return ""
+}

@@ -29,3 +29,22 @@ func (def *InputObjectTypeDefinition) GetLoc() Location {
 func (def *InputObjectTypeDefinition) GetName() Name {
 	return def.Name
 }
+func (def *InputObjectTypeDefinition) GetTypeCondition() NamedType {
+	return NamedType{}
+}
+
+func (def *InputObjectTypeDefinition) GetVariableDefinitions() []VariableDefinition {
+	return []VariableDefinition{}
+}
+
+func (def *InputObjectTypeDefinition) GetDirectives() []Directive {
+	return []Directive{}
+}
+
+func (def *InputObjectTypeDefinition) GetSelectionSet() SelectionSet {
+	return SelectionSet{}
+}
+
+func (def *InputObjectTypeDefinition) GetOperation() string {
+	return ""
+}

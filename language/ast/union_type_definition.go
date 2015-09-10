@@ -29,3 +29,24 @@ func (def *UnionTypeDefinition) GetLoc() Location {
 func (def *UnionTypeDefinition) GetName() Name {
 	return def.Name
 }
+
+
+func (def *UnionTypeDefinition) GetTypeCondition() NamedType {
+	return NamedType{}
+}
+
+func (def *UnionTypeDefinition) GetVariableDefinitions() []VariableDefinition {
+	return []VariableDefinition{}
+}
+
+func (def *UnionTypeDefinition) GetDirectives() []Directive {
+	return []Directive{}
+}
+
+func (def *UnionTypeDefinition) GetSelectionSet() SelectionSet {
+	return SelectionSet{}
+}
+
+func (def *UnionTypeDefinition) GetOperation() string {
+	return ""
+}
