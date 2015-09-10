@@ -5,7 +5,6 @@ import (
 
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/chris-ramon/graphql-go/language/errors"
 	"github.com/chris-ramon/graphql-go/language/fd"
 	"github.com/chris-ramon/graphql-go/language/kinds"
 	"github.com/chris-ramon/graphql-go/language/lexer"
@@ -13,14 +12,14 @@ import (
 	"github.com/chris-ramon/graphql-go/language/source"
 )
 
-func unexpected(parser *Parser, atToken lexer.Token) graphqlerrors.GraphQLError {
+func unexpected(parser *Parser, atToken lexer.Token) error {
 	var token lexer.Token
 	if (atToken == lexer.Token{}) {
 		token = parser.Token
 	} else {
 		token = parser.Token
 	}
-	return languageerrors.Error(parser.Source, token.Start, lexer.GetTokenDesc(token))
+	return graphqlerrors.NewSyntaxError(parser.Source, token.Start, lexer.GetTokenDesc(token))
 }
 
 type ParseOptions struct {
@@ -33,7 +32,7 @@ type ParseParams struct {
 	Options ParseOptions
 }
 
-func Parse(p ParseParams) (ast.Document, graphqlerrors.GraphQLError) {
+func Parse(p ParseParams) (ast.Document, error) {
 	var doc ast.Document
 	var sourceObj *source.Source
 	switch p.Source.(type) {
@@ -43,15 +42,15 @@ func Parse(p ParseParams) (ast.Document, graphqlerrors.GraphQLError) {
 		s, _ := p.Source.(string)
 		sourceObj = source.NewSource(s, "")
 	}
-	parser, errMakeParser := makeParser(sourceObj, p.Options)
-	if errMakeParser.Error != nil {
-		return doc, errMakeParser
+	parser, err := makeParser(sourceObj, p.Options)
+	if err != nil {
+		return doc, err
 	}
-	doc, errParseDocument := parseDocument(parser)
-	if errParseDocument.Error != nil {
-		return doc, errParseDocument
+	doc, err = parseDocument(parser)
+	if err != nil {
+		return doc, err
 	}
-	return doc, graphqlerrors.GraphQLError{}
+	return doc, nil
 }
 
 type Parser struct {
@@ -62,10 +61,10 @@ type Parser struct {
 	Token    lexer.Token
 }
 
-func makeParser(s *source.Source, opts ParseOptions) (*Parser, graphqlerrors.GraphQLError) {
+func makeParser(s *source.Source, opts ParseOptions) (*Parser, error) {
 	lexToken := lexer.Lex(s)
 	token, err := lexToken(0)
-	if err.Error != nil {
+	if err != nil {
 		return &Parser{}, err
 	}
 	return &Parser{
@@ -74,11 +73,11 @@ func makeParser(s *source.Source, opts ParseOptions) (*Parser, graphqlerrors.Gra
 		Options:  opts,
 		PrevEnd:  0,
 		Token:    token,
-	}, graphqlerrors.GraphQLError{}
+	}, nil
 }
 
 // Implements the parsing rules in the Document section.
-func parseDocument(parser *Parser) (ast.Document, graphqlerrors.GraphQLError) {
+func parseDocument(parser *Parser) (ast.Document, error) {
 	start := parser.Token.Start
 	var definitions []ast.Definition
 	for {
@@ -87,25 +86,25 @@ func parseDocument(parser *Parser) (ast.Document, graphqlerrors.GraphQLError) {
 		}
 		if peek(parser, lexer.TokenKind[lexer.BRACE_L]) {
 			oDef, err := parseOperationDefinition(parser)
-			if err.Error != nil {
+			if err != nil {
 				return ast.Document{}, err
 			}
 			definitions = append(definitions, oDef)
 		} else if peek(parser, lexer.TokenKind[lexer.NAME]) {
 			if parser.Token.Value == "query" || parser.Token.Value == "mutation" {
 				oDef, err := parseOperationDefinition(parser)
-				if err.Error != nil {
+				if err != nil {
 					return ast.Document{}, err
 				}
 				definitions = append(definitions, oDef)
 			} else if parser.Token.Value == "fragment" {
 				fDef, err := parseFragmentDefinition(parser)
-				if err.Error != nil {
+				if err != nil {
 					return ast.Document{}, err
 				}
 				definitions = append(definitions, fDef)
 			} else {
-				if err := unexpected(parser, lexer.Token{}); err.Error != nil {
+				if err := unexpected(parser, lexer.Token{}); err != nil {
 					return ast.Document{}, err
 				}
 			}
@@ -115,7 +114,7 @@ func parseDocument(parser *Parser) (ast.Document, graphqlerrors.GraphQLError) {
 		Kind:        kinds.Document,
 		Loc:         loc(parser, start),
 		Definitions: definitions,
-	}, graphqlerrors.GraphQLError{}
+	}, nil
 }
 
 // If the next token is of the given kind, return true after advancing
@@ -130,15 +129,15 @@ func skip(parser *Parser, Kind int) bool {
 }
 
 // Moves the internal parser object to the next lexed token.
-func advance(parser *Parser) graphqlerrors.GraphQLError {
+func advance(parser *Parser) error {
 	prevEnd := parser.Token.End
 	parser.PrevEnd = prevEnd
 	token, err := parser.LexToken(prevEnd)
-	if err.Error != nil {
+	if err != nil {
 		return err
 	}
 	parser.Token = token
-	return graphqlerrors.GraphQLError{}
+	return nil
 }
 
 // Determines if the next token is of a given kind
@@ -147,11 +146,11 @@ func peek(parser *Parser, Kind int) bool {
 }
 
 // Implements the parsing rules in the Operations section.
-func parseOperationDefinition(parser *Parser) (*od.OperationDefinition, graphqlerrors.GraphQLError) {
+func parseOperationDefinition(parser *Parser) (*od.OperationDefinition, error) {
 	start := parser.Token.Start
 	if peek(parser, lexer.TokenKind[lexer.BRACE_L]) {
 		selectionSet, err := parseSelectionSet(parser)
-		if err.Error != nil {
+		if err != nil {
 			oDef := od.NewOperationDefinition()
 			return oDef, err
 		}
@@ -163,28 +162,28 @@ func parseOperationDefinition(parser *Parser) (*od.OperationDefinition, graphqle
 		return oDef, err
 	}
 	operationToken, err := expect(parser, lexer.TokenKind[lexer.NAME])
-	if err.Error != nil {
+	if err != nil {
 		oDef := od.NewOperationDefinition()
 		return oDef, err
 	}
 	operation := operationToken.Value
 	name, err := parseName(parser)
-	if err.Error != nil {
+	if err != nil {
 		oDef := od.NewOperationDefinition()
 		return oDef, err
 	}
 	variableDefinitions, err := parseVariableDefinitions(parser)
-	if err.Error != nil {
+	if err != nil {
 		oDef := od.NewOperationDefinition()
 		return oDef, err
 	}
 	directives, err := parseDirectives(parser)
-	if err.Error != nil {
+	if err != nil {
 		oDef := od.NewOperationDefinition()
 		return oDef, err
 	}
 	selectionSet, err := parseSelectionSet(parser)
-	if err.Error != nil {
+	if err != nil {
 		oDef := od.NewOperationDefinition()
 		return oDef, err
 	}
@@ -195,40 +194,40 @@ func parseOperationDefinition(parser *Parser) (*od.OperationDefinition, graphqle
 	oDef.Directives = directives
 	oDef.SelectionSet = selectionSet
 	oDef.Loc = loc(parser, start)
-	return oDef, graphqlerrors.GraphQLError{}
+	return oDef, nil
 }
 
-func parseFragmentDefinition(parser *Parser) (*fd.FragmentDefinition, graphqlerrors.GraphQLError) {
+func parseFragmentDefinition(parser *Parser) (*fd.FragmentDefinition, error) {
 	start := parser.Token.Start
-	_, errFragment := expectKeyWord(parser, "fragment")
-	if errFragment.Error != nil {
+	_, err := expectKeyWord(parser, "fragment")
+	if err != nil {
 		fDef := fd.NewFragmentDefinition()
-		return fDef, errFragment
+		return fDef, err
 	}
-	name, errName := parseName(parser)
-	if errName.Error != nil {
+	name, err := parseName(parser)
+	if err != nil {
 		fDef := fd.NewFragmentDefinition()
-		return fDef, errName
+		return fDef, err
 	}
-	_, errOn := expectKeyWord(parser, "on")
-	if errOn.Error != nil {
+	_, err = expectKeyWord(parser, "on")
+	if err != nil {
 		fDef := fd.NewFragmentDefinition()
-		return fDef, errOn
+		return fDef, err
 	}
-	typeCondition, errTypeCondition := parseName(parser)
-	if errTypeCondition.Error != nil {
+	typeCondition, err := parseName(parser)
+	if err != nil {
 		fDef := fd.NewFragmentDefinition()
-		return fDef, errTypeCondition
+		return fDef, err
 	}
-	selectionSet, errSelectionSet := parseSelectionSet(parser)
-	if errSelectionSet.Error != nil {
+	selectionSet, err := parseSelectionSet(parser)
+	if err != nil {
 		fDef := fd.NewFragmentDefinition()
-		return fDef, errSelectionSet
+		return fDef, err
 	}
-	directives, errDirectives := parseDirectives(parser)
-	if errDirectives.Error != nil {
+	directives, err := parseDirectives(parser)
+	if err != nil {
 		fDef := fd.NewFragmentDefinition()
-		return fDef, errDirectives
+		return fDef, err
 	}
 	fDef := fd.NewFragmentDefinition()
 	fDef.Name = name
@@ -236,39 +235,39 @@ func parseFragmentDefinition(parser *Parser) (*fd.FragmentDefinition, graphqlerr
 	fDef.Directives = directives
 	fDef.SelectionSet = selectionSet
 	fDef.Loc = loc(parser, start)
-	return fDef, graphqlerrors.GraphQLError{}
+	return fDef, nil
 }
 
-func expectKeyWord(parser *Parser, value string) (lexer.Token, graphqlerrors.GraphQLError) {
+func expectKeyWord(parser *Parser, value string) (lexer.Token, error) {
 	token := parser.Token
 	if token.Kind == lexer.TokenKind[lexer.NAME] && token.Value == value {
 		advance(parser)
-		return token, graphqlerrors.GraphQLError{}
+		return token, nil
 	}
 	descp := fmt.Sprintf("Expected \"%s\", found %s", value, lexer.GetTokenDesc(token))
-	return token, languageerrors.Error(parser.Source, token.Start, descp)
+	return token, graphqlerrors.NewSyntaxError(parser.Source, token.Start, descp)
 }
 
-func parseSelectionSet(parser *Parser) (ast.SelectionSet, graphqlerrors.GraphQLError) {
+func parseSelectionSet(parser *Parser) (ast.SelectionSet, error) {
 	start := parser.Token.Start
 	selections, err := many(parser, lexer.TokenKind[lexer.BRACE_L], parseSelection, lexer.TokenKind[lexer.BRACE_R])
-	if err.Error != nil {
+	if err != nil {
 		return ast.SelectionSet{}, err
 	}
 	return ast.SelectionSet{
 		Kind:       kinds.SelectionSet,
 		Selections: selections,
 		Loc:        loc(parser, start),
-	}, graphqlerrors.GraphQLError{}
+	}, nil
 }
 
-func parseSelection(parser *Parser) (interface{}, graphqlerrors.GraphQLError) {
+func parseSelection(parser *Parser) (interface{}, error) {
 	if peek(parser, lexer.TokenKind[lexer.SPREAD]) {
 		r, err := parseFragment(parser)
-		if err.Error != nil {
+		if err != nil {
 			return r, err
 		}
-		return r, graphqlerrors.GraphQLError{}
+		return r, nil
 	} else {
 		return parseField(parser)
 	}
@@ -291,75 +290,75 @@ func loc(parser *Parser, start int) ast.Location {
 	}
 }
 
-func expect(parser *Parser, kind int) (lexer.Token, graphqlerrors.GraphQLError) {
+func expect(parser *Parser, kind int) (lexer.Token, error) {
 	token := parser.Token
 	if token.Kind == kind {
 		advance(parser)
-		return token, graphqlerrors.GraphQLError{}
+		return token, nil
 	}
 	descp := fmt.Sprintf("Expected %s, found %s", lexer.GetTokenKindDesc(kind), lexer.GetTokenDesc(token))
-	return token, languageerrors.Error(parser.Source, token.Start, descp)
+	return token, graphqlerrors.NewSyntaxError(parser.Source, token.Start, descp)
 }
 
 // Converts a name lex token into a name parse node.
-func parseName(parser *Parser) (ast.Name, graphqlerrors.GraphQLError) {
+func parseName(parser *Parser) (ast.Name, error) {
 	token, err := expect(parser, lexer.TokenKind[lexer.NAME])
-	if err.Error != nil {
+	if err != nil {
 		return ast.Name{}, err
 	}
 	return ast.Name{
 		Kind:  kinds.Name,
 		Value: token.Value,
 		Loc:   loc(parser, token.Start),
-	}, graphqlerrors.GraphQLError{}
+	}, nil
 }
 
-func parseVariableDefinitions(parser *Parser) ([]ast.VariableDefinition, graphqlerrors.GraphQLError) {
+func parseVariableDefinitions(parser *Parser) ([]ast.VariableDefinition, error) {
 	if peek(parser, lexer.TokenKind[lexer.PAREN_L]) {
 		vdefs, err := many(parser, lexer.TokenKind[lexer.PAREN_L], parseVariableDefinition, lexer.TokenKind[lexer.PAREN_R])
 		var variableDefinitions []ast.VariableDefinition
 		for i, vdef := range vdefs {
 			variableDefinitions[i] = vdef.(ast.VariableDefinition)
 		}
-		if err.Error != nil {
+		if err != nil {
 			return variableDefinitions, err
 		}
-		return variableDefinitions, graphqlerrors.GraphQLError{}
+		return variableDefinitions, nil
 	} else {
 		var vd []ast.VariableDefinition
-		return vd, graphqlerrors.GraphQLError{}
+		return vd, nil
 	}
 }
 
-func parseDirectives(parser *Parser) ([]ast.Directive, graphqlerrors.GraphQLError) {
+func parseDirectives(parser *Parser) ([]ast.Directive, error) {
 	directives := []ast.Directive{}
 	for {
 		if !peek(parser, lexer.TokenKind[lexer.AT]) {
 			break
 		}
 		directive, err := parseDirective(parser)
-		if err.Error != nil {
+		if err != nil {
 			return directives, err
 		}
 		directives = append(directives, directive)
 	}
-	return directives, graphqlerrors.GraphQLError{}
+	return directives, nil
 }
 
-func parseDirective(parser *Parser) (ast.Directive, graphqlerrors.GraphQLError) {
+func parseDirective(parser *Parser) (ast.Directive, error) {
 	start := parser.Token.Start
 	_, err := expect(parser, lexer.TokenKind[lexer.AT])
-	if err.Error != nil {
+	if err != nil {
 		return ast.Directive{}, err
 	}
 	name, err := parseName(parser)
-	if err.Error != nil {
+	if err != nil {
 		return ast.Directive{}, err
 	}
 	var value ast.Value
 	if skip(parser, lexer.TokenKind[lexer.COLON]) {
 		v, err := parseValue(parser, false)
-		if err.Error != nil {
+		if err != nil {
 			return ast.Directive{}, err
 		}
 		value = v
@@ -369,29 +368,29 @@ func parseDirective(parser *Parser) (ast.Directive, graphqlerrors.GraphQLError) 
 		Name:  name,
 		Value: value,
 		Loc:   loc(parser, start),
-	}, graphqlerrors.GraphQLError{}
+	}, nil
 }
 
-func parseVariableDefinition(parser *Parser) (interface{}, graphqlerrors.GraphQLError) {
+func parseVariableDefinition(parser *Parser) (interface{}, error) {
 	start := parser.Token.Start
 	var defaultValue ast.Value
 	if skip(parser, lexer.TokenKind[lexer.EQUALS]) {
 		dv, err := parseValue(parser, true)
-		if err.Error != nil {
+		if err != nil {
 			return dv, err
 		}
 		defaultValue = dv
 	}
 	_, err := expect(parser, lexer.TokenKind[lexer.COLON])
-	if err.Error != nil {
+	if err != nil {
 		return ast.VariableDefinition{}, err
 	}
 	variable, err := parseVariable(parser)
-	if err.Error != nil {
+	if err != nil {
 		return ast.VariableDefinition{}, err
 	}
 	ttype, err := parseType(parser)
-	if err.Error != nil {
+	if err != nil {
 		return ast.VariableDefinition{}, err
 	}
 	return ast.VariableDefinition{
@@ -400,38 +399,38 @@ func parseVariableDefinition(parser *Parser) (interface{}, graphqlerrors.GraphQL
 		Type:         ttype,
 		DefaultValue: defaultValue,
 		Loc:          loc(parser, start),
-	}, graphqlerrors.GraphQLError{}
+	}, nil
 }
 
-func parseVariable(parser *Parser) (ast.Variable, graphqlerrors.GraphQLError) {
+func parseVariable(parser *Parser) (ast.Variable, error) {
 	start := parser.Token.Start
 	_, err := expect(parser, lexer.TokenKind[lexer.DOLLAR])
-	if err.Error != nil {
+	if err != nil {
 		return ast.Variable{}, err
 	}
 	name, err := parseName(parser)
-	if err.Error != nil {
+	if err != nil {
 		return ast.Variable{}, err
 	}
 	return ast.Variable{
 		Kind: kinds.Variable,
 		Name: name,
 		Loc:  loc(parser, start),
-	}, graphqlerrors.GraphQLError{}
+	}, nil
 }
 
-func parseType(parser *Parser) (ast.Type, graphqlerrors.GraphQLError) {
+func parseType(parser *Parser) (ast.Type, error) {
 	start := parser.Token.Start
 	var ttype ast.Type
 	if skip(parser, lexer.TokenKind[lexer.BRACE_L]) {
-		t, errParseType := parseType(parser)
-		if errParseType.Error != nil {
-			return t, errParseType
+		t, err := parseType(parser)
+		if err != nil {
+			return t, err
 		}
 		ttype = t
-		_, errExpect := expect(parser, lexer.TokenKind[lexer.BRACKET_R])
-		if errExpect.Error != nil {
-			return ttype, errExpect
+		_, err = expect(parser, lexer.TokenKind[lexer.BRACKET_R])
+		if err != nil {
+			return ttype, err
 		}
 		ttype = ast.ListType{
 			Kind: kinds.ListType,
@@ -440,7 +439,7 @@ func parseType(parser *Parser) (ast.Type, graphqlerrors.GraphQLError) {
 		}
 	} else {
 		name, err := parseName(parser)
-		if err.Error != nil {
+		if err != nil {
 			return ttype, err
 		}
 		ttype = name
@@ -451,37 +450,37 @@ func parseType(parser *Parser) (ast.Type, graphqlerrors.GraphQLError) {
 			Type: ttype,
 			Loc:  loc(parser, start),
 		}
-		return ttype, graphqlerrors.GraphQLError{}
+		return ttype, nil
 	}
-	return ttype, graphqlerrors.GraphQLError{}
+	return ttype, nil
 }
 
-func parseValue(parser *Parser, isConst bool) (ast.Value, graphqlerrors.GraphQLError) {
+func parseValue(parser *Parser, isConst bool) (ast.Value, error) {
 	token := parser.Token
 	switch token.Kind {
 	case lexer.TokenKind[lexer.BRACE_L]:
 		value, err := parseArray(parser, isConst)
-		if err.Error != nil {
+		if err != nil {
 			return value, err
 		}
-		return value, graphqlerrors.GraphQLError{}
+		return value, nil
 	}
-	if err := unexpected(parser, lexer.Token{}); err.Error != nil {
+	if err := unexpected(parser, lexer.Token{}); err != nil {
 		return nil, err
 	}
-	return nil, graphqlerrors.GraphQLError{}
+	return nil, nil
 }
 
-type parseFn func(parser *Parser) (interface{}, graphqlerrors.GraphQLError)
+type parseFn func(parser *Parser) (interface{}, error)
 
-func many(parser *Parser, openKind int, parseFn parseFn, closeKind int) ([]interface{}, graphqlerrors.GraphQLError) {
+func many(parser *Parser, openKind int, parseFn parseFn, closeKind int) ([]interface{}, error) {
 	_, err := expect(parser, openKind)
-	if err.Error != nil {
+	if err != nil {
 		return nil, err
 	}
 	var nodes []interface{}
 	node, err := parseFn(parser)
-	if err.Error != nil {
+	if err != nil {
 		return nodes, err
 	}
 	nodes = append(nodes, node)
@@ -490,32 +489,32 @@ func many(parser *Parser, openKind int, parseFn parseFn, closeKind int) ([]inter
 			break
 		}
 		node, err := parseFn(parser)
-		if err.Error != nil {
+		if err != nil {
 			return nodes, err
 		}
 		nodes = append(nodes, node)
 	}
-	return nodes, graphqlerrors.GraphQLError{}
+	return nodes, nil
 }
 
-func parseFragment(parser *Parser) (interface{}, graphqlerrors.GraphQLError) {
+func parseFragment(parser *Parser) (interface{}, error) {
 	start := parser.Token.Start
 	_, err := expect(parser, lexer.TokenKind[lexer.SPREAD])
-	if err.Error != nil {
+	if err != nil {
 		return nil, err
 	}
 	name, err := parseName(parser)
-	if err.Error != nil {
+	if err != nil {
 		return nil, err
 	}
 	if parser.Token.Value == "on" {
 		advance(parser)
 		selectionSet, err := parseSelectionSet(parser)
-		if err.Error != nil {
+		if err != nil {
 			return ast.InlineFragment{}, err
 		}
 		directives, err := parseDirectives(parser)
-		if err.Error != nil {
+		if err != nil {
 			return ast.InlineFragment{}, err
 		}
 		return ast.InlineFragment{
@@ -524,10 +523,10 @@ func parseFragment(parser *Parser) (interface{}, graphqlerrors.GraphQLError) {
 			Directives:    directives,
 			SelectionSet:  selectionSet,
 			Loc:           loc(parser, start),
-		}, graphqlerrors.GraphQLError{}
+		}, nil
 	}
 	directives, err := parseDirectives(parser)
-	if err.Error != nil {
+	if err != nil {
 		return ast.InlineFragment{}, err
 	}
 	return ast.FragmentSpread{
@@ -535,13 +534,13 @@ func parseFragment(parser *Parser) (interface{}, graphqlerrors.GraphQLError) {
 		Name:       name,
 		Directives: directives,
 		Loc:        loc(parser, start),
-	}, graphqlerrors.GraphQLError{}
+	}, nil
 }
 
-func parseField(parser *Parser) (ast.Field, graphqlerrors.GraphQLError) {
+func parseField(parser *Parser) (ast.Field, error) {
 	start := parser.Token.Start
 	nameOrAlias, err := parseName(parser)
-	if err.Error != nil {
+	if err != nil {
 		return ast.Field{}, err
 	}
 	var (
@@ -551,7 +550,7 @@ func parseField(parser *Parser) (ast.Field, graphqlerrors.GraphQLError) {
 	if skip(parser, lexer.TokenKind[lexer.COLON]) {
 		alias = nameOrAlias
 		n, err := parseName(parser)
-		if err.Error != nil {
+		if err != nil {
 			return ast.Field{}, err
 		}
 		name = n
@@ -561,17 +560,17 @@ func parseField(parser *Parser) (ast.Field, graphqlerrors.GraphQLError) {
 	var selectionSet ast.SelectionSet
 	if peek(parser, lexer.TokenKind[lexer.BRACE_L]) {
 		sSet, err := parseSelectionSet(parser)
-		if err.Error != nil {
+		if err != nil {
 			return ast.Field{}, err
 		}
 		selectionSet = sSet
 	}
 	arguments, err := parseArguments(parser)
-	if err.Error != nil {
+	if err != nil {
 		return ast.Field{}, err
 	}
 	directives, err := parseDirectives(parser)
-	if err.Error != nil {
+	if err != nil {
 		return ast.Field{}, err
 	}
 	return ast.Field{
@@ -582,10 +581,10 @@ func parseField(parser *Parser) (ast.Field, graphqlerrors.GraphQLError) {
 		Directives:   directives,
 		SelectionSet: selectionSet,
 		Loc:          loc(parser, start),
-	}, graphqlerrors.GraphQLError{}
+	}, nil
 }
 
-func parseArray(parser *Parser, isConst bool) (ast.ArrayValue, graphqlerrors.GraphQLError) {
+func parseArray(parser *Parser, isConst bool) (ast.ArrayValue, error) {
 	start := parser.Token.Start
 	var item parseFn
 	if isConst {
@@ -594,7 +593,7 @@ func parseArray(parser *Parser, isConst bool) (ast.ArrayValue, graphqlerrors.Gra
 		item = parseVariableValue
 	}
 	iValues, err := any(parser, lexer.TokenKind[lexer.BRACE_L], item, lexer.TokenKind[lexer.BRACKET_R])
-	if err.Error != nil {
+	if err != nil {
 		return ast.ArrayValue{}, err
 	}
 	var values []ast.Value
@@ -605,56 +604,56 @@ func parseArray(parser *Parser, isConst bool) (ast.ArrayValue, graphqlerrors.Gra
 		Kind:   kinds.Array,
 		Values: values,
 		Loc:    loc(parser, start),
-	}, graphqlerrors.GraphQLError{}
+	}, nil
 }
 
-func any(parser *Parser, openKind int, parseFn parseFn, closeKind int) ([]interface{}, graphqlerrors.GraphQLError) {
+func any(parser *Parser, openKind int, parseFn parseFn, closeKind int) ([]interface{}, error) {
 	var nodes []interface{}
 	_, err := expect(parser, openKind)
-	if err.Error != nil {
-		return nodes, graphqlerrors.GraphQLError{}
+	if err != nil {
+		return nodes, nil
 	}
 	for {
 		if skip(parser, closeKind) {
 			break
 		}
 		n, err := parseFn(parser)
-		if err.Error != nil {
+		if err != nil {
 			return nodes, err
 		}
 		nodes = append(nodes, n)
 	}
-	return nodes, graphqlerrors.GraphQLError{}
+	return nodes, nil
 }
 
-func parseArguments(parser *Parser) ([]ast.Argument, graphqlerrors.GraphQLError) {
+func parseArguments(parser *Parser) ([]ast.Argument, error) {
 	if peek(parser, lexer.TokenKind[lexer.PAREN_L]) {
 		iArguments, err := many(parser, lexer.TokenKind[lexer.PAREN_L], parseArgument, lexer.TokenKind[lexer.PAREN_R])
 		var arguments []ast.Argument
-		if err.Error != nil {
+		if err != nil {
 			return arguments, err
 		}
 		for i, iArgument := range iArguments {
 			arguments[i] = iArgument.(ast.Argument)
 		}
-		return arguments, graphqlerrors.GraphQLError{}
+		return arguments, nil
 	} else {
-		return []ast.Argument{}, graphqlerrors.GraphQLError{}
+		return []ast.Argument{}, nil
 	}
 }
 
-func parseArgument(parser *Parser) (interface{}, graphqlerrors.GraphQLError) {
+func parseArgument(parser *Parser) (interface{}, error) {
 	start := parser.Token.Start
 	name, err := parseName(parser)
-	if err.Error != nil {
+	if err != nil {
 		return ast.Argument{}, err
 	}
-	_, errExpect := expect(parser, lexer.TokenKind[lexer.COLON])
-	if errExpect.Error != nil {
-		return ast.Argument{}, errExpect
+	_, err = expect(parser, lexer.TokenKind[lexer.COLON])
+	if err != nil {
+		return ast.Argument{}, err
 	}
 	value, err := parseValue(parser, false)
-	if err.Error != nil {
+	if err != nil {
 		return ast.Argument{}, err
 	}
 	return ast.Argument{
@@ -662,21 +661,21 @@ func parseArgument(parser *Parser) (interface{}, graphqlerrors.GraphQLError) {
 		Name:  name,
 		Value: value,
 		Loc:   loc(parser, start),
-	}, graphqlerrors.GraphQLError{}
+	}, nil
 }
 
-func parseConstValue(parser *Parser) (interface{}, graphqlerrors.GraphQLError) {
+func parseConstValue(parser *Parser) (interface{}, error) {
 	value, err := parseValue(parser, true)
-	if err.Error != nil {
+	if err != nil {
 		return value, err
 	}
-	return value, graphqlerrors.GraphQLError{}
+	return value, nil
 }
 
-func parseVariableValue(parser *Parser) (interface{}, graphqlerrors.GraphQLError) {
+func parseVariableValue(parser *Parser) (interface{}, error) {
 	value, err := parseValue(parser, false)
-	if err.Error != nil {
+	if err != nil {
 		return value, err
 	}
-	return value, graphqlerrors.GraphQLError{}
+	return value, nil
 }

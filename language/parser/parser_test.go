@@ -17,7 +17,7 @@ func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
 		Options: opts,
 	}
 	document, err := Parse(params)
-	if err.Error != nil {
+	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	oDef := od.OperationDefinition{
@@ -77,7 +77,10 @@ func TestParseProvidesUsefulErrors(t *testing.T) {
 1: {
     ^
 `
-	if err.Error.Error() != expectedError {
-		t.Fatalf("unexpected error. \n\n expected: \n %v \n\n got: \n %v", expectedError, err)
+	if err == nil {
+		t.Fatalf("unexpected nil error\nexpected:\n%v\n\ngot:\n%v", expectedError, err)
+	}
+	if err.Error() != expectedError {
+		t.Fatalf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", expectedError, err.Error())
 	}
 }
