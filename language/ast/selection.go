@@ -3,7 +3,6 @@ package ast
 type Selection interface {
 }
 
-
 type Field struct {
 	Kind         string
 	Loc          Location

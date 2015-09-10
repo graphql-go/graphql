@@ -36,8 +36,8 @@ func (def *UnionTypeDefinition) GetName() *Name {
 	return def.Name
 }
 
-func (def *UnionTypeDefinition) GetVariableDefinitions() []VariableDefinition {
-	return []VariableDefinition{}
+func (def *UnionTypeDefinition) GetVariableDefinitions() []*VariableDefinition {
+	return []*VariableDefinition{}
 }
 
 func (def *UnionTypeDefinition) GetSelectionSet() SelectionSet {

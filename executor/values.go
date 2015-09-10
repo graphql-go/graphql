@@ -17,7 +17,7 @@ import (
 //}, {});
 //}
 
-func GetVariableValues(schema types.GraphQLSchema, definitionASTs []ast.VariableDefinition, inputs map[string]string) (r map[string]interface{}) {
+func GetVariableValues(schema types.GraphQLSchema, definitionASTs []*ast.VariableDefinition, inputs map[string]string) (r map[string]interface{}) {
 	//TODO: use reduce
 	return r
 }

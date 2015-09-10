@@ -36,8 +36,8 @@ func (def *InterfaceTypeDefinition) GetName() *Name {
 	return def.Name
 }
 
-func (def *InterfaceTypeDefinition) GetVariableDefinitions() []VariableDefinition {
-	return []VariableDefinition{}
+func (def *InterfaceTypeDefinition) GetVariableDefinitions() []*VariableDefinition {
+	return []*VariableDefinition{}
 }
 
 func (def *InterfaceTypeDefinition) GetSelectionSet() SelectionSet {

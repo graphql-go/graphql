@@ -3,7 +3,7 @@ package ast
 type Definition interface {
 	// TODO: determine the minimal set of interface for `Definition`
 	GetOperation() string
-	GetVariableDefinitions() []VariableDefinition
+	GetVariableDefinitions() []*VariableDefinition
 	GetSelectionSet() SelectionSet
 }
 

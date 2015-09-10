@@ -34,8 +34,8 @@ func (def *ScalarTypeDefinition) GetName() *Name {
 	return def.Name
 }
 
-func (def *ScalarTypeDefinition) GetVariableDefinitions() []VariableDefinition {
-	return []VariableDefinition{}
+func (def *ScalarTypeDefinition) GetVariableDefinitions() []*VariableDefinition {
+	return []*VariableDefinition{}
 }
 
 func (def *ScalarTypeDefinition) GetSelectionSet() SelectionSet {

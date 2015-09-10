@@ -36,8 +36,8 @@ func (def *EnumTypeDefinition) GetName() *Name {
 	return def.Name
 }
 
-func (def *EnumTypeDefinition) GetVariableDefinitions() []VariableDefinition {
-	return []VariableDefinition{}
+func (def *EnumTypeDefinition) GetVariableDefinitions() []*VariableDefinition {
+	return []*VariableDefinition{}
 }
 
 func (def *EnumTypeDefinition) GetSelectionSet() SelectionSet {

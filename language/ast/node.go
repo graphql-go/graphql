@@ -11,6 +11,7 @@ type Node interface {
 var _ Node = (*Name)(nil)
 var _ Node = (*Document)(nil)
 var _ Node = (*OperationDefinition)(nil)
+var _ Node = (*VariableDefinition)(nil)
 
 //var _ Node = (*Variable)(nil)
 //var _ Node = (*SelectionSet)(nil)
@@ -21,6 +22,7 @@ var _ Node = (*OperationDefinition)(nil)
 var _ Node = (*FragmentDefinition)(nil)
 
 //var _ Node = (*IntValue)(nil)
+//var _ Node = (*FloatValue)(nil)
 //var _ Node = (*StringValue)(nil)
 //var _ Node = (*BooleanValue)(nil)
 //var _ Node = (*EnumValue)(nil)

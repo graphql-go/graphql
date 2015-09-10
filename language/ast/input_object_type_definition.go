@@ -36,8 +36,8 @@ func (def *InputObjectTypeDefinition) GetName() *Name {
 	return def.Name
 }
 
-func (def *InputObjectTypeDefinition) GetVariableDefinitions() []VariableDefinition {
-	return []VariableDefinition{}
+func (def *InputObjectTypeDefinition) GetVariableDefinitions() []*VariableDefinition {
+	return []*VariableDefinition{}
 }
 
 func (def *InputObjectTypeDefinition) GetSelectionSet() SelectionSet {

@@ -238,51 +238,52 @@ func parseOperationDefinition(parser *Parser) (*ast.OperationDefinition, error) 
 	}), nil
 }
 
-func parseVariableDefinitions(parser *Parser) ([]ast.VariableDefinition, error) {
+func parseVariableDefinitions(parser *Parser) ([]*ast.VariableDefinition, error) {
+	variableDefinitions := []*ast.VariableDefinition{}
 	if peek(parser, lexer.TokenKind[lexer.PAREN_L]) {
 		vdefs, err := many(parser, lexer.TokenKind[lexer.PAREN_L], parseVariableDefinition, lexer.TokenKind[lexer.PAREN_R])
-		variableDefinitions := []ast.VariableDefinition{}
 		for _, vdef := range vdefs {
-			variableDefinitions = append(variableDefinitions, vdef.(ast.VariableDefinition))
+			if vdef != nil {
+				variableDefinitions = append(variableDefinitions, vdef.(*ast.VariableDefinition))
+			}
 		}
 		if err != nil {
 			return variableDefinitions, err
 		}
 		return variableDefinitions, nil
-	} else {
-		return []ast.VariableDefinition{}, nil
 	}
+	return variableDefinitions, nil
 }
 
 func parseVariableDefinition(parser *Parser) (interface{}, error) {
 	start := parser.Token.Start
 	variable, err := parseVariable(parser)
 	if err != nil {
-		return ast.VariableDefinition{}, err
+		return nil, err
 	}
 	_, err = expect(parser, lexer.TokenKind[lexer.COLON])
 	if err != nil {
-		return ast.VariableDefinition{}, err
+		return nil, err
 	}
 	ttype, err := parseType(parser)
 	if err != nil {
-		return ast.VariableDefinition{}, err
+		return nil, err
 	}
 	var defaultValue ast.Value
 	if skip(parser, lexer.TokenKind[lexer.EQUALS]) {
 		dv, err := parseValueLiteral(parser, true)
 		if err != nil {
-			return dv, err
+			return nil, err
 		}
 		defaultValue = dv
 	}
-	return ast.VariableDefinition{
+	return ast.NewVariableDefinition(&ast.VariableDefinition{
 		Kind:         kinds.VariableDefinition,
 		Variable:     variable,
 		Type:         ttype,
 		DefaultValue: defaultValue,
 		Loc:          loc(parser, start),
-	}, nil
+	}), nil
 }
 
 func parseVariable(parser *Parser) (ast.Variable, error) {

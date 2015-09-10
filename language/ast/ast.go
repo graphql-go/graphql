@@ -10,20 +10,6 @@ type Location struct {
 	Source *source.Source
 }
 
-type VariableDefinition struct {
-	Kind         string
-	Loc          Location
-	Variable     Variable
-	Type         interface{}
-	DefaultValue Value
-}
-
-func NewVariableDefinition() *VariableDefinition {
-	return &VariableDefinition{
-		Kind: "VariableDefinition",
-	}
-}
-
 type SelectionSet struct {
 	Kind       string
 	Loc        Location

@@ -10,8 +10,7 @@ type OperationDefinition struct {
 	Loc                 Location
 	Operation           string
 	Name                *Name
-	VariableDefinitions []VariableDefinition
-	TypeCondition       NamedType
+	VariableDefinitions []*VariableDefinition
 	Directives          []Directive
 	SelectionSet        SelectionSet
 }
@@ -26,7 +25,6 @@ func NewOperationDefinition(op *OperationDefinition) *OperationDefinition {
 		Operation:           op.Operation,
 		Name:                op.Name,
 		VariableDefinitions: op.VariableDefinitions,
-		TypeCondition:       op.TypeCondition,
 		Directives:          op.Directives,
 		SelectionSet:        op.SelectionSet,
 	}
@@ -48,11 +46,7 @@ func (op *OperationDefinition) GetName() *Name {
 	return op.Name
 }
 
-func (op *OperationDefinition) GetTypeCondition() NamedType {
-	return op.TypeCondition
-}
-
-func (op *OperationDefinition) GetVariableDefinitions() []VariableDefinition {
+func (op *OperationDefinition) GetVariableDefinitions() []*VariableDefinition {
 	return op.VariableDefinitions
 }
 

@@ -10,7 +10,7 @@ type FragmentDefinition struct {
 	Loc                 Location
 	Operation           string
 	Name                *Name
-	VariableDefinitions []VariableDefinition
+	VariableDefinitions []*VariableDefinition
 	TypeCondition       NamedType
 	Directives          []Directive
 	SelectionSet        SelectionSet
@@ -48,7 +48,7 @@ func (fd *FragmentDefinition) GetName() *Name {
 	return fd.Name
 }
 
-func (fd *FragmentDefinition) GetVariableDefinitions() []VariableDefinition {
+func (fd *FragmentDefinition) GetVariableDefinitions() []*VariableDefinition {
 	return fd.VariableDefinitions
 }
 

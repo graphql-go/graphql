@@ -1,10 +1,10 @@
 package ast
 
 // TypeDefinition implements Definition
-type TypeDefinition interface{
+type TypeDefinition interface {
 	// TODO: determine the minimal set of interface for `TypeDefinition`
 	GetOperation() string
-	GetVariableDefinitions() []VariableDefinition
+	GetVariableDefinitions() []*VariableDefinition
 	GetSelectionSet() SelectionSet
 }
 
@@ -29,7 +29,6 @@ type EnumValueDefinition struct {
 	Loc  Location
 	Name *Name
 }
-
 
 // Ensure that all typeDefinition types implements TypeDefinition interface
 var _ TypeDefinition = (*ObjectTypeDefinition)(nil)

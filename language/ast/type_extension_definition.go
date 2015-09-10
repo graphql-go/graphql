@@ -30,8 +30,8 @@ func (def *TypeExtensionDefinition) GetLoc() Location {
 	return def.Loc
 }
 
-func (def *TypeExtensionDefinition) GetVariableDefinitions() []VariableDefinition {
-	return []VariableDefinition{}
+func (def *TypeExtensionDefinition) GetVariableDefinitions() []*VariableDefinition {
+	return []*VariableDefinition{}
 }
 
 func (def *TypeExtensionDefinition) GetSelectionSet() SelectionSet {
