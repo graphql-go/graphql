@@ -10,14 +10,6 @@ type Location struct {
 	Source *source.Source
 }
 
-
-// Document
-//type Document struct {
-//	Kind        string
-//	Loc         Location
-//	Definitions []Node
-//}
-
 type VariableDefinition struct {
 	Kind         string
 	Loc          Location
@@ -32,45 +24,15 @@ func NewVariableDefinition() *VariableDefinition {
 	}
 }
 
-type Variable struct {
-	Kind string
-	Loc  Location
-	Name *Name
-}
-
-func NewVariable() *Variable {
-	return &Variable{
-		Kind: "Variable",
-	}
-}
-
 type SelectionSet struct {
 	Kind       string
 	Loc        Location
 	Selections []interface{}
 }
 
-type Selection interface{}
-
 func NewSelectionSet() *SelectionSet {
 	return &SelectionSet{
 		Kind: "SelectionSet",
-	}
-}
-
-type Field struct {
-	Kind         string
-	Loc          Location
-	Alias        *Name
-	Name         *Name
-	Arguments    []Argument
-	Directives   []Directive
-	SelectionSet SelectionSet
-}
-
-func NewField() *Name {
-	return &Name{
-		Kind: "Field",
 	}
 }
 
@@ -87,97 +49,6 @@ func NewArgument() *Name {
 	}
 }
 
-// Fragments
-
-type FragmentSpread struct {
-	Kind       string
-	Loc        Location
-	Name       *Name
-	Directives []Directive
-}
-
-type InlineFragment struct {
-	Kind          string
-	Loc           Location
-	TypeCondition NamedType
-	Directives    []Directive
-	SelectionSet  SelectionSet
-}
-
-// Values
-
-type Value interface {
-	//GetKind() string
-	//GetLoc() Location
-	//GetName() Name
-}
-
-type IntValue struct {
-	Kind  string
-	Loc   Location
-	Value string
-}
-
-type FloatValue struct {
-	Kind  string
-	Loc   Location
-	Value string
-}
-
-type StringValue struct {
-	Kind  string
-	Loc   Location
-	Value string
-}
-
-type BooleanValue struct {
-	Kind  string
-	Loc   Location
-	Value bool
-}
-
-type EnumValue struct {
-	Kind  string
-	Loc   Location
-	Value string
-}
-
-type ListValue struct {
-	Kind   string
-	Loc    Location
-	Values []Value
-}
-
-type ObjectValue struct {
-	Kind   string
-	Loc    Location
-	Fields []ObjectField
-}
-
-type ObjectField struct {
-	Kind  string
-	Name  *Name
-	Loc   Location
-	Value Value
-}
-
-// Type does not exists in graphql-js ast
-type ArrayValue struct {
-	Kind   string
-	Loc    Location
-	Values []Value
-}
-
-// Directives
-
-// why?
-//type Directive struct {
-//	Kind  string
-//	Loc   Location
-//	Name  Name
-//	Value Value
-//}
-
 type Directive struct {
 	Kind      string
 	Loc       Location
@@ -189,51 +60,4 @@ func NewDirective() *Directive {
 	return &Directive{
 		Kind: "Directive",
 	}
-}
-
-// Type Reference
-
-type Type interface{}
-
-type NamedType struct {
-	Kind string
-	Loc  Location
-	Name *Name
-	Type Type
-}
-
-type ListType struct {
-	Kind string
-	Loc  Location
-	Type Type
-}
-
-type NonNullType struct {
-	Kind string
-	Loc  Location
-	Type Type
-}
-
-// TODO: Type Definitions
-
-type FieldDefinition struct {
-	Kind      string
-	Loc       Location
-	Name      *Name
-	Arguments []InputValueDefinition
-	Type      Type
-}
-
-type InputValueDefinition struct {
-	Kind         string
-	Loc          Location
-	Name         *Name
-	Type         Type
-	DefaultValue Value
-}
-
-type EnumValueDefinition struct {
-	Kind string
-	Loc  Location
-	Name *Name
 }
