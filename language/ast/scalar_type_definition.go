@@ -38,8 +38,8 @@ func (def *ScalarTypeDefinition) GetVariableDefinitions() []*VariableDefinition 
 	return []*VariableDefinition{}
 }
 
-func (def *ScalarTypeDefinition) GetSelectionSet() SelectionSet {
-	return SelectionSet{}
+func (def *ScalarTypeDefinition) GetSelectionSet() *SelectionSet {
+	return &SelectionSet{}
 }
 
 func (def *ScalarTypeDefinition) GetOperation() string {

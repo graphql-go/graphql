@@ -40,8 +40,8 @@ func (def *EnumTypeDefinition) GetVariableDefinitions() []*VariableDefinition {
 	return []*VariableDefinition{}
 }
 
-func (def *EnumTypeDefinition) GetSelectionSet() SelectionSet {
-	return SelectionSet{}
+func (def *EnumTypeDefinition) GetSelectionSet() *SelectionSet {
+	return &SelectionSet{}
 }
 
 func (def *EnumTypeDefinition) GetOperation() string {

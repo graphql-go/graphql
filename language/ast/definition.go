@@ -4,7 +4,7 @@ type Definition interface {
 	// TODO: determine the minimal set of interface for `Definition`
 	GetOperation() string
 	GetVariableDefinitions() []*VariableDefinition
-	GetSelectionSet() SelectionSet
+	GetSelectionSet() *SelectionSet
 }
 
 // Ensure that all definition types implements Definition interface

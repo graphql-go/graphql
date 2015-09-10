@@ -40,8 +40,8 @@ func (def *UnionTypeDefinition) GetVariableDefinitions() []*VariableDefinition {
 	return []*VariableDefinition{}
 }
 
-func (def *UnionTypeDefinition) GetSelectionSet() SelectionSet {
-	return SelectionSet{}
+func (def *UnionTypeDefinition) GetSelectionSet() *SelectionSet {
+	return &SelectionSet{}
 }
 
 func (def *UnionTypeDefinition) GetOperation() string {

@@ -40,8 +40,8 @@ func (def *InputObjectTypeDefinition) GetVariableDefinitions() []*VariableDefini
 	return []*VariableDefinition{}
 }
 
-func (def *InputObjectTypeDefinition) GetSelectionSet() SelectionSet {
-	return SelectionSet{}
+func (def *InputObjectTypeDefinition) GetSelectionSet() *SelectionSet {
+	return &SelectionSet{}
 }
 
 func (def *InputObjectTypeDefinition) GetOperation() string {

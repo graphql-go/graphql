@@ -92,7 +92,7 @@ func getOperationRootType(schema types.GraphQLSchema, operation ast.Definition, 
 type CollectFieldsParams struct {
 	ExeContext           ExecutionContext
 	OperationType        types.GraphQLObjectType
-	SelectionSet         ast.SelectionSet
+	SelectionSet         *ast.SelectionSet
 	Fields               map[string][]ast.Field
 	VisitedFragmentNames map[string]bool
 }

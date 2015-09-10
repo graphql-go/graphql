@@ -3,12 +3,6 @@ package ast
 type Value interface {
 }
 
-type Variable struct {
-	Kind string
-	Loc  Location
-	Name *Name
-}
-
 type IntValue struct {
 	Kind  string
 	Loc   Location

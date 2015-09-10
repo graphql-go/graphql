@@ -10,18 +10,6 @@ type Location struct {
 	Source *source.Source
 }
 
-type SelectionSet struct {
-	Kind       string
-	Loc        Location
-	Selections []interface{}
-}
-
-func NewSelectionSet() *SelectionSet {
-	return &SelectionSet{
-		Kind: "SelectionSet",
-	}
-}
-
 type Argument struct {
 	Kind  string
 	Loc   Location

@@ -5,7 +5,7 @@ type TypeDefinition interface {
 	// TODO: determine the minimal set of interface for `TypeDefinition`
 	GetOperation() string
 	GetVariableDefinitions() []*VariableDefinition
-	GetSelectionSet() SelectionSet
+	GetSelectionSet() *SelectionSet
 }
 
 type FieldDefinition struct {

@@ -13,7 +13,7 @@ type FragmentDefinition struct {
 	VariableDefinitions []*VariableDefinition
 	TypeCondition       NamedType
 	Directives          []Directive
-	SelectionSet        SelectionSet
+	SelectionSet        *SelectionSet
 }
 
 func NewFragmentDefinition(fd *FragmentDefinition) *FragmentDefinition {
@@ -52,6 +52,6 @@ func (fd *FragmentDefinition) GetVariableDefinitions() []*VariableDefinition {
 	return fd.VariableDefinitions
 }
 
-func (fd *FragmentDefinition) GetSelectionSet() SelectionSet {
+func (fd *FragmentDefinition) GetSelectionSet() *SelectionSet {
 	return fd.SelectionSet
 }

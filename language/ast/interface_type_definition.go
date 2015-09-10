@@ -40,8 +40,8 @@ func (def *InterfaceTypeDefinition) GetVariableDefinitions() []*VariableDefiniti
 	return []*VariableDefinition{}
 }
 
-func (def *InterfaceTypeDefinition) GetSelectionSet() SelectionSet {
-	return SelectionSet{}
+func (def *InterfaceTypeDefinition) GetSelectionSet() *SelectionSet {
+	return &SelectionSet{}
 }
 
 func (def *InterfaceTypeDefinition) GetOperation() string {

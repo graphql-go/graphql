@@ -34,8 +34,8 @@ func (def *TypeExtensionDefinition) GetVariableDefinitions() []*VariableDefiniti
 	return []*VariableDefinition{}
 }
 
-func (def *TypeExtensionDefinition) GetSelectionSet() SelectionSet {
-	return SelectionSet{}
+func (def *TypeExtensionDefinition) GetSelectionSet() *SelectionSet {
+	return &SelectionSet{}
 }
 
 func (def *TypeExtensionDefinition) GetOperation() string {

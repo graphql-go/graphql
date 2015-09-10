@@ -8,7 +8,7 @@ import (
 type VariableDefinition struct {
 	Kind         string
 	Loc          Location
-	Variable     Variable
+	Variable     *Variable
 	Type         Type
 	DefaultValue Value
 }

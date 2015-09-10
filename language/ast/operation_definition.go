@@ -12,7 +12,7 @@ type OperationDefinition struct {
 	Name                *Name
 	VariableDefinitions []*VariableDefinition
 	Directives          []Directive
-	SelectionSet        SelectionSet
+	SelectionSet        *SelectionSet
 }
 
 func NewOperationDefinition(op *OperationDefinition) *OperationDefinition {
@@ -54,6 +54,6 @@ func (op *OperationDefinition) GetDirectives() []Directive {
 	return op.Directives
 }
 
-func (op *OperationDefinition) GetSelectionSet() SelectionSet {
+func (op *OperationDefinition) GetSelectionSet() *SelectionSet {
 	return op.SelectionSet
 }

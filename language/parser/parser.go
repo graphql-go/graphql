@@ -286,34 +286,42 @@ func parseVariableDefinition(parser *Parser) (interface{}, error) {
 	}), nil
 }
 
-func parseVariable(parser *Parser) (ast.Variable, error) {
+func parseVariable(parser *Parser) (*ast.Variable, error) {
 	start := parser.Token.Start
 	_, err := expect(parser, lexer.TokenKind[lexer.DOLLAR])
 	if err != nil {
-		return ast.Variable{}, err
+		return nil, err
 	}
 	name, err := parseName(parser)
 	if err != nil {
-		return ast.Variable{}, err
+		return nil, err
 	}
-	return ast.Variable{
+	return ast.NewVariable(&ast.Variable{
 		Kind: kinds.Variable,
 		Name: name,
 		Loc:  loc(parser, start),
-	}, nil
+	}), nil
 }
 
-func parseSelectionSet(parser *Parser) (ast.SelectionSet, error) {
+func parseSelectionSet(parser *Parser) (*ast.SelectionSet, error) {
 	start := parser.Token.Start
-	selections, err := many(parser, lexer.TokenKind[lexer.BRACE_L], parseSelection, lexer.TokenKind[lexer.BRACE_R])
+	selectionInterfaces, err := many(parser, lexer.TokenKind[lexer.BRACE_L], parseSelection, lexer.TokenKind[lexer.BRACE_R])
 	if err != nil {
-		return ast.SelectionSet{}, err
+		return nil, err
 	}
-	return ast.SelectionSet{
+	selections := []ast.Selection{}
+	for _, selection := range selectionInterfaces {
+		if selection != nil {
+			// type assert interface{} into ast.Selection interface
+			selections = append(selections, selection.(ast.Selection))
+		}
+	}
+
+	return ast.NewSelectionSet(&ast.SelectionSet{
 		Kind:       kinds.SelectionSet,
 		Selections: selections,
 		Loc:        loc(parser, start),
-	}, nil
+	}), nil
 }
 
 func parseSelection(parser *Parser) (interface{}, error) {
@@ -353,7 +361,7 @@ func parseField(parser *Parser) (ast.Field, error) {
 	if err != nil {
 		return ast.Field{}, err
 	}
-	var selectionSet ast.SelectionSet
+	var selectionSet *ast.SelectionSet
 	if peek(parser, lexer.TokenKind[lexer.BRACE_L]) {
 		sSet, err := parseSelectionSet(parser)
 		if err != nil {

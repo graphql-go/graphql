@@ -10,7 +10,7 @@ type Field struct {
 	Name         *Name
 	Arguments    []Argument
 	Directives   []Directive
-	SelectionSet SelectionSet
+	SelectionSet *SelectionSet
 }
 
 type FragmentSpread struct {
@@ -25,7 +25,7 @@ type InlineFragment struct {
 	Loc           Location
 	TypeCondition NamedType
 	Directives    []Directive
-	SelectionSet  SelectionSet
+	SelectionSet  *SelectionSet
 }
 
 // Ensure that all definition types implements Definition interface
