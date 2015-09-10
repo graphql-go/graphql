@@ -9,7 +9,7 @@ type InputObjectTypeDefinition struct {
 	Kind   string
 	Loc    *Location
 	Name   *Name
-	Fields []interface{}
+	Fields []*InputValueDefinition
 }
 
 func NewInputObjectTypeDefinition(def *InputObjectTypeDefinition) *InputObjectTypeDefinition {

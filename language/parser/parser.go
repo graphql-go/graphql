@@ -984,11 +984,16 @@ func parseInputObjectTypeDefinition(parser *Parser) (*ast.InputObjectTypeDefinit
 	if err != nil {
 		return nil, err
 	}
-	fields, err := any(parser, lexer.TokenKind[lexer.BRACE_L], parseInputValueDef, lexer.TokenKind[lexer.BRACE_R])
+	iInputValueDefinitions, err := any(parser, lexer.TokenKind[lexer.BRACE_L], parseInputValueDef, lexer.TokenKind[lexer.BRACE_R])
 	if err != nil {
 		return nil, err
 	}
-
+	fields := []*ast.InputValueDefinition{}
+	for _, iInputValueDefinition := range iInputValueDefinitions {
+		if iInputValueDefinition != nil {
+			fields = append(fields, iInputValueDefinition.(*ast.InputValueDefinition))
+		}
+	}
 	return ast.NewInputObjectTypeDefinition(&ast.InputObjectTypeDefinition{
 		Name:   name,
 		Loc:    loc(parser, start),
