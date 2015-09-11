@@ -1,6 +1,7 @@
 package ast
 
 type Type interface {
+	GetKind() string
 }
 
 // Ensure that all value types implements Value interface

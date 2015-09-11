@@ -13,7 +13,7 @@ type GraphqlParams struct {
 	Schema         types.GraphQLSchema
 	RequestString  string
 	RootObject     map[string]interface{}
-	VariableValues map[string]string
+	VariableValues map[string]interface{}
 	OperationName  string
 }
 

@@ -61,15 +61,13 @@ func init() {
 		1003: Leia,
 		1004: Tarkin,
 	}
-	var charIntFields types.GraphQLFieldDefinitionMap
-	charIntFields = make(types.GraphQLFieldDefinitionMap)
+	charIntFields := types.GraphQLFieldDefinitionMap{}
 	characterInterface := types.GraphQLInterfaceType{
 		Name:        "Character",
 		Description: "A character in the Star Wars Trilogy",
 		Fields:      charIntFields,
 	}
-	var fields types.GraphQLFieldDefinitionMap
-	fields = make(types.GraphQLFieldDefinitionMap)
+	fields := types.GraphQLFieldDefinitionMap{}
 	fields["hero"] = types.GraphQLFieldDefinition{
 		Type: &characterInterface,
 		Resolve: func(p types.GQLFDRParams) (r interface{}) {

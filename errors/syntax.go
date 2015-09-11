@@ -2,9 +2,9 @@ package graphqlerrors
 
 import (
 	"fmt"
-	"go/ast"
 	"regexp"
 
+	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/language/source"
 )

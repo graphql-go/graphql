@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
 )
@@ -159,7 +160,7 @@ type GraphQLInputType interface {
 
 type GraphQLFieldArgument struct {
 	Name         string
-	Type         GraphQLInputType
+	Type         GraphQLType
 	DefaultValue interface{}
 	Description  string
 }
@@ -167,7 +168,7 @@ type GraphQLFieldArgument struct {
 type GraphQLFieldDefinition struct {
 	Name              string
 	Description       string
-	Type              GraphQLOutputType
+	Type              GraphQLType
 	Args              []GraphQLFieldArgument
 	Resolve           GraphQLFieldDefinitionResolve
 	DeprecationReason string
@@ -181,6 +182,29 @@ type GraphQLObjectType struct {
 }
 
 type GraphQLList struct {
+	OfType GraphQLType
+}
+
+func NewGraphQLList(ofType GraphQLType) *GraphQLList {
+	// TODO: add invariant() check
+	return &GraphQLList{
+		OfType: ofType,
+	}
+}
+func (gl *GraphQLList) GetName() string {
+	return ""
+}
+func (gl *GraphQLList) GetDescription() string {
+	return ""
+}
+func (gl *GraphQLList) Coerce(value interface{}) interface{} {
+	return value
+}
+func (gl *GraphQLList) CoerceLiteral(value interface{}) interface{} {
+	return value
+}
+func (gl *GraphQLList) ToString() string {
+	return fmt.Sprint("%v", gl)
 }
 
 type GraphQLNonNull struct {
@@ -194,6 +218,8 @@ type GraphQLSchemaConfig struct {
 type GraphQLSchema struct {
 	Query        GraphQLObjectType
 	SchemaConfig GraphQLSchemaConfig
+
+	typeMap TypeMap
 }
 
 func (gq *GraphQLSchema) Constructor(config GraphQLSchemaConfig) {
@@ -208,5 +234,54 @@ func (gq *GraphQLSchema) GetMutationType() GraphQLObjectType {
 	return gq.SchemaConfig.Mutation
 }
 
+type TypeMap map[string]GraphQLType
+
+func (gq *GraphQLSchema) GetTypeMap() TypeMap {
+	return gq.typeMap
+}
+
+func (gq *GraphQLSchema) GetType(name string) GraphQLType {
+	return gq.GetTypeMap()[name]
+}
+
 type GraphQLString struct {
+	Name        string
+	Description string
+}
+
+func (gs *GraphQLString) GetName() string {
+	return gs.Name
+}
+func (gs *GraphQLString) GetDescription() string {
+	return gs.Description
+}
+func (gs *GraphQLString) Coerce(value interface{}) (r interface{}) {
+	return r
+}
+func (gs *GraphQLString) CoerceLiteral(value interface{}) (r interface{}) {
+	return r
+}
+func (gs *GraphQLString) ToString() string {
+	return fmt.Sprint("%v", gs)
+}
+
+type GraphQLInt struct {
+	Name        string
+	Description string
+}
+
+func (gi *GraphQLInt) GetName() string {
+	return gi.Name
+}
+func (gi *GraphQLInt) GetDescription() string {
+	return gi.Description
+}
+func (gs *GraphQLInt) Coerce(value interface{}) (r interface{}) {
+	return r
+}
+func (gi *GraphQLInt) CoerceLiteral(value interface{}) (r interface{}) {
+	return r
+}
+func (gi *GraphQLInt) ToString() string {
+	return fmt.Sprint("%v", gi)
 }
