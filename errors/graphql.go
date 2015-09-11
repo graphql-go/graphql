@@ -1,9 +1,9 @@
 package graphqlerrors
 
 import (
-	"go/ast"
 
 	"fmt"
+	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/language/source"
 )
@@ -33,10 +33,10 @@ func NewGraphQLError(message string, nodes []ast.Node, stack string, source *sou
 	}
 	if len(positions) == 0 && len(nodes) > 0 {
 		for _, node := range nodes {
-			if !node.Pos().IsValid() {
+			if node.GetLoc() == nil {
 				continue
 			}
-			positions = append(positions, int(node.Pos()))
+			positions = append(positions, node.GetLoc().Start)
 		}
 	}
 	return &GraphQLError{

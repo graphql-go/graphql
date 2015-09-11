@@ -6,14 +6,13 @@ import (
 
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/chris-ramon/graphql-go/language/kinds"
 	"github.com/chris-ramon/graphql-go/types"
 )
 
 type ExecuteParams struct {
 	Schema        types.GraphQLSchema
 	Root          map[string]interface{}
-	AST           ast.Document
+	AST           *ast.Document
 	OperationName string
 	Args          map[string]string
 }
@@ -93,12 +92,12 @@ func getOperationRootType(schema types.GraphQLSchema, operation ast.Definition, 
 type CollectFieldsParams struct {
 	ExeContext           ExecutionContext
 	OperationType        types.GraphQLObjectType
-	SelectionSet         ast.SelectionSet
-	Fields               map[string][]ast.Field
+	SelectionSet         *ast.SelectionSet
+	Fields               map[string][]*ast.Field
 	VisitedFragmentNames map[string]bool
 }
 
-func collectFields(p CollectFieldsParams) (r map[string][]ast.Field) {
+func collectFields(p CollectFieldsParams) (r map[string][]*ast.Field) {
 
 	return r
 }
@@ -107,7 +106,7 @@ type ExecuteFieldsParams struct {
 	ExecutionContext ExecutionContext
 	ParentType       types.GraphQLObjectType
 	Source           map[string]interface{}
-	Fields           map[string][]ast.Field
+	Fields           map[string][]*ast.Field
 }
 
 func executeFields(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) {
@@ -120,7 +119,7 @@ func executeFields(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) 
 type BuildExecutionCtxParams struct {
 	Schema        types.GraphQLSchema
 	Root          map[string]interface{}
-	AST           ast.Document
+	AST           *ast.Document
 	OperationName string
 	Args          map[string]string
 	Errors        []error
@@ -141,18 +140,18 @@ func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
 	operations := make(map[string]ast.Definition)
 	fragments := make(map[string]ast.Definition)
 	for _, statement := range p.AST.Definitions {
-		switch statement.GetKind() {
-		case kinds.OperationDefinition:
+		switch stm := statement.(type) {
+		case *ast.OperationDefinition:
 			log.Println("kinds.OperationDefinition")
 			key := ""
-			if statement.GetName().Value != "" {
-				key = statement.GetName().Value
+			if stm.GetName().Value != "" {
+				key = stm.GetName().Value
 			}
-			operations[key] = statement
+			operations[key] = stm
 			break
-		case kinds.FragmentDefinition:
+		case *ast.FragmentDefinition:
 			log.Println("kinds.FragmentDefinition")
-			fragments[statement.GetName().Value] = statement
+			fragments[stm.GetName().Value] = stm
 			break
 		default:
 			log.Println("default")
