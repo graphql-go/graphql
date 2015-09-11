@@ -19,6 +19,21 @@ func (gqR *GraphQLResult) HasErrors() bool {
 
 type GraphQLEnumType struct {
 }
+func (gt *GraphQLEnumType) GetName() string {
+	return ""
+}
+func (gt *GraphQLEnumType) GetDescription() string {
+	return ""
+}
+func (gt *GraphQLEnumType) Coerce(value interface{}) interface{} {
+	return value
+}
+func (gt *GraphQLEnumType) CoerceLiteral(value interface{}) interface{} {
+	return value
+}
+func (gt *GraphQLEnumType) ToString() string {
+	return fmt.Sprint("%v", gt)
+}
 
 type GraphQLInterfaceTypeConfig struct {
 	Name        string
@@ -91,7 +106,7 @@ func (it *GraphQLInterfaceType) ToString() string {
 	return it.Name
 }
 
-type GQLFDRParams struct {
+type GQLFRParams struct {
 	Source     interface{}
 	Args       map[string]interface{}
 	Context    interface{}
@@ -101,7 +116,7 @@ type GQLFDRParams struct {
 	Schema     GraphQLSchema
 }
 
-type GraphQLFieldDefinitionResolve func(p GQLFDRParams) interface{}
+type GraphQLFieldResolveFn func(p GQLFRParams) interface{}
 
 type GraphQLScalarTypeConfig struct {
 	Name        string
@@ -170,7 +185,7 @@ type GraphQLFieldDefinition struct {
 	Description       string
 	Type              GraphQLType
 	Args              []GraphQLFieldArgument
-	Resolve           GraphQLFieldDefinitionResolve
+	Resolve           GraphQLFieldResolveFn
 	DeprecationReason string
 }
 
@@ -179,6 +194,21 @@ type GraphQLFieldDefinitionMap map[string]GraphQLFieldDefinition
 type GraphQLObjectType struct {
 	Name   string
 	Fields GraphQLFieldDefinitionMap
+}
+func (gt *GraphQLObjectType) GetName() string {
+	return ""
+}
+func (gt *GraphQLObjectType) GetDescription() string {
+	return ""
+}
+func (gt *GraphQLObjectType) Coerce(value interface{}) interface{} {
+	return value
+}
+func (gt *GraphQLObjectType) CoerceLiteral(value interface{}) interface{} {
+	return value
+}
+func (gt *GraphQLObjectType) ToString() string {
+	return fmt.Sprint("%v", gt)
 }
 
 type GraphQLList struct {
@@ -207,8 +237,6 @@ func (gl *GraphQLList) ToString() string {
 	return fmt.Sprint("%v", gl)
 }
 
-type GraphQLNonNull struct {
-}
 
 type GraphQLSchemaConfig struct {
 	Query    GraphQLObjectType

@@ -22,7 +22,6 @@ import (
 
 func GetVariableValues(schema types.GraphQLSchema, definitionASTs []*ast.VariableDefinition, inputs map[string]interface{}) (map[string]interface{}, error) {
 
-	pretty.Println("GetVariableValues", schema, definitionASTs, inputs)
 	values := map[string]interface{}{}
 	for _, defAST := range definitionASTs {
 		if defAST == nil {
@@ -41,7 +40,6 @@ func GetVariableValues(schema types.GraphQLSchema, definitionASTs []*ast.Variabl
 		}
 		values[varName] = varValue
 	}
-	pretty.Println("GetVariableValues", values)
 	return values, nil
 }
 

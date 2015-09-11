@@ -31,7 +31,6 @@ func Execute(p ExecuteParams, resultChan chan *types.GraphQLResult) {
 		ResultChan:    resultChan,
 	}
 	exeContext := buildExecutionContext(params)
-	pretty.Println("----> exeContext", exeContext, result, errors)
 	if result.HasErrors() {
 		return
 	}
@@ -51,6 +50,9 @@ type ExecuteOperationParams struct {
 
 func executeOperation(p ExecuteOperationParams, r chan *types.GraphQLResult) {
 	//TODO: mutation operation
+	if p.Operation.GetOperation() == "mutation" {
+		return
+	}
 	pretty.Println("---->", p)
 	operationType := getOperationRootType(p.ExecutionContext.Schema, p.Operation, r)
 	collectFieldsParams := CollectFieldsParams{
@@ -59,6 +61,8 @@ func executeOperation(p ExecuteOperationParams, r chan *types.GraphQLResult) {
 		SelectionSet:  p.Operation.GetSelectionSet(),
 	}
 	fields := collectFields(collectFieldsParams)
+
+	pretty.Println("===> fields collectFields", fields)
 	executeFieldsParams := ExecuteFieldsParams{
 		ExecutionContext: p.ExecutionContext,
 		ParentType:       operationType,
@@ -68,6 +72,7 @@ func executeOperation(p ExecuteOperationParams, r chan *types.GraphQLResult) {
 	executeFields(executeFieldsParams, r)
 }
 
+// Extracts the root type of the operation from the schema.
 func getOperationRootType(schema types.GraphQLSchema, operation ast.Definition, r chan *types.GraphQLResult) (objType types.GraphQLObjectType) {
 	switch operation.GetOperation() {
 	case "query":
@@ -99,9 +104,75 @@ type CollectFieldsParams struct {
 	VisitedFragmentNames map[string]bool
 }
 
-func collectFields(p CollectFieldsParams) (r map[string][]*ast.Field) {
+// Given a selectionSet, adds all of the fields in that selection to
+// the passed in map of fields, and returns it at the end.
+func collectFields(p CollectFieldsParams) (map[string][]*ast.Field) {
 
-	return r
+	fields := p.Fields
+	if fields == nil {
+		fields = map[string][]*ast.Field{}
+	}
+
+	if p.SelectionSet == nil {
+		return fields
+	}
+
+	for _, iSelection := range p.SelectionSet.Selections {
+		switch selection := iSelection.(type) {
+		case *ast.Field:
+			if !shouldIncludeNode(p.ExeContext, selection.Directives) {
+				continue
+			}
+			name := getFieldEntryKey(selection)
+			if _, ok := fields[name]; !ok {
+				fields[name] = []*ast.Field{}
+			}
+			fields[name] = append(fields[name], selection)
+		case *ast.InlineFragment:
+			if !shouldIncludeNode(p.ExeContext, selection.Directives) ||
+			!doesFragmentConditionMatch(p.ExeContext, selection, p.OperationType) {
+				continue
+			}
+			innerParams := CollectFieldsParams{
+				ExeContext: p.ExeContext,
+				OperationType: p.OperationType,
+				SelectionSet: selection.SelectionSet,
+				Fields: fields,
+				VisitedFragmentNames: p.VisitedFragmentNames,
+			}
+			fields = collectFields(innerParams)
+		case *ast.FragmentSpread:
+			fragName := ""
+			if selection.Name != nil {
+				fragName = selection.Name.Value
+			}
+			if _, ok := p.VisitedFragmentNames[fragName]; !ok ||
+			!shouldIncludeNode(p.ExeContext, selection.Directives) {
+				continue
+			}
+			p.VisitedFragmentNames[fragName] = true
+			fragment, hasFragment := p.ExeContext.Fragments[fragName]
+			if !hasFragment {
+				continue
+			}
+			switch fragment := fragment.(type) {
+			case *ast.FragmentDefinition:
+				if !shouldIncludeNode(p.ExeContext, fragment.Directives) ||
+				!doesFragmentConditionMatch(p.ExeContext, fragment, p.OperationType) {
+					continue
+				}
+				innerParams := CollectFieldsParams{
+					ExeContext: p.ExeContext,
+					OperationType: p.OperationType,
+					SelectionSet: fragment.GetSelectionSet(),
+					Fields: fields,
+					VisitedFragmentNames: p.VisitedFragmentNames,
+				}
+				fields = collectFields(innerParams)
+			}
+		}
+	}
+	return fields
 }
 
 type ExecuteFieldsParams struct {
@@ -111,7 +182,14 @@ type ExecuteFieldsParams struct {
 	Fields           map[string][]*ast.Field
 }
 
+// Implements the "Evaluating selection sets" section of the spec for "read" mode.
 func executeFields(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) {
+	if p.Source == nil {
+		p.Source = map[string]interface{}{}
+	}
+	if p.Fields == nil {
+		p.Fields = map[string][]*ast.Field{}
+	}
 	var result types.GraphQLResult
 	//mutable := reflect.ValueOf(p.ExecutionContext.Result.Data).Elem()
 	//mutable.FieldByName("Name").SetString("R2-D2")
@@ -178,7 +256,6 @@ func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
 	if opName == "" {
 		// get first opName
 		for k, _ := range operations {
-			pretty.Println("k", k)
 			opName = k
 			break
 		}
@@ -206,4 +283,27 @@ func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
 	eCtx.VariableValues = variableValues
 	eCtx.Errors = p.Errors
 	return eCtx
+}
+
+// Implements the logic to compute the key of a given field’s entry
+func getFieldEntryKey(node *ast.Field) string {
+	if node.Alias != nil && node.Alias.Value != "" {
+		return node.Alias.Value
+	}
+	if node.Name != nil && node.Name.Value != "" {
+		return node.Name.Value
+	}
+	return ""
+}
+// Determines if a field should be included based on the @include and @skip
+// directives, where @skip has higher precedence than @include.
+func shouldIncludeNode(eCtx ExecutionContext, directives []*ast.Directive) bool {
+	pretty.Println("shouldIncludeNode not implemented")
+	return true
+}
+
+// Determines if a fragment is applicable to the given type.
+func doesFragmentConditionMatch(eCtx ExecutionContext, fragment ast.Node, ttype types.GraphQLObjectType) bool {
+	pretty.Println("shouldIncludeNode not implemented")
+	return true
 }

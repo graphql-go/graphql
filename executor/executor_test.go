@@ -1,6 +1,7 @@
-package executor
+package executor_test
 
 import (
+	"github.com/chris-ramon/graphql-go/executor"
 	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/types"
 	"github.com/kr/pretty"
@@ -75,14 +76,14 @@ func TestExecutesArbritraryCode(t *testing.T) {
 		"size": 100,
 	}
 	operationName := "Example"
-	ep := ExecuteParams{
+	ep := executor.ExecuteParams{
 		Schema:        schema,
 		Root:          root,
 		AST:           astDoc,
 		OperationName: operationName,
 		Args:          args,
 	}
-	go Execute(ep, resultChannel)
+	go executor.Execute(ep, resultChannel)
 	result := <-resultChannel
 	pretty.Println("result", result)
 	if len(result.Errors) > 0 {

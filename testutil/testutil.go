@@ -70,7 +70,7 @@ func init() {
 	fields := types.GraphQLFieldDefinitionMap{}
 	fields["hero"] = types.GraphQLFieldDefinition{
 		Type: &characterInterface,
-		Resolve: func(p types.GQLFDRParams) (r interface{}) {
+		Resolve: func(p types.GQLFRParams) (r interface{}) {
 			return r
 		},
 	}
