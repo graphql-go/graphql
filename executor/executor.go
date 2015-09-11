@@ -12,7 +12,7 @@ import (
 type ExecuteParams struct {
 	Schema        types.GraphQLSchema
 	Root          map[string]interface{}
-	AST           ast.Document
+	AST           *ast.Document
 	OperationName string
 	Args          map[string]string
 }
@@ -92,12 +92,12 @@ func getOperationRootType(schema types.GraphQLSchema, operation ast.Definition, 
 type CollectFieldsParams struct {
 	ExeContext           ExecutionContext
 	OperationType        types.GraphQLObjectType
-	SelectionSet         ast.SelectionSet
-	Fields               map[string][]ast.Field
+	SelectionSet         *ast.SelectionSet
+	Fields               map[string][]*ast.Field
 	VisitedFragmentNames map[string]bool
 }
 
-func collectFields(p CollectFieldsParams) (r map[string][]ast.Field) {
+func collectFields(p CollectFieldsParams) (r map[string][]*ast.Field) {
 
 	return r
 }
@@ -106,7 +106,7 @@ type ExecuteFieldsParams struct {
 	ExecutionContext ExecutionContext
 	ParentType       types.GraphQLObjectType
 	Source           map[string]interface{}
-	Fields           map[string][]ast.Field
+	Fields           map[string][]*ast.Field
 }
 
 func executeFields(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) {
@@ -119,7 +119,7 @@ func executeFields(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) 
 type BuildExecutionCtxParams struct {
 	Schema        types.GraphQLSchema
 	Root          map[string]interface{}
-	AST           ast.Document
+	AST           *ast.Document
 	OperationName string
 	Args          map[string]string
 	Errors        []error

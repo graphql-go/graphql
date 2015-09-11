@@ -11,7 +11,7 @@ type ValidationResult struct {
 	Errors  []graphqlerrors.GraphQLFormattedError
 }
 
-func ValidateDocument(schema types.GraphQLSchema, ast ast.Document) (vr ValidationResult) {
+func ValidateDocument(schema types.GraphQLSchema, ast *ast.Document) (vr ValidationResult) {
 	vr.IsValid = true
 	return vr
 }
