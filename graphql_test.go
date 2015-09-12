@@ -85,19 +85,21 @@ func TestBasicGraphQLExample(t *testing.T) {
 		return "world"
 	}
 
-	schema := types.GraphQLSchema{
+	schema := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
 		Query: types.GraphQLObjectType{
 			Name: "RootQueryType",
 			Fields: types.GraphQLFieldDefinitionMap{
 				"hello": types.GraphQLFieldDefinition{
+					Name: "Returns `world`",
 					Type: &types.GraphQLString{},
 					Resolve: helloFieldResolved,
 				},
 			},
 		},
-	}
+	})
 	query := "{ hello }";
-	expected := map[string]interface{}{
+	var expected interface{}
+	expected = map[string]interface{}{
 		"hello": "world",
 	}
 

@@ -28,6 +28,7 @@ func Graphql(p GraphqlParams, resultChannel chan *types.GraphQLResult) {
 		return
 	}
 	validationResult := validator.ValidateDocument(p.Schema, AST)
+
 	if !validationResult.IsValid {
 		result := types.GraphQLResult{
 			Errors: validationResult.Errors,

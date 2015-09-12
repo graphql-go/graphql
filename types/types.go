@@ -114,6 +114,8 @@ type GQLFRParams struct {
 	FieldType  interface{}
 	ParentType interface{}
 	Schema     GraphQLSchema
+
+	Info GraphQLResolveInfo
 }
 
 type GraphQLFieldResolveFn func(p GQLFRParams) interface{}
@@ -196,7 +198,7 @@ type GraphQLObjectType struct {
 	Fields GraphQLFieldDefinitionMap
 }
 func (gt *GraphQLObjectType) GetName() string {
-	return ""
+	return gt.Name
 }
 func (gt *GraphQLObjectType) GetDescription() string {
 	return ""
@@ -208,7 +210,7 @@ func (gt *GraphQLObjectType) CoerceLiteral(value interface{}) interface{} {
 	return value
 }
 func (gt *GraphQLObjectType) ToString() string {
-	return fmt.Sprint("%v", gt)
+	return fmt.Sprint("%v", gt.Name)
 }
 
 type GraphQLList struct {
@@ -250,8 +252,10 @@ type GraphQLSchema struct {
 	typeMap TypeMap
 }
 
-func (gq *GraphQLSchema) Constructor(config GraphQLSchemaConfig) {
-	gq.SchemaConfig = config
+func NewGraphQLSchema(config GraphQLSchemaConfig) GraphQLSchema {
+	return GraphQLSchema{
+		SchemaConfig: config,
+	}
 }
 
 func (gq *GraphQLSchema) GetQueryType() GraphQLObjectType {

@@ -4,7 +4,6 @@ import (
 	"github.com/chris-ramon/graphql-go/executor"
 	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/types"
-	"github.com/kr/pretty"
 	"testing"
 )
 
@@ -27,7 +26,7 @@ func TestExecutesArbritraryCode(t *testing.T) {
         e
       }
     `
-	schema := types.GraphQLSchema{
+	schema := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
 		Query: types.GraphQLObjectType{
 			Name: "DataType",
 			Fields: types.GraphQLFieldDefinitionMap{
@@ -60,7 +59,7 @@ func TestExecutesArbritraryCode(t *testing.T) {
 				},
 			},
 		},
-	}
+	})
 	pparams := parser.ParseParams{
 		Source: query,
 		Options: parser.ParseOptions{
@@ -85,7 +84,6 @@ func TestExecutesArbritraryCode(t *testing.T) {
 	}
 	go executor.Execute(ep, resultChannel)
 	result := <-resultChannel
-	pretty.Println("result", result)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}

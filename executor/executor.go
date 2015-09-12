@@ -2,11 +2,11 @@ package executor
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/types"
-	"github.com/kr/pretty"
 )
 
 type ExecuteParams struct {
@@ -53,16 +53,14 @@ func executeOperation(p ExecuteOperationParams, r chan *types.GraphQLResult) {
 	if p.Operation.GetOperation() == "mutation" {
 		return
 	}
-	pretty.Println("---->", p)
 	operationType := getOperationRootType(p.ExecutionContext.Schema, p.Operation, r)
+
 	collectFieldsParams := CollectFieldsParams{
 		ExeContext:    p.ExecutionContext,
 		OperationType: operationType,
 		SelectionSet:  p.Operation.GetSelectionSet(),
 	}
 	fields := collectFields(collectFieldsParams)
-
-	pretty.Println("===> fields collectFields", fields)
 	executeFieldsParams := ExecuteFieldsParams{
 		ExecutionContext: p.ExecutionContext,
 		ParentType:       operationType,
@@ -191,6 +189,14 @@ func executeFields(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) 
 		p.Fields = map[string][]*ast.Field{}
 	}
 	var result types.GraphQLResult
+
+	finalResults := map[string]interface{}{}
+	for responseName, fieldASTs := range p.Fields {
+		result := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+		finalResults[responseName] = result
+	}
+
+	result.Data = finalResults
 	//mutable := reflect.ValueOf(p.ExecutionContext.Result.Data).Elem()
 	//mutable.FieldByName("Name").SetString("R2-D2")
 	resultChan <- &result
@@ -226,17 +232,14 @@ func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
 			if stm.GetName() != nil && stm.GetName().Value != "" {
 				key = stm.GetName().Value
 			}
-			pretty.Println("kinds.OperationDefinition", key)
 			operations[key] = stm
 		case *ast.FragmentDefinition:
 			key := ""
 			if stm.GetName() != nil && stm.GetName().Value != "" {
 				key = stm.GetName().Value
 			}
-			pretty.Println("kinds.FragmentDefinition", key)
 			fragments[key] = stm
 		default:
-			pretty.Println("default")
 			err := graphqlerrors.NewGraphQLFormattedError(
 				fmt.Sprintf("GraphQL cannot execute a request containing a %v", statement.GetKind()),
 			)
@@ -249,7 +252,6 @@ func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
 		err := graphqlerrors.NewGraphQLFormattedError("Must provide operation name if query contains multiple operations")
 		p.Result.Errors = append(p.Result.Errors, err)
 		p.ResultChan <- p.Result
-		pretty.Println("err1")
 		return eCtx
 	}
 	opName := p.OperationName
@@ -265,14 +267,12 @@ func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
 		err := graphqlerrors.NewGraphQLFormattedError(fmt.Sprintf(`Unknown operation named "%v".`, opName))
 		p.Result.Errors = append(p.Result.Errors, err)
 		p.ResultChan <- p.Result
-		pretty.Println("err2")
 		return eCtx
 	}
 	variableValues, err := GetVariableValues(p.Schema, operation.GetVariableDefinitions(), p.Args)
 	if err != nil {
 		p.Result.Errors = append(p.Result.Errors, graphqlerrors.FormatError(err))
 		p.ResultChan <- p.Result
-		pretty.Println("err3")
 		return eCtx
 	}
 
@@ -298,12 +298,83 @@ func getFieldEntryKey(node *ast.Field) string {
 // Determines if a field should be included based on the @include and @skip
 // directives, where @skip has higher precedence than @include.
 func shouldIncludeNode(eCtx ExecutionContext, directives []*ast.Directive) bool {
-	pretty.Println("shouldIncludeNode not implemented")
+	log.Println("shouldIncludeNode not implemented")
 	return true
 }
 
 // Determines if a fragment is applicable to the given type.
 func doesFragmentConditionMatch(eCtx ExecutionContext, fragment ast.Node, ttype types.GraphQLObjectType) bool {
-	pretty.Println("shouldIncludeNode not implemented")
+	log.Println("shouldIncludeNode not implemented")
 	return true
+}
+
+/**
+ * Resolves the field on the given source object. In particular, this
+ * figures out the value that the field returns by calling its resolve function,
+ * then calls completeValue to complete promises, serialize scalars, or execute
+ * the sub-selection-set for objects.
+ */
+func resolveField(eCtx ExecutionContext, parentType types.GraphQLObjectType, source interface{}, fieldASTs []*ast.Field) interface{} {
+
+	fieldAST := fieldASTs[0]
+	fieldName := getFieldEntryKey(fieldAST)
+
+	fieldDef := getFieldDef(eCtx.Schema, parentType, fieldName)
+
+	returnType := fieldDef.Type
+	resolveFn := fieldDef.Resolve
+	if resolveFn == nil {
+		resolveFn = defaultResolveFn
+	}
+
+	// TODO: Build a map of arguments from the field.arguments AST, using the
+	// variables scope to fulfill any variable references.
+	// TODO: find a way to memoize, in case this field is within a List type.
+ 	args := map[string]interface{}{}
+
+	// TODO: The resolve function's optional third argument is a collection of
+	// information about the current execution state.
+	info := types.GraphQLResolveInfo{
+		FieldName: fieldName,
+		FieldASTs: fieldASTs,
+		ReturnType: returnType,
+		ParentType: parentType,
+		Schema: eCtx.Schema,
+		Fragments: eCtx.Fragments,
+		RootValue: eCtx.Root,
+		Operation: eCtx.Operation,
+		VariableValues: eCtx.VariableValues,
+	}
+
+	// TODO: If an error occurs while calling the field `resolve` function, ensure that
+	// it is wrapped as a GraphQLError with locations. Log this error and return
+	// null if allowed, otherwise throw the error so the parent field can handle
+	// it.
+	result := resolveFn(types.GQLFRParams{
+		Source: source,
+		Args: args,
+		Info: info,
+	})
+	return result
+}
+
+func getFieldDef(schema types.GraphQLSchema, parentType types.GraphQLObjectType, fieldName string) types.GraphQLFieldDefinition {
+
+	if fieldName == types.SchemaMetaFieldDef.Name &&
+	schema.GetQueryType().Name == parentType.Name {
+		return types.SchemaMetaFieldDef
+	}
+	if fieldName == types.TypeMetaFieldDef.Name &&
+	schema.GetQueryType().Name == parentType.Name {
+		return types.TypeMetaFieldDef
+	}
+	if fieldName == types.TypeNameMetaFieldDef.Name &&
+	schema.GetQueryType().Name == parentType.Name {
+		return types.TypeNameMetaFieldDef
+	}
+	return parentType.Fields[fieldName]
+}
+
+func defaultResolveFn(p types.GQLFRParams) interface{} {
+	return "defaultResolveFn"
 }

@@ -1,4 +1,5 @@
 package types
+import "github.com/chris-ramon/graphql-go/language/ast"
 
 type GraphQLType interface {
 	GetName() string
@@ -24,7 +25,6 @@ type GraphQLArgument struct {
 	Description string
 }
 
-
 type GraphQLNonNull interface {
 	GetName() string
 	GetDescription() string
@@ -32,3 +32,22 @@ type GraphQLNonNull interface {
 	CoerceLiteral(value interface{}) interface{}
 	ToString() string
 }
+
+type GraphQLResolveInfo struct {
+	FieldName string
+	FieldASTs []*ast.Field
+	ReturnType GraphQLOutputType
+	ParentType GraphQLCompositeType
+	Schema GraphQLSchema
+	Fragments map[string]ast.Definition
+	RootValue interface{}
+	Operation ast.Definition
+	VariableValues map[string]interface{}
+}
+
+type GraphQLCompositeType interface {
+
+}
+var _ GraphQLCompositeType = (*GraphQLObjectType)(nil)
+var _ GraphQLCompositeType = (*GraphQLInterfaceType)(nil)
+//var _ GraphQLCompositeType = (*GraphQLUnionType)(nil)

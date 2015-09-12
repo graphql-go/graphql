@@ -78,7 +78,7 @@ func init() {
 		Name:   "Query",
 		Fields: fields,
 	}
-	StarWarsSchema = types.GraphQLSchema{
+	StarWarsSchema = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
 		Query: queryType,
-	}
+	})
 }

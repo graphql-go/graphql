@@ -5,7 +5,6 @@ import (
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/types"
-	"github.com/kr/pretty"
 )
 
 //export function getVariableValues(
@@ -46,10 +45,7 @@ func GetVariableValues(schema types.GraphQLSchema, definitionASTs []*ast.Variabl
 // Given a variable definition, and any value of input, return a value which
 // adheres to the variable definition, or throw an error.
 func getVariableValue(schema types.GraphQLSchema, definitionAST *ast.VariableDefinition, input interface{}) (interface{}, error) {
-	pretty.Println("getVariableValue input", input)
-
 	ttype := typeFromAST(schema, definitionAST.Type)
-	pretty.Println("getVariableValue ttype", ttype)
 	variable := definitionAST.Variable
 	if ttype == nil {
 		return "", graphqlerrors.NewGraphQLError(
