@@ -5,10 +5,36 @@ import (
 	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/types"
 	"testing"
+	"github.com/kr/pretty"
+	"fmt"
 )
 
 func TestExecutesArbritraryCode(t *testing.T) {
 	resultChannel := make(chan *types.GraphQLResult)
+
+	deepData := map[string]interface{} {}
+	data := map[string]interface{} {
+		"a": func () string { return "Apple" },
+		"b": func () string { return "Banana" },
+		"c": func () string { return "Cookie" },
+		"d": func () string { return "Donut" },
+		"e": func () string { return "Egg" },
+		"f": "Fish",
+		"pic": func(size int) string {
+			return fmt.Sprintf("Pic of size: %v", size)
+		},
+		"deep": func() interface{} { return deepData },
+		"promise": func() interface{} {
+			// instead of promise, let's try go-routines
+			return "TODO  go-routines"
+		},
+	}
+	deepData = map[string]interface{} {
+		"a": func () string { return "Already Been Done" },
+		"b": func () string { return "Boring" },
+		"c": func () []string { return []string{"Contrived", "", "Confusing"} },
+		"deeper": func () []interface{} { return []interface{}{data, nil, nil} },
+	}
 
 	query := `
       query Example($size: Int) {
@@ -26,7 +52,21 @@ func TestExecutesArbritraryCode(t *testing.T) {
         e
       }
     `
-	schema := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	pparams := parser.ParseParams{
+		Source: query,
+		Options: parser.ParseOptions{
+			NoSource: true,
+		},
+	}
+	astDoc, err := parser.Parse(pparams)
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+	picResolverFn := func(p types.GQLFRParams) interface{} {
+		pretty.Println("----==> picResolverFn p.ARG", p.Args)
+		return fmt.Sprintf("$$$$$Pic of size: %v", 100000)
+	}
+	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
 		Query: types.GraphQLObjectType{
 			Name: "DataType",
 			Fields: types.GraphQLFieldDefinitionMap{
@@ -56,20 +96,15 @@ func TestExecutesArbritraryCode(t *testing.T) {
 						},
 					},
 					Type: &types.GraphQLString{},
+					Resolve: picResolverFn,
 				},
 			},
 		},
 	})
-	pparams := parser.ParseParams{
-		Source: query,
-		Options: parser.ParseOptions{
-			NoSource: true,
-		},
-	}
-	astDoc, err := parser.Parse(pparams)
 	if err != nil {
-		t.Fatalf("Parse failed: %v", err)
+		t.Fatalf("Error in schema", err.Error())
 	}
+
 	root := map[string]interface{}{}
 	args := map[string]interface{}{
 		"size": 100,

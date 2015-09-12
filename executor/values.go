@@ -5,31 +5,19 @@ import (
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/types"
+	"log"
+	"github.com/chris-ramon/graphql-go/language/kinds"
+	"github.com/kr/pretty"
 )
 
-//export function getVariableValues(
-//schema: GraphQLSchema,
-//definitionASTs: Array<VariableDefinition>,
-//inputs: { [key: string]: any }
-//): { [key: string]: any } {
-//return definitionASTs.reduce((values, defAST) => {
-//var varName = defAST.variable.name.value;
-//values[varName] = getVariableValue(schema, defAST, inputs[varName]);
-//return values;
-//}, {});
-//}
 
-func GetVariableValues(schema types.GraphQLSchema, definitionASTs []*ast.VariableDefinition, inputs map[string]interface{}) (map[string]interface{}, error) {
-
+// Prepares an object map of variableValues of the correct type based on the
+// provided variable definitions and arbitrary input. If the input cannot be
+// parsed to match the variable definitions, a GraphQLError will be returned.
+func getVariableValues(schema types.GraphQLSchema, definitionASTs []*ast.VariableDefinition, inputs map[string]interface{}) (map[string]interface{}, error) {
 	values := map[string]interface{}{}
 	for _, defAST := range definitionASTs {
-		if defAST == nil {
-			continue
-		}
-		if defAST.Variable == nil {
-			continue
-		}
-		if defAST.Variable.Name == nil {
+		if defAST == nil || defAST.Variable == nil || defAST.Variable.Name == nil {
 			continue
 		}
 		varName := defAST.Variable.Name.Value
@@ -42,15 +30,51 @@ func GetVariableValues(schema types.GraphQLSchema, definitionASTs []*ast.Variabl
 	return values, nil
 }
 
+
+// Prepares an object map of argument values given a list of argument
+// definitions and list of argument AST nodes.
+func getArgumentValues(argDefs []types.GraphQLArgument, argASTs []*ast.Argument, variableVariables map[string]interface{}) (map[string]interface{}, error) {
+
+	argASTMap := map[string]*ast.Argument{}
+	for _, argAST := range argASTs {
+		if argAST.Name != nil {
+			argASTMap[argAST.Name.Value] = argAST
+		}
+	}
+	results := map[string]interface{}{}
+	for _, argDef := range argDefs {
+		name := argDef.Name
+		var valueAST ast.Value
+		if argAST, ok := argASTMap[name]; ok {
+			valueAST = argAST.Value
+		}
+
+		value, err := valueFromAST(valueAST, argDef.Type, variableVariables)
+		if err != nil || isNullish(value) {
+			value = argDef.DefaultValue
+		}
+		if !isNullish(value) {
+			results[name] = value
+		}
+	}
+	return results, nil
+}
+
 // Given a variable definition, and any value of input, return a value which
 // adheres to the variable definition, or throw an error.
 func getVariableValue(schema types.GraphQLSchema, definitionAST *ast.VariableDefinition, input interface{}) (interface{}, error) {
-	ttype := typeFromAST(schema, definitionAST.Type)
+	pretty.Println("--->getVariableValue", definitionAST.Type)
+	ttype, err := typeFromAST(schema, definitionAST.Type)
+	if err != nil {
+		return nil, err
+	}
 	variable := definitionAST.Variable
+	pretty.Println("--->getVariableValue", ttype, variable)
+
 	if ttype == nil {
 		return "", graphqlerrors.NewGraphQLError(
-			fmt.Sprintf(`Variable "$%v" expected value of type
-			"%v" which cannot be used as an input type.`, variable.Name.Value, definitionAST.Type),
+			fmt.Sprintf(`Variable "$%v" expected value of type `+
+			`"%v" which cannot be used as an input type.`, variable.Name.Value, definitionAST.Type),
 			[]ast.Node{definitionAST},
 			"",
 			nil,
@@ -61,7 +85,6 @@ func getVariableValue(schema types.GraphQLSchema, definitionAST *ast.VariableDef
 		if isNullish(input) {
 			defaultValue := definitionAST.DefaultValue
 			if defaultValue != nil {
-				//  TODO: Note: enforce that GraphQLType implements GraphQLInputType
 				variables := map[string]interface{}{}
 				return valueFromAST(defaultValue, ttype, variables)
 			}
@@ -90,28 +113,39 @@ func getVariableValue(schema types.GraphQLSchema, definitionAST *ast.VariableDef
 
 // Given a type and any value, return a runtime value coerced to match the type.
 func coerceValue(ttype types.GraphQLInputType, value interface{}) (interface{}, error) {
+	pretty.Println("coerceValue", ttype, value)
 	return value, nil
 }
 
 // graphql-js/src/utilities.js`
 
-func typeFromAST(schema types.GraphQLSchema, inputTypeAST ast.Type) types.GraphQLType {
+func typeFromAST(schema types.GraphQLSchema, inputTypeAST ast.Type) (types.GraphQLType, error) {
+	pretty.Println("---> inputTypeAST", inputTypeAST)
 	switch inputTypeAST := inputTypeAST.(type) {
 	case *ast.ListType:
-		innerType := typeFromAST(schema, inputTypeAST.Type)
-		return types.NewGraphQLList(innerType)
+		innerType, err := typeFromAST(schema, inputTypeAST.Type)
+		if err != nil {
+			return nil, err
+		}
+		return types.NewGraphQLList(innerType), nil
 	case *ast.NonNullType:
-		innerType := typeFromAST(schema, inputTypeAST.Type)
-		return types.NewGraphQLList(innerType)
+		innerType, err := typeFromAST(schema, inputTypeAST.Type)
+		if err != nil {
+			return nil, err
+		}
+		return types.NewGraphQLList(innerType), nil
 	case *ast.NamedType:
 		nameValue := ""
 		if inputTypeAST.Name != nil {
 			nameValue = inputTypeAST.Name.Value
 		}
-		return schema.GetType(nameValue)
+		pretty.Println("---> nameValue", nameValue)
+		pretty.Println("---> GetTypeMap", schema.GetTypeMap())
+
+		return schema.GetType(nameValue), nil
+	default:
+		return nil, invariant(inputTypeAST.GetKind() == kinds.NamedType, "Must be a named type.")
 	}
-	// TODO: do invariant check here
-	return nil
 }
 
 // isValidInputValue alias isValidJSValue
@@ -147,5 +181,14 @@ func isNullish(value interface{}) bool {
 func valueFromAST(valueAST ast.Value, ttype types.GraphQLInputType, variables map[string]interface{}) (interface{}, error) {
 	//  TODO: Note: enforce that GraphQLType implements GraphQLInputType
 
+	log.Println("valueFromAST not implemented")
 	return valueAST, nil
+}
+
+// TODO: figure out where to organize utils
+func invariant(condition bool, message string) error {
+	if !condition {
+		return graphqlerrors.NewGraphQLFormattedError(message)
+	}
+	return nil
 }

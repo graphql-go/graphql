@@ -1,8 +1,12 @@
 package types
-import "github.com/chris-ramon/graphql-go/language/ast"
+import (
+	"github.com/chris-ramon/graphql-go/language/ast"
+	"fmt"
+)
 
 type GraphQLType interface {
 	GetName() string
+	SetName(string)
 	GetDescription() string
 	Coerce(value interface{}) interface{}
 	CoerceLiteral(value interface{}) interface{}
@@ -16,7 +20,7 @@ var _ GraphQLType = (*GraphQLInterfaceType)(nil)
 var _ GraphQLType = (*GraphQLEnumType)(nil)
 //var _ GraphQLType = (*GraphQLInputObjectType)(nil)
 var _ GraphQLType = (*GraphQLList)(nil)
-var _ GraphQLType = (GraphQLNonNull)(nil)
+var _ GraphQLType = (*GraphQLNonNull)(nil)
 
 type GraphQLArgument struct {
 	Name        string
@@ -25,12 +29,34 @@ type GraphQLArgument struct {
 	Description string
 }
 
-type GraphQLNonNull interface {
-	GetName() string
-	GetDescription() string
-	Coerce(value interface{}) interface{}
-	CoerceLiteral(value interface{}) interface{}
-	ToString() string
+//type GraphQLNonNull interface {
+//	GetName() string
+//	GetDescription() string
+//	Coerce(value interface{}) interface{}
+//	CoerceLiteral(value interface{}) interface{}
+//	ToString() string
+//}
+
+type GraphQLNonNull struct {
+	OfType GraphQLType
+}
+func (gl *GraphQLNonNull) GetName() string {
+	return gl.OfType.GetName()
+}
+func (gl *GraphQLNonNull) SetName(name string) {
+	gl.OfType.SetName(name)
+}
+func (gl *GraphQLNonNull) GetDescription() string {
+	return ""
+}
+func (gl *GraphQLNonNull) Coerce(value interface{}) interface{} {
+	return value
+}
+func (gl *GraphQLNonNull) CoerceLiteral(value interface{}) interface{} {
+	return value
+}
+func (gl *GraphQLNonNull) ToString() string {
+	return fmt.Sprint("%v", gl)
 }
 
 type GraphQLResolveInfo struct {

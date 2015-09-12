@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
+	"github.com/kr/pretty"
 )
 
 type Schema interface{}
@@ -18,9 +19,13 @@ func (gqR *GraphQLResult) HasErrors() bool {
 }
 
 type GraphQLEnumType struct {
+	Name string
 }
 func (gt *GraphQLEnumType) GetName() string {
-	return ""
+	return gt.Name
+}
+func (gt *GraphQLEnumType) SetName(name string) {
+	gt.Name = name
 }
 func (gt *GraphQLEnumType) GetDescription() string {
 	return ""
@@ -53,6 +58,9 @@ type GraphQLInterfaceType struct {
 
 func (it *GraphQLInterfaceType) GetName() string {
 	return it.Name
+}
+func (it *GraphQLInterfaceType) SetName(name string) {
+	it.Name = name
 }
 func (it *GraphQLInterfaceType) GetDescription() string {
 	return it.Description
@@ -115,7 +123,7 @@ type GQLFRParams struct {
 	ParentType interface{}
 	Schema     GraphQLSchema
 
-	Info GraphQLResolveInfo
+	Info       GraphQLResolveInfo
 }
 
 type GraphQLFieldResolveFn func(p GQLFRParams) interface{}
@@ -142,6 +150,9 @@ type GraphQLScalarType struct {
 func (sT *GraphQLScalarType) GetName() string {
 	return sT.Name
 
+}
+func (sT *GraphQLScalarType) SetName(name string) {
+	sT.Name = name
 }
 func (sT *GraphQLScalarType) GetDescription() string {
 	return sT.Description
@@ -174,6 +185,10 @@ type GraphQLInputType interface {
 	CoerceLiteral(value interface{}) interface{}
 	ToString() string
 }
+var _ GraphQLInputType = (*GraphQLScalarType)(nil)
+var _ GraphQLInputType = (*GraphQLEnumType)(nil)
+//var _ GraphQLInputType = (*GraphQLInputObjectType)(nil)
+var _ GraphQLInputType = (*GraphQLList)(nil)
 
 type GraphQLFieldArgument struct {
 	Name         string
@@ -194,11 +209,17 @@ type GraphQLFieldDefinition struct {
 type GraphQLFieldDefinitionMap map[string]GraphQLFieldDefinition
 
 type GraphQLObjectType struct {
-	Name   string
-	Fields GraphQLFieldDefinitionMap
+	Name        string
+	Description string
+	//	TypeConfig GraphQLObjectTypeConfig
+	Fields      GraphQLFieldDefinitionMap
+	Interfaces  []GraphQLInterfaceType
 }
 func (gt *GraphQLObjectType) GetName() string {
 	return gt.Name
+}
+func (gt *GraphQLObjectType) SetName(name string) {
+	gt.Name = name
 }
 func (gt *GraphQLObjectType) GetDescription() string {
 	return ""
@@ -218,13 +239,15 @@ type GraphQLList struct {
 }
 
 func NewGraphQLList(ofType GraphQLType) *GraphQLList {
-	// TODO: add invariant() check
 	return &GraphQLList{
 		OfType: ofType,
 	}
 }
 func (gl *GraphQLList) GetName() string {
-	return ""
+	return gl.OfType.GetName()
+}
+func (gl *GraphQLList) SetName(name string) {
+	gl.OfType.SetName(name)
 }
 func (gl *GraphQLList) GetDescription() string {
 	return ""
@@ -245,17 +268,148 @@ type GraphQLSchemaConfig struct {
 	Mutation GraphQLObjectType
 }
 
+// chose to name as GraphQLTypeMap instead of TypeMap
+type GraphQLTypeMap map[string]GraphQLType
+
 type GraphQLSchema struct {
 	Query        GraphQLObjectType
 	SchemaConfig GraphQLSchemaConfig
 
-	typeMap TypeMap
+	typeMap      GraphQLTypeMap
 }
 
-func NewGraphQLSchema(config GraphQLSchemaConfig) GraphQLSchema {
-	return GraphQLSchema{
+func fillInFieldNames(field *GraphQLFieldDefinition, defaultName string) {
+	fieldName := field.Name
+	if fieldName == "" {
+		fieldName = defaultName
+		field.Name = fieldName
+		if field.Type.GetName() == "" {
+			field.Type.SetName(fieldName)
+		}
+	}
+	for _, arg := range field.Args {
+		argName := arg.Name
+		if argName == "" {
+			argName = defaultName
+			arg.Name = argName
+		}
+		if arg.Type.GetName() == "" {
+			arg.Type.SetName(argName)
+		}
+	}
+}
+func NewGraphQLSchema(config GraphQLSchemaConfig) (GraphQLSchema, error) {
+
+	// allow user to optionally not explicitly specify `Name` in `GraphQLObjectType.Fields`
+	// if `Name` is not specified, use FieldDefinitionMap keys
+	for key, field := range config.Query.Fields {
+		fillInFieldNames(&field, key)
+		config.Query.Fields[key] = field
+
+	}
+	for key, field := range config.Mutation.Fields {
+		fillInFieldNames(&field, key)
+		config.Mutation.Fields[key] = field
+	}
+
+	schema := GraphQLSchema{
 		SchemaConfig: config,
 	}
+
+	var err error
+	typeMap := GraphQLTypeMap{}
+	objectTypes := []GraphQLObjectType{
+		schema.GetQueryType(),
+		schema.GetMutationType(),
+		__Schema,
+	}
+	for _, objectType := range objectTypes {
+		typeMap, err = typeMapReducer(typeMap, &objectType)
+		if err != nil {
+			return schema, err
+		}
+
+	}
+	schema.typeMap = typeMap
+
+	return schema, nil
+}
+func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLTypeMap, error) {
+	var err error
+	if objectType == nil {
+		return typeMap, nil
+	}
+
+	switch objectType := objectType.(type) {
+	case *GraphQLList:
+		return typeMapReducer(typeMap, objectType.OfType)
+	case *GraphQLNonNull:
+		return typeMapReducer(typeMap, objectType.OfType)
+	}
+
+	if _, ok := typeMap[objectType.GetName()]; ok {
+		return typeMap, graphqlerrors.NewGraphQLFormattedError(
+			fmt.Sprintf(`Schema must contain unique named types but contains multiple types named "%v".`, objectType.GetName()),
+		)
+	}
+	if objectType.GetName() == "" {
+		pretty.Println("-----> EMPTY NAME", objectType.GetName(), objectType)
+		return typeMap, nil
+	}
+
+	typeMap[objectType.GetName()] = objectType
+
+	switch objectType := objectType.(type) {
+	//	case *GraphQLUnionType:
+	//	fallthrough
+	case *GraphQLInterfaceType:
+		for _, innerObjectType := range objectType.GetPossibleTypes() {
+			typeMap, err = typeMapReducer(typeMap, &innerObjectType)
+			if err != nil {
+				return typeMap, err
+			}
+		}
+	case *GraphQLObjectType:
+		for _, innerObjectType := range objectType.Interfaces {
+			typeMap, err = typeMapReducer(typeMap, &innerObjectType)
+			if err != nil {
+				return typeMap, err
+			}
+		}
+	}
+
+	switch objectType := objectType.(type) {
+	case *GraphQLObjectType:
+		fieldMap := objectType.Fields
+		for _, field := range fieldMap {
+			for _, arg := range field.Args {
+				typeMap, err = typeMapReducer(typeMap, arg.Type)
+				if err != nil {
+					return typeMap, err
+				}
+			}
+			typeMap, err = typeMapReducer(typeMap, field.Type)
+			if err != nil {
+				return typeMap, err
+			}
+		}
+	case *GraphQLInterfaceType:
+		fieldMap := objectType.Fields
+		for _, field := range fieldMap {
+			for _, arg := range field.Args {
+				typeMap, err = typeMapReducer(typeMap, arg.Type)
+				if err != nil {
+					return typeMap, err
+				}
+			}
+			typeMap, err = typeMapReducer(typeMap, field.Type)
+			if err != nil {
+				return typeMap, err
+			}
+		}
+	//	case *GraphQLInputObjectType:
+	}
+	return typeMap, nil
 }
 
 func (gq *GraphQLSchema) GetQueryType() GraphQLObjectType {
@@ -266,9 +420,8 @@ func (gq *GraphQLSchema) GetMutationType() GraphQLObjectType {
 	return gq.SchemaConfig.Mutation
 }
 
-type TypeMap map[string]GraphQLType
 
-func (gq *GraphQLSchema) GetTypeMap() TypeMap {
+func (gq *GraphQLSchema) GetTypeMap() GraphQLTypeMap {
 	return gq.typeMap
 }
 
@@ -283,6 +436,9 @@ type GraphQLString struct {
 
 func (gs *GraphQLString) GetName() string {
 	return gs.Name
+}
+func (gs *GraphQLString) SetName(name string) {
+	gs.Name = name
 }
 func (gs *GraphQLString) GetDescription() string {
 	return gs.Description
@@ -301,9 +457,11 @@ type GraphQLInt struct {
 	Name        string
 	Description string
 }
-
 func (gi *GraphQLInt) GetName() string {
 	return gi.Name
+}
+func (gi *GraphQLInt) SetName(name string) {
+	gi.Name = name
 }
 func (gi *GraphQLInt) GetDescription() string {
 	return gi.Description

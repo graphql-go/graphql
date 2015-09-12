@@ -269,7 +269,7 @@ func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
 		p.ResultChan <- p.Result
 		return eCtx
 	}
-	variableValues, err := GetVariableValues(p.Schema, operation.GetVariableDefinitions(), p.Args)
+	variableValues, err := getVariableValues(p.Schema, operation.GetVariableDefinitions(), p.Args)
 	if err != nil {
 		p.Result.Errors = append(p.Result.Errors, graphqlerrors.FormatError(err))
 		p.ResultChan <- p.Result
