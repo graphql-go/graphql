@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"fmt"
+	"io/ioutil"
+	"strings"
+
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/language/source"
-	"io/ioutil"
-	"strings"
 )
 
 func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
@@ -124,7 +125,7 @@ fragment MissingOn Type
 
 func TestParseProvidesUsefulErrorsWhenUsingSource(t *testing.T) {
 	test := errorMessageTest{
-		source.NewSource("query", "MyQuery.graphql"),
+		source.NewSource(&source.Source{Body: "query", Name: "MyQuery.graphql"}),
 		`Syntax Error MyQuery.graphql (1:6) Expected Name, found EOF`,
 		false,
 	}
@@ -240,14 +241,14 @@ func TestParsesExperimentalSubscriptionFeature(t *testing.T) {
 }
 
 func TestParseCreatesAst(t *testing.T) {
-	source := source.NewSource(`{
+	body := `{
   node(id: 4) {
     id,
     name
   }
 }
-`, "")
-
+`
+	source := source.NewSource(&source.Source{Body: body})
 	document, err := Parse(
 		ParseParams{
 			Source: source,
