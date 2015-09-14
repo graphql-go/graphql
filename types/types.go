@@ -263,10 +263,11 @@ func (it *GraphQLInterfaceType) String() string {
 	return it.Name
 }
 
+// TODO: clean up GQLFRParams fields
 type GQLFRParams struct {
-	Source     map[string]interface{}
-	Args       map[string]interface{}
-	Context    interface{}
+	Source map[string]interface{}
+	Args   map[string]interface{}
+	//	Context    interface{}
 	FieldAST   interface{}
 	FieldType  interface{}
 	ParentType interface{}

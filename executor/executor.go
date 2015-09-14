@@ -201,6 +201,7 @@ func executeFields(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) 
 
 	finalResults := map[string]interface{}{}
 	for responseName, fieldASTs := range p.Fields {
+
 		resolved, err := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
 		if err != nil {
 			result.Errors = append(result.Errors, graphqlerrors.FormatError(err))
@@ -263,7 +264,7 @@ func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
 		}
 	}
 	if (p.OperationName == "") && (len(operations) != 1) {
-		err := graphqlerrors.NewGraphQLFormattedError("Must provide operation name if query contains multiple operations")
+		err := graphqlerrors.NewGraphQLFormattedError("Must provide operation name if query contains multiple operations.")
 		p.Result.Errors = append(p.Result.Errors, err)
 		p.ResultChan <- p.Result
 		return eCtx
@@ -411,8 +412,15 @@ func doesFragmentConditionMatch(eCtx ExecutionContext, fragment ast.Node, ttype 
  * then calls completeValue to complete promises, serialize scalars, or execute
  * the sub-selection-set for objects.
  */
-func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, source map[string]interface{}, fieldASTs []*ast.Field) (interface{}, error) {
-
+func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, source map[string]interface{}, fieldASTs []*ast.Field) (result interface{}, err error) {
+	// catch panic
+	defer func() (interface{}, error) {
+		if r := recover(); r != nil {
+			err = graphqlerrors.NewGraphQLFormattedError(fmt.Sprintf("%v", r))
+			return nil, err
+		}
+		return result, nil
+	}()
 	fieldAST := fieldASTs[0]
 	fieldName := ""
 	if fieldAST.Name != nil {
@@ -453,17 +461,16 @@ func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, so
 	// it is wrapped as a GraphQLError with locations. Log this error and return
 	// null if allowed, otherwise throw the error so the parent field can handle
 	// it.
-	result := resolveFn(types.GQLFRParams{
+	result = resolveFn(types.GQLFRParams{
 		Source: source,
 		Args:   args,
 		Info:   info,
 	})
-	completed, err := completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
+	result, err = completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
 	if err != nil {
-		// TODO: return error if fail to resolve field
 		return nil, err
 	}
-	return completed, nil
+	return result, nil
 }
 
 func getFieldDef(schema types.GraphQLSchema, parentType *types.GraphQLObjectType, fieldName string) *types.GraphQLFieldDefinition {
@@ -504,10 +511,7 @@ func completeValueCatchingError(eCtx ExecutionContext, returnType types.GraphQLT
 	// catch panic
 	defer func() (interface{}, error) {
 		if r := recover(); r != nil {
-			err, ok := r.(error)
-			if !ok {
-				err = graphqlerrors.NewGraphQLFormattedError("Unknown error in completing value")
-			}
+			err = graphqlerrors.NewGraphQLFormattedError(fmt.Sprintf("%v", r))
 			return nil, err
 		}
 		return completed, nil
