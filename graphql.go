@@ -18,7 +18,10 @@ type GraphqlParams struct {
 }
 
 func Graphql(p GraphqlParams, resultChannel chan *types.GraphQLResult) {
-	source := source.NewSource(p.RequestString, "GraphQL request")
+	source := source.NewSource(&source.Source{
+		Body: p.RequestString,
+		Name: "GraphQL request",
+	})
 	AST, err := parser.Parse(parser.ParseParams{Source: source})
 	if err != nil {
 		result := types.GraphQLResult{
