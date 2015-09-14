@@ -6,6 +6,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/kinds"
 	"github.com/chris-ramon/graphql-go/types"
+	"reflect"
 )
 
 // Prepares an object map of variableValues of the correct type based on the
@@ -64,7 +65,7 @@ func getVariableValue(schema types.GraphQLSchema, definitionAST *ast.VariableDef
 
 	if ttype == nil {
 		return "", graphqlerrors.NewGraphQLError(
-			fmt.Sprintf(`Variable "$%v" expected value of type `+
+			fmt.Sprintf(`11Variable "$%v" expected value of type `+
 				`"%v" which cannot be used as an input type.`, variable.Name.Value, definitionAST.Type),
 			[]ast.Node{definitionAST},
 			"",
@@ -79,8 +80,8 @@ func getVariableValue(schema types.GraphQLSchema, definitionAST *ast.VariableDef
 				variables := map[string]interface{}{}
 				return valueFromAST(defaultValue, ttype, variables)
 			}
-			return coerceValue(ttype, input)
 		}
+		return coerceValue(ttype, input)
 	}
 	if isNullish(input) {
 		return "", graphqlerrors.NewGraphQLError(
@@ -139,15 +140,45 @@ func typeFromAST(schema types.GraphQLSchema, inputTypeAST ast.Type) (types.Graph
 // Given a JavaScript value and a GraphQL type, determine if the value will be
 // accepted for that type. This is primarily useful for validating the
 // runtime values of query variables.
-func isValidInputValue(input interface{}, ttype types.GraphQLInputType) bool {
-	// TODO: isValidInputValue
+func isValidInputValue(value interface{}, ttype types.GraphQLInputType) bool {
+
+	switch ttype := ttype.(type) {
+	case *types.GraphQLNonNull:
+		if isNullish(value) {
+			return false
+		}
+		return isValidInputValue(value, ttype.OfType)
+	}
+
+	if isNullish(value) {
+		return true
+	}
+
+	switch ttype := ttype.(type) {
+	case *types.GraphQLList:
+		itemType := ttype.OfType
+		valType := reflect.ValueOf(itemType)
+		if valType.Kind() == reflect.Slice {
+			for i := 0; i < valType.Len(); i++ {
+				val := valType.Index(i).Interface()
+				if !isValidInputValue(val, itemType) {
+					return false
+				}
+			}
+			return true
+		}
+		return isValidInputValue(value, itemType)
+	case *types.GraphQLInputObjectType:
+		// TODO: isValidInputValue for GraphQLInputObjectType
+		return true
+	}
+
 	return true
 }
 
 // Returns true if a value is null, undefined, or NaN.
 func isNullish(value interface{}) bool {
-	// TODO: rethink isNullish. Do we need it?
-	return true
+	return value == nil
 }
 
 /**

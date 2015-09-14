@@ -21,7 +21,7 @@ var _ GraphQLType = (*GraphQLInterfaceType)(nil)
 //var _ GraphQLType = (*GraphQLUnionType)(nil)
 var _ GraphQLType = (*GraphQLEnumType)(nil)
 
-//var _ GraphQLType = (*GraphQLInputObjectType)(nil)
+var _ GraphQLType = (*GraphQLInputObjectType)(nil)
 var _ GraphQLType = (*GraphQLList)(nil)
 var _ GraphQLType = (*GraphQLNonNull)(nil)
 
@@ -92,6 +92,8 @@ var _ GraphQLCompositeType = (*GraphQLInterfaceType)(nil)
 //var _ GraphQLCompositeType = (*GraphQLUnionType)(nil)
 
 type GraphQLAbstractType interface {
+	GetObjectType(value interface{}, info GraphQLResolveInfo) *GraphQLObjectType
+	GetPossibleTypes() []*GraphQLObjectType
 	IsPossibleType(ttype *GraphQLObjectType) bool
 }
 

@@ -6,6 +6,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/types"
 	"github.com/kr/pretty"
+	"reflect"
 	"testing"
 )
 
@@ -24,16 +25,15 @@ func TestExecutesArbritraryCode(t *testing.T) {
 			return fmt.Sprintf("Pic of size: %v", size)
 		},
 		"deep": func() interface{} { return deepData },
-		"promise": func() interface{} {
-			// TODO: instead of promise, let's try go-routines
-			return "TODO  go-routines"
-		},
+	}
+	data["promise"] = func() interface{} {
+		return data
 	}
 	deepData = map[string]interface{}{
-		"a":      func() string { return "Already Been Done" },
-		"b":      func() string { return "Boring" },
-		"c":      func() []string { return []string{"Contrived", "", "Confusing"} },
-		"deeper": func() []interface{} { return []interface{}{data, nil, nil} },
+		"a":      func() interface{} { return "Already Been Done" },
+		"b":      func() interface{} { return "Boring" },
+		"c":      func() interface{} { return []string{"Contrived", "", "Confusing"} },
+		"deeper": func() interface{} { return []interface{}{data, nil, nil} },
 	}
 
 	query := `
@@ -65,20 +65,58 @@ func TestExecutesArbritraryCode(t *testing.T) {
         e
       }
     `
-	pparams := parser.ParseParams{
-		Source: query,
-		Options: parser.ParseOptions{
-			NoSource: true,
+
+	// TODO make GraphQLResult json marshal friendly
+	expected := &types.GraphQLResult{
+		Data: map[string]interface{}{
+			"b": "Banana",
+			"x": "Cookie",
+			"d": "Donut",
+			"e": "Egg",
+			"promise": &types.GraphQLResult{
+				Data: map[string]interface{}{
+					"a": "Apple",
+				},
+			},
+			"a": "Apple",
+			"deep": &types.GraphQLResult{
+				Data: map[string]interface{}{
+					"a": "Already Been Done",
+					"b": "Boring",
+					"c": []interface{}{
+						"Contrived",
+						"",
+						"Confusing",
+					},
+					"deeper": []interface{}{
+						&types.GraphQLResult{
+							Data: map[string]interface{}{
+								"a": "Apple",
+								"b": "Banana",
+							},
+						},
+					},
+				},
+			},
+			"f":   "Fish",
+			"pic": "Pic of size: 100",
 		},
 	}
-	astDoc, err := parser.Parse(pparams)
-	if err != nil {
-		t.Fatalf("Parse failed: %v", err)
-	}
-	picResolverFn := func(p types.GQLFRParams) interface{} {
-		return p.Source["pic"].(func(size int) string)(p.Args["size"].(int))
-	}
 
+	// Schema Definitions
+	picResolverFn := func(p types.GQLFRParams) interface{} {
+		// get and type assert ResolveFn for this field
+		picResolver, ok := p.Source["pic"].(func(size int) string)
+		if !ok {
+			return nil
+		}
+		// get and type assert argument
+		sizeArg, ok := p.Args["size"].(int)
+		if !ok {
+			return nil
+		}
+		return picResolver(sizeArg)
+	}
 	dataType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
 		Name: "DataType",
 		Fields: types.GraphQLFieldConfigMap{
@@ -135,15 +173,30 @@ func TestExecutesArbritraryCode(t *testing.T) {
 	dataType.AddFieldConfig("deep", &types.GraphQLFieldConfig{
 		Type: deepDataType,
 	})
+	// in this case DataType has DataType
+	dataType.AddFieldConfig("promise", &types.GraphQLFieldConfig{
+		Type: dataType,
+	})
 
 	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
 		Query: dataType,
 	})
-
 	if err != nil {
 		t.Fatalf("Error in schema %v", err.Error())
 	}
 
+	// parse query
+	astDoc, err := parser.Parse(parser.ParseParams{
+		Source: query,
+		Options: parser.ParseOptions{
+			NoSource: true,
+		},
+	})
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+
+	// execute
 	args := map[string]interface{}{
 		"size": 100,
 	}
@@ -157,8 +210,10 @@ func TestExecutesArbritraryCode(t *testing.T) {
 	}
 	go executor.Execute(ep, resultChannel)
 	result := <-resultChannel
-	pretty.Println(result)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
 	}
 }

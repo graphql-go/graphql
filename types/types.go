@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
+	"reflect"
 	"regexp"
 )
 
@@ -168,7 +169,7 @@ type GraphQLInterfaceTypeConfig struct {
 	Description string
 }
 
-type ResolveTypeFn func(value interface{}, info GraphQLResolveInfo) GraphQLObjectType
+type ResolveTypeFn func(value interface{}, info GraphQLResolveInfo) *GraphQLObjectType
 type GraphQLInterfaceType struct {
 	Name        string
 	Description string
@@ -238,15 +239,26 @@ func (it *GraphQLInterfaceType) IsPossibleType(ttype *GraphQLObjectType) bool {
 	return false
 }
 
-func (it *GraphQLInterfaceType) getObjectType(value interface{}, info GraphQLResolveInfo) (r GraphQLObjectType) {
-	//var resolver = this._typeConfig.resolveType;
-	//return resolver ? resolver(value) : getTypeOf(value, this);
+func (it *GraphQLInterfaceType) GetObjectType(value interface{}, info GraphQLResolveInfo) *GraphQLObjectType {
 	if it.ResolveType != nil {
 		return it.ResolveType(value, info)
 	}
-	return GraphQLObjectType{}
+	return nil
 }
 
+func getTypeOf(value interface{}, info GraphQLResolveInfo, abstractType GraphQLAbstractType) *GraphQLObjectType {
+	possibleTypes := abstractType.GetPossibleTypes()
+
+	for _, possibleType := range possibleTypes {
+		possibleTypeVal := reflect.ValueOf(possibleType)
+		if possibleTypeVal.IsValid() &&
+			possibleTypeVal.Kind() == reflect.Func &&
+			possibleType.IsTypeOf(value, info) {
+			return possibleType
+		}
+	}
+	return nil
+}
 func (it *GraphQLInterfaceType) String() string {
 	return it.Name
 }
@@ -298,7 +310,7 @@ type GraphQLInputType interface {
 var _ GraphQLInputType = (*GraphQLScalarType)(nil)
 var _ GraphQLInputType = (*GraphQLEnumType)(nil)
 
-//var _ GraphQLInputType = (*GraphQLInputObjectType)(nil)
+var _ GraphQLInputType = (*GraphQLInputObjectType)(nil)
 var _ GraphQLInputType = (*GraphQLList)(nil)
 
 type GraphQLFieldArgument struct {
@@ -505,7 +517,7 @@ var (
 	//	_ GraphQLNamedType = (GraphQLUnionType)(nil)
 	_ GraphQLNamedType = (*GraphQLEnumType)(nil)
 
-//	_ GraphQLNamedType = (*GraphQLInputObjectType)(nil)
+	_ GraphQLNamedType = (*GraphQLInputObjectType)(nil)
 )
 
 // TODO: there is another invariant() func in `executor`
@@ -588,4 +600,86 @@ func defineInterfaces(ttype *GraphQLObjectType, interfaces []*GraphQLInterfaceTy
 	}
 
 	return interfaces, nil
+}
+
+type InputObjectFieldConfig struct {
+	Type         GraphQLInputType
+	DefaultValue interface{}
+	Description  string
+}
+type InputObjectField struct {
+	Name         string
+	Type         GraphQLInputType
+	DefaultValue interface{}
+	Description  string
+}
+type InputObjectConfigFieldMap map[string]InputObjectFieldConfig
+type InputObjectFieldMap map[string]InputObjectField
+type InputObjectConfig struct {
+	Name        string
+	Fields      InputObjectConfigFieldMap
+	Description string
+}
+type GraphQLInputObjectType struct {
+	Name        string
+	Description string
+
+	typeConfig InputObjectConfig
+	fields     InputObjectFieldMap
+
+	err error
+}
+
+func NewGraphQLInputObjectType(config InputObjectConfig) *GraphQLInputObjectType {
+	gt := &GraphQLInputObjectType{}
+	err := invariant(config.Name != "", "Type must be named.")
+	if err != nil {
+		gt.err = err
+		return gt
+	}
+
+	gt.Name = config.Name
+	gt.Description = config.Description
+	gt.typeConfig = config
+	gt.fields = gt.defineFieldMap()
+	return gt
+}
+
+func (gt *GraphQLInputObjectType) defineFieldMap() InputObjectFieldMap {
+	fieldMap := gt.typeConfig.Fields
+	resultFieldMap := InputObjectFieldMap{}
+	for fieldName, fieldConfig := range fieldMap {
+		err := assertValidName(fieldName)
+		if err != nil {
+			continue
+		}
+		field := InputObjectField{}
+		field.Name = fieldName
+		field.Type = fieldConfig.Type
+		field.Description = fieldConfig.Description
+		field.DefaultValue = field.DefaultValue
+		resultFieldMap[fieldName] = field
+	}
+	return resultFieldMap
+}
+func (gt *GraphQLInputObjectType) GetFields() InputObjectFieldMap {
+	return gt.fields
+}
+func (gt *GraphQLInputObjectType) GetName() string {
+	return gt.Name
+}
+func (gt *GraphQLInputObjectType) SetName(name string) {
+	gt.Name = name
+}
+func (gt *GraphQLInputObjectType) GetDescription() string {
+	return gt.Description
+}
+func (gt *GraphQLInputObjectType) Coerce(value interface{}) interface{} {
+	return value
+}
+func (gt *GraphQLInputObjectType) CoerceLiteral(value interface{}) interface{} {
+	return value
+}
+func (gt *GraphQLInputObjectType) String() string {
+	return gt.Name
 }
