@@ -90,3 +90,10 @@ var _ GraphQLCompositeType = (*GraphQLObjectType)(nil)
 var _ GraphQLCompositeType = (*GraphQLInterfaceType)(nil)
 
 //var _ GraphQLCompositeType = (*GraphQLUnionType)(nil)
+
+type GraphQLAbstractType interface {
+	IsPossibleType(ttype *GraphQLObjectType) bool
+}
+
+var _ GraphQLAbstractType = (*GraphQLInterfaceType)(nil)
+//var _ GraphQLAbstractType = (*GraphQLUnionType)(nil)

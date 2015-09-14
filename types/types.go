@@ -177,7 +177,7 @@ type GraphQLInterfaceType struct {
 	typeConfig        GraphQLInterfaceTypeConfig
 	fields            GraphQLFieldDefinitionMap
 	implementations   []*GraphQLObjectType
-	possibleTypeNames map[string]bool
+	possibleTypes      map[string]bool
 }
 
 func (it *GraphQLInterfaceType) GetName() string {
@@ -216,17 +216,26 @@ func (it *GraphQLInterfaceType) GetPossibleTypes() []*GraphQLObjectType {
 	return it.implementations
 }
 
-func (it *GraphQLInterfaceType) IsPossibleType(objType GraphQLObjectType) bool {
-	//var possibleTypeNames = this._possibleTypeNames;
-	//if (!possibleTypeNames) {
-	//this._possibleTypeNames = possibleTypeNames =
-	//this.getPossibleTypes().reduce(
-	//(map, possibleType) => ((map[possibleType.name] = true), map),
-	//{}
-	//);
-	//}
-	//return possibleTypeNames[type.name] === true;
-	return true
+func (it *GraphQLInterfaceType) IsPossibleType(ttype *GraphQLObjectType) bool {
+
+	if ttype == nil {
+		return false
+	}
+	if len(it.possibleTypes) == 0 {
+		possibleTypes := map[string]bool{}
+		for _, possibleType := range it.GetPossibleTypes() {
+			if possibleType == nil {
+				continue
+			}
+			possibleTypes[possibleType.Name] = true
+		}
+		it.possibleTypes = possibleTypes
+	}
+
+	if val, ok := it.possibleTypes[ttype.Name]; ok {
+		return val
+	}
+	return false
 }
 
 func (it *GraphQLInterfaceType) getObjectType(value interface{}, info GraphQLResolveInfo) (r GraphQLObjectType) {

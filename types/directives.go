@@ -30,7 +30,27 @@ var GraphQLIncludeDirective *GraphQLDirective = NewGraphQLDirective(&GraphQLDire
 	Args: []*GraphQLArgument{
 		&GraphQLArgument{
 			Name:        "if",
+			Type: NewGraphQLNonNull(GraphQLBoolean),
 			Description: "Included when true.",
 		},
 	},
+	OnOperation: false,
+	OnFragment: true,
+	OnField: true,
+})
+
+var GraphQLSkipDirective *GraphQLDirective = NewGraphQLDirective(&GraphQLDirective{
+	Name: "skip",
+	Description: "Directs the executor to skip this field or fragment when the `if` " +
+		"argument is true.",
+	Args: []*GraphQLArgument{
+		&GraphQLArgument{
+			Name:        "if",
+			Type: NewGraphQLNonNull(GraphQLBoolean),
+			Description: "Skipped when true.",
+		},
+	},
+	OnOperation: false,
+	OnFragment: true,
+	OnField: true,
 })

@@ -7,7 +7,6 @@ import (
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/types"
 	"reflect"
-	"github.com/kr/pretty"
 )
 
 type ExecuteParams struct {
@@ -118,11 +117,12 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 	if fields == nil {
 		fields = map[string][]*ast.Field{}
 	}
-
+	if p.VisitedFragmentNames == nil {
+		p.VisitedFragmentNames = map[string]bool{}
+	}
 	if p.SelectionSet == nil {
 		return fields
 	}
-
 	for _, iSelection := range p.SelectionSet.Selections {
 		switch selection := iSelection.(type) {
 		case *ast.Field:
@@ -135,8 +135,9 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 			}
 			fields[name] = append(fields[name], selection)
 		case *ast.InlineFragment:
+
 			if !shouldIncludeNode(p.ExeContext, selection.Directives) ||
-				!doesFragmentConditionMatch(p.ExeContext, selection, p.OperationType) {
+			!doesFragmentConditionMatch(p.ExeContext, selection, p.OperationType) {
 				continue
 			}
 			innerParams := CollectFieldsParams{
@@ -146,14 +147,14 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 				Fields:               fields,
 				VisitedFragmentNames: p.VisitedFragmentNames,
 			}
-			fields = collectFields(innerParams)
+			collectFields(innerParams)
 		case *ast.FragmentSpread:
 			fragName := ""
 			if selection.Name != nil {
 				fragName = selection.Name.Value
 			}
-			if _, ok := p.VisitedFragmentNames[fragName]; !ok ||
-				!shouldIncludeNode(p.ExeContext, selection.Directives) {
+			if visited, ok := p.VisitedFragmentNames[fragName]; (ok && visited) ||
+			!shouldIncludeNode(p.ExeContext, selection.Directives) {
 				continue
 			}
 			p.VisitedFragmentNames[fragName] = true
@@ -161,10 +162,10 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 			if !hasFragment {
 				continue
 			}
-			switch fragment := fragment.(type) {
-			case *ast.FragmentDefinition:
+
+			if fragment, ok := fragment.(*ast.FragmentDefinition); ok {
 				if !shouldIncludeNode(p.ExeContext, fragment.Directives) ||
-					!doesFragmentConditionMatch(p.ExeContext, fragment, p.OperationType) {
+				!doesFragmentConditionMatch(p.ExeContext, fragment, p.OperationType) {
 					continue
 				}
 				innerParams := CollectFieldsParams{
@@ -174,7 +175,7 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 					Fields:               fields,
 					VisitedFragmentNames: p.VisitedFragmentNames,
 				}
-				fields = collectFields(innerParams)
+				collectFields(innerParams)
 			}
 		}
 	}
@@ -297,6 +298,7 @@ func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
 
 // Implements the logic to compute the key of a given field’s entry
 func getFieldEntryKey(node *ast.Field) string {
+
 	if node.Alias != nil && node.Alias.Value != "" {
 		return node.Alias.Value
 	}
@@ -309,16 +311,96 @@ func getFieldEntryKey(node *ast.Field) string {
 // Determines if a field should be included based on the @include and @skip
 // directives, where @skip has higher precedence than @include.
 func shouldIncludeNode(eCtx ExecutionContext, directives []*ast.Directive) bool {
-	//TODO: shouldIncludeNode not implemented
-	return true
+
+	defaultReturnValue := true
+
+	var skipAST *ast.Directive
+	var includeAST *ast.Directive
+	for _, directive := range directives {
+		if directive == nil || directive.Name == nil {
+			continue
+		}
+		if directive.Name.Value == types.GraphQLSkipDirective.Name {
+			skipAST = directive
+			break
+		}
+	}
+	if skipAST != nil {
+		argValues, err := getArgumentValues(
+			types.GraphQLSkipDirective.Args,
+			skipAST.Arguments,
+			eCtx.VariableValues,
+		)
+		if err != nil {
+			return defaultReturnValue
+		}
+		if skipIf, ok := argValues["if"]; ok {
+			if boolSkipIf, ok := skipIf.(bool); ok {
+				return !boolSkipIf
+			}
+		}
+		return defaultReturnValue
+	}
+	for _, directive := range directives {
+		if directive == nil || directive.Name == nil {
+			continue
+		}
+		if directive.Name.Value == types.GraphQLIncludeDirective.Name {
+			includeAST = directive
+			break
+		}
+	}
+	if includeAST != nil {
+		argValues, err := getArgumentValues(
+			types.GraphQLIncludeDirective.Args,
+			skipAST.Arguments,
+			eCtx.VariableValues,
+		)
+		if err != nil {
+			return defaultReturnValue
+		}
+		if includeIf, ok := argValues["if"]; ok {
+			if boolIncludeIf, ok := includeIf.(bool); ok {
+				return !boolIncludeIf
+			}
+		}
+		return defaultReturnValue
+	}
+	return defaultReturnValue
 }
 
 // Determines if a fragment is applicable to the given type.
 func doesFragmentConditionMatch(eCtx ExecutionContext, fragment ast.Node, ttype *types.GraphQLObjectType) bool {
-	//TODO: doesFragmentConditionMatch not implemented
-	return true
-}
 
+	switch fragment := fragment.(type) {
+	case *ast.FragmentDefinition:
+		conditionalType, err := typeFromAST(eCtx.Schema, fragment.TypeCondition)
+		if err != nil {
+			return false
+		}
+		if conditionalType == ttype {
+			return true
+		}
+
+		if conditionalType, ok := conditionalType.(types.GraphQLAbstractType); ok {
+			return conditionalType.IsPossibleType(ttype)
+		}
+	case *ast.InlineFragment:
+		conditionalType, err := typeFromAST(eCtx.Schema, fragment.TypeCondition)
+		if err != nil {
+			return false
+		}
+		if conditionalType == ttype {
+			return true
+		}
+
+		if conditionalType, ok := conditionalType.(types.GraphQLAbstractType); ok {
+			return conditionalType.IsPossibleType(ttype)
+		}
+	}
+
+	return false
+}
 /**
  * Resolves the field on the given source object. In particular, this
  * figures out the value that the field returns by calling its resolve function,
@@ -328,7 +410,10 @@ func doesFragmentConditionMatch(eCtx ExecutionContext, fragment ast.Node, ttype 
 func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, source map[string]interface{}, fieldASTs []*ast.Field) interface{} {
 
 	fieldAST := fieldASTs[0]
-	fieldName := getFieldEntryKey(fieldAST)
+	fieldName := ""
+	if fieldAST.Name != nil {
+		fieldName = fieldAST.Name.Value
+	}
 
 	fieldDef := getFieldDef(eCtx.Schema, parentType, fieldName)
 	if fieldDef == nil {
@@ -379,15 +464,15 @@ func getFieldDef(schema types.GraphQLSchema, parentType *types.GraphQLObjectType
 	}
 
 	if fieldName == types.SchemaMetaFieldDef.Name &&
-		schema.GetQueryType().Name == parentType.Name {
+	schema.GetQueryType().Name == parentType.Name {
 		return types.SchemaMetaFieldDef
 	}
 	if fieldName == types.TypeMetaFieldDef.Name &&
-		schema.GetQueryType().Name == parentType.Name {
+	schema.GetQueryType().Name == parentType.Name {
 		return types.TypeMetaFieldDef
 	}
 	if fieldName == types.TypeNameMetaFieldDef.Name &&
-		schema.GetQueryType().Name == parentType.Name {
+	schema.GetQueryType().Name == parentType.Name {
 		return types.TypeNameMetaFieldDef
 	}
 	return parentType.GetFields()[fieldName]
