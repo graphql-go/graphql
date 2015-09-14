@@ -174,10 +174,10 @@ type GraphQLInterfaceType struct {
 	Description string
 	ResolveType ResolveTypeFn
 
-	typeConfig        GraphQLInterfaceTypeConfig
-	fields            GraphQLFieldDefinitionMap
-	implementations   []*GraphQLObjectType
-	possibleTypes      map[string]bool
+	typeConfig      GraphQLInterfaceTypeConfig
+	fields          GraphQLFieldDefinitionMap
+	implementations []*GraphQLObjectType
+	possibleTypes   map[string]bool
 }
 
 func (it *GraphQLInterfaceType) GetName() string {

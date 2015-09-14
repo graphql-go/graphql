@@ -30,13 +30,13 @@ var GraphQLIncludeDirective *GraphQLDirective = NewGraphQLDirective(&GraphQLDire
 	Args: []*GraphQLArgument{
 		&GraphQLArgument{
 			Name:        "if",
-			Type: NewGraphQLNonNull(GraphQLBoolean),
+			Type:        NewGraphQLNonNull(GraphQLBoolean),
 			Description: "Included when true.",
 		},
 	},
 	OnOperation: false,
-	OnFragment: true,
-	OnField: true,
+	OnFragment:  true,
+	OnField:     true,
 })
 
 var GraphQLSkipDirective *GraphQLDirective = NewGraphQLDirective(&GraphQLDirective{
@@ -46,11 +46,11 @@ var GraphQLSkipDirective *GraphQLDirective = NewGraphQLDirective(&GraphQLDirecti
 	Args: []*GraphQLArgument{
 		&GraphQLArgument{
 			Name:        "if",
-			Type: NewGraphQLNonNull(GraphQLBoolean),
+			Type:        NewGraphQLNonNull(GraphQLBoolean),
 			Description: "Skipped when true.",
 		},
 	},
 	OnOperation: false,
-	OnFragment: true,
-	OnField: true,
+	OnFragment:  true,
+	OnField:     true,
 })

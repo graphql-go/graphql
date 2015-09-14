@@ -76,7 +76,7 @@ func TestExecutesArbritraryCode(t *testing.T) {
 		t.Fatalf("Parse failed: %v", err)
 	}
 	picResolverFn := func(p types.GQLFRParams) interface{} {
-		return p.Source["pic"].(func(size int) string)(1000)
+		return p.Source["pic"].(func(size int) string)(p.Args["size"].(int))
 	}
 
 	dataType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{

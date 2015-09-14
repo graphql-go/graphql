@@ -137,7 +137,7 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 		case *ast.InlineFragment:
 
 			if !shouldIncludeNode(p.ExeContext, selection.Directives) ||
-			!doesFragmentConditionMatch(p.ExeContext, selection, p.OperationType) {
+				!doesFragmentConditionMatch(p.ExeContext, selection, p.OperationType) {
 				continue
 			}
 			innerParams := CollectFieldsParams{
@@ -154,7 +154,7 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 				fragName = selection.Name.Value
 			}
 			if visited, ok := p.VisitedFragmentNames[fragName]; (ok && visited) ||
-			!shouldIncludeNode(p.ExeContext, selection.Directives) {
+				!shouldIncludeNode(p.ExeContext, selection.Directives) {
 				continue
 			}
 			p.VisitedFragmentNames[fragName] = true
@@ -165,7 +165,7 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 
 			if fragment, ok := fragment.(*ast.FragmentDefinition); ok {
 				if !shouldIncludeNode(p.ExeContext, fragment.Directives) ||
-				!doesFragmentConditionMatch(p.ExeContext, fragment, p.OperationType) {
+					!doesFragmentConditionMatch(p.ExeContext, fragment, p.OperationType) {
 					continue
 				}
 				innerParams := CollectFieldsParams{
@@ -401,6 +401,7 @@ func doesFragmentConditionMatch(eCtx ExecutionContext, fragment ast.Node, ttype 
 
 	return false
 }
+
 /**
  * Resolves the field on the given source object. In particular, this
  * figures out the value that the field returns by calling its resolve function,
@@ -464,15 +465,15 @@ func getFieldDef(schema types.GraphQLSchema, parentType *types.GraphQLObjectType
 	}
 
 	if fieldName == types.SchemaMetaFieldDef.Name &&
-	schema.GetQueryType().Name == parentType.Name {
+		schema.GetQueryType().Name == parentType.Name {
 		return types.SchemaMetaFieldDef
 	}
 	if fieldName == types.TypeMetaFieldDef.Name &&
-	schema.GetQueryType().Name == parentType.Name {
+		schema.GetQueryType().Name == parentType.Name {
 		return types.TypeMetaFieldDef
 	}
 	if fieldName == types.TypeNameMetaFieldDef.Name &&
-	schema.GetQueryType().Name == parentType.Name {
+		schema.GetQueryType().Name == parentType.Name {
 		return types.TypeNameMetaFieldDef
 	}
 	return parentType.GetFields()[fieldName]

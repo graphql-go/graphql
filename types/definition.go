@@ -96,4 +96,5 @@ type GraphQLAbstractType interface {
 }
 
 var _ GraphQLAbstractType = (*GraphQLInterfaceType)(nil)
+
 //var _ GraphQLAbstractType = (*GraphQLUnionType)(nil)
