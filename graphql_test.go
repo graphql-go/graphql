@@ -85,19 +85,22 @@ func TestBasicGraphQLExample(t *testing.T) {
 		return "world"
 	}
 
-	schema := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.GraphQLObjectType{
+	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
 			Name: "RootQueryType",
-			Fields: types.GraphQLFieldDefinitionMap{
-				"hello": types.GraphQLFieldDefinition{
-					Name: "Returns `world`",
-					Type: &types.GraphQLString{},
-					Resolve: helloFieldResolved,
+			Fields: types.GraphQLFieldConfigMap{
+				"hello": &types.GraphQLFieldConfig{
+					Description: "Returns `world`",
+					Type:        types.GraphQLString,
+					Resolve:     helloFieldResolved,
 				},
 			},
-		},
+		}),
 	})
-	query := "{ hello }";
+	if err != nil {
+		t.Fatalf("wrong result, unexpected errors: %v", err.Error())
+	}
+	query := "{ hello }"
 	var expected interface{}
 	expected = map[string]interface{}{
 		"hello": "world",
@@ -105,7 +108,7 @@ func TestBasicGraphQLExample(t *testing.T) {
 
 	resultChannel := make(chan *types.GraphQLResult)
 	go Graphql(GraphqlParams{
-		Schema: schema,
+		Schema:        schema,
 		RequestString: query,
 	}, resultChannel)
 	result := <-resultChannel
@@ -115,6 +118,5 @@ func TestBasicGraphQLExample(t *testing.T) {
 	if !reflect.DeepEqual(result.Data, expected) {
 		t.Fatalf("wrong result, query: %v, graphql result: %v, expected: %v", query, result, expected)
 	}
-
 
 }

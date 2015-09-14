@@ -2,11 +2,12 @@ package executor
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/types"
+	"reflect"
+	"github.com/kr/pretty"
 )
 
 type ExecuteParams struct {
@@ -71,7 +72,14 @@ func executeOperation(p ExecuteOperationParams, r chan *types.GraphQLResult) {
 }
 
 // Extracts the root type of the operation from the schema.
-func getOperationRootType(schema types.GraphQLSchema, operation ast.Definition, r chan *types.GraphQLResult) (objType types.GraphQLObjectType) {
+func getOperationRootType(schema types.GraphQLSchema, operation ast.Definition, r chan *types.GraphQLResult) (objType *types.GraphQLObjectType) {
+	if operation == nil {
+		var result types.GraphQLResult
+		err := graphqlerrors.NewGraphQLFormattedError("Can only execute queries and mutations")
+		result.Errors = append(result.Errors, err)
+		r <- &result
+		return objType
+	}
 	switch operation.GetOperation() {
 	case "query":
 		return schema.GetQueryType()
@@ -96,7 +104,7 @@ func getOperationRootType(schema types.GraphQLSchema, operation ast.Definition, 
 
 type CollectFieldsParams struct {
 	ExeContext           ExecutionContext
-	OperationType        types.GraphQLObjectType
+	OperationType        *types.GraphQLObjectType
 	SelectionSet         *ast.SelectionSet
 	Fields               map[string][]*ast.Field
 	VisitedFragmentNames map[string]bool
@@ -104,7 +112,7 @@ type CollectFieldsParams struct {
 
 // Given a selectionSet, adds all of the fields in that selection to
 // the passed in map of fields, and returns it at the end.
-func collectFields(p CollectFieldsParams) (map[string][]*ast.Field) {
+func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 
 	fields := p.Fields
 	if fields == nil {
@@ -128,14 +136,14 @@ func collectFields(p CollectFieldsParams) (map[string][]*ast.Field) {
 			fields[name] = append(fields[name], selection)
 		case *ast.InlineFragment:
 			if !shouldIncludeNode(p.ExeContext, selection.Directives) ||
-			!doesFragmentConditionMatch(p.ExeContext, selection, p.OperationType) {
+				!doesFragmentConditionMatch(p.ExeContext, selection, p.OperationType) {
 				continue
 			}
 			innerParams := CollectFieldsParams{
-				ExeContext: p.ExeContext,
-				OperationType: p.OperationType,
-				SelectionSet: selection.SelectionSet,
-				Fields: fields,
+				ExeContext:           p.ExeContext,
+				OperationType:        p.OperationType,
+				SelectionSet:         selection.SelectionSet,
+				Fields:               fields,
 				VisitedFragmentNames: p.VisitedFragmentNames,
 			}
 			fields = collectFields(innerParams)
@@ -145,7 +153,7 @@ func collectFields(p CollectFieldsParams) (map[string][]*ast.Field) {
 				fragName = selection.Name.Value
 			}
 			if _, ok := p.VisitedFragmentNames[fragName]; !ok ||
-			!shouldIncludeNode(p.ExeContext, selection.Directives) {
+				!shouldIncludeNode(p.ExeContext, selection.Directives) {
 				continue
 			}
 			p.VisitedFragmentNames[fragName] = true
@@ -156,14 +164,14 @@ func collectFields(p CollectFieldsParams) (map[string][]*ast.Field) {
 			switch fragment := fragment.(type) {
 			case *ast.FragmentDefinition:
 				if !shouldIncludeNode(p.ExeContext, fragment.Directives) ||
-				!doesFragmentConditionMatch(p.ExeContext, fragment, p.OperationType) {
+					!doesFragmentConditionMatch(p.ExeContext, fragment, p.OperationType) {
 					continue
 				}
 				innerParams := CollectFieldsParams{
-					ExeContext: p.ExeContext,
-					OperationType: p.OperationType,
-					SelectionSet: fragment.GetSelectionSet(),
-					Fields: fields,
+					ExeContext:           p.ExeContext,
+					OperationType:        p.OperationType,
+					SelectionSet:         fragment.GetSelectionSet(),
+					Fields:               fields,
 					VisitedFragmentNames: p.VisitedFragmentNames,
 				}
 				fields = collectFields(innerParams)
@@ -175,7 +183,7 @@ func collectFields(p CollectFieldsParams) (map[string][]*ast.Field) {
 
 type ExecuteFieldsParams struct {
 	ExecutionContext ExecutionContext
-	ParentType       types.GraphQLObjectType
+	ParentType       *types.GraphQLObjectType
 	Source           map[string]interface{}
 	Fields           map[string][]*ast.Field
 }
@@ -193,7 +201,9 @@ func executeFields(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) 
 	finalResults := map[string]interface{}{}
 	for responseName, fieldASTs := range p.Fields {
 		result := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
-		finalResults[responseName] = result
+		if result != nil {
+			finalResults[responseName] = result
+		}
 	}
 
 	result.Data = finalResults
@@ -295,16 +305,17 @@ func getFieldEntryKey(node *ast.Field) string {
 	}
 	return ""
 }
+
 // Determines if a field should be included based on the @include and @skip
 // directives, where @skip has higher precedence than @include.
 func shouldIncludeNode(eCtx ExecutionContext, directives []*ast.Directive) bool {
-	log.Println("shouldIncludeNode not implemented")
+	//TODO: shouldIncludeNode not implemented
 	return true
 }
 
 // Determines if a fragment is applicable to the given type.
-func doesFragmentConditionMatch(eCtx ExecutionContext, fragment ast.Node, ttype types.GraphQLObjectType) bool {
-	log.Println("shouldIncludeNode not implemented")
+func doesFragmentConditionMatch(eCtx ExecutionContext, fragment ast.Node, ttype *types.GraphQLObjectType) bool {
+	//TODO: doesFragmentConditionMatch not implemented
 	return true
 }
 
@@ -314,35 +325,38 @@ func doesFragmentConditionMatch(eCtx ExecutionContext, fragment ast.Node, ttype 
  * then calls completeValue to complete promises, serialize scalars, or execute
  * the sub-selection-set for objects.
  */
-func resolveField(eCtx ExecutionContext, parentType types.GraphQLObjectType, source interface{}, fieldASTs []*ast.Field) interface{} {
+func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, source map[string]interface{}, fieldASTs []*ast.Field) interface{} {
 
 	fieldAST := fieldASTs[0]
 	fieldName := getFieldEntryKey(fieldAST)
 
 	fieldDef := getFieldDef(eCtx.Schema, parentType, fieldName)
-
+	if fieldDef == nil {
+		return nil
+	}
 	returnType := fieldDef.Type
 	resolveFn := fieldDef.Resolve
+
 	if resolveFn == nil {
 		resolveFn = defaultResolveFn
 	}
 
-	// TODO: Build a map of arguments from the field.arguments AST, using the
+	// Build a map of arguments from the field.arguments AST, using the
 	// variables scope to fulfill any variable references.
 	// TODO: find a way to memoize, in case this field is within a List type.
- 	args := map[string]interface{}{}
+	args, _ := getArgumentValues(fieldDef.Args, fieldAST.Arguments, eCtx.VariableValues)
 
-	// TODO: The resolve function's optional third argument is a collection of
+	// The resolve function's optional third argument is a collection of
 	// information about the current execution state.
 	info := types.GraphQLResolveInfo{
-		FieldName: fieldName,
-		FieldASTs: fieldASTs,
-		ReturnType: returnType,
-		ParentType: parentType,
-		Schema: eCtx.Schema,
-		Fragments: eCtx.Fragments,
-		RootValue: eCtx.Root,
-		Operation: eCtx.Operation,
+		FieldName:      fieldName,
+		FieldASTs:      fieldASTs,
+		ReturnType:     returnType,
+		ParentType:     parentType,
+		Schema:         eCtx.Schema,
+		Fragments:      eCtx.Fragments,
+		RootValue:      eCtx.Root,
+		Operation:      eCtx.Operation,
 		VariableValues: eCtx.VariableValues,
 	}
 
@@ -352,29 +366,42 @@ func resolveField(eCtx ExecutionContext, parentType types.GraphQLObjectType, sou
 	// it.
 	result := resolveFn(types.GQLFRParams{
 		Source: source,
-		Args: args,
-		Info: info,
+		Args:   args,
+		Info:   info,
 	})
 	return result
 }
 
-func getFieldDef(schema types.GraphQLSchema, parentType types.GraphQLObjectType, fieldName string) types.GraphQLFieldDefinition {
+func getFieldDef(schema types.GraphQLSchema, parentType *types.GraphQLObjectType, fieldName string) *types.GraphQLFieldDefinition {
+
+	if parentType == nil {
+		return nil
+	}
 
 	if fieldName == types.SchemaMetaFieldDef.Name &&
-	schema.GetQueryType().Name == parentType.Name {
+		schema.GetQueryType().Name == parentType.Name {
 		return types.SchemaMetaFieldDef
 	}
 	if fieldName == types.TypeMetaFieldDef.Name &&
-	schema.GetQueryType().Name == parentType.Name {
+		schema.GetQueryType().Name == parentType.Name {
 		return types.TypeMetaFieldDef
 	}
 	if fieldName == types.TypeNameMetaFieldDef.Name &&
-	schema.GetQueryType().Name == parentType.Name {
+		schema.GetQueryType().Name == parentType.Name {
 		return types.TypeNameMetaFieldDef
 	}
-	return parentType.Fields[fieldName]
+	return parentType.GetFields()[fieldName]
 }
 
 func defaultResolveFn(p types.GQLFRParams) interface{} {
-	return "defaultResolveFn"
+	property := p.Source[p.Info.FieldName]
+	val := reflect.ValueOf(property)
+	if val.IsValid() && val.Type().Kind() == reflect.Func {
+		// try type casting the func to the most basic func signature
+		// for more complex signatures, user have to define ResolveFn
+		if propertyFn, ok := property.(func() interface{}); ok {
+			return propertyFn()
+		}
+	}
+	return property
 }

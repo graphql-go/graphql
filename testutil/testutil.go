@@ -62,23 +62,23 @@ func init() {
 		1004: Tarkin,
 	}
 	charIntFields := types.GraphQLFieldDefinitionMap{}
-	characterInterface := types.GraphQLInterfaceType{
+	characterInterface := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
 		Name:        "Character",
 		Description: "A character in the Star Wars Trilogy",
 		Fields:      charIntFields,
-	}
-	fields := types.GraphQLFieldDefinitionMap{}
-	fields["hero"] = types.GraphQLFieldDefinition{
-		Type: &characterInterface,
-		Resolve: func(p types.GQLFRParams) (r interface{}) {
-			return r
+	})
+	queryType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+		Name: "Query",
+		Fields: types.GraphQLFieldConfigMap{
+			"hero": &types.GraphQLFieldConfig{
+				Type: characterInterface,
+				Resolve: func(p types.GQLFRParams) (r interface{}) {
+					return r
+				},
+			},
 		},
-	}
-	queryType := types.GraphQLObjectType{
-		Name:   "Query",
-		Fields: fields,
-	}
-	StarWarsSchema = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	})
+	StarWarsSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
 		Query: queryType,
 	})
 }

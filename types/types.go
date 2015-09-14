@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/kr/pretty"
+	"regexp"
 )
 
 type Schema interface{}
@@ -18,9 +18,106 @@ func (gqR *GraphQLResult) HasErrors() bool {
 	return (len(gqR.Errors) > 0)
 }
 
-type GraphQLEnumType struct {
-	Name string
+type GraphQLEnumValueConfigMap map[string]GraphQLEnumValueConfig
+type GraphQLEnumValueConfig struct {
+	Value             interface{}
+	DeprecationReason string
+	Description       string
 }
+type GraphQLEnumTypeConfig struct {
+	Name        string
+	Values      GraphQLEnumValueConfigMap
+	Description string
+}
+type GraphQLEnumValueDefinition struct {
+	Name              string
+	Value             interface{}
+	DeprecationReason string
+	Description       string
+}
+
+type GraphQLEnumType struct {
+	Name        string
+	Description string
+
+	enumConfig   GraphQLEnumTypeConfig
+	values       []GraphQLEnumValueDefinition
+	valuesLookup map[interface{}]GraphQLEnumValueDefinition
+	nameLookup   map[string]GraphQLEnumValueDefinition
+
+	err error
+}
+
+func NewGraphQLEnumType(config GraphQLEnumTypeConfig) *GraphQLEnumType {
+	gt := &GraphQLEnumType{}
+	gt.enumConfig = config
+
+	err := assertValidName(config.Name)
+	if err != nil {
+		gt.err = err
+		return gt
+	}
+
+	gt.Name = config.Name
+	gt.Description = config.Description
+	gt.values, err = gt.defineEnumValues(config.Values)
+	if err != nil {
+		gt.err = err
+		return gt
+	}
+
+	return gt
+}
+func (gt *GraphQLEnumType) defineEnumValues(valueMap GraphQLEnumValueConfigMap) ([]GraphQLEnumValueDefinition, error) {
+	values := []GraphQLEnumValueDefinition{}
+
+	for valueName, valueConfig := range valueMap {
+		err := assertValidName(valueName)
+		if err != nil {
+			return values, err
+		}
+		value := GraphQLEnumValueDefinition{
+			Name:              valueName,
+			Value:             valueConfig.Value,
+			DeprecationReason: valueConfig.DeprecationReason,
+			Description:       valueConfig.Description,
+		}
+		if value.Value == nil {
+			value.Value = valueName
+		}
+		values = append(values, value)
+	}
+	return values, nil
+}
+
+func (gt *GraphQLEnumType) GetValues() []GraphQLEnumValueDefinition {
+	return gt.values
+}
+func (gt *GraphQLEnumType) Serialize(value interface{}) interface{} {
+	if enumValue, ok := gt.getValueLookup()[value]; ok {
+		return enumValue.Name
+	}
+	return nil
+}
+func (gt *GraphQLEnumType) ParseValue(value interface{}) interface{} {
+	valueStr, ok := value.(string)
+	if !ok {
+		return nil
+	}
+	if enumValue, ok := gt.getNameLookup()[valueStr]; ok {
+		return enumValue.Value
+	}
+	return nil
+}
+func (gt *GraphQLEnumType) ParseLiteral(valueAST ast.Value) interface{} {
+	if valueAST, ok := valueAST.(*ast.EnumValue); ok {
+		if enumValue, ok := gt.getNameLookup()[valueAST.Value]; ok {
+			return enumValue.Value
+		}
+	}
+	return nil
+}
+
 func (gt *GraphQLEnumType) GetName() string {
 	return gt.Name
 }
@@ -36,8 +133,32 @@ func (gt *GraphQLEnumType) Coerce(value interface{}) interface{} {
 func (gt *GraphQLEnumType) CoerceLiteral(value interface{}) interface{} {
 	return value
 }
-func (gt *GraphQLEnumType) ToString() string {
-	return fmt.Sprint("%v", gt)
+func (gt *GraphQLEnumType) String() string {
+	return gt.Name
+}
+
+func (gt *GraphQLEnumType) getValueLookup() map[interface{}]GraphQLEnumValueDefinition {
+	if len(gt.valuesLookup) > 0 {
+		return gt.valuesLookup
+	}
+	valuesLookup := map[interface{}]GraphQLEnumValueDefinition{}
+	for _, value := range gt.GetValues() {
+		valuesLookup[value.Value] = value
+	}
+	gt.valuesLookup = valuesLookup
+	return gt.valuesLookup
+}
+
+func (gt *GraphQLEnumType) getNameLookup() map[string]GraphQLEnumValueDefinition {
+	if len(gt.nameLookup) > 0 {
+		return gt.nameLookup
+	}
+	nameLookup := map[string]GraphQLEnumValueDefinition{}
+	for _, value := range gt.GetValues() {
+		nameLookup[value.Name] = value
+	}
+	gt.nameLookup = nameLookup
+	return gt.nameLookup
 }
 
 type GraphQLInterfaceTypeConfig struct {
@@ -47,13 +168,16 @@ type GraphQLInterfaceTypeConfig struct {
 	Description string
 }
 
+type ResolveTypeFn func(value interface{}, info GraphQLResolveInfo) GraphQLObjectType
 type GraphQLInterfaceType struct {
-	Name              string
-	Description       string
-	TypeConfig        GraphQLInterfaceTypeConfig
-	Fields            GraphQLFieldDefinitionMap
-	Implementations   []GraphQLObjectType
-	PossibleTypeNames map[string]bool
+	Name        string
+	Description string
+	ResolveType ResolveTypeFn
+
+	typeConfig        GraphQLInterfaceTypeConfig
+	fields            GraphQLFieldDefinitionMap
+	implementations   []*GraphQLObjectType
+	possibleTypeNames map[string]bool
 }
 
 func (it *GraphQLInterfaceType) GetName() string {
@@ -72,13 +196,14 @@ func (it *GraphQLInterfaceType) CoerceLiteral(value interface{}) (r interface{})
 	return r
 }
 
-func (it *GraphQLInterfaceType) Constructor(config GraphQLInterfaceTypeConfig) {
-	//TODO: figure out how to make next line work
-	//invariant(config.name, 'Type must be named.');
+// TODO: NewGraphQLInterfaceType
+func NewGraphQLInterfaceType(config GraphQLInterfaceTypeConfig) *GraphQLInterfaceType {
+	it := &GraphQLInterfaceType{}
 	it.Name = config.Name
 	it.Description = config.Description
-	it.TypeConfig = config
+	it.typeConfig = config
 	//it.Implementations = []GraphQLObjectType;
+	return it
 }
 
 func (it *GraphQLInterfaceType) GetFields() (fields GraphQLFieldDefinitionMap) {
@@ -87,8 +212,8 @@ func (it *GraphQLInterfaceType) GetFields() (fields GraphQLFieldDefinitionMap) {
 	return fields
 }
 
-func (it *GraphQLInterfaceType) GetPossibleTypes() []GraphQLObjectType {
-	return it.Implementations
+func (it *GraphQLInterfaceType) GetPossibleTypes() []*GraphQLObjectType {
+	return it.implementations
 }
 
 func (it *GraphQLInterfaceType) IsPossibleType(objType GraphQLObjectType) bool {
@@ -104,89 +229,66 @@ func (it *GraphQLInterfaceType) IsPossibleType(objType GraphQLObjectType) bool {
 	return true
 }
 
-func (it *GraphQLInterfaceType) ResolveType(any interface{}) (r GraphQLObjectType) {
+func (it *GraphQLInterfaceType) getObjectType(value interface{}, info GraphQLResolveInfo) (r GraphQLObjectType) {
 	//var resolver = this._typeConfig.resolveType;
 	//return resolver ? resolver(value) : getTypeOf(value, this);
-	return r
+	if it.ResolveType != nil {
+		return it.ResolveType(value, info)
+	}
+	return GraphQLObjectType{}
 }
 
-func (it *GraphQLInterfaceType) ToString() string {
+func (it *GraphQLInterfaceType) String() string {
 	return it.Name
 }
 
 type GQLFRParams struct {
-	Source     interface{}
+	Source     map[string]interface{}
 	Args       map[string]interface{}
 	Context    interface{}
 	FieldAST   interface{}
 	FieldType  interface{}
 	ParentType interface{}
-	Schema     GraphQLSchema
 
-	Info       GraphQLResolveInfo
+	Schema    GraphQLSchema
+	Directive GraphQLDirective
+
+	Info GraphQLResolveInfo
 }
 
+// TODO: relook at GraphQLFieldResolveFn params
 type GraphQLFieldResolveFn func(p GQLFRParams) interface{}
-
-type GraphQLScalarTypeConfig struct {
-	Name        string
-	Description string
-}
-
-func (stC *GraphQLScalarTypeConfig) Coerce(value interface{}) (r interface{}) {
-	return r
-}
-
-func (stC *GraphQLScalarTypeConfig) CoerceLiteral(value ast.Value) (r interface{}) {
-	return r
-}
-
-type GraphQLScalarType struct {
-	Name         string
-	Description  string
-	ScalarConfig GraphQLScalarTypeConfig
-}
-
-func (sT *GraphQLScalarType) GetName() string {
-	return sT.Name
-
-}
-func (sT *GraphQLScalarType) SetName(name string) {
-	sT.Name = name
-}
-func (sT *GraphQLScalarType) GetDescription() string {
-	return sT.Description
-
-}
-func (sT *GraphQLScalarType) Coerce(value interface{}) (r interface{}) {
-	return r
-
-}
-func (sT *GraphQLScalarType) CoerceLiteral(value interface{}) (r interface{}) {
-	return r
-
-}
-func (sT *GraphQLScalarType) ToString() string {
-	return sT.Name
-}
 
 type GraphQLOutputType interface {
 	GetName() string
+	SetName(string)
 	GetDescription() string
 	Coerce(value interface{}) (r interface{})
 	CoerceLiteral(value interface{}) (r interface{})
-	ToString() string
+	String() string
 }
+
+var _ GraphQLOutputType = (*GraphQLScalarType)(nil)
+var _ GraphQLOutputType = (*GraphQLObjectType)(nil)
+var _ GraphQLOutputType = (*GraphQLInterfaceType)(nil)
+
+//var _ GraphQLOutputType = (*GraphQLUnionType)(nil)
+var _ GraphQLOutputType = (*GraphQLEnumType)(nil)
+var _ GraphQLOutputType = (*GraphQLList)(nil)
+var _ GraphQLOutputType = (*GraphQLNonNull)(nil)
 
 type GraphQLInputType interface {
 	GetName() string
+	SetName(string)
 	GetDescription() string
 	Coerce(value interface{}) interface{}
 	CoerceLiteral(value interface{}) interface{}
-	ToString() string
+	String() string
 }
+
 var _ GraphQLInputType = (*GraphQLScalarType)(nil)
 var _ GraphQLInputType = (*GraphQLEnumType)(nil)
+
 //var _ GraphQLInputType = (*GraphQLInputObjectType)(nil)
 var _ GraphQLInputType = (*GraphQLList)(nil)
 
@@ -200,20 +302,111 @@ type GraphQLFieldArgument struct {
 type GraphQLFieldDefinition struct {
 	Name              string
 	Description       string
-	Type              GraphQLType
-	Args              []GraphQLFieldArgument
+	Type              GraphQLOutputType
+	Args              []*GraphQLArgument
 	Resolve           GraphQLFieldResolveFn
 	DeprecationReason string
 }
 
-type GraphQLFieldDefinitionMap map[string]GraphQLFieldDefinition
+type GraphQLFieldDefinitionMap map[string]*GraphQLFieldDefinition
 
+type IsTypeOfFn func(value interface{}, info GraphQLResolveInfo) bool
+
+type GraphQLObjectTypeConfig struct {
+	Name        string
+	Interfaces  []*GraphQLInterfaceType
+	Fields      GraphQLFieldConfigMap
+	IsTypeOf    IsTypeOfFn
+	Description string
+}
 type GraphQLObjectType struct {
 	Name        string
 	Description string
-	//	TypeConfig GraphQLObjectTypeConfig
-	Fields      GraphQLFieldDefinitionMap
-	Interfaces  []GraphQLInterfaceType
+	IsTypeOf    IsTypeOfFn
+
+	typeConfig GraphQLObjectTypeConfig
+	fields     GraphQLFieldDefinitionMap
+	interfaces []*GraphQLInterfaceType
+	// Interim alternative to throwing an error during schema definition at run-time
+	err error
+}
+
+func NewGraphQLObjectType(config GraphQLObjectTypeConfig) *GraphQLObjectType {
+	objectType := &GraphQLObjectType{}
+
+	err := invariant(config.Name != "", "Type must be named.")
+	if err != nil {
+		objectType.err = err
+		return objectType
+	}
+	err = assertValidName(config.Name)
+	if err != nil {
+		objectType.err = err
+		return objectType
+	}
+
+	objectType.Name = config.Name
+	objectType.Description = config.Description
+	objectType.IsTypeOf = config.IsTypeOf
+	objectType.typeConfig = config
+
+	/*
+			addImplementationToInterfaces()
+			Update the interfaces to know about this implementation.
+			This is an rare and unfortunate use of mutation in the type definition
+		 	implementations, but avoids an expensive "getPossibleTypes"
+		 	implementation for Interface types.
+	*/
+	for _, iface := range objectType.GetInterfaces() {
+		iface.implementations = append(iface.implementations, objectType)
+	}
+
+	objectType.fields, err = defineFieldMap(objectType, objectType.typeConfig.Fields)
+	if err != nil {
+		objectType.err = err
+		return objectType
+	}
+
+	objectType.interfaces, err = defineInterfaces(objectType, objectType.typeConfig.Interfaces)
+	if err != nil {
+		objectType.err = err
+		return objectType
+	}
+
+	return objectType
+}
+
+func (gt *GraphQLObjectType) __setTypesFor__Type(__type GraphQLType, __field GraphQLType, __enumValue GraphQLType, __inputValue GraphQLType) {
+
+	// This is a workaround for the initialization loop problem
+	// update config map first, then redefine field maps
+	for fieldName, _ := range gt.typeConfig.Fields {
+		switch fieldName {
+		case "fields":
+			gt.typeConfig.Fields[fieldName].Type = NewGraphQLList(NewGraphQLNonNull(__field))
+		case "interfaces":
+			gt.typeConfig.Fields[fieldName].Type = NewGraphQLList(NewGraphQLNonNull(__type))
+		case "possibleTypes":
+			gt.typeConfig.Fields[fieldName].Type = NewGraphQLList(NewGraphQLNonNull(__type))
+		case "enumValues":
+			gt.typeConfig.Fields[fieldName].Type = NewGraphQLList(NewGraphQLNonNull(__enumValue))
+		case "inputFields":
+			gt.typeConfig.Fields[fieldName].Type = NewGraphQLList(NewGraphQLNonNull(__inputValue))
+		case "ofType":
+			gt.typeConfig.Fields[fieldName].Type = __type
+		}
+	}
+	gt.fields, _ = defineFieldMap(gt, gt.typeConfig.Fields)
+}
+func (gt *GraphQLObjectType) AddFieldConfig(fieldName string, fieldConfig *GraphQLFieldConfig) {
+	if fieldName == "" || fieldConfig == nil {
+		return
+	}
+	gt.typeConfig.Fields[fieldName] = fieldConfig
+
+	// re-define field map
+	gt.fields, _ = defineFieldMap(gt, gt.typeConfig.Fields)
+
 }
 func (gt *GraphQLObjectType) GetName() string {
 	return gt.Name
@@ -230,8 +423,35 @@ func (gt *GraphQLObjectType) Coerce(value interface{}) interface{} {
 func (gt *GraphQLObjectType) CoerceLiteral(value interface{}) interface{} {
 	return value
 }
-func (gt *GraphQLObjectType) ToString() string {
-	return fmt.Sprint("%v", gt.Name)
+func (gt *GraphQLObjectType) String() string {
+	return gt.Name
+}
+
+func (gt *GraphQLObjectType) GetFields() GraphQLFieldDefinitionMap {
+	return gt.fields
+}
+
+func (gt *GraphQLObjectType) GetInterfaces() []*GraphQLInterfaceType {
+	return gt.interfaces
+
+}
+
+type GraphQLFieldConfigMap map[string]*GraphQLFieldConfig
+
+type GraphQLFieldConfig struct {
+	Type              GraphQLOutputType
+	Args              GraphQLFieldConfigArgumentMap
+	Resolve           GraphQLFieldResolveFn
+	DeprecationReason string
+	Description       string
+}
+
+type GraphQLFieldConfigArgumentMap map[string]*GraphQLArgumentConfig
+
+type GraphQLArgumentConfig struct {
+	Type         GraphQLInputType
+	DefaultValue interface{}
+	Description  string
 }
 
 type GraphQLList struct {
@@ -244,10 +464,9 @@ func NewGraphQLList(ofType GraphQLType) *GraphQLList {
 	}
 }
 func (gl *GraphQLList) GetName() string {
-	return gl.OfType.GetName()
+	return fmt.Sprintf("%v", gl.OfType)
 }
 func (gl *GraphQLList) SetName(name string) {
-	gl.OfType.SetName(name)
 }
 func (gl *GraphQLList) GetDescription() string {
 	return ""
@@ -258,220 +477,106 @@ func (gl *GraphQLList) Coerce(value interface{}) interface{} {
 func (gl *GraphQLList) CoerceLiteral(value interface{}) interface{} {
 	return value
 }
-func (gl *GraphQLList) ToString() string {
-	return fmt.Sprint("%v", gl)
+func (gl *GraphQLList) String() string {
+	if gl.OfType != nil {
+		return gl.OfType.GetName()
+	}
+	return ""
 }
 
-
-type GraphQLSchemaConfig struct {
-	Query    GraphQLObjectType
-	Mutation GraphQLObjectType
+// These named types do not include modifiers like List or NonNull.
+type GraphQLNamedType interface {
+	String() string
 }
 
-// chose to name as GraphQLTypeMap instead of TypeMap
-type GraphQLTypeMap map[string]GraphQLType
+var (
+	_ GraphQLNamedType = (*GraphQLScalarType)(nil)
+	_ GraphQLNamedType = (*GraphQLObjectType)(nil)
+	_ GraphQLNamedType = (*GraphQLInterfaceType)(nil)
+	//	_ GraphQLNamedType = (GraphQLUnionType)(nil)
+	_ GraphQLNamedType = (*GraphQLEnumType)(nil)
 
-type GraphQLSchema struct {
-	Query        GraphQLObjectType
-	SchemaConfig GraphQLSchemaConfig
+//	_ GraphQLNamedType = (*GraphQLInputObjectType)(nil)
+)
 
-	typeMap      GraphQLTypeMap
+// TODO: there is another invariant() func in `executor`
+func invariant(condition bool, message string) error {
+	if !condition {
+		return graphqlerrors.NewGraphQLFormattedError(message)
+	}
+	return nil
 }
 
-func fillInFieldNames(field *GraphQLFieldDefinition, defaultName string) {
-	fieldName := field.Name
-	if fieldName == "" {
-		fieldName = defaultName
-		field.Name = fieldName
-		if field.Type.GetName() == "" {
-			field.Type.SetName(fieldName)
-		}
-	}
-	for _, arg := range field.Args {
-		argName := arg.Name
-		if argName == "" {
-			argName = defaultName
-			arg.Name = argName
-		}
-		if arg.Type.GetName() == "" {
-			arg.Type.SetName(argName)
-		}
-	}
+var NAME_REGEXP, _ = regexp.Compile("^[_a-zA-Z][_a-zA-Z0-9]*$")
+
+func assertValidName(name string) error {
+	return invariant(
+		NAME_REGEXP.MatchString(name),
+		fmt.Sprintf(`Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "%v" does not.`, name),
+	)
 }
-func NewGraphQLSchema(config GraphQLSchemaConfig) (GraphQLSchema, error) {
 
-	// allow user to optionally not explicitly specify `Name` in `GraphQLObjectType.Fields`
-	// if `Name` is not specified, use FieldDefinitionMap keys
-	for key, field := range config.Query.Fields {
-		fillInFieldNames(&field, key)
-		config.Query.Fields[key] = field
+func defineFieldMap(ttype GraphQLNamedType, fields GraphQLFieldConfigMap) (GraphQLFieldDefinitionMap, error) {
 
-	}
-	for key, field := range config.Mutation.Fields {
-		fillInFieldNames(&field, key)
-		config.Mutation.Fields[key] = field
-	}
+	resultFieldMap := GraphQLFieldDefinitionMap{}
 
-	schema := GraphQLSchema{
-		SchemaConfig: config,
+	err := invariant(
+		len(fields) > 0,
+		fmt.Sprintf(`%v fields must be an object with field names as keys`, ttype),
+	)
+	if err != nil {
+		return resultFieldMap, err
 	}
 
-	var err error
-	typeMap := GraphQLTypeMap{}
-	objectTypes := []GraphQLObjectType{
-		schema.GetQueryType(),
-		schema.GetMutationType(),
-		__Schema,
-	}
-	for _, objectType := range objectTypes {
-		typeMap, err = typeMapReducer(typeMap, &objectType)
+	for fieldName, field := range fields {
+		err := assertValidName(fieldName)
 		if err != nil {
-			return schema, err
+			return resultFieldMap, err
+		}
+		fieldDef := &GraphQLFieldDefinition{
+			Name:              fieldName,
+			Description:       field.Description,
+			Type:              field.Type,
+			Resolve:           field.Resolve,
+			DeprecationReason: field.DeprecationReason,
 		}
 
+		fieldDef.Args = []*GraphQLArgument{}
+		for argName, arg := range field.Args {
+			err := assertValidName(argName)
+			if err != nil {
+				return resultFieldMap, err
+			}
+			fieldArg := &GraphQLArgument{
+				Name:         argName,
+				Description:  arg.Description,
+				Type:         arg.Type,
+				DefaultValue: arg.DefaultValue,
+			}
+			fieldDef.Args = append(fieldDef.Args, fieldArg)
+		}
+		resultFieldMap[fieldName] = fieldDef
 	}
-	schema.typeMap = typeMap
-
-	return schema, nil
+	return resultFieldMap, nil
 }
-func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLTypeMap, error) {
-	var err error
-	if objectType == nil {
-		return typeMap, nil
+
+func defineInterfaces(ttype *GraphQLObjectType, interfaces []*GraphQLInterfaceType) ([]*GraphQLInterfaceType, error) {
+	if len(interfaces) == 0 {
+		return interfaces, nil
 	}
 
-	switch objectType := objectType.(type) {
-	case *GraphQLList:
-		return typeMapReducer(typeMap, objectType.OfType)
-	case *GraphQLNonNull:
-		return typeMapReducer(typeMap, objectType.OfType)
-	}
-
-	if _, ok := typeMap[objectType.GetName()]; ok {
-		return typeMap, graphqlerrors.NewGraphQLFormattedError(
-			fmt.Sprintf(`Schema must contain unique named types but contains multiple types named "%v".`, objectType.GetName()),
+	for _, iface := range interfaces {
+		err := invariant(
+			iface.ResolveType != nil,
+			fmt.Sprintf(`Interface Type %v does not provide a "resolveType" function `+
+				`and implementing Type %v does not provide a "isTypeOf" `+
+				`function. There is no way to resolve this implementing type `+
+				`during execution.`, iface, ttype),
 		)
-	}
-	if objectType.GetName() == "" {
-		pretty.Println("-----> EMPTY NAME", objectType.GetName(), objectType)
-		return typeMap, nil
-	}
-
-	typeMap[objectType.GetName()] = objectType
-
-	switch objectType := objectType.(type) {
-	//	case *GraphQLUnionType:
-	//	fallthrough
-	case *GraphQLInterfaceType:
-		for _, innerObjectType := range objectType.GetPossibleTypes() {
-			typeMap, err = typeMapReducer(typeMap, &innerObjectType)
-			if err != nil {
-				return typeMap, err
-			}
-		}
-	case *GraphQLObjectType:
-		for _, innerObjectType := range objectType.Interfaces {
-			typeMap, err = typeMapReducer(typeMap, &innerObjectType)
-			if err != nil {
-				return typeMap, err
-			}
+		if err != nil {
+			return interfaces, err
 		}
 	}
 
-	switch objectType := objectType.(type) {
-	case *GraphQLObjectType:
-		fieldMap := objectType.Fields
-		for _, field := range fieldMap {
-			for _, arg := range field.Args {
-				typeMap, err = typeMapReducer(typeMap, arg.Type)
-				if err != nil {
-					return typeMap, err
-				}
-			}
-			typeMap, err = typeMapReducer(typeMap, field.Type)
-			if err != nil {
-				return typeMap, err
-			}
-		}
-	case *GraphQLInterfaceType:
-		fieldMap := objectType.Fields
-		for _, field := range fieldMap {
-			for _, arg := range field.Args {
-				typeMap, err = typeMapReducer(typeMap, arg.Type)
-				if err != nil {
-					return typeMap, err
-				}
-			}
-			typeMap, err = typeMapReducer(typeMap, field.Type)
-			if err != nil {
-				return typeMap, err
-			}
-		}
-	//	case *GraphQLInputObjectType:
-	}
-	return typeMap, nil
-}
-
-func (gq *GraphQLSchema) GetQueryType() GraphQLObjectType {
-	return gq.SchemaConfig.Query
-}
-
-func (gq *GraphQLSchema) GetMutationType() GraphQLObjectType {
-	return gq.SchemaConfig.Mutation
-}
-
-
-func (gq *GraphQLSchema) GetTypeMap() GraphQLTypeMap {
-	return gq.typeMap
-}
-
-func (gq *GraphQLSchema) GetType(name string) GraphQLType {
-	return gq.GetTypeMap()[name]
-}
-
-type GraphQLString struct {
-	Name        string
-	Description string
-}
-
-func (gs *GraphQLString) GetName() string {
-	return gs.Name
-}
-func (gs *GraphQLString) SetName(name string) {
-	gs.Name = name
-}
-func (gs *GraphQLString) GetDescription() string {
-	return gs.Description
-}
-func (gs *GraphQLString) Coerce(value interface{}) (r interface{}) {
-	return r
-}
-func (gs *GraphQLString) CoerceLiteral(value interface{}) (r interface{}) {
-	return r
-}
-func (gs *GraphQLString) ToString() string {
-	return fmt.Sprint("%v", gs)
-}
-
-type GraphQLInt struct {
-	Name        string
-	Description string
-}
-func (gi *GraphQLInt) GetName() string {
-	return gi.Name
-}
-func (gi *GraphQLInt) SetName(name string) {
-	gi.Name = name
-}
-func (gi *GraphQLInt) GetDescription() string {
-	return gi.Description
-}
-func (gs *GraphQLInt) Coerce(value interface{}) (r interface{}) {
-	return r
-}
-func (gi *GraphQLInt) CoerceLiteral(value interface{}) (r interface{}) {
-	return r
-}
-func (gi *GraphQLInt) ToString() string {
-	return fmt.Sprint("%v", gi)
+	return interfaces, nil
 }

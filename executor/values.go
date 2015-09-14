@@ -4,12 +4,9 @@ import (
 	"fmt"
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/chris-ramon/graphql-go/types"
-	"log"
 	"github.com/chris-ramon/graphql-go/language/kinds"
-	"github.com/kr/pretty"
+	"github.com/chris-ramon/graphql-go/types"
 )
-
 
 // Prepares an object map of variableValues of the correct type based on the
 // provided variable definitions and arbitrary input. If the input cannot be
@@ -30,10 +27,9 @@ func getVariableValues(schema types.GraphQLSchema, definitionASTs []*ast.Variabl
 	return values, nil
 }
 
-
 // Prepares an object map of argument values given a list of argument
 // definitions and list of argument AST nodes.
-func getArgumentValues(argDefs []types.GraphQLArgument, argASTs []*ast.Argument, variableVariables map[string]interface{}) (map[string]interface{}, error) {
+func getArgumentValues(argDefs []*types.GraphQLArgument, argASTs []*ast.Argument, variableVariables map[string]interface{}) (map[string]interface{}, error) {
 
 	argASTMap := map[string]*ast.Argument{}
 	for _, argAST := range argASTs {
@@ -63,18 +59,16 @@ func getArgumentValues(argDefs []types.GraphQLArgument, argASTs []*ast.Argument,
 // Given a variable definition, and any value of input, return a value which
 // adheres to the variable definition, or throw an error.
 func getVariableValue(schema types.GraphQLSchema, definitionAST *ast.VariableDefinition, input interface{}) (interface{}, error) {
-	pretty.Println("--->getVariableValue", definitionAST.Type)
 	ttype, err := typeFromAST(schema, definitionAST.Type)
 	if err != nil {
 		return nil, err
 	}
 	variable := definitionAST.Variable
-	pretty.Println("--->getVariableValue", ttype, variable)
 
 	if ttype == nil {
 		return "", graphqlerrors.NewGraphQLError(
 			fmt.Sprintf(`Variable "$%v" expected value of type `+
-			`"%v" which cannot be used as an input type.`, variable.Name.Value, definitionAST.Type),
+				`"%v" which cannot be used as an input type.`, variable.Name.Value, definitionAST.Type),
 			[]ast.Node{definitionAST},
 			"",
 			nil,
@@ -113,14 +107,13 @@ func getVariableValue(schema types.GraphQLSchema, definitionAST *ast.VariableDef
 
 // Given a type and any value, return a runtime value coerced to match the type.
 func coerceValue(ttype types.GraphQLInputType, value interface{}) (interface{}, error) {
-	pretty.Println("coerceValue", ttype, value)
+	// TODO: coerceValue not implemented
 	return value, nil
 }
 
 // graphql-js/src/utilities.js`
 
 func typeFromAST(schema types.GraphQLSchema, inputTypeAST ast.Type) (types.GraphQLType, error) {
-	pretty.Println("---> inputTypeAST", inputTypeAST)
 	switch inputTypeAST := inputTypeAST.(type) {
 	case *ast.ListType:
 		innerType, err := typeFromAST(schema, inputTypeAST.Type)
@@ -139,9 +132,6 @@ func typeFromAST(schema types.GraphQLSchema, inputTypeAST ast.Type) (types.Graph
 		if inputTypeAST.Name != nil {
 			nameValue = inputTypeAST.Name.Value
 		}
-		pretty.Println("---> nameValue", nameValue)
-		pretty.Println("---> GetTypeMap", schema.GetTypeMap())
-
 		return schema.GetType(nameValue), nil
 	default:
 		return nil, invariant(inputTypeAST.GetKind() == kinds.NamedType, "Must be a named type.")
@@ -179,10 +169,67 @@ func isNullish(value interface{}) bool {
  *
  */
 func valueFromAST(valueAST ast.Value, ttype types.GraphQLInputType, variables map[string]interface{}) (interface{}, error) {
-	//  TODO: Note: enforce that GraphQLType implements GraphQLInputType
 
-	log.Println("valueFromAST not implemented")
-	return valueAST, nil
+	if valueAST == nil {
+		return nil, nil
+	}
+
+	switch ttype := ttype.(type) {
+	case *types.GraphQLNonNull:
+		return valueFromAST(valueAST, ttype.OfType, variables)
+	}
+
+	switch valueAST := valueAST.(type) {
+	case *ast.Variable:
+		variableName := ""
+		if valueAST.Name != nil {
+			variableName = valueAST.Name.Value
+		}
+		if variables == nil {
+			return nil, nil
+		}
+		if variableVal, ok := variables[variableName]; !ok {
+			return nil, nil
+		} else {
+			// Note: we're not doing any checking that this variable is correct. We're
+			// assuming that this query has been validated and the variable usage here
+			// is of the correct type.
+			return variableVal, nil
+		}
+	}
+
+	if itemType, ok := ttype.(*types.GraphQLList); ok {
+		if valAST, ok := valueAST.(*ast.ListValue); ok {
+			values := []interface{}{}
+			for _, itemAST := range valAST.Values {
+				v, err := valueFromAST(itemAST, itemType.OfType, variables)
+				if err != nil {
+					continue
+				}
+				values = append(values, v)
+			}
+		}
+		v, err := valueFromAST(valueAST, itemType, variables)
+		if err != nil {
+			return nil, nil
+		}
+		return []interface{}{v}, nil
+	}
+
+	//	if itemType, ok := ttype.(*types.GraphQLInputObjectType); ok {
+	//
+	//	}
+
+	switch ttype := ttype.(type) {
+	case *types.GraphQLScalarType:
+		return ttype.ParseLiteral(valueAST), nil
+	case *types.GraphQLEnumType:
+		return ttype.ParseLiteral(valueAST), nil
+	default:
+	}
+
+	err := invariant(true, "Must be input type")
+	return valueAST, err
 }
 
 // TODO: figure out where to organize utils
