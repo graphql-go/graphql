@@ -1,16 +1,20 @@
 package source
 
+const (
+	name = "GraphQL"
+)
+
 type Source struct {
 	Body string
 	Name string
 }
 
-func NewSource(body, name string) *Source {
-	if name == "" {
-		name = "GraphQL"
+func NewSource(s *Source) *Source {
+	if s == nil {
+		s = &Source{Name: name}
 	}
-	return &Source{
-		Body: body,
-		Name: name,
+	if s.Name == "" {
+		s.Name = name
 	}
+	return s
 }
