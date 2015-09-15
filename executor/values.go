@@ -40,13 +40,15 @@ func getArgumentValues(argDefs []*types.GraphQLArgument, argASTs []*ast.Argument
 	}
 	results := map[string]interface{}{}
 	for _, argDef := range argDefs {
+
 		name := argDef.Name
 		var valueAST ast.Value
+
 		if argAST, ok := argASTMap[name]; ok {
 			valueAST = argAST.Value
 		}
 		value, err := valueFromAST(valueAST, argDef.Type, variableVariables)
-		if err != nil {
+		if err != nil || value == nil {
 			value = argDef.DefaultValue
 		}
 		if value != nil {

@@ -389,15 +389,14 @@ func TestCorrectlyThreadsArguments(t *testing.T) {
 				"b": &types.GraphQLFieldConfig{
 					Args: types.GraphQLFieldConfigArgumentMap{
 						"numArg": &types.GraphQLArgumentConfig{
-							Type: types.GraphQLString,
+							Type: types.GraphQLInt,
 						},
 						"stringArg": &types.GraphQLArgumentConfig{
-							Type: types.GraphQLInt,
+							Type: types.GraphQLString,
 						},
 					},
 					Type: types.GraphQLString,
 					Resolve: func(p types.GQLFRParams) interface{} {
-						pretty.Println("---", p.Args)
 						resolvedArgs = p.Args
 						return resolvedArgs
 					},
