@@ -35,8 +35,8 @@ func Parse(p ParseParams) (*ast.Document, error) {
 	case *source.Source:
 		sourceObj = p.Source.(*source.Source)
 	default:
-		s, _ := p.Source.(string)
-		sourceObj = source.NewSource(s, "")
+		body, _ := p.Source.(string)
+		sourceObj = source.NewSource(&source.Source{Body: body})
 	}
 	parser, err := makeParser(sourceObj, p.Options)
 	if err != nil {
@@ -57,8 +57,8 @@ func parseValue(p ParseParams) (ast.Value, error) {
 	case *source.Source:
 		sourceObj = p.Source.(*source.Source)
 	default:
-		s, _ := p.Source.(string)
-		sourceObj = source.NewSource(s, "")
+		body, _ := p.Source.(string)
+		sourceObj = source.NewSource(&source.Source{Body: body})
 	}
 	parser, err := makeParser(sourceObj, p.Options)
 	if err != nil {
