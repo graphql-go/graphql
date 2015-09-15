@@ -1,6 +1,7 @@
 package executor_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/executor"
@@ -255,14 +256,11 @@ func TestMergesParallelFragments(t *testing.T) {
 							"b": "Banana",
 							"c": "Cherry",
 						},
-						Errors: nil,
 					},
 				},
-				Errors: nil,
 			},
 			"c": "Cherry",
 		},
-		Errors: nil,
 	}
 
 	typeObjectType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
@@ -399,6 +397,7 @@ func TestCorrectlyThreadsArguments(t *testing.T) {
 					},
 					Type: types.GraphQLString,
 					Resolve: func(p types.GQLFRParams) interface{} {
+						pretty.Println("---", p.Args)
 						resolvedArgs = p.Args
 						return resolvedArgs
 					},
@@ -548,6 +547,53 @@ func TestUsesTheInlineOperationIfNoOperationIsProvided(t *testing.T) {
 	}
 }
 
+func TestUsesTheOnlyOperationIfNoOperationIsProvided(t *testing.T) {
+
+	doc := `query Example { a }`
+	data := map[string]interface{}{
+		"a": "b",
+	}
+
+	expected := &types.GraphQLResult{
+		Data: map[string]interface{}{
+			"a": "b",
+		},
+	}
+
+	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+			Name: "Type",
+			Fields: types.GraphQLFieldConfigMap{
+				"a": &types.GraphQLFieldConfig{
+					Type: types.GraphQLString,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	// parse query
+	ast := parse(doc, t)
+
+	// execute
+	ep := executor.ExecuteParams{
+		Schema: schema,
+		AST:    ast,
+		Root:   data,
+	}
+	resultChannel := make(chan *types.GraphQLResult)
+	go executor.Execute(ep, resultChannel)
+	result := <-resultChannel
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+	}
+}
+
 func TestThrowsIfNoOperationIsProvidedWithMultipleOperations(t *testing.T) {
 
 	doc := `query Example { a } query OtherExample { a }`
@@ -596,5 +642,511 @@ func TestThrowsIfNoOperationIsProvidedWithMultipleOperations(t *testing.T) {
 	}
 	if !reflect.DeepEqual(expectedErrors, result.Errors) {
 		t.Fatalf("unexpected result, Diff: %v", pretty.Diff(expectedErrors, result.Errors))
+	}
+}
+
+func TestUsesTheQuerySchemaForQueries(t *testing.T) {
+
+	doc := `query Q { a } mutation M { c }`
+	data := map[string]interface{}{
+		"a": "b",
+		"c": "d",
+	}
+
+	expected := &types.GraphQLResult{
+		Data: map[string]interface{}{
+			"a": "b",
+		},
+	}
+
+	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+			Name: "Q",
+			Fields: types.GraphQLFieldConfigMap{
+				"a": &types.GraphQLFieldConfig{
+					Type: types.GraphQLString,
+				},
+			},
+		}),
+		Mutation: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+			Name: "M",
+			Fields: types.GraphQLFieldConfigMap{
+				"c": &types.GraphQLFieldConfig{
+					Type: types.GraphQLString,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	// parse query
+	ast := parse(doc, t)
+
+	// execute
+	ep := executor.ExecuteParams{
+		Schema:        schema,
+		AST:           ast,
+		Root:          data,
+		OperationName: "Q",
+	}
+	resultChannel := make(chan *types.GraphQLResult)
+	go executor.Execute(ep, resultChannel)
+	result := <-resultChannel
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+	}
+}
+
+func TestUsesTheMutationSchemaForQueries(t *testing.T) {
+
+	doc := `query Q { a } mutation M { c }`
+	data := map[string]interface{}{
+		"a": "b",
+		"c": "d",
+	}
+
+	expected := &types.GraphQLResult{
+		Data: map[string]interface{}{
+			"c": "d",
+		},
+	}
+
+	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+			Name: "Q",
+			Fields: types.GraphQLFieldConfigMap{
+				"a": &types.GraphQLFieldConfig{
+					Type: types.GraphQLString,
+				},
+			},
+		}),
+		Mutation: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+			Name: "M",
+			Fields: types.GraphQLFieldConfigMap{
+				"c": &types.GraphQLFieldConfig{
+					Type: types.GraphQLString,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	// parse query
+	ast := parse(doc, t)
+
+	// execute
+	ep := executor.ExecuteParams{
+		Schema:        schema,
+		AST:           ast,
+		Root:          data,
+		OperationName: "M",
+	}
+	resultChannel := make(chan *types.GraphQLResult)
+	go executor.Execute(ep, resultChannel)
+	result := <-resultChannel
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+	}
+}
+
+func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
+
+	doc := `
+	{
+      b,
+      a,
+      c,
+      d,
+      e
+    }
+	`
+	data := map[string]interface{}{
+		"a": func() interface{} { return "a" },
+		"b": func() interface{} { return "b" },
+		"c": func() interface{} { return "c" },
+		"d": func() interface{} { return "d" },
+		"e": func() interface{} { return "e" },
+	}
+
+	expected := &types.GraphQLResult{
+		Data: map[string]interface{}{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+			"d": "d",
+			"e": "e",
+		},
+	}
+
+	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+			Name: "Type",
+			Fields: types.GraphQLFieldConfigMap{
+				"a": &types.GraphQLFieldConfig{
+					Type: types.GraphQLString,
+				},
+				"b": &types.GraphQLFieldConfig{
+					Type: types.GraphQLString,
+				},
+				"c": &types.GraphQLFieldConfig{
+					Type: types.GraphQLString,
+				},
+				"d": &types.GraphQLFieldConfig{
+					Type: types.GraphQLString,
+				},
+				"e": &types.GraphQLFieldConfig{
+					Type: types.GraphQLString,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	// parse query
+	ast := parse(doc, t)
+
+	// execute
+	ep := executor.ExecuteParams{
+		Schema: schema,
+		AST:    ast,
+		Root:   data,
+	}
+	resultChannel := make(chan *types.GraphQLResult)
+	go executor.Execute(ep, resultChannel)
+	result := <-resultChannel
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+	}
+
+	// TODO: ensure key ordering
+	// The following does not work
+	// - iterating over result.Data map
+	//   Note that golang's map iteration order is randomized
+	//   So, iterating over result.Data won't do it for a test
+	// - Marshal the result.Data to json string and assert it
+	//
+	t.Skipf("TODO: Ensure key ordering")
+}
+
+func TestAvoidsRecursion(t *testing.T) {
+
+	doc := `
+      query Q {
+        a
+        ...Frag
+        ...Frag
+      }
+
+      fragment Frag on Type {
+        a,
+        ...Frag
+      }
+    `
+	data := map[string]interface{}{
+		"a": "b",
+	}
+
+	expected := &types.GraphQLResult{
+		Data: map[string]interface{}{
+			"a": "b",
+		},
+	}
+
+	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+			Name: "Type",
+			Fields: types.GraphQLFieldConfigMap{
+				"a": &types.GraphQLFieldConfig{
+					Type: types.GraphQLString,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	// parse query
+	ast := parse(doc, t)
+
+	// execute
+	ep := executor.ExecuteParams{
+		Schema:        schema,
+		AST:           ast,
+		Root:          data,
+		OperationName: "Q",
+	}
+	resultChannel := make(chan *types.GraphQLResult)
+	go executor.Execute(ep, resultChannel)
+	result := <-resultChannel
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+	}
+
+}
+
+func TestDoesNotIncludeIllegalFieldsInOutput(t *testing.T) {
+
+	doc := `mutation M {
+      thisIsIllegalDontIncludeMe
+    }`
+
+	expected := &types.GraphQLResult{
+		Data: map[string]interface{}{},
+	}
+
+	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+			Name: "Q",
+			Fields: types.GraphQLFieldConfigMap{
+				"a": &types.GraphQLFieldConfig{
+					Type: types.GraphQLString,
+				},
+			},
+		}),
+		Mutation: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+			Name: "M",
+			Fields: types.GraphQLFieldConfigMap{
+				"c": &types.GraphQLFieldConfig{
+					Type: types.GraphQLString,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	// parse query
+	ast := parse(doc, t)
+
+	// execute
+	ep := executor.ExecuteParams{
+		Schema: schema,
+		AST:    ast,
+	}
+	resultChannel := make(chan *types.GraphQLResult)
+	go executor.Execute(ep, resultChannel)
+	result := <-resultChannel
+	if len(result.Errors) == 0 {
+		t.Fatalf("wrong result, expected len(%v) errors, got len(%v)", len(expected.Errors), len(result.Errors))
+	}
+	if !reflect.DeepEqual(expected.Data, result.Data) {
+		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected.Data, result.Data))
+	}
+}
+
+func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
+
+	doc := `{ field(a: true, c: false, e: 0) }`
+
+	expected := &types.GraphQLResult{
+		Data: map[string]interface{}{
+			"field": `{"a":true,"c":false,"e":0}`,
+		},
+	}
+
+	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+			Name: "Type",
+			Fields: types.GraphQLFieldConfigMap{
+				"field": &types.GraphQLFieldConfig{
+					Type: types.GraphQLString,
+					Args: types.GraphQLFieldConfigArgumentMap{
+						"a": &types.GraphQLArgumentConfig{
+							Type: types.GraphQLBoolean,
+						},
+						"b": &types.GraphQLArgumentConfig{
+							Type: types.GraphQLBoolean,
+						},
+						"c": &types.GraphQLArgumentConfig{
+							Type: types.GraphQLBoolean,
+						},
+						"d": &types.GraphQLArgumentConfig{
+							Type: types.GraphQLInt,
+						},
+						"e": &types.GraphQLArgumentConfig{
+							Type: types.GraphQLInt,
+						},
+					},
+					Resolve: func(p types.GQLFRParams) interface{} {
+						pretty.Println(p.Args)
+						args, _ := json.Marshal(p.Args)
+						return string(args)
+					},
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	// parse query
+	ast := parse(doc, t)
+
+	// execute
+	ep := executor.ExecuteParams{
+		Schema: schema,
+		AST:    ast,
+	}
+	resultChannel := make(chan *types.GraphQLResult)
+	go executor.Execute(ep, resultChannel)
+	result := <-resultChannel
+	pretty.Println(result)
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+	}
+}
+
+type testSpecialType struct {
+	Value string
+}
+type testNotSpecialType struct {
+	Value string
+}
+
+func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
+
+	query := `{ specials { value } }`
+
+	data := map[string]interface{}{
+		"specials": []interface{}{
+			&testSpecialType{"foo"},
+			&testNotSpecialType{"bar"},
+		},
+	}
+
+	expected := &types.GraphQLResult{
+		Data: map[string]interface{}{
+			"specials": []interface{}{
+				map[string]interface{}{
+					"value": "foo",
+				},
+			},
+		},
+	}
+
+	specialType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+		Name: "SpecialType",
+		IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
+			if _, ok := value.(*testSpecialType); ok {
+				return true
+			}
+			return false
+		},
+		Fields: types.GraphQLFieldConfigMap{
+			"value": &types.GraphQLFieldConfig{
+				Type: types.GraphQLString,
+			},
+		},
+	})
+	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+			Name: "Query",
+			Fields: types.GraphQLFieldConfigMap{
+				"specials": &types.GraphQLFieldConfig{
+					Type: types.NewGraphQLList(specialType),
+					Resolve: func(p types.GQLFRParams) interface{} {
+						pretty.Println("===>", p.Info.FieldName, p.Source["specials"])
+						return p.Source["specials"]
+					},
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	// parse query
+	ast := parse(query, t)
+
+	// execute
+	ep := executor.ExecuteParams{
+		Schema: schema,
+		AST:    ast,
+		Root:   data,
+	}
+	resultChannel := make(chan *types.GraphQLResult)
+	go executor.Execute(ep, resultChannel)
+	result := <-resultChannel
+	pretty.Println(result)
+	if len(result.Errors) == 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+	}
+}
+
+func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
+
+	query := `
+      { foo }
+
+      type Query { foo: String }
+	`
+	expected := &types.GraphQLResult{
+		Data: nil,
+		Errors: []graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.GraphQLFormattedError{
+				Message:   "GraphQL cannot execute a request containing a ObjectTypeDefinition",
+				Locations: []location.SourceLocation{},
+			},
+		},
+	}
+
+	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+			Name: "Query",
+			Fields: types.GraphQLFieldConfigMap{
+				"foo": &types.GraphQLFieldConfig{
+					Type: types.GraphQLString,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	// parse query
+	ast := parse(query, t)
+
+	// execute
+	ep := executor.ExecuteParams{
+		Schema: schema,
+		AST:    ast,
+	}
+	resultChannel := make(chan *types.GraphQLResult)
+	go executor.Execute(ep, resultChannel)
+	result := <-resultChannel
+	if len(result.Errors) != 1 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
 	}
 }

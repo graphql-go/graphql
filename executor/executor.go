@@ -49,10 +49,6 @@ type ExecuteOperationParams struct {
 }
 
 func executeOperation(p ExecuteOperationParams, r chan *types.GraphQLResult) {
-	//TODO: mutation operation
-	if p.Operation.GetOperation() == "mutation" {
-		return
-	}
 	operationType := getOperationRootType(p.ExecutionContext.Schema, p.Operation, r)
 
 	collectFieldsParams := CollectFieldsParams{
@@ -61,11 +57,16 @@ func executeOperation(p ExecuteOperationParams, r chan *types.GraphQLResult) {
 		SelectionSet:  p.Operation.GetSelectionSet(),
 	}
 	fields := collectFields(collectFieldsParams)
+
 	executeFieldsParams := ExecuteFieldsParams{
 		ExecutionContext: p.ExecutionContext,
 		ParentType:       operationType,
 		Source:           p.Root,
 		Fields:           fields,
+	}
+	if p.Operation.GetOperation() == "mutation" {
+		executeFieldsSerially(executeFieldsParams, r)
+		return
 	}
 	executeFields(executeFieldsParams, r)
 }
@@ -84,7 +85,7 @@ func getOperationRootType(schema types.GraphQLSchema, operation ast.Definition, 
 		return schema.GetQueryType()
 	case "mutation":
 		mutationType := schema.GetMutationType()
-		if mutationType.Name != "" {
+		if mutationType.Name == "" {
 			var result types.GraphQLResult
 			err := graphqlerrors.NewGraphQLFormattedError("Schema is not configured for mutations")
 			result.Errors = append(result.Errors, err)
@@ -212,8 +213,30 @@ func executeFields(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) 
 	}
 
 	result.Data = finalResults
-	//mutable := reflect.ValueOf(p.ExecutionContext.Result.Data).Elem()
-	//mutable.FieldByName("Name").SetString("R2-D2")
+	resultChan <- &result
+}
+
+// Implements the "Evaluating selection sets" section of the spec for "write" mode.
+func executeFieldsSerially(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) {
+	if p.Source == nil {
+		p.Source = map[string]interface{}{}
+	}
+	if p.Fields == nil {
+		p.Fields = map[string][]*ast.Field{}
+	}
+	var result types.GraphQLResult
+
+	finalResults := map[string]interface{}{}
+	for responseName, fieldASTs := range p.Fields {
+		resolved, err := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+		if err != nil {
+			result.Errors = append(result.Errors, graphqlerrors.FormatError(err))
+		}
+		if resolved != nil {
+			finalResults[responseName] = resolved
+		}
+	}
+	result.Data = finalResults
 	resultChan <- &result
 }
 
