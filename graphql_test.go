@@ -7,6 +7,7 @@ import (
 	"github.com/chris-ramon/graphql-go/types"
 
 	"./testutil"
+	"github.com/kr/pretty"
 )
 
 type T struct {
@@ -26,8 +27,14 @@ var (
 				}
 			`,
 			Schema: testutil.StarWarsSchema,
-			Expected: map[string]interface{}{
-				"name": "R2-D2",
+			Expected: &types.GraphQLResult{
+				Data: map[string]interface{}{
+					"hero": &types.GraphQLResult{
+						Data: map[string]interface{}{
+							"name": "R2-D2",
+						},
+					},
+				},
 			},
 		},
 		T{
@@ -43,13 +50,31 @@ var (
 				}
 				`,
 			Schema: testutil.StarWarsSchema,
-			Expected: map[string]interface{}{
-				"id":   "2001",
-				"name": "R2-D2",
-				"friends": []map[string]interface{}{
-					map[string]interface{}{"name": "Luke Skywalker"},
-					map[string]interface{}{"name": "Han Solo"},
-					map[string]interface{}{"name": "Leia Organa"},
+			Expected: &types.GraphQLResult{
+				Data: map[string]interface{}{
+					"hero": &types.GraphQLResult{
+						Data: map[string]interface{}{
+							"id":   "2001",
+							"name": "R2-D2",
+							"friends": []interface{}{
+								&types.GraphQLResult{
+									Data: map[string]interface{}{
+										"name": "Luke Skywalker",
+									},
+								},
+								&types.GraphQLResult{
+									Data: map[string]interface{}{
+										"name": "Han Solo",
+									},
+								},
+								&types.GraphQLResult{
+									Data: map[string]interface{}{
+										"name": "Leia Organa",
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -73,8 +98,8 @@ func testGraphql(test T, p GraphqlParams, t *testing.T) {
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(result.Data, test.Expected) {
-		t.Fatalf("wrong result, query: %v, graphql result: %v, expected: %v", test.Query, result, test.Expected)
+	if !reflect.DeepEqual(result, test.Expected) {
+		t.Fatalf("wrong result, query: %v, graphql result diff: %v", test.Query, pretty.Diff(test.Expected, result))
 	}
 }
 
@@ -116,7 +141,7 @@ func TestBasicGraphQLExample(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(result.Data, expected) {
-		t.Fatalf("wrong result, query: %v, graphql result: %v, expected: %v", query, result, expected)
+		t.Fatalf("wrong result, query: %v, graphql result diff: %v", query, pretty.Diff(expected, result))
 	}
 
 }

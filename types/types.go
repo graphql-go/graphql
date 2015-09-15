@@ -164,8 +164,8 @@ func (gt *GraphQLEnumType) getNameLookup() map[string]GraphQLEnumValueDefinition
 
 type GraphQLInterfaceTypeConfig struct {
 	Name        string
-	Fields      interface{}
-	ResolveType GraphQLObjectType
+	Fields      GraphQLFieldConfigMap
+	ResolveType ResolveTypeFn
 	Description string
 }
 
@@ -179,6 +179,48 @@ type GraphQLInterfaceType struct {
 	fields          GraphQLFieldDefinitionMap
 	implementations []*GraphQLObjectType
 	possibleTypes   map[string]bool
+
+	// Interim alternative to throwing an error during schema definition at run-time
+	err error
+}
+
+// TODO: NewGraphQLInterfaceType
+func NewGraphQLInterfaceType(config GraphQLInterfaceTypeConfig) *GraphQLInterfaceType {
+	it := &GraphQLInterfaceType{}
+
+	err := invariant(config.Name != "", "Type must be named.")
+	if err != nil {
+		it.err = err
+		return it
+	}
+	err = assertValidName(config.Name)
+	if err != nil {
+		it.err = err
+		return it
+	}
+	it.Name = config.Name
+	it.Description = config.Description
+	it.ResolveType = config.ResolveType
+	it.typeConfig = config
+	it.implementations = []*GraphQLObjectType{}
+
+	it.fields, err = defineFieldMap(it, it.typeConfig.Fields)
+	if err != nil {
+		it.err = err
+		return it
+	}
+
+	return it
+}
+
+func (it *GraphQLInterfaceType) AddFieldConfig(fieldName string, fieldConfig *GraphQLFieldConfig) {
+	if fieldName == "" || fieldConfig == nil {
+		return
+	}
+	it.typeConfig.Fields[fieldName] = fieldConfig
+
+	// re-define field map
+	it.fields, _ = defineFieldMap(it, it.typeConfig.Fields)
 }
 
 func (it *GraphQLInterfaceType) GetName() string {
@@ -191,25 +233,13 @@ func (it *GraphQLInterfaceType) GetDescription() string {
 	return it.Description
 }
 func (it *GraphQLInterfaceType) Coerce(value interface{}) (r interface{}) {
-	return r
+	return value
 }
 func (it *GraphQLInterfaceType) CoerceLiteral(value interface{}) (r interface{}) {
-	return r
-}
-
-// TODO: NewGraphQLInterfaceType
-func NewGraphQLInterfaceType(config GraphQLInterfaceTypeConfig) *GraphQLInterfaceType {
-	it := &GraphQLInterfaceType{}
-	it.Name = config.Name
-	it.Description = config.Description
-	it.typeConfig = config
-	//it.Implementations = []GraphQLObjectType;
-	return it
+	return value
 }
 
 func (it *GraphQLInterfaceType) GetFields() (fields GraphQLFieldDefinitionMap) {
-	//return this._fields ||
-	//(this._fields = defineFieldMap(this._typeConfig.fields));
 	return fields
 }
 
@@ -265,7 +295,7 @@ func (it *GraphQLInterfaceType) String() string {
 
 // TODO: clean up GQLFRParams fields
 type GQLFRParams struct {
-	Source map[string]interface{}
+	Source interface{}
 	Args   map[string]interface{}
 	//	Context    interface{}
 	FieldAST   interface{}
@@ -372,17 +402,6 @@ func NewGraphQLObjectType(config GraphQLObjectTypeConfig) *GraphQLObjectType {
 	objectType.IsTypeOf = config.IsTypeOf
 	objectType.typeConfig = config
 
-	/*
-			addImplementationToInterfaces()
-			Update the interfaces to know about this implementation.
-			This is an rare and unfortunate use of mutation in the type definition
-		 	implementations, but avoids an expensive "getPossibleTypes"
-		 	implementation for Interface types.
-	*/
-	for _, iface := range objectType.GetInterfaces() {
-		iface.implementations = append(iface.implementations, objectType)
-	}
-
 	objectType.fields, err = defineFieldMap(objectType, objectType.typeConfig.Fields)
 	if err != nil {
 		objectType.err = err
@@ -393,6 +412,17 @@ func NewGraphQLObjectType(config GraphQLObjectTypeConfig) *GraphQLObjectType {
 	if err != nil {
 		objectType.err = err
 		return objectType
+	}
+
+	/*
+			addImplementationToInterfaces()
+			Update the interfaces to know about this implementation.
+			This is an rare and unfortunate use of mutation in the type definition
+		 	implementations, but avoids an expensive "getPossibleTypes"
+		 	implementation for Interface types.
+	*/
+	for _, iface := range objectType.GetInterfaces() {
+		iface.implementations = append(iface.implementations, objectType)
 	}
 
 	return objectType

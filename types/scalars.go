@@ -96,12 +96,11 @@ func (st *GraphQLScalarType) String() string {
 
 // TODO: GraphQLScalarType.Coerce() Check if we need this
 func (st *GraphQLScalarType) Coerce(value interface{}) (r interface{}) {
-	return r
+	return value
 
 }
 func (st *GraphQLScalarType) CoerceLiteral(value interface{}) (r interface{}) {
-	return r
-
+	return value
 }
 
 func coerceInt(value interface{}) interface{} {

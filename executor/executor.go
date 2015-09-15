@@ -186,7 +186,7 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 type ExecuteFieldsParams struct {
 	ExecutionContext ExecutionContext
 	ParentType       *types.GraphQLObjectType
-	Source           map[string]interface{}
+	Source           interface{}
 	Fields           map[string][]*ast.Field
 }
 
@@ -435,7 +435,7 @@ func doesFragmentConditionMatch(eCtx ExecutionContext, fragment ast.Node, ttype 
  * then calls completeValue to complete promises, serialize scalars, or execute
  * the sub-selection-set for objects.
  */
-func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, source map[string]interface{}, fieldASTs []*ast.Field) (result interface{}, err error) {
+func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, source interface{}, fieldASTs []*ast.Field) (result interface{}, err error) {
 	// catch panic
 	defer func() (interface{}, error) {
 		if r := recover(); r != nil {
@@ -491,7 +491,7 @@ func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, so
 	})
 	result, err = completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 	return result, nil
 }
@@ -518,16 +518,20 @@ func getFieldDef(schema types.GraphQLSchema, parentType *types.GraphQLObjectType
 }
 
 func defaultResolveFn(p types.GQLFRParams) interface{} {
-	property := p.Source[p.Info.FieldName]
-	val := reflect.ValueOf(property)
-	if val.IsValid() && val.Type().Kind() == reflect.Func {
-		// try type casting the func to the most basic func signature
-		// for more complex signatures, user have to define ResolveFn
-		if propertyFn, ok := property.(func() interface{}); ok {
-			return propertyFn()
+	// expects p.Source to be a map
+	if sourceMap, ok := p.Source.(map[string]interface{}); ok {
+		property := sourceMap[p.Info.FieldName]
+		val := reflect.ValueOf(property)
+		if val.IsValid() && val.Type().Kind() == reflect.Func {
+			// try type casting the func to the most basic func signature
+			// for more complex signatures, user have to define ResolveFn
+			if propertyFn, ok := property.(func() interface{}); ok {
+				return propertyFn()
+			}
 		}
+		return property
 	}
-	return property
+	return p.Source
 }
 
 func completeValueCatchingError(eCtx ExecutionContext, returnType types.GraphQLType, fieldASTs []*ast.Field, info types.GraphQLResolveInfo, result interface{}) (completed interface{}, err error) {
@@ -541,7 +545,8 @@ func completeValueCatchingError(eCtx ExecutionContext, returnType types.GraphQLT
 	}()
 
 	if returnType, ok := returnType.(*types.GraphQLNonNull); ok {
-		return completeValue(eCtx, returnType, fieldASTs, info, result)
+		completed, err = completeValue(eCtx, returnType, fieldASTs, info, result)
+		return completed, err
 	}
 	completed, err = completeValue(eCtx, returnType, fieldASTs, info, result)
 	if err != nil {
@@ -601,15 +606,20 @@ func completeValue(eCtx ExecutionContext, returnType types.GraphQLType, fieldAST
 		}
 
 		itemType := returnType.OfType
+		var lastErr error
 		completedResults := []interface{}{}
 		for i := 0; i < resultVal.Len(); i++ {
 			val := resultVal.Index(i).Interface()
 			completedItem, err := completeValueCatchingError(eCtx, itemType, fieldASTs, info, val)
-			if err == nil && completedItem != nil {
+			if err != nil {
+				lastErr = err
+				continue
+			}
+			if completedItem != nil {
 				completedResults = append(completedResults, completedItem)
 			}
 		}
-		return completedResults, err
+		return completedResults, lastErr
 	}
 
 	// If field type is Scalar or Enum, serialize to a valid value, returning
@@ -660,9 +670,9 @@ func completeValue(eCtx ExecutionContext, returnType types.GraphQLType, fieldAST
 	// If there is an isTypeOf predicate function, call it with the
 	// current result. If isTypeOf returns false, then raise an error rather
 	// than continuing execution.
-	if objectType.IsTypeOf != nil && objectType.IsTypeOf(result, info) {
+	if objectType.IsTypeOf != nil && !objectType.IsTypeOf(result, info) {
 		return result, graphqlerrors.NewGraphQLFormattedError(
-			fmt.Sprintf(`Expected value of type "%v" but got: %v.`, objectType, returnType),
+			fmt.Sprintf(`Expected value of type "%v" but got: %T.`, objectType, result),
 		)
 	}
 
@@ -687,16 +697,10 @@ func completeValue(eCtx ExecutionContext, returnType types.GraphQLType, fieldAST
 	}
 
 	resultChannel := make(chan *types.GraphQLResult)
-	resultMap, ok := result.(map[string]interface{})
-	if !ok {
-		return result, graphqlerrors.NewGraphQLFormattedError(
-			fmt.Sprintf(`Expected result to be map[string]interface{}.`),
-		)
-	}
 	executeFieldsParams := ExecuteFieldsParams{
 		ExecutionContext: eCtx,
 		ParentType:       objectType,
-		Source:           resultMap,
+		Source:           result,
 		Fields:           subFieldASTs,
 	}
 	go executeFields(executeFieldsParams, resultChannel)

@@ -123,7 +123,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 	// Schema Definitions
 	picResolverFn := func(p types.GQLFRParams) interface{} {
 		// get and type assert ResolveFn for this field
-		picResolver, ok := p.Source["pic"].(func(size int) string)
+		picResolver, ok := p.Source.(map[string]interface{})["pic"].(func(size int) string)
 		if !ok {
 			return nil
 		}
@@ -339,7 +339,7 @@ func TestThreadsContextCorrectly(t *testing.T) {
 				"a": &types.GraphQLFieldConfig{
 					Type: types.GraphQLString,
 					Resolve: func(p types.GQLFRParams) interface{} {
-						resolvedContext = p.Source
+						resolvedContext = p.Source.(map[string]interface{})
 						return resolvedContext
 					},
 				},
@@ -832,12 +832,13 @@ func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
 		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
 	}
 
-	// TODO: ensure key ordering
+	// TODO: test to ensure key ordering
 	// The following does not work
 	// - iterating over result.Data map
 	//   Note that golang's map iteration order is randomized
 	//   So, iterating over result.Data won't do it for a test
 	// - Marshal the result.Data to json string and assert it
+	//   json.Marshal seems to re-sort the keys automatically
 	//
 	t.Skipf("TODO: Ensure key ordering")
 }
@@ -1030,17 +1031,25 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 
 	data := map[string]interface{}{
 		"specials": []interface{}{
-			&testSpecialType{"foo"},
-			&testNotSpecialType{"bar"},
+			testSpecialType{"foo"},
+			testNotSpecialType{"bar"},
 		},
 	}
 
 	expected := &types.GraphQLResult{
 		Data: map[string]interface{}{
 			"specials": []interface{}{
-				map[string]interface{}{
-					"value": "foo",
+				&types.GraphQLResult{
+					Data: map[string]interface{}{
+						"value": "foo",
+					},
 				},
+			},
+		},
+		Errors: []graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.GraphQLFormattedError{
+				Message:   `Expected value of type "SpecialType" but got: executor_test.testNotSpecialType.`,
+				Locations: []location.SourceLocation{},
 			},
 		},
 	}
@@ -1048,7 +1057,7 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 	specialType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
 		Name: "SpecialType",
 		IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
-			if _, ok := value.(*testSpecialType); ok {
+			if _, ok := value.(testSpecialType); ok {
 				return true
 			}
 			return false
@@ -1056,6 +1065,9 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 		Fields: types.GraphQLFieldConfigMap{
 			"value": &types.GraphQLFieldConfig{
 				Type: types.GraphQLString,
+				Resolve: func(p types.GQLFRParams) interface{} {
+					return p.Source.(testSpecialType).Value
+				},
 			},
 		},
 	})
@@ -1066,8 +1078,7 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 				"specials": &types.GraphQLFieldConfig{
 					Type: types.NewGraphQLList(specialType),
 					Resolve: func(p types.GQLFRParams) interface{} {
-						pretty.Println("===>", p.Info.FieldName, p.Source["specials"])
-						return p.Source["specials"]
+						return p.Source.(map[string]interface{})["specials"]
 					},
 				},
 			},
@@ -1089,10 +1100,9 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 	resultChannel := make(chan *types.GraphQLResult)
 	go executor.Execute(ep, resultChannel)
 	result := <-resultChannel
-	pretty.Println(result)
-	if len(result.Errors) == 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
+	//	if len(result.Errors) == 0 {
+	//		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	//	}
 	if !reflect.DeepEqual(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
 	}
