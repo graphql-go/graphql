@@ -988,7 +988,6 @@ func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
 						},
 					},
 					Resolve: func(p types.GQLFRParams) interface{} {
-						pretty.Println(p.Args)
 						args, _ := json.Marshal(p.Args)
 						return string(args)
 					},
@@ -1011,7 +1010,6 @@ func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
 	resultChannel := make(chan *types.GraphQLResult)
 	go executor.Execute(ep, resultChannel)
 	result := <-resultChannel
-	pretty.Println(result)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}

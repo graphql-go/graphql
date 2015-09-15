@@ -49,7 +49,9 @@ func getArgumentValues(argDefs []*types.GraphQLArgument, argASTs []*ast.Argument
 		if err != nil {
 			value = argDef.DefaultValue
 		}
-		results[name] = value
+		if value != nil {
+			results[name] = value
+		}
 	}
 	return results, nil
 }
