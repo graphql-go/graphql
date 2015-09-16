@@ -42,6 +42,88 @@ func Execute(p ExecuteParams, resultChan chan *types.GraphQLResult) {
 	executeOperation(eOperationParams, resultChan)
 }
 
+type BuildExecutionCtxParams struct {
+	Schema        types.GraphQLSchema
+	Root          map[string]interface{}
+	AST           *ast.Document
+	OperationName string
+	Args          map[string]interface{}
+	Errors        []error
+	Result        *types.GraphQLResult
+	ResultChan    chan *types.GraphQLResult
+}
+type ExecutionContext struct {
+	Schema         types.GraphQLSchema
+	Fragments      map[string]ast.Definition
+	Root           map[string]interface{}
+	Operation      ast.Definition
+	VariableValues map[string]interface{}
+	Errors         []error
+}
+
+func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
+	operations := map[string]ast.Definition{}
+	fragments := map[string]ast.Definition{}
+	for _, statement := range p.AST.Definitions {
+		switch stm := statement.(type) {
+		case *ast.OperationDefinition:
+			key := ""
+			if stm.GetName() != nil && stm.GetName().Value != "" {
+				key = stm.GetName().Value
+			}
+			operations[key] = stm
+		case *ast.FragmentDefinition:
+			key := ""
+			if stm.GetName() != nil && stm.GetName().Value != "" {
+				key = stm.GetName().Value
+			}
+			fragments[key] = stm
+		default:
+			err := graphqlerrors.NewGraphQLFormattedError(
+				fmt.Sprintf("GraphQL cannot execute a request containing a %v", statement.GetKind()),
+			)
+			p.Result.Errors = append(p.Result.Errors, err)
+			p.ResultChan <- p.Result
+			return eCtx
+		}
+	}
+	if (p.OperationName == "") && (len(operations) != 1) {
+		err := graphqlerrors.NewGraphQLFormattedError("Must provide operation name if query contains multiple operations.")
+		p.Result.Errors = append(p.Result.Errors, err)
+		p.ResultChan <- p.Result
+		return eCtx
+	}
+	opName := p.OperationName
+	if opName == "" {
+		// get first opName
+		for k, _ := range operations {
+			opName = k
+			break
+		}
+	}
+	operation, found := operations[opName]
+	if !found {
+		err := graphqlerrors.NewGraphQLFormattedError(fmt.Sprintf(`Unknown operation named "%v".`, opName))
+		p.Result.Errors = append(p.Result.Errors, err)
+		p.ResultChan <- p.Result
+		return eCtx
+	}
+	variableValues, err := getVariableValues(p.Schema, operation.GetVariableDefinitions(), p.Args)
+	if err != nil {
+		p.Result.Errors = append(p.Result.Errors, graphqlerrors.FormatError(err))
+		p.ResultChan <- p.Result
+		return eCtx
+	}
+
+	eCtx.Schema = p.Schema
+	eCtx.Fragments = fragments
+	eCtx.Root = p.Root
+	eCtx.Operation = operation
+	eCtx.VariableValues = variableValues
+	eCtx.Errors = p.Errors
+	return eCtx
+}
+
 type ExecuteOperationParams struct {
 	ExecutionContext ExecutionContext
 	Root             map[string]interface{}
@@ -100,6 +182,63 @@ func getOperationRootType(schema types.GraphQLSchema, operation ast.Definition, 
 		r <- &result
 		return objType
 	}
+}
+
+type ExecuteFieldsParams struct {
+	ExecutionContext ExecutionContext
+	ParentType       *types.GraphQLObjectType
+	Source           interface{}
+	Fields           map[string][]*ast.Field
+}
+
+// Implements the "Evaluating selection sets" section of the spec for "write" mode.
+func executeFieldsSerially(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) {
+	if p.Source == nil {
+		p.Source = map[string]interface{}{}
+	}
+	if p.Fields == nil {
+		p.Fields = map[string][]*ast.Field{}
+	}
+	var result types.GraphQLResult
+
+	finalResults := map[string]interface{}{}
+	for responseName, fieldASTs := range p.Fields {
+		resolved, err := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+		if err != nil {
+			result.Errors = append(result.Errors, graphqlerrors.FormatError(err))
+		}
+		if resolved != nil {
+			finalResults[responseName] = resolved
+		}
+	}
+	result.Data = finalResults
+	resultChan <- &result
+}
+
+// Implements the "Evaluating selection sets" section of the spec for "read" mode.
+func executeFields(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) {
+	if p.Source == nil {
+		p.Source = map[string]interface{}{}
+	}
+	if p.Fields == nil {
+		p.Fields = map[string][]*ast.Field{}
+	}
+	var result types.GraphQLResult
+
+	finalResults := map[string]interface{}{}
+	for responseName, fieldASTs := range p.Fields {
+
+		resolved, err := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+		if err != nil {
+			result.Errors = append(result.Errors, graphqlerrors.FormatError(err))
+		}
+		if resolved != nil {
+			finalResults[responseName] = resolved
+		}
+	}
+
+	result.Data = finalResults
+	resultChan <- &result
 }
 
 type CollectFieldsParams struct {
@@ -181,158 +320,6 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 		}
 	}
 	return fields
-}
-
-type ExecuteFieldsParams struct {
-	ExecutionContext ExecutionContext
-	ParentType       *types.GraphQLObjectType
-	Source           interface{}
-	Fields           map[string][]*ast.Field
-}
-
-// Implements the "Evaluating selection sets" section of the spec for "read" mode.
-func executeFields(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) {
-	if p.Source == nil {
-		p.Source = map[string]interface{}{}
-	}
-	if p.Fields == nil {
-		p.Fields = map[string][]*ast.Field{}
-	}
-	var result types.GraphQLResult
-
-	finalResults := map[string]interface{}{}
-	for responseName, fieldASTs := range p.Fields {
-
-		resolved, err := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
-		if err != nil {
-			result.Errors = append(result.Errors, graphqlerrors.FormatError(err))
-		}
-		if resolved != nil {
-			finalResults[responseName] = resolved
-		}
-	}
-
-	result.Data = finalResults
-	resultChan <- &result
-}
-
-// Implements the "Evaluating selection sets" section of the spec for "write" mode.
-func executeFieldsSerially(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) {
-	if p.Source == nil {
-		p.Source = map[string]interface{}{}
-	}
-	if p.Fields == nil {
-		p.Fields = map[string][]*ast.Field{}
-	}
-	var result types.GraphQLResult
-
-	finalResults := map[string]interface{}{}
-	for responseName, fieldASTs := range p.Fields {
-		resolved, err := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
-		if err != nil {
-			result.Errors = append(result.Errors, graphqlerrors.FormatError(err))
-		}
-		if resolved != nil {
-			finalResults[responseName] = resolved
-		}
-	}
-	result.Data = finalResults
-	resultChan <- &result
-}
-
-type BuildExecutionCtxParams struct {
-	Schema        types.GraphQLSchema
-	Root          map[string]interface{}
-	AST           *ast.Document
-	OperationName string
-	Args          map[string]interface{}
-	Errors        []error
-	Result        *types.GraphQLResult
-	ResultChan    chan *types.GraphQLResult
-}
-
-type ExecutionContext struct {
-	Schema         types.GraphQLSchema
-	Fragments      map[string]ast.Definition
-	Root           map[string]interface{}
-	Operation      ast.Definition
-	VariableValues map[string]interface{}
-	Errors         []error
-}
-
-func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
-	operations := map[string]ast.Definition{}
-	fragments := map[string]ast.Definition{}
-	for _, statement := range p.AST.Definitions {
-		switch stm := statement.(type) {
-		case *ast.OperationDefinition:
-			key := ""
-			if stm.GetName() != nil && stm.GetName().Value != "" {
-				key = stm.GetName().Value
-			}
-			operations[key] = stm
-		case *ast.FragmentDefinition:
-			key := ""
-			if stm.GetName() != nil && stm.GetName().Value != "" {
-				key = stm.GetName().Value
-			}
-			fragments[key] = stm
-		default:
-			err := graphqlerrors.NewGraphQLFormattedError(
-				fmt.Sprintf("GraphQL cannot execute a request containing a %v", statement.GetKind()),
-			)
-			p.Result.Errors = append(p.Result.Errors, err)
-			p.ResultChan <- p.Result
-			return eCtx
-		}
-	}
-	if (p.OperationName == "") && (len(operations) != 1) {
-		err := graphqlerrors.NewGraphQLFormattedError("Must provide operation name if query contains multiple operations.")
-		p.Result.Errors = append(p.Result.Errors, err)
-		p.ResultChan <- p.Result
-		return eCtx
-	}
-	opName := p.OperationName
-	if opName == "" {
-		// get first opName
-		for k, _ := range operations {
-			opName = k
-			break
-		}
-	}
-	operation, found := operations[opName]
-	if !found {
-		err := graphqlerrors.NewGraphQLFormattedError(fmt.Sprintf(`Unknown operation named "%v".`, opName))
-		p.Result.Errors = append(p.Result.Errors, err)
-		p.ResultChan <- p.Result
-		return eCtx
-	}
-	variableValues, err := getVariableValues(p.Schema, operation.GetVariableDefinitions(), p.Args)
-	if err != nil {
-		p.Result.Errors = append(p.Result.Errors, graphqlerrors.FormatError(err))
-		p.ResultChan <- p.Result
-		return eCtx
-	}
-
-	eCtx.Schema = p.Schema
-	eCtx.Fragments = fragments
-	eCtx.Root = p.Root
-	eCtx.Operation = operation
-	eCtx.VariableValues = variableValues
-	eCtx.Errors = p.Errors
-	return eCtx
-}
-
-// Implements the logic to compute the key of a given field’s entry
-func getFieldEntryKey(node *ast.Field) string {
-
-	if node.Alias != nil && node.Alias.Value != "" {
-		return node.Alias.Value
-	}
-	if node.Name != nil && node.Name.Value != "" {
-		return node.Name.Value
-	}
-	return ""
 }
 
 // Determines if a field should be included based on the @include and @skip
@@ -429,6 +416,18 @@ func doesFragmentConditionMatch(eCtx ExecutionContext, fragment ast.Node, ttype 
 	return false
 }
 
+// Implements the logic to compute the key of a given field’s entry
+func getFieldEntryKey(node *ast.Field) string {
+
+	if node.Alias != nil && node.Alias.Value != "" {
+		return node.Alias.Value
+	}
+	if node.Name != nil && node.Name.Value != "" {
+		return node.Name.Value
+	}
+	return ""
+}
+
 /**
  * Resolves the field on the given source object. In particular, this
  * figures out the value that the field returns by calling its resolve function,
@@ -494,44 +493,6 @@ func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, so
 		return result, err
 	}
 	return result, nil
-}
-
-func getFieldDef(schema types.GraphQLSchema, parentType *types.GraphQLObjectType, fieldName string) *types.GraphQLFieldDefinition {
-
-	if parentType == nil {
-		return nil
-	}
-
-	if fieldName == types.SchemaMetaFieldDef.Name &&
-		schema.GetQueryType().Name == parentType.Name {
-		return types.SchemaMetaFieldDef
-	}
-	if fieldName == types.TypeMetaFieldDef.Name &&
-		schema.GetQueryType().Name == parentType.Name {
-		return types.TypeMetaFieldDef
-	}
-	if fieldName == types.TypeNameMetaFieldDef.Name &&
-		schema.GetQueryType().Name == parentType.Name {
-		return types.TypeNameMetaFieldDef
-	}
-	return parentType.GetFields()[fieldName]
-}
-
-func defaultResolveFn(p types.GQLFRParams) interface{} {
-	// expects p.Source to be a map
-	if sourceMap, ok := p.Source.(map[string]interface{}); ok {
-		property := sourceMap[p.Info.FieldName]
-		val := reflect.ValueOf(property)
-		if val.IsValid() && val.Type().Kind() == reflect.Func {
-			// try type casting the func to the most basic func signature
-			// for more complex signatures, user have to define ResolveFn
-			if propertyFn, ok := property.(func() interface{}); ok {
-				return propertyFn()
-			}
-		}
-		return property
-	}
-	return p.Source
 }
 
 func completeValueCatchingError(eCtx ExecutionContext, returnType types.GraphQLType, fieldASTs []*ast.Field, info types.GraphQLResolveInfo, result interface{}) (completed interface{}, err error) {
@@ -707,4 +668,42 @@ func completeValue(eCtx ExecutionContext, returnType types.GraphQLType, fieldAST
 	results := <-resultChannel
 	return results, nil
 
+}
+
+func defaultResolveFn(p types.GQLFRParams) interface{} {
+	// expects p.Source to be a map
+	if sourceMap, ok := p.Source.(map[string]interface{}); ok {
+		property := sourceMap[p.Info.FieldName]
+		val := reflect.ValueOf(property)
+		if val.IsValid() && val.Type().Kind() == reflect.Func {
+			// try type casting the func to the most basic func signature
+			// for more complex signatures, user have to define ResolveFn
+			if propertyFn, ok := property.(func() interface{}); ok {
+				return propertyFn()
+			}
+		}
+		return property
+	}
+	return p.Source
+}
+
+func getFieldDef(schema types.GraphQLSchema, parentType *types.GraphQLObjectType, fieldName string) *types.GraphQLFieldDefinition {
+
+	if parentType == nil {
+		return nil
+	}
+
+	if fieldName == types.SchemaMetaFieldDef.Name &&
+		schema.GetQueryType().Name == parentType.Name {
+		return types.SchemaMetaFieldDef
+	}
+	if fieldName == types.TypeMetaFieldDef.Name &&
+		schema.GetQueryType().Name == parentType.Name {
+		return types.TypeMetaFieldDef
+	}
+	if fieldName == types.TypeNameMetaFieldDef.Name &&
+		schema.GetQueryType().Name == parentType.Name {
+		return types.TypeNameMetaFieldDef
+	}
+	return parentType.GetFields()[fieldName]
 }

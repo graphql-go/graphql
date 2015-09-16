@@ -69,7 +69,7 @@ func getVariableValue(schema types.GraphQLSchema, definitionAST *ast.VariableDef
 
 	if ttype == nil {
 		return "", graphqlerrors.NewGraphQLError(
-			fmt.Sprintf(`11Variable "$%v" expected value of type `+
+			fmt.Sprintf(`Variable "$%v" expected value of type `+
 				`"%v" which cannot be used as an input type.`, variable.Name.Value, definitionAST.Type),
 			[]ast.Node{definitionAST},
 			"",
@@ -114,6 +114,7 @@ func coerceValue(ttype types.GraphQLInputType, value interface{}) (interface{}, 
 }
 
 // graphql-js/src/utilities.js`
+// TODO: figure out where to organize utils
 
 func typeFromAST(schema types.GraphQLSchema, inputTypeAST ast.Type) (types.GraphQLType, error) {
 	switch inputTypeAST := inputTypeAST.(type) {
@@ -141,7 +142,7 @@ func typeFromAST(schema types.GraphQLSchema, inputTypeAST ast.Type) (types.Graph
 }
 
 // isValidInputValue alias isValidJSValue
-// Given a JavaScript value and a GraphQL type, determine if the value will be
+// Given a value and a GraphQL type, determine if the value will be
 // accepted for that type. This is primarily useful for validating the
 // runtime values of query variables.
 func isValidInputValue(value interface{}, ttype types.GraphQLInputType) bool {
@@ -173,11 +174,43 @@ func isValidInputValue(value interface{}, ttype types.GraphQLInputType) bool {
 		}
 		return isValidInputValue(value, itemType)
 	case *types.GraphQLInputObjectType:
-		// TODO: isValidInputValue for GraphQLInputObjectType
+		valueMap, ok := value.(map[string]interface{})
+		if !ok {
+			return false
+		}
+
+		fields := ttype.GetFields()
+		for fieldName, _ := range valueMap {
+			if _, ok := fields[fieldName]; !ok {
+				return false
+			}
+		}
+		for fieldName, _ := range fields {
+			if _, ok := fields[fieldName]; !ok {
+				if !isValidInputValue(valueMap[fieldName], fields[fieldName].Type) {
+					return false
+				}
+			}
+			return true
+		}
 		return true
 	}
 
-	return true
+	switch ttype := ttype.(type) {
+	case *types.GraphQLScalarType:
+		parsedVal := ttype.ParseValue(value)
+		if parsedVal == nil {
+			return false
+		}
+		return true
+	case *types.GraphQLEnumType:
+		parsedVal := ttype.ParseValue(value)
+		if parsedVal == nil {
+			return false
+		}
+		return true
+	}
+	return false
 }
 
 // Returns true if a value is null, undefined, or NaN.
@@ -264,7 +297,6 @@ func valueFromAST(valueAST ast.Value, ttype types.GraphQLInputType, variables ma
 	return valueAST, err
 }
 
-// TODO: figure out where to organize utils
 func invariant(condition bool, message string) error {
 	if !condition {
 		return graphqlerrors.NewGraphQLFormattedError(message)

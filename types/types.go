@@ -743,6 +743,8 @@ type InputObjectConfig struct {
 	Fields      InputObjectConfigFieldMap
 	Description string
 }
+
+// TODO: GraphQLInputObjectType is more of a map in Golang
 type GraphQLInputObjectType struct {
 	Name        string
 	Description string
