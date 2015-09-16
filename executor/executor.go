@@ -367,7 +367,7 @@ func shouldIncludeNode(eCtx ExecutionContext, directives []*ast.Directive) bool 
 	if includeAST != nil {
 		argValues, err := getArgumentValues(
 			types.GraphQLIncludeDirective.Args,
-			skipAST.Arguments,
+			includeAST.Arguments,
 			eCtx.VariableValues,
 		)
 		if err != nil {
@@ -375,7 +375,7 @@ func shouldIncludeNode(eCtx ExecutionContext, directives []*ast.Directive) bool 
 		}
 		if includeIf, ok := argValues["if"]; ok {
 			if boolIncludeIf, ok := includeIf.(bool); ok {
-				return !boolIncludeIf
+				return boolIncludeIf
 			}
 		}
 		return defaultReturnValue

@@ -475,11 +475,11 @@ func parseFragmentDefinition(parser *Parser) (*ast.FragmentDefinition, error) {
 	if err != nil {
 		return nil, err
 	}
-	selectionSet, err := parseSelectionSet(parser)
+	directives, err := parseDirectives(parser)
 	if err != nil {
 		return nil, err
 	}
-	directives, err := parseDirectives(parser)
+	selectionSet, err := parseSelectionSet(parser)
 	if err != nil {
 		return nil, err
 	}
