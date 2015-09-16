@@ -83,9 +83,6 @@ func (st *GraphQLScalarType) ParseLiteral(valueAST ast.Value) interface{} {
 func (st *GraphQLScalarType) GetName() string {
 	return st.Name
 }
-func (st *GraphQLScalarType) SetName(name string) {
-	st.Name = name
-}
 func (st *GraphQLScalarType) GetDescription() string {
 	return st.Description
 

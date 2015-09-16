@@ -122,9 +122,6 @@ func (gt *GraphQLEnumType) ParseLiteral(valueAST ast.Value) interface{} {
 func (gt *GraphQLEnumType) GetName() string {
 	return gt.Name
 }
-func (gt *GraphQLEnumType) SetName(name string) {
-	gt.Name = name
-}
 func (gt *GraphQLEnumType) GetDescription() string {
 	return ""
 }
@@ -226,9 +223,6 @@ func (it *GraphQLInterfaceType) AddFieldConfig(fieldName string, fieldConfig *Gr
 func (it *GraphQLInterfaceType) GetName() string {
 	return it.Name
 }
-func (it *GraphQLInterfaceType) SetName(name string) {
-	it.Name = name
-}
 func (it *GraphQLInterfaceType) GetDescription() string {
 	return it.Description
 }
@@ -313,7 +307,6 @@ type GraphQLFieldResolveFn func(p GQLFRParams) interface{}
 
 type GraphQLOutputType interface {
 	GetName() string
-	SetName(string)
 	GetDescription() string
 	Coerce(value interface{}) (r interface{})
 	CoerceLiteral(value interface{}) (r interface{})
@@ -323,15 +316,13 @@ type GraphQLOutputType interface {
 var _ GraphQLOutputType = (*GraphQLScalarType)(nil)
 var _ GraphQLOutputType = (*GraphQLObjectType)(nil)
 var _ GraphQLOutputType = (*GraphQLInterfaceType)(nil)
-
-//var _ GraphQLOutputType = (*GraphQLUnionType)(nil)
+var _ GraphQLOutputType = (*GraphQLUnionType)(nil)
 var _ GraphQLOutputType = (*GraphQLEnumType)(nil)
 var _ GraphQLOutputType = (*GraphQLList)(nil)
 var _ GraphQLOutputType = (*GraphQLNonNull)(nil)
 
 type GraphQLInputType interface {
 	GetName() string
-	SetName(string)
 	GetDescription() string
 	Coerce(value interface{}) interface{}
 	CoerceLiteral(value interface{}) interface{}
@@ -463,9 +454,6 @@ func (gt *GraphQLObjectType) AddFieldConfig(fieldName string, fieldConfig *Graph
 func (gt *GraphQLObjectType) GetName() string {
 	return gt.Name
 }
-func (gt *GraphQLObjectType) SetName(name string) {
-	gt.Name = name
-}
 func (gt *GraphQLObjectType) GetDescription() string {
 	return ""
 }
@@ -518,8 +506,6 @@ func NewGraphQLList(ofType GraphQLType) *GraphQLList {
 func (gl *GraphQLList) GetName() string {
 	return fmt.Sprintf("%v", gl.OfType)
 }
-func (gl *GraphQLList) SetName(name string) {
-}
 func (gl *GraphQLList) GetDescription() string {
 	return ""
 }
@@ -536,6 +522,112 @@ func (gl *GraphQLList) String() string {
 	return ""
 }
 
+type GraphQLUnionTypeConfig struct {
+	Name        string
+	Types       []*GraphQLObjectType
+	ResolveType ResolveTypeFn
+	Description string
+}
+type GraphQLUnionType struct {
+	Name        string
+	Description string
+	ResolveType ResolveTypeFn
+
+	typeConfig    GraphQLUnionTypeConfig
+	types         []*GraphQLObjectType
+	possibleTypes map[string]bool
+
+	err error
+}
+
+func NewGraphQLUnionType(config GraphQLUnionTypeConfig) *GraphQLUnionType {
+	objectType := &GraphQLUnionType{}
+
+	err := invariant(config.Name != "", "Type must be named.")
+	if err != nil {
+		objectType.err = err
+		return objectType
+	}
+	err = assertValidName(config.Name)
+	if err != nil {
+		objectType.err = err
+		return objectType
+	}
+	objectType.Name = config.Name
+	objectType.Description = config.Description
+
+	err = invariant(
+		config.ResolveType != nil,
+		fmt.Sprintf(`%v must provide "resolveType" as a function.`, objectType),
+	)
+	if err != nil {
+		objectType.err = err
+		return objectType
+	}
+	objectType.ResolveType = config.ResolveType
+
+	err = invariant(
+		len(config.Types) > 0,
+		fmt.Sprintf(`Must provide Array of types for Union %v`, config.Name),
+	)
+	if err != nil {
+		objectType.err = err
+		return objectType
+	}
+
+	objectType.types = config.Types
+	objectType.typeConfig = config
+
+	return objectType
+}
+
+func (ut *GraphQLUnionType) GetPossibleTypes() []*GraphQLObjectType {
+	return ut.types
+}
+func (ut *GraphQLUnionType) IsPossibleType(ttype *GraphQLObjectType) bool {
+
+	if ttype == nil {
+		return false
+	}
+	if len(ut.possibleTypes) == 0 {
+		possibleTypes := map[string]bool{}
+		for _, possibleType := range ut.GetPossibleTypes() {
+			if possibleType == nil {
+				continue
+			}
+			possibleTypes[possibleType.Name] = true
+		}
+		ut.possibleTypes = possibleTypes
+	}
+
+	if val, ok := ut.possibleTypes[ttype.Name]; ok {
+		return val
+	}
+	return false
+}
+func (ut *GraphQLUnionType) GetObjectType(value interface{}, info GraphQLResolveInfo) *GraphQLObjectType {
+	if ut.ResolveType != nil {
+		return ut.ResolveType(value, info)
+	}
+	return getTypeOf(value, info, ut)
+}
+
+func (ut *GraphQLUnionType) String() string {
+	return ut.Name
+}
+func (ut *GraphQLUnionType) GetName() string {
+	return ut.Name
+}
+func (ut *GraphQLUnionType) GetDescription() string {
+	return ut.Description
+}
+func (ut *GraphQLUnionType) Coerce(value interface{}) (r interface{}) {
+	return value
+}
+func (ut *GraphQLUnionType) CoerceLiteral(value interface{}) (r interface{}) {
+	return value
+}
+
 // These named types do not include modifiers like List or NonNull.
 type GraphQLNamedType interface {
 	String() string
@@ -545,7 +637,7 @@ var (
 	_ GraphQLNamedType = (*GraphQLScalarType)(nil)
 	_ GraphQLNamedType = (*GraphQLObjectType)(nil)
 	_ GraphQLNamedType = (*GraphQLInterfaceType)(nil)
-	//	_ GraphQLNamedType = (GraphQLUnionType)(nil)
+	_ GraphQLNamedType = (*GraphQLUnionType)(nil)
 	_ GraphQLNamedType = (*GraphQLEnumType)(nil)
 
 	_ GraphQLNamedType = (*GraphQLInputObjectType)(nil)
@@ -698,9 +790,6 @@ func (gt *GraphQLInputObjectType) GetFields() InputObjectFieldMap {
 }
 func (gt *GraphQLInputObjectType) GetName() string {
 	return gt.Name
-}
-func (gt *GraphQLInputObjectType) SetName(name string) {
-	gt.Name = name
 }
 func (gt *GraphQLInputObjectType) GetDescription() string {
 	return gt.Description

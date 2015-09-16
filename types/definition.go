@@ -7,7 +7,6 @@ import (
 
 type GraphQLType interface {
 	GetName() string
-	SetName(string)
 	GetDescription() string
 	Coerce(value interface{}) interface{}
 	CoerceLiteral(value interface{}) interface{}
@@ -17,10 +16,8 @@ type GraphQLType interface {
 var _ GraphQLType = (*GraphQLScalarType)(nil)
 var _ GraphQLType = (*GraphQLObjectType)(nil)
 var _ GraphQLType = (*GraphQLInterfaceType)(nil)
-
-//var _ GraphQLType = (*GraphQLUnionType)(nil)
+var _ GraphQLType = (*GraphQLUnionType)(nil)
 var _ GraphQLType = (*GraphQLEnumType)(nil)
-
 var _ GraphQLType = (*GraphQLInputObjectType)(nil)
 var _ GraphQLType = (*GraphQLList)(nil)
 var _ GraphQLType = (*GraphQLNonNull)(nil)
@@ -51,9 +48,6 @@ func NewGraphQLNonNull(ofType GraphQLType) *GraphQLNonNull {
 }
 func (gl *GraphQLNonNull) GetName() string {
 	return fmt.Sprintf("%v", gl.OfType)
-}
-func (gl *GraphQLNonNull) SetName(name string) {
-	gl.OfType.SetName(name)
 }
 func (gl *GraphQLNonNull) GetDescription() string {
 	return ""
@@ -88,8 +82,7 @@ type GraphQLCompositeType interface {
 
 var _ GraphQLCompositeType = (*GraphQLObjectType)(nil)
 var _ GraphQLCompositeType = (*GraphQLInterfaceType)(nil)
-
-//var _ GraphQLCompositeType = (*GraphQLUnionType)(nil)
+var _ GraphQLCompositeType = (*GraphQLUnionType)(nil)
 
 type GraphQLAbstractType interface {
 	GetObjectType(value interface{}, info GraphQLResolveInfo) *GraphQLObjectType
@@ -98,5 +91,4 @@ type GraphQLAbstractType interface {
 }
 
 var _ GraphQLAbstractType = (*GraphQLInterfaceType)(nil)
-
-//var _ GraphQLAbstractType = (*GraphQLUnionType)(nil)
+var _ GraphQLAbstractType = (*GraphQLUnionType)(nil)

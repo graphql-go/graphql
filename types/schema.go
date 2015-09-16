@@ -133,8 +133,13 @@ func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLType
 	typeMap[objectType.GetName()] = objectType
 
 	switch objectType := objectType.(type) {
-	//	case *GraphQLUnionType:
-	//	fallthrough
+	case *GraphQLUnionType:
+		for _, innerObjectType := range objectType.GetPossibleTypes() {
+			typeMap, err = typeMapReducer(typeMap, innerObjectType)
+			if err != nil {
+				return typeMap, err
+			}
+		}
 	case *GraphQLInterfaceType:
 		for _, innerObjectType := range objectType.GetPossibleTypes() {
 			typeMap, err = typeMapReducer(typeMap, innerObjectType)
