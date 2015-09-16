@@ -419,28 +419,6 @@ func NewGraphQLObjectType(config GraphQLObjectTypeConfig) *GraphQLObjectType {
 	return objectType
 }
 
-func (gt *GraphQLObjectType) __setTypesFor__Type(__type GraphQLType, __field GraphQLType, __enumValue GraphQLType, __inputValue GraphQLType) {
-
-	// This is a workaround for the initialization loop problem
-	// update config map first, then redefine field maps
-	for fieldName, _ := range gt.typeConfig.Fields {
-		switch fieldName {
-		case "fields":
-			gt.typeConfig.Fields[fieldName].Type = NewGraphQLList(NewGraphQLNonNull(__field))
-		case "interfaces":
-			gt.typeConfig.Fields[fieldName].Type = NewGraphQLList(NewGraphQLNonNull(__type))
-		case "possibleTypes":
-			gt.typeConfig.Fields[fieldName].Type = NewGraphQLList(NewGraphQLNonNull(__type))
-		case "enumValues":
-			gt.typeConfig.Fields[fieldName].Type = NewGraphQLList(NewGraphQLNonNull(__enumValue))
-		case "inputFields":
-			gt.typeConfig.Fields[fieldName].Type = NewGraphQLList(NewGraphQLNonNull(__inputValue))
-		case "ofType":
-			gt.typeConfig.Fields[fieldName].Type = __type
-		}
-	}
-	gt.fields, _ = defineFieldMap(gt, gt.typeConfig.Fields)
-}
 func (gt *GraphQLObjectType) AddFieldConfig(fieldName string, fieldConfig *GraphQLFieldConfig) {
 	if fieldName == "" || fieldConfig == nil {
 		return

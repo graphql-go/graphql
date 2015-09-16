@@ -72,8 +72,7 @@ func init() {
 		},
 	})
 
-	// define __Type without field.Type definitions first
-	// we'll point them back to itself `__Type` after init
+	// Note: some fields (for e.g "fields", "interfaces") are defined later due to cyclic reference
 	__Type = NewGraphQLObjectType(GraphQLObjectTypeConfig{
 		Name: "__Type",
 		Fields: GraphQLFieldConfigMap{
@@ -90,56 +89,12 @@ func init() {
 			"description": &GraphQLFieldConfig{
 				Type: GraphQLString,
 			},
-			"fields": &GraphQLFieldConfig{
-				//				Type: NewGraphQLList(NewGraphQLNonNull(__Field)),
-				Args: GraphQLFieldConfigArgumentMap{
-					"includeDeprecated": &GraphQLArgumentConfig{
-						Type:         GraphQLBoolean,
-						DefaultValue: false,
-					},
-				},
-				Resolve: func(p GQLFRParams) interface{} {
-					// TODO: resolveFn for __Type
-					return nil
-				},
-			},
-			"interfaces": &GraphQLFieldConfig{
-				//				Type: NewGraphQLList(NewGraphQLNonNull(__Type)),
-				Resolve: func(p GQLFRParams) interface{} {
-					// TODO: resolveFn for __Type
-					return nil
-				},
-			},
-			"possibleTypes": &GraphQLFieldConfig{
-				//				Type: NewGraphQLList(NewGraphQLNonNull(__Type)),
-				Resolve: func(p GQLFRParams) interface{} {
-					// TODO: resolveFn for __Type
-					return nil
-				},
-			},
-			"enumValues": &GraphQLFieldConfig{
-				//				Type: NewGraphQLList(NewGraphQLNonNull(__EnumValue)),
-				Args: GraphQLFieldConfigArgumentMap{
-					"includeDeprecated": &GraphQLArgumentConfig{
-						Type:         GraphQLBoolean,
-						DefaultValue: false,
-					},
-				},
-				Resolve: func(p GQLFRParams) interface{} {
-					// TODO: resolveFn for __Type
-					return nil
-				},
-			},
-			"inputFields": &GraphQLFieldConfig{
-				//				Type: NewGraphQLList(NewGraphQLNonNull(__InputValue)),
-				Resolve: func(p GQLFRParams) interface{} {
-					// TODO: resolveFn for __Type
-					return nil
-				},
-			},
-			"ofType": &GraphQLFieldConfig{
-			//				Type: __Type,
-			},
+			"fields":        &GraphQLFieldConfig{},
+			"interfaces":    &GraphQLFieldConfig{},
+			"possibleTypes": &GraphQLFieldConfig{},
+			"enumValues":    &GraphQLFieldConfig{},
+			"inputFields":   &GraphQLFieldConfig{},
+			"ofType":        &GraphQLFieldConfig{},
 		},
 	})
 
@@ -296,12 +251,58 @@ mutation operations.`,
 		},
 	})
 
-	__Type.__setTypesFor__Type(
-		__Type,
-		__Field,
-		__EnumValue,
-		__InputValue,
-	)
+	// Again, adding field configs to __Type that have cyclic reference here
+	// because golang don't like them too much during init/compile-time
+	__Type.AddFieldConfig("fields", &GraphQLFieldConfig{
+		Type: NewGraphQLList(NewGraphQLNonNull(__Field)),
+		Args: GraphQLFieldConfigArgumentMap{
+			"includeDeprecated": &GraphQLArgumentConfig{
+				Type:         GraphQLBoolean,
+				DefaultValue: false,
+			},
+		},
+		Resolve: func(p GQLFRParams) interface{} {
+			// TODO: resolveFn for __Type
+			return nil
+		},
+	})
+	__Type.AddFieldConfig("interfaces", &GraphQLFieldConfig{
+		Type: NewGraphQLList(NewGraphQLNonNull(__Type)),
+		Resolve: func(p GQLFRParams) interface{} {
+			// TODO: resolveFn for __Type
+			return nil
+		},
+	})
+	__Type.AddFieldConfig("possibleTypes", &GraphQLFieldConfig{
+		Type: NewGraphQLList(NewGraphQLNonNull(__Type)),
+		Resolve: func(p GQLFRParams) interface{} {
+			// TODO: resolveFn for __Type
+			return nil
+		},
+	})
+	__Type.AddFieldConfig("enumValues", &GraphQLFieldConfig{
+		Type: NewGraphQLList(NewGraphQLNonNull(__EnumValue)),
+		Args: GraphQLFieldConfigArgumentMap{
+			"includeDeprecated": &GraphQLArgumentConfig{
+				Type:         GraphQLBoolean,
+				DefaultValue: false,
+			},
+		},
+		Resolve: func(p GQLFRParams) interface{} {
+			// TODO: resolveFn for __Type
+			return nil
+		},
+	})
+	__Type.AddFieldConfig("inputFields", &GraphQLFieldConfig{
+		Type: NewGraphQLList(NewGraphQLNonNull(__InputValue)),
+		Resolve: func(p GQLFRParams) interface{} {
+			// TODO: resolveFn for __Type
+			return nil
+		},
+	})
+	__Type.AddFieldConfig("ofType", &GraphQLFieldConfig{
+		Type: __Type,
+	})
 
 	/**
 	 * Note that these are GraphQLFieldDefinition and not GraphQLFieldConfig,
