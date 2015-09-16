@@ -29,10 +29,8 @@ var (
 			Schema: testutil.StarWarsSchema,
 			Expected: &types.GraphQLResult{
 				Data: map[string]interface{}{
-					"hero": &types.GraphQLResult{
-						Data: map[string]interface{}{
-							"name": "R2-D2",
-						},
+					"hero": map[string]interface{}{
+						"name": "R2-D2",
 					},
 				},
 			},
@@ -52,26 +50,18 @@ var (
 			Schema: testutil.StarWarsSchema,
 			Expected: &types.GraphQLResult{
 				Data: map[string]interface{}{
-					"hero": &types.GraphQLResult{
-						Data: map[string]interface{}{
-							"id":   "2001",
-							"name": "R2-D2",
-							"friends": []interface{}{
-								&types.GraphQLResult{
-									Data: map[string]interface{}{
-										"name": "Luke Skywalker",
-									},
-								},
-								&types.GraphQLResult{
-									Data: map[string]interface{}{
-										"name": "Han Solo",
-									},
-								},
-								&types.GraphQLResult{
-									Data: map[string]interface{}{
-										"name": "Leia Organa",
-									},
-								},
+					"hero": map[string]interface{}{
+						"id":   "2001",
+						"name": "R2-D2",
+						"friends": []interface{}{
+							map[string]interface{}{
+								"name": "Luke Skywalker",
+							},
+							map[string]interface{}{
+								"name": "Han Solo",
+							},
+							map[string]interface{}{
+								"name": "Leia Organa",
 							},
 						},
 					},

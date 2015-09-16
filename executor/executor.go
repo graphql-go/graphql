@@ -18,7 +18,7 @@ type ExecuteParams struct {
 }
 
 func Execute(p ExecuteParams, resultChan chan *types.GraphQLResult) {
-	var errors []error
+	var errors []graphqlerrors.GraphQLFormattedError
 	var result types.GraphQLResult
 	params := BuildExecutionCtxParams{
 		Schema:        p.Schema,
@@ -48,7 +48,7 @@ type BuildExecutionCtxParams struct {
 	AST           *ast.Document
 	OperationName string
 	Args          map[string]interface{}
-	Errors        []error
+	Errors        []graphqlerrors.GraphQLFormattedError
 	Result        *types.GraphQLResult
 	ResultChan    chan *types.GraphQLResult
 }
@@ -58,7 +58,7 @@ type ExecutionContext struct {
 	Root           map[string]interface{}
 	Operation      ast.Definition
 	VariableValues map[string]interface{}
-	Errors         []error
+	Errors         []graphqlerrors.GraphQLFormattedError
 }
 
 func buildExecutionContext(p BuildExecutionCtxParams) (eCtx ExecutionContext) {
@@ -203,9 +203,9 @@ func executeFieldsSerially(p ExecuteFieldsParams, resultChan chan *types.GraphQL
 
 	finalResults := map[string]interface{}{}
 	for responseName, fieldASTs := range p.Fields {
-		resolved, err := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
-		if err != nil {
-			result.Errors = append(result.Errors, graphqlerrors.FormatError(err))
+		resolved, errs := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+		for _, err := range errs {
+			result.Errors = append(result.Errors, err)
 		}
 		if resolved != nil {
 			finalResults[responseName] = resolved
@@ -228,9 +228,9 @@ func executeFields(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) 
 	finalResults := map[string]interface{}{}
 	for responseName, fieldASTs := range p.Fields {
 
-		resolved, err := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
-		if err != nil {
-			result.Errors = append(result.Errors, graphqlerrors.FormatError(err))
+		resolved, resolvedErrs := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+		for _, err := range resolvedErrs {
+			result.Errors = append(result.Errors, err)
 		}
 		if resolved != nil {
 			finalResults[responseName] = resolved
@@ -434,14 +434,14 @@ func getFieldEntryKey(node *ast.Field) string {
  * then calls completeValue to complete promises, serialize scalars, or execute
  * the sub-selection-set for objects.
  */
-func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, source interface{}, fieldASTs []*ast.Field) (result interface{}, err error) {
+func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, source interface{}, fieldASTs []*ast.Field) (result interface{}, errs []graphqlerrors.GraphQLFormattedError) {
 	// catch panic
-	defer func() (interface{}, error) {
+	defer func() (interface{}, []graphqlerrors.GraphQLFormattedError) {
 		if r := recover(); r != nil {
-			err = graphqlerrors.NewGraphQLFormattedError(fmt.Sprintf("%v", r))
-			return nil, err
+			errs = append(errs, graphqlerrors.NewGraphQLFormattedError(fmt.Sprintf("%v", r)))
+			return result, errs
 		}
-		return result, nil
+		return result, errs
 	}()
 	fieldAST := fieldASTs[0]
 	fieldName := ""
@@ -451,7 +451,12 @@ func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, so
 
 	fieldDef := getFieldDef(eCtx.Schema, parentType, fieldName)
 	if fieldDef == nil {
-		return nil, graphqlerrors.NewGraphQLFormattedError(fmt.Sprintf("Missing field definition for field: %v", fieldName))
+		return nil, errs
+		//		return nil, append(errs,
+		//			graphqlerrors.NewGraphQLFormattedError(
+		//				fmt.Sprintf("Missing field definition for field: %v", fieldName),
+		//			),
+		//		)
 	}
 	returnType := fieldDef.Type
 	resolveFn := fieldDef.Resolve
@@ -488,44 +493,39 @@ func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, so
 		Args:   args,
 		Info:   info,
 	})
-	result, err = completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
-	if err != nil {
-		return result, err
-	}
-	return result, nil
+	return completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
 }
 
-func completeValueCatchingError(eCtx ExecutionContext, returnType types.GraphQLType, fieldASTs []*ast.Field, info types.GraphQLResolveInfo, result interface{}) (completed interface{}, err error) {
+func completeValueCatchingError(eCtx ExecutionContext, returnType types.GraphQLType, fieldASTs []*ast.Field, info types.GraphQLResolveInfo, result interface{}) (completed interface{}, errs []graphqlerrors.GraphQLFormattedError) {
 	// catch panic
-	defer func() (interface{}, error) {
+	defer func() (interface{}, []graphqlerrors.GraphQLFormattedError) {
 		if r := recover(); r != nil {
-			err = graphqlerrors.NewGraphQLFormattedError(fmt.Sprintf("%v", r))
-			return nil, err
+			return completed, append(errs, graphqlerrors.NewGraphQLFormattedError(fmt.Sprintf("%v", r)))
 		}
-		return completed, nil
+		return completed, errs
 	}()
 
 	if returnType, ok := returnType.(*types.GraphQLNonNull); ok {
-		completed, err = completeValue(eCtx, returnType, fieldASTs, info, result)
-		return completed, err
+		return completeValue(eCtx, returnType, fieldASTs, info, result)
 	}
-	completed, err = completeValue(eCtx, returnType, fieldASTs, info, result)
-	if err != nil {
-		return completed, err
+	completed, completedErrs := completeValue(eCtx, returnType, fieldASTs, info, result)
+	if len(completedErrs) > 0 {
+		return completed, append(errs, completedErrs...)
 	}
 	resultVal := reflect.ValueOf(completed)
 	if resultVal.IsValid() && resultVal.Type().Kind() == reflect.Func {
 		if propertyFn, ok := completed.(func() interface{}); ok {
 			return propertyFn(), nil
 		}
-		return completed, graphqlerrors.NewGraphQLFormattedError("Error resolving func. Expected `func() interface{}` signature")
+		return completed, append(errs, graphqlerrors.NewGraphQLFormattedError("Error resolving func. Expected `func() interface{}` signature"))
 	}
-	return completed, nil
+	return completed, errs
 
 }
 
-func completeValue(eCtx ExecutionContext, returnType types.GraphQLType, fieldASTs []*ast.Field, info types.GraphQLResolveInfo, result interface{}) (interface{}, error) {
+func completeValue(eCtx ExecutionContext, returnType types.GraphQLType, fieldASTs []*ast.Field, info types.GraphQLResolveInfo, result interface{}) (interface{}, []graphqlerrors.GraphQLFormattedError) {
 
+	var errs []graphqlerrors.GraphQLFormattedError
 	// TODO: explore resolving go-routines in completeValue
 
 	resultVal := reflect.ValueOf(result)
@@ -533,21 +533,20 @@ func completeValue(eCtx ExecutionContext, returnType types.GraphQLType, fieldAST
 		if propertyFn, ok := result.(func() interface{}); ok {
 			return propertyFn(), nil
 		}
-		return result, graphqlerrors.NewGraphQLFormattedError("Error resolving func. Expected `func() interface{}` signature")
+		return result, append(errs, graphqlerrors.NewGraphQLFormattedError("Error resolving func. Expected `func() interface{}` signature"))
 	}
 
 	if returnType, ok := returnType.(*types.GraphQLNonNull); ok {
-		completed, err := completeValue(eCtx, returnType.OfType, fieldASTs, info, result)
-		if completed == nil {
-			err = graphqlerrors.NewGraphQLError(
-				fmt.Sprintf("Cannot return null for non-nullable field %v.%v", info.ParentType, info.FieldName),
-				[]ast.Node{},
-				"",
-				nil,
-				[]int{},
-			)
+		completed, completedErrs := completeValue(eCtx, returnType.OfType, fieldASTs, info, result)
+		if len(completedErrs) > 0 {
+			errs = append(errs, completedErrs...)
 		}
-		return completed, err
+		if completed == nil {
+			errs = append(errs, graphqlerrors.NewGraphQLFormattedError(
+				fmt.Sprintf("Cannot return null for non-nullable field %v.%v", info.ParentType, info.FieldName),
+			))
+		}
+		return completed, errs
 	}
 
 	if result == nil {
@@ -563,24 +562,23 @@ func completeValue(eCtx ExecutionContext, returnType types.GraphQLType, fieldAST
 			"User Error: expected iterable, but did not find one.",
 		)
 		if err != nil {
-			return result, err
+			return result, append(errs, graphqlerrors.FormatError(err))
 		}
 
 		itemType := returnType.OfType
-		var lastErr error
 		completedResults := []interface{}{}
 		for i := 0; i < resultVal.Len(); i++ {
 			val := resultVal.Index(i).Interface()
-			completedItem, err := completeValueCatchingError(eCtx, itemType, fieldASTs, info, val)
-			if err != nil {
-				lastErr = err
+			completedItem, completedErrs := completeValueCatchingError(eCtx, itemType, fieldASTs, info, val)
+			if len(completedErrs) > 0 {
+				errs = append(errs, completedErrs...)
 				continue
 			}
 			if completedItem != nil {
 				completedResults = append(completedResults, completedItem)
 			}
 		}
-		return completedResults, lastErr
+		return completedResults, errs
 	}
 
 	// If field type is Scalar or Enum, serialize to a valid value, returning
@@ -588,7 +586,7 @@ func completeValue(eCtx ExecutionContext, returnType types.GraphQLType, fieldAST
 	if returnType, ok := returnType.(*types.GraphQLScalarType); ok {
 		err := invariant(returnType.Serialize != nil, "Missing serialize method on type")
 		if err != nil {
-			return result, err
+			return result, append(errs, graphqlerrors.FormatError(err))
 		}
 		serializedResult := returnType.Serialize(result)
 		if isNullish(serializedResult) {
@@ -600,7 +598,7 @@ func completeValue(eCtx ExecutionContext, returnType types.GraphQLType, fieldAST
 	if returnType, ok := returnType.(*types.GraphQLEnumType); ok {
 		err := invariant(returnType.Serialize != nil, "Missing serialize method on type")
 		if err != nil {
-			return result, err
+			return result, append(errs, graphqlerrors.FormatError(err))
 		}
 		serializedResult := returnType.Serialize(result)
 		if isNullish(serializedResult) {
@@ -618,10 +616,10 @@ func completeValue(eCtx ExecutionContext, returnType types.GraphQLType, fieldAST
 	case types.GraphQLAbstractType:
 		objectType = returnType.GetObjectType(result, info)
 		if objectType != nil && !returnType.IsPossibleType(objectType) {
-			return result, graphqlerrors.NewGraphQLFormattedError(
+			return result, append(errs, graphqlerrors.NewGraphQLFormattedError(
 				fmt.Sprintf(`Runtime Object type "%v" is not a possible type `+
 					`for "%v".`, objectType, returnType),
-			)
+			))
 		}
 	}
 	if objectType == nil {
@@ -632,9 +630,9 @@ func completeValue(eCtx ExecutionContext, returnType types.GraphQLType, fieldAST
 	// current result. If isTypeOf returns false, then raise an error rather
 	// than continuing execution.
 	if objectType.IsTypeOf != nil && !objectType.IsTypeOf(result, info) {
-		return result, graphqlerrors.NewGraphQLFormattedError(
+		return result, append(errs, graphqlerrors.NewGraphQLFormattedError(
 			fmt.Sprintf(`Expected value of type "%v" but got: %T.`, objectType, result),
-		)
+		))
 	}
 
 	// Collect sub-fields to execute to complete this value.
@@ -666,7 +664,10 @@ func completeValue(eCtx ExecutionContext, returnType types.GraphQLType, fieldAST
 	}
 	go executeFields(executeFieldsParams, resultChannel)
 	results := <-resultChannel
-	return results, nil
+	for _, err := range results.Errors {
+		errs = append(errs, err)
+	}
+	return results.Data, errs
 
 }
 

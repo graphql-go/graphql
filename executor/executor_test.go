@@ -83,35 +83,28 @@ func TestExecutesArbitraryCode(t *testing.T) {
       }
     `
 
-	// TODO make GraphQLResult json friendly
 	expected := &types.GraphQLResult{
 		Data: map[string]interface{}{
 			"b": "Banana",
 			"x": "Cookie",
 			"d": "Donut",
 			"e": "Egg",
-			"promise": &types.GraphQLResult{
-				Data: map[string]interface{}{
-					"a": "Apple",
-				},
+			"promise": map[string]interface{}{
+				"a": "Apple",
 			},
 			"a": "Apple",
-			"deep": &types.GraphQLResult{
-				Data: map[string]interface{}{
-					"a": "Already Been Done",
-					"b": "Boring",
-					"c": []interface{}{
-						"Contrived",
-						"",
-						"Confusing",
-					},
-					"deeper": []interface{}{
-						&types.GraphQLResult{
-							Data: map[string]interface{}{
-								"a": "Apple",
-								"b": "Banana",
-							},
-						},
+			"deep": map[string]interface{}{
+				"a": "Already Been Done",
+				"b": "Boring",
+				"c": []interface{}{
+					"Contrived",
+					"",
+					"Confusing",
+				},
+				"deeper": []interface{}{
+					map[string]interface{}{
+						"a": "Apple",
+						"b": "Banana",
 					},
 				},
 			},
@@ -247,16 +240,12 @@ func TestMergesParallelFragments(t *testing.T) {
 		Data: map[string]interface{}{
 			"a": "Apple",
 			"b": "Banana",
-			"deep": &types.GraphQLResult{
-				Data: map[string]interface{}{
-					"c": "Cherry",
+			"deep": map[string]interface{}{
+				"c": "Cherry",
+				"b": "Banana",
+				"deeper": map[string]interface{}{
 					"b": "Banana",
-					"deeper": &types.GraphQLResult{
-						Data: map[string]interface{}{
-							"b": "Banana",
-							"c": "Cherry",
-						},
-					},
+					"c": "Cherry",
 				},
 			},
 			"c": "Cherry",
@@ -946,7 +935,7 @@ func TestDoesNotIncludeIllegalFieldsInOutput(t *testing.T) {
 	resultChannel := make(chan *types.GraphQLResult)
 	go executor.Execute(ep, resultChannel)
 	result := <-resultChannel
-	if len(result.Errors) == 0 {
+	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, expected len(%v) errors, got len(%v)", len(expected.Errors), len(result.Errors))
 	}
 	if !reflect.DeepEqual(expected.Data, result.Data) {
@@ -1039,10 +1028,8 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 	expected := &types.GraphQLResult{
 		Data: map[string]interface{}{
 			"specials": []interface{}{
-				&types.GraphQLResult{
-					Data: map[string]interface{}{
-						"value": "foo",
-					},
+				map[string]interface{}{
+					"value": "foo",
 				},
 			},
 		},
