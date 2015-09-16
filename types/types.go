@@ -393,18 +393,6 @@ func NewGraphQLObjectType(config GraphQLObjectTypeConfig) *GraphQLObjectType {
 	objectType.IsTypeOf = config.IsTypeOf
 	objectType.typeConfig = config
 
-	objectType.fields, err = defineFieldMap(objectType, objectType.typeConfig.Fields)
-	if err != nil {
-		objectType.err = err
-		return objectType
-	}
-
-	objectType.interfaces, err = defineInterfaces(objectType, objectType.typeConfig.Interfaces)
-	if err != nil {
-		objectType.err = err
-		return objectType
-	}
-
 	/*
 			addImplementationToInterfaces()
 			Update the interfaces to know about this implementation.
@@ -425,9 +413,6 @@ func (gt *GraphQLObjectType) AddFieldConfig(fieldName string, fieldConfig *Graph
 	}
 	gt.typeConfig.Fields[fieldName] = fieldConfig
 
-	// re-define field map
-	gt.fields, _ = defineFieldMap(gt, gt.typeConfig.Fields)
-
 }
 func (gt *GraphQLObjectType) GetName() string {
 	return gt.Name
@@ -446,12 +431,17 @@ func (gt *GraphQLObjectType) String() string {
 }
 
 func (gt *GraphQLObjectType) GetFields() GraphQLFieldDefinitionMap {
+	fields, err := defineFieldMap(gt, gt.typeConfig.Fields)
+	gt.err = err
+	gt.fields = fields
 	return gt.fields
 }
 
 func (gt *GraphQLObjectType) GetInterfaces() []*GraphQLInterfaceType {
+	interfaces, err := defineInterfaces(gt, gt.typeConfig.Interfaces)
+	gt.err = err
+	gt.interfaces = interfaces
 	return gt.interfaces
-
 }
 
 type GraphQLFieldConfigMap map[string]*GraphQLFieldConfig
