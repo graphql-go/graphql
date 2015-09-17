@@ -25,11 +25,6 @@ func NewGraphQLError(message string, nodes []ast.Node, stack string, source *sou
 	if stack == "" && message != "" {
 		stack = message
 	}
-	locations := []location.SourceLocation{}
-	for _, pos := range positions {
-		loc := location.GetLocation(source, pos)
-		locations = append(locations, loc)
-	}
 	if len(positions) == 0 && len(nodes) > 0 {
 		for _, node := range nodes {
 			if node.GetLoc() == nil {
@@ -37,6 +32,11 @@ func NewGraphQLError(message string, nodes []ast.Node, stack string, source *sou
 			}
 			positions = append(positions, node.GetLoc().Start)
 		}
+	}
+	locations := []location.SourceLocation{}
+	for _, pos := range positions {
+		loc := location.GetLocation(source, pos)
+		locations = append(locations, loc)
 	}
 	return &GraphQLError{
 		Message:   message,

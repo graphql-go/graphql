@@ -12,10 +12,15 @@ type SourceLocation struct {
 }
 
 func GetLocation(s *source.Source, position int) SourceLocation {
+	body := ""
+	if s != nil {
+		body = s.Body
+	}
 	line := 1
 	column := position + 1
 	lineRegexp := regexp.MustCompile("\r\n|[\n\r\u2028\u2029]")
-	for _, match := range lineRegexp.FindAllStringIndex(s.Body, -1) {
+	matches := lineRegexp.FindAllStringIndex(body, -1)
+	for _, match := range matches {
 		matchIndex := match[0]
 		if matchIndex < position {
 			line += 1

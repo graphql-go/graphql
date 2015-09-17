@@ -61,6 +61,7 @@ func article(id interface{}) *testArticle {
 		},
 	}
 }
+
 func TestExecutesUsingAComplexSchema(t *testing.T) {
 
 	johnSmith = &testAuthor{
@@ -297,6 +298,7 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 							"bar",
 							"1",
 							"true",
+							nil,
 						},
 						"id": "1",
 					},

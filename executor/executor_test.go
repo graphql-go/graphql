@@ -50,7 +50,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 		"a":      func() interface{} { return "Already Been Done" },
 		"b":      func() interface{} { return "Boring" },
 		"c":      func() interface{} { return []string{"Contrived", "", "Confusing"} },
-		"deeper": func() interface{} { return []interface{}{data, nil, nil} },
+		"deeper": func() interface{} { return []interface{}{data, nil, data} },
 	}
 
 	query := `
@@ -102,6 +102,11 @@ func TestExecutesArbitraryCode(t *testing.T) {
 					"Confusing",
 				},
 				"deeper": []interface{}{
+					map[string]interface{}{
+						"a": "Apple",
+						"b": "Banana",
+					},
+					nil,
 					map[string]interface{}{
 						"a": "Apple",
 						"b": "Banana",
@@ -431,7 +436,8 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
     }`
 
 	expectedData := map[string]interface{}{
-		"sync": "sync",
+		"sync":      "sync",
+		"syncError": nil,
 	}
 	expectedErrors := []graphqlerrors.GraphQLFormattedError{
 		graphqlerrors.GraphQLFormattedError{

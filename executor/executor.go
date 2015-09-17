@@ -139,7 +139,6 @@ func executeOperation(p ExecuteOperationParams, r chan *types.GraphQLResult) {
 		SelectionSet:  p.Operation.GetSelectionSet(),
 	}
 	fields := collectFields(collectFieldsParams)
-
 	executeFieldsParams := ExecuteFieldsParams{
 		ExecutionContext: p.ExecutionContext,
 		ParentType:       operationType,
@@ -203,13 +202,14 @@ func executeFieldsSerially(p ExecuteFieldsParams, resultChan chan *types.GraphQL
 
 	finalResults := map[string]interface{}{}
 	for responseName, fieldASTs := range p.Fields {
-		resolved, errs := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+		resolved, hasNoFieldDefs, errs := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+		if hasNoFieldDefs {
+			continue
+		}
 		for _, err := range errs {
 			result.Errors = append(result.Errors, err)
 		}
-		if resolved != nil {
-			finalResults[responseName] = resolved
-		}
+		finalResults[responseName] = resolved
 	}
 	result.Data = finalResults
 	resultChan <- &result
@@ -228,13 +228,14 @@ func executeFields(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) 
 	finalResults := map[string]interface{}{}
 	for responseName, fieldASTs := range p.Fields {
 
-		resolved, resolvedErrs := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+		resolved, hasNoFieldDefs, resolvedErrs := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+		if hasNoFieldDefs {
+			continue
+		}
 		for _, err := range resolvedErrs {
 			result.Errors = append(result.Errors, err)
 		}
-		if resolved != nil {
-			finalResults[responseName] = resolved
-		}
+		finalResults[responseName] = resolved
 	}
 
 	result.Data = finalResults
@@ -434,15 +435,18 @@ func getFieldEntryKey(node *ast.Field) string {
  * then calls completeValue to complete promises, serialize scalars, or execute
  * the sub-selection-set for objects.
  */
-func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, source interface{}, fieldASTs []*ast.Field) (result interface{}, errs []graphqlerrors.GraphQLFormattedError) {
+func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, source interface{}, fieldASTs []*ast.Field) (result interface{}, hasNoFieldDefs bool, errs []graphqlerrors.GraphQLFormattedError) {
 	// catch panic
-	defer func() (interface{}, []graphqlerrors.GraphQLFormattedError) {
+	defer func() (interface{}, bool, []graphqlerrors.GraphQLFormattedError) {
 		if r := recover(); r != nil {
 			errs = append(errs, graphqlerrors.NewGraphQLFormattedError(fmt.Sprintf("%v", r)))
-			return result, errs
+			return result, hasNoFieldDefs, errs
 		}
-		return result, errs
+		return result, hasNoFieldDefs, errs
 	}()
+
+	hasNoFieldDefs = false
+
 	fieldAST := fieldASTs[0]
 	fieldName := ""
 	if fieldAST.Name != nil {
@@ -451,16 +455,11 @@ func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, so
 
 	fieldDef := getFieldDef(eCtx.Schema, parentType, fieldName)
 	if fieldDef == nil {
-		return nil, errs
-		//		return nil, append(errs,
-		//			graphqlerrors.NewGraphQLFormattedError(
-		//				fmt.Sprintf("Missing field definition for field: %v", fieldName),
-		//			),
-		//		)
+		hasNoFieldDefs = true
+		return nil, hasNoFieldDefs, errs
 	}
 	returnType := fieldDef.Type
 	resolveFn := fieldDef.Resolve
-
 	if resolveFn == nil {
 		resolveFn = defaultResolveFn
 	}
@@ -484,7 +483,7 @@ func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, so
 		VariableValues: eCtx.VariableValues,
 	}
 
-	// If an error occurs while calling the field `resolve` function, ensure that
+	// TODO: If an error occurs while calling the field `resolve` function, ensure that
 	// it is wrapped as a GraphQLError with locations. Log this error and return
 	// null if allowed, otherwise throw the error so the parent field can handle
 	// it.
@@ -493,7 +492,8 @@ func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, so
 		Args:   args,
 		Info:   info,
 	})
-	return completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
+	completed, errs := completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
+	return completed, hasNoFieldDefs, errs
 }
 
 func completeValueCatchingError(eCtx ExecutionContext, returnType types.GraphQLType, fieldASTs []*ast.Field, info types.GraphQLResolveInfo, result interface{}) (completed interface{}, errs []graphqlerrors.GraphQLFormattedError) {
@@ -542,14 +542,16 @@ func completeValue(eCtx ExecutionContext, returnType types.GraphQLType, fieldAST
 			errs = append(errs, completedErrs...)
 		}
 		if completed == nil {
-			errs = append(errs, graphqlerrors.NewGraphQLFormattedError(
-				fmt.Sprintf("Cannot return null for non-nullable field %v.%v", info.ParentType, info.FieldName),
-			))
+			err := graphqlerrors.NewLocatedError(
+				fmt.Sprintf("Cannot return null for non-nullable field %v.%v.", info.ParentType, info.FieldName),
+				graphqlerrors.FieldASTsToNodeASTs(fieldASTs),
+			)
+			errs = append(errs, graphqlerrors.FormatError(err))
 		}
 		return completed, errs
 	}
 
-	if result == nil {
+	if isNullish(result) {
 		return result, nil
 	}
 
@@ -574,9 +576,7 @@ func completeValue(eCtx ExecutionContext, returnType types.GraphQLType, fieldAST
 				errs = append(errs, completedErrs...)
 				continue
 			}
-			if completedItem != nil {
-				completedResults = append(completedResults, completedItem)
-			}
+			completedResults = append(completedResults, completedItem)
 		}
 		return completedResults, errs
 	}
