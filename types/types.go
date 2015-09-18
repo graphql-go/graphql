@@ -331,9 +331,22 @@ type GraphQLInputType interface {
 
 var _ GraphQLInputType = (*GraphQLScalarType)(nil)
 var _ GraphQLInputType = (*GraphQLEnumType)(nil)
-
 var _ GraphQLInputType = (*GraphQLInputObjectType)(nil)
 var _ GraphQLInputType = (*GraphQLList)(nil)
+
+func IsInputType(ttype GraphQLType) bool {
+	namedType := GetNamedType(ttype)
+	if _, ok := namedType.(*GraphQLScalarType); ok {
+		return true
+	}
+	if _, ok := namedType.(*GraphQLEnumType); ok {
+		return true
+	}
+	if _, ok := namedType.(*GraphQLInputObjectType); ok {
+		return true
+	}
+	return false
+}
 
 type GraphQLFieldArgument struct {
 	Name         string
@@ -610,6 +623,22 @@ var (
 
 	_ GraphQLNamedType = (*GraphQLInputObjectType)(nil)
 )
+
+func GetNamedType(ttype GraphQLType) GraphQLNamedType {
+	unmodifiedType := ttype
+	for {
+		if ttype, ok := unmodifiedType.(*GraphQLList); ok {
+			unmodifiedType = ttype.OfType
+			continue
+		}
+		if ttype, ok := unmodifiedType.(*GraphQLNonNull); ok {
+			unmodifiedType = ttype.OfType
+			continue
+		}
+		break
+	}
+	return unmodifiedType
+}
 
 // TODO: there is another invariant() func in `executor`
 func invariant(condition bool, message string) error {

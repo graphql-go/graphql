@@ -838,9 +838,12 @@ func parseInputValueDef(parser *Parser) (interface{}, error) {
 	}
 	var defaultValue ast.Value
 	if skip(parser, lexer.TokenKind[lexer.EQUALS]) {
-		defaultValue, err = parseConstValue(parser)
+		val, err := parseConstValue(parser)
 		if err != nil {
 			return nil, err
+		}
+		if val, ok := val.(ast.Value); ok {
+			defaultValue = val
 		}
 	}
 	return ast.NewInputValueDefinition(&ast.InputValueDefinition{

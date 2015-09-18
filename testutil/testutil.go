@@ -348,7 +348,7 @@ func Parse(t *testing.T, query string) *ast.Document {
 		},
 	})
 	if err != nil {
-		t.Fatalf("Parse failed: %v\n\tfor query: %v", err, query)
+		t.Fatalf("Parse failed: %v", err)
 	}
 	return astDoc
 }

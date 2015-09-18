@@ -75,7 +75,7 @@ func (st *GraphQLScalarType) ParseValue(value interface{}) interface{} {
 }
 func (st *GraphQLScalarType) ParseLiteral(valueAST ast.Value) interface{} {
 	if st.scalarConfig.ParseLiteral == nil {
-		return valueAST
+		return nil
 	}
 	return st.scalarConfig.ParseLiteral(valueAST)
 }

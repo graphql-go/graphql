@@ -141,8 +141,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 			"pic": &types.GraphQLFieldConfig{
 				Args: types.GraphQLFieldConfigArgumentMap{
 					"size": &types.GraphQLArgumentConfig{
-						Type:         types.GraphQLInt,
-						DefaultValue: 100,
+						Type: types.GraphQLInt,
 					},
 				},
 				Type:    types.GraphQLString,

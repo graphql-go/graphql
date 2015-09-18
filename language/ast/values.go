@@ -5,6 +5,7 @@ import (
 )
 
 type Value interface {
+	GetValue() interface{}
 }
 
 // Ensure that all value types implements Value interface
@@ -43,6 +44,15 @@ func (v *Variable) GetLoc() *Location {
 	return v.Loc
 }
 
+// GetValue alias to Variable.GetName()
+func (v *Variable) GetValue() interface{} {
+	return v.GetName()
+}
+
+func (v *Variable) GetName() interface{} {
+	return v.Name
+}
+
 // IntValue implements Node, Value
 type IntValue struct {
 	Kind  string
@@ -67,6 +77,10 @@ func (v *IntValue) GetKind() string {
 
 func (v *IntValue) GetLoc() *Location {
 	return v.Loc
+}
+
+func (v *IntValue) GetValue() interface{} {
+	return v.Value
 }
 
 // FloatValue implements Node, Value
@@ -95,6 +109,10 @@ func (v *FloatValue) GetLoc() *Location {
 	return v.Loc
 }
 
+func (v *FloatValue) GetValue() interface{} {
+	return v.Value
+}
+
 // StringValue implements Node, Value
 type StringValue struct {
 	Kind  string
@@ -119,6 +137,10 @@ func (v *StringValue) GetKind() string {
 
 func (v *StringValue) GetLoc() *Location {
 	return v.Loc
+}
+
+func (v *StringValue) GetValue() interface{} {
+	return v.Value
 }
 
 // BooleanValue implements Node, Value
@@ -147,6 +169,10 @@ func (v *BooleanValue) GetLoc() *Location {
 	return v.Loc
 }
 
+func (v *BooleanValue) GetValue() interface{} {
+	return v.Value
+}
+
 // EnumValue implements Node, Value
 type EnumValue struct {
 	Kind  string
@@ -171,6 +197,10 @@ func (v *EnumValue) GetKind() string {
 
 func (v *EnumValue) GetLoc() *Location {
 	return v.Loc
+}
+
+func (v *EnumValue) GetValue() interface{} {
+	return v.Value
 }
 
 // ListValue implements Node, Value
@@ -199,6 +229,16 @@ func (v *ListValue) GetLoc() *Location {
 	return v.Loc
 }
 
+// GetValue alias to ListValue.GetValues()
+func (v *ListValue) GetValue() interface{} {
+	return v.GetValues()
+}
+
+func (v *ListValue) GetValues() interface{} {
+	// TODO: verify ObjectValue.GetValue()
+	return v.Values
+}
+
 // ObjectValue implements Node, Value
 type ObjectValue struct {
 	Kind   string
@@ -223,6 +263,11 @@ func (v *ObjectValue) GetKind() string {
 
 func (v *ObjectValue) GetLoc() *Location {
 	return v.Loc
+}
+
+func (v *ObjectValue) GetValue() interface{} {
+	// TODO: verify ObjectValue.GetValue()
+	return v.Fields
 }
 
 // ObjectField implements Node, Value
@@ -251,4 +296,8 @@ func (f *ObjectField) GetKind() string {
 
 func (f *ObjectField) GetLoc() *Location {
 	return f.Loc
+}
+
+func (f *ObjectField) GetValue() interface{} {
+	return f.Value
 }
