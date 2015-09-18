@@ -683,7 +683,7 @@ func parseDirective(parser *Parser) (*ast.Directive, error) {
 func parseType(parser *Parser) (ast.Type, error) {
 	start := parser.Token.Start
 	var ttype ast.Type
-	if skip(parser, lexer.TokenKind[lexer.BRACE_L]) {
+	if skip(parser, lexer.TokenKind[lexer.BRACKET_L]) {
 		t, err := parseType(parser)
 		if err != nil {
 			return t, err
