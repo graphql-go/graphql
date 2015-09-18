@@ -3,6 +3,7 @@ package executor_test
 import (
 	"fmt"
 	"github.com/chris-ramon/graphql-go/executor"
+	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
 	"github.com/kr/pretty"
 	"reflect"
@@ -352,17 +353,14 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 	}
 
 	// parse query
-	ast := parse(request, t)
+	ast := testutil.Parse(t, request)
 
 	// execute
 	ep := executor.ExecuteParams{
 		Schema: blogSchema,
 		AST:    ast,
 	}
-
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}

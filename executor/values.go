@@ -47,8 +47,8 @@ func getArgumentValues(argDefs []*types.GraphQLArgument, argASTs []*ast.Argument
 		if argAST, ok := argASTMap[name]; ok {
 			valueAST = argAST.Value
 		}
-		value, err := valueFromAST(valueAST, argDef.Type, variableVariables)
-		if err != nil || value == nil {
+		value := valueFromAST(valueAST, argDef.Type, variableVariables)
+		if value == nil {
 			value = argDef.DefaultValue
 		}
 		if value != nil {
@@ -82,7 +82,7 @@ func getVariableValue(schema types.GraphQLSchema, definitionAST *ast.VariableDef
 			defaultValue := definitionAST.DefaultValue
 			if defaultValue != nil {
 				variables := map[string]interface{}{}
-				return valueFromAST(defaultValue, ttype, variables)
+				return valueFromAST(defaultValue, ttype, variables), nil
 			}
 		}
 		return coerceValue(ttype, input)
@@ -233,68 +233,87 @@ func isNullish(value interface{}) bool {
  * | Int / Float          | Number        |
  *
  */
-func valueFromAST(valueAST ast.Value, ttype types.GraphQLInputType, variables map[string]interface{}) (interface{}, error) {
+func valueFromAST(valueAST ast.Value, ttype types.GraphQLInputType, variables map[string]interface{}) interface{} {
 
-	if valueAST == nil {
-		return nil, nil
-	}
-
-	switch ttype := ttype.(type) {
-	case *types.GraphQLNonNull:
+	if ttype, ok := ttype.(*types.GraphQLNonNull); ok {
 		return valueFromAST(valueAST, ttype.OfType, variables)
 	}
 
-	switch valueAST := valueAST.(type) {
-	case *ast.Variable:
-		variableName := ""
-		if valueAST.Name != nil {
-			variableName = valueAST.Name.Value
+	if valueAST == nil {
+		return nil
+	}
+
+	if valueAST, ok := valueAST.(*ast.Variable); ok && valueAST.Kind == kinds.Variable {
+		if valueAST.Name == nil {
+			return nil
 		}
 		if variables == nil {
-			return nil, nil
+			return nil
 		}
+		variableName := valueAST.Name.Value
 		if variableVal, ok := variables[variableName]; !ok {
-			return nil, nil
+			return nil
 		} else {
 			// Note: we're not doing any checking that this variable is correct. We're
 			// assuming that this query has been validated and the variable usage here
 			// is of the correct type.
-			return variableVal, nil
+			return variableVal
 		}
 	}
 
-	if itemType, ok := ttype.(*types.GraphQLList); ok {
-		if valAST, ok := valueAST.(*ast.ListValue); ok {
+	if ttype, ok := ttype.(*types.GraphQLList); ok {
+		itemType := ttype.OfType
+		if valueAST, ok := valueAST.(*ast.ListValue); ok && valueAST.Kind == kinds.ListValue {
 			values := []interface{}{}
-			for _, itemAST := range valAST.Values {
-				v, err := valueFromAST(itemAST, itemType.OfType, variables)
-				if err != nil {
-					continue
-				}
+			for _, itemAST := range valueAST.Values {
+				v := valueFromAST(itemAST, itemType, variables)
 				values = append(values, v)
 			}
+			return values
 		}
-		v, err := valueFromAST(valueAST, itemType, variables)
-		if err != nil {
-			return nil, nil
-		}
-		return []interface{}{v}, nil
+		v := valueFromAST(valueAST, itemType, variables)
+		return []interface{}{v}
 	}
 
-	//	if itemType, ok := ttype.(*types.GraphQLInputObjectType); ok {
-	//
-	//	}
+	if ttype, ok := ttype.(*types.GraphQLInputObjectType); ok {
+		valueAST, ok := valueAST.(*ast.ObjectValue)
+		if !ok {
+			return nil
+		}
+		fieldASTs := map[string]*ast.ObjectField{}
+		for _, fieldAST := range valueAST.Fields {
+			if fieldAST.Name == nil {
+				continue
+			}
+			fieldName := fieldAST.Name.Value
+			fieldASTs[fieldName] = fieldAST
+
+		}
+		obj := map[string]interface{}{}
+		for fieldName, field := range ttype.GetFields() {
+			fieldAST, ok := fieldASTs[fieldName]
+			if !ok || fieldAST == nil {
+				continue
+			}
+			fieldValue := valueFromAST(fieldAST.Value, field.Type, variables)
+			if isNullish(fieldValue) {
+				fieldValue = field.DefaultValue
+			}
+			if !isNullish(fieldValue) {
+				obj[fieldName] = fieldValue
+			}
+		}
+		return obj
+	}
 
 	switch ttype := ttype.(type) {
 	case *types.GraphQLScalarType:
-		return ttype.ParseLiteral(valueAST), nil
+		return ttype.ParseLiteral(valueAST)
 	case *types.GraphQLEnumType:
-		return ttype.ParseLiteral(valueAST), nil
+		return ttype.ParseLiteral(valueAST)
 	default:
 	}
-
-	err := invariant(true, "Must be input type")
-	return valueAST, err
+	return valueAST
 }
 
 func invariant(condition bool, message string) error {

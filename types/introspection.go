@@ -79,8 +79,7 @@ func init() {
 			"kind": &GraphQLFieldConfig{
 				Type: NewGraphQLNonNull(__TypeKind),
 				Resolve: func(p GQLFRParams) interface{} {
-					// TODO: resolveFn for __Type
-					return nil
+					return "TODO: resolveFn for __Type"
 				},
 			},
 			"name": &GraphQLFieldConfig{
@@ -113,8 +112,7 @@ func init() {
 			"defaultValue": &GraphQLFieldConfig{
 				Type: GraphQLString,
 				Resolve: func(p GQLFRParams) interface{} {
-					// TODO: resolveFn for __InputValue
-					return nil
+					return "TODO: resolveFn for __InputValue"
 				},
 			},
 		},
@@ -132,8 +130,7 @@ func init() {
 			"args": &GraphQLFieldConfig{
 				Type: NewGraphQLNonNull(NewGraphQLList(NewGraphQLNonNull(__InputValue))),
 				Resolve: func(p GQLFRParams) interface{} {
-					// TODO: resolveFn for __Field
-					return nil
+					return "TODO: resolveFn for __Field"
 				},
 			},
 			"type": &GraphQLFieldConfig{
@@ -142,8 +139,7 @@ func init() {
 			"isDeprecated": &GraphQLFieldConfig{
 				Type: NewGraphQLNonNull(GraphQLBoolean),
 				Resolve: func(p GQLFRParams) interface{} {
-					// TODO: resolveFn for __Field
-					return nil
+					return "TODO: resolveFn for __Field"
 				},
 			},
 			"deprecationReason": &GraphQLFieldConfig{
@@ -241,8 +237,7 @@ mutation operations.`,
 			"isDeprecated": &GraphQLFieldConfig{
 				Type: NewGraphQLNonNull(GraphQLBoolean),
 				Resolve: func(p GQLFRParams) interface{} {
-					// TODO: resolveFn for __EnumValue
-					return nil
+					return "TODO: resolveFn for __EnumValue"
 				},
 			},
 			"deprecationReason": &GraphQLFieldConfig{
@@ -262,22 +257,19 @@ mutation operations.`,
 			},
 		},
 		Resolve: func(p GQLFRParams) interface{} {
-			// TODO: resolveFn for __Type
-			return nil
+			return "TODO: resolveFn for __Type"
 		},
 	})
 	__Type.AddFieldConfig("interfaces", &GraphQLFieldConfig{
 		Type: NewGraphQLList(NewGraphQLNonNull(__Type)),
 		Resolve: func(p GQLFRParams) interface{} {
-			// TODO: resolveFn for __Type
-			return nil
+			return "TODO: resolveFn for __Type"
 		},
 	})
 	__Type.AddFieldConfig("possibleTypes", &GraphQLFieldConfig{
 		Type: NewGraphQLList(NewGraphQLNonNull(__Type)),
 		Resolve: func(p GQLFRParams) interface{} {
-			// TODO: resolveFn for __Type
-			return nil
+			return "TODO: resolveFn for __Type"
 		},
 	})
 	__Type.AddFieldConfig("enumValues", &GraphQLFieldConfig{
@@ -289,15 +281,13 @@ mutation operations.`,
 			},
 		},
 		Resolve: func(p GQLFRParams) interface{} {
-			// TODO: resolveFn for __Type
-			return nil
+			return "TODO: resolveFn for __Type"
 		},
 	})
 	__Type.AddFieldConfig("inputFields", &GraphQLFieldConfig{
 		Type: NewGraphQLList(NewGraphQLNonNull(__InputValue)),
 		Resolve: func(p GQLFRParams) interface{} {
-			// TODO: resolveFn for __Type
-			return nil
+			return "TODO: resolveFn for __Type"
 		},
 	})
 	__Type.AddFieldConfig("ofType", &GraphQLFieldConfig{
@@ -315,8 +305,7 @@ mutation operations.`,
 		Description: "Access the current type schema of this server.",
 		Args:        []*GraphQLArgument{},
 		Resolve: func(p GQLFRParams) interface{} {
-			// TODO: resolveFn for SchemaMetaFieldDef
-			return nil
+			return p.Schema
 		},
 	}
 	TypeMetaFieldDef = &GraphQLFieldDefinition{
@@ -330,8 +319,11 @@ mutation operations.`,
 			},
 		},
 		Resolve: func(p GQLFRParams) interface{} {
-			// TODO: resolveFn for TypeMetaFieldDef
-			return nil
+			name, ok := p.Args["name"].(string)
+			if !ok {
+				return nil
+			}
+			return p.Info.Schema.GetType(name)
 		},
 	}
 
@@ -341,8 +333,7 @@ mutation operations.`,
 		Description: "The name of the current Object type at runtime.",
 		Args:        []*GraphQLArgument{},
 		Resolve: func(p GQLFRParams) interface{} {
-			// TODO: resolveFn for TypeNameMetaFieldDef
-			return nil
+			return p.Info.ParentType.GetName()
 		},
 	}
 

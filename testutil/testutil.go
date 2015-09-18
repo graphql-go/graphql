@@ -1,8 +1,12 @@
 package testutil
 
 import (
+	"github.com/chris-ramon/graphql-go/executor"
+	"github.com/chris-ramon/graphql-go/language/ast"
+	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/types"
 	"strconv"
+	"testing"
 )
 
 var (
@@ -332,4 +336,25 @@ func GetHero(episode interface{}) interface{} {
 		return Luke
 	}
 	return Artoo
+}
+
+// Test helper functions
+
+func Parse(t *testing.T, query string) *ast.Document {
+	astDoc, err := parser.Parse(parser.ParseParams{
+		Source: query,
+		Options: parser.ParseOptions{
+			NoSource: true,
+		},
+	})
+	if err != nil {
+		t.Fatalf("Parse failed: %v\n\tfor query: %v", err, query)
+	}
+	return astDoc
+}
+func Execute(t *testing.T, ep executor.ExecuteParams) *types.GraphQLResult {
+	resultChannel := make(chan *types.GraphQLResult)
+	go executor.Execute(ep, resultChannel)
+	result := <-resultChannel
+	return result
 }

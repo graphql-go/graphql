@@ -4,6 +4,7 @@ import (
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/executor"
 	"github.com/chris-ramon/graphql-go/language/location"
+	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
 	"github.com/kr/pretty"
 	"reflect"
@@ -38,7 +39,7 @@ func checkList(t *testing.T, testType types.GraphQLType, testData interface{}, e
 	}
 
 	// parse query
-	ast := parse(`{ nest { test } }`, t)
+	ast := testutil.Parse(t, `{ nest { test } }`)
 
 	// execute
 	ep := executor.ExecuteParams{
@@ -46,9 +47,7 @@ func checkList(t *testing.T, testType types.GraphQLType, testData interface{}, e
 		AST:    ast,
 		Root:   data,
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(expected.Errors) != len(result.Errors) {
 		t.Fatalf("wrong result, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
 	}

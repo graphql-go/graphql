@@ -78,6 +78,7 @@ type GraphQLResolveInfo struct {
 }
 
 type GraphQLCompositeType interface {
+	GetName() string
 }
 
 var _ GraphQLCompositeType = (*GraphQLObjectType)(nil)

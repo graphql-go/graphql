@@ -2,6 +2,7 @@ package executor_test
 
 import (
 	"github.com/chris-ramon/graphql-go/executor"
+	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
 	"github.com/kr/pretty"
 	"reflect"
@@ -27,20 +28,14 @@ var directivesTestData map[string]interface{} = map[string]interface{}{
 	"b": func() interface{} { return "b" },
 }
 
-func executeTestQuery(t *testing.T, doc string) *types.GraphQLResult {
-	// parse query
-	ast := parse(doc, t)
-
-	// execute
+func executeDirectivesTestQuery(t *testing.T, doc string) *types.GraphQLResult {
+	ast := testutil.Parse(t, doc)
 	ep := executor.ExecuteParams{
 		Schema: directivesTestSchema,
 		AST:    ast,
 		Root:   directivesTestData,
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
-	return result
+	return testutil.Execute(t, ep)
 }
 
 func TestDirectivesWorksWithoutDirectives(t *testing.T) {
@@ -51,7 +46,7 @@ func TestDirectivesWorksWithoutDirectives(t *testing.T) {
 			"b": "b",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -68,7 +63,7 @@ func TestDirectivesWorksOnScalarsIfTrueIncludesScalar(t *testing.T) {
 			"b": "b",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -84,7 +79,7 @@ func TestDirectivesWorksOnScalarsIfFalseOmitsOnScalar(t *testing.T) {
 			"a": "a",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -101,7 +96,7 @@ func TestDirectivesWorksOnScalarsUnlessFalseIncludesScalar(t *testing.T) {
 			"b": "b",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -117,7 +112,7 @@ func TestDirectivesWorksOnScalarsUnlessTrueOmitsScalar(t *testing.T) {
 			"a": "a",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -141,7 +136,7 @@ func TestDirectivesWorksOnFragmentSpreadsIfFalseOmitsFragmentSpread(t *testing.T
 			"a": "a",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -166,7 +161,7 @@ func TestDirectivesWorksOnFragmentSpreadsIfTrueIncludesFragmentSpread(t *testing
 			"b": "b",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -191,7 +186,7 @@ func TestDirectivesWorksOnFragmentSpreadsUnlessFalseIncludesFragmentSpread(t *te
 			"b": "b",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -215,7 +210,7 @@ func TestDirectivesWorksOnFragmentSpreadsUnlessTrueOmitsFragmentSpread(t *testin
 			"a": "a",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -241,7 +236,7 @@ func TestDirectivesWorksOnInlineFragmentIfFalseOmitsInlineFragment(t *testing.T)
 			"a": "a",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -268,7 +263,7 @@ func TestDirectivesWorksOnInlineFragmentIfTrueIncludesInlineFragment(t *testing.
 			"b": "b",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -295,7 +290,7 @@ func TestDirectivesWorksOnInlineFragmentUnlessFalseIncludesInlineFragment(t *tes
 			"b": "b",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -321,7 +316,7 @@ func TestDirectivesWorksOnInlineFragmentUnlessTrueIncludesInlineFragment(t *test
 			"a": "a",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -345,7 +340,7 @@ func TestDirectivesWorksOnFragmentIfFalseOmitsFragment(t *testing.T) {
 			"a": "a",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -370,7 +365,7 @@ func TestDirectivesWorksOnFragmentIfTrueIncludesFragment(t *testing.T) {
 			"b": "b",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -395,7 +390,7 @@ func TestDirectivesWorksOnFragmentUnlessFalseIncludesFragment(t *testing.T) {
 			"b": "b",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -419,7 +414,7 @@ func TestDirectivesWorksOnFragmentUnlessTrueOmitsFragment(t *testing.T) {
 			"a": "a",
 		},
 	}
-	result := executeTestQuery(t, query)
+	result := executeDirectivesTestQuery(t, query)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}

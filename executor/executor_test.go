@@ -5,30 +5,15 @@ import (
 	"fmt"
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/executor"
-	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/location"
-	"github.com/chris-ramon/graphql-go/language/parser"
+	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
 	"github.com/kr/pretty"
 	"reflect"
 	"testing"
 )
 
-func parse(query string, t *testing.T) *ast.Document {
-	astDoc, err := parser.Parse(parser.ParseParams{
-		Source: query,
-		Options: parser.ParseOptions{
-			NoSource: true,
-		},
-	})
-	if err != nil {
-		t.Fatalf("Parse failed: %v", err)
-	}
-	return astDoc
-}
-
 func TestExecutesArbitraryCode(t *testing.T) {
-	resultChannel := make(chan *types.GraphQLResult)
 
 	deepData := map[string]interface{}{}
 	data := map[string]interface{}{
@@ -201,7 +186,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 	}
 
 	// parse query
-	astDoc := parse(query, t)
+	astDoc := testutil.Parse(t, query)
 
 	// execute
 	args := map[string]interface{}{
@@ -215,8 +200,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 		OperationName: operationName,
 		Args:          args,
 	}
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -296,16 +280,14 @@ func TestMergesParallelFragments(t *testing.T) {
 	}
 
 	// parse query
-	ast := parse(query, t)
+	ast := testutil.Parse(t, query)
 
 	// execute
 	ep := executor.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -345,7 +327,7 @@ func TestThreadsContextCorrectly(t *testing.T) {
 	}
 
 	// parse query
-	ast := parse(query, t)
+	ast := testutil.Parse(t, query)
 
 	// execute
 	ep := executor.ExecuteParams{
@@ -403,16 +385,14 @@ func TestCorrectlyThreadsArguments(t *testing.T) {
 	}
 
 	// parse query
-	ast := parse(query, t)
+	ast := testutil.Parse(t, query)
 
 	// execute
 	ep := executor.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -472,7 +452,7 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 	}
 
 	// parse query
-	ast := parse(query, t)
+	ast := testutil.Parse(t, query)
 
 	// execute
 	ep := executor.ExecuteParams{
@@ -522,7 +502,7 @@ func TestUsesTheInlineOperationIfNoOperationIsProvided(t *testing.T) {
 	}
 
 	// parse query
-	ast := parse(doc, t)
+	ast := testutil.Parse(t, doc)
 
 	// execute
 	ep := executor.ExecuteParams{
@@ -530,9 +510,7 @@ func TestUsesTheInlineOperationIfNoOperationIsProvided(t *testing.T) {
 		AST:    ast,
 		Root:   data,
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -569,7 +547,7 @@ func TestUsesTheOnlyOperationIfNoOperationIsProvided(t *testing.T) {
 	}
 
 	// parse query
-	ast := parse(doc, t)
+	ast := testutil.Parse(t, doc)
 
 	// execute
 	ep := executor.ExecuteParams{
@@ -617,7 +595,7 @@ func TestThrowsIfNoOperationIsProvidedWithMultipleOperations(t *testing.T) {
 	}
 
 	// parse query
-	ast := parse(doc, t)
+	ast := testutil.Parse(t, doc)
 
 	// execute
 	ep := executor.ExecuteParams{
@@ -625,9 +603,7 @@ func TestThrowsIfNoOperationIsProvidedWithMultipleOperations(t *testing.T) {
 		AST:    ast,
 		Root:   data,
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(result.Errors) != 1 {
 		t.Fatalf("wrong result, expected len(1) unexpected len: %v", len(result.Errors))
 	}
@@ -676,7 +652,7 @@ func TestUsesTheQuerySchemaForQueries(t *testing.T) {
 	}
 
 	// parse query
-	ast := parse(doc, t)
+	ast := testutil.Parse(t, doc)
 
 	// execute
 	ep := executor.ExecuteParams{
@@ -733,7 +709,7 @@ func TestUsesTheMutationSchemaForQueries(t *testing.T) {
 	}
 
 	// parse query
-	ast := parse(doc, t)
+	ast := testutil.Parse(t, doc)
 
 	// execute
 	ep := executor.ExecuteParams{
@@ -742,9 +718,7 @@ func TestUsesTheMutationSchemaForQueries(t *testing.T) {
 		Root:          data,
 		OperationName: "M",
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -809,7 +783,7 @@ func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
 	}
 
 	// parse query
-	ast := parse(doc, t)
+	ast := testutil.Parse(t, doc)
 
 	// execute
 	ep := executor.ExecuteParams{
@@ -877,7 +851,7 @@ func TestAvoidsRecursion(t *testing.T) {
 	}
 
 	// parse query
-	ast := parse(doc, t)
+	ast := testutil.Parse(t, doc)
 
 	// execute
 	ep := executor.ExecuteParams{
@@ -886,9 +860,7 @@ func TestAvoidsRecursion(t *testing.T) {
 		Root:          data,
 		OperationName: "Q",
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -931,7 +903,7 @@ func TestDoesNotIncludeIllegalFieldsInOutput(t *testing.T) {
 	}
 
 	// parse query
-	ast := parse(doc, t)
+	ast := testutil.Parse(t, doc)
 
 	// execute
 	ep := executor.ExecuteParams{
@@ -995,16 +967,14 @@ func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
 	}
 
 	// parse query
-	ast := parse(doc, t)
+	ast := testutil.Parse(t, doc)
 
 	// execute
 	ep := executor.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -1082,7 +1052,7 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 	}
 
 	// parse query
-	ast := parse(query, t)
+	ast := testutil.Parse(t, query)
 
 	// execute
 	ep := executor.ExecuteParams{
@@ -1133,16 +1103,14 @@ func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
 	}
 
 	// parse query
-	ast := parse(query, t)
+	ast := testutil.Parse(t, query)
 
 	// execute
 	ep := executor.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(result.Errors) != 1 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}

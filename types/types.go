@@ -678,15 +678,17 @@ func defineInterfaces(ttype *GraphQLObjectType, interfaces []*GraphQLInterfaceTy
 	}
 
 	for _, iface := range interfaces {
-		err := invariant(
-			iface.ResolveType != nil,
-			fmt.Sprintf(`Interface Type %v does not provide a "resolveType" function `+
-				`and implementing Type %v does not provide a "isTypeOf" `+
-				`function. There is no way to resolve this implementing type `+
-				`during execution.`, iface, ttype),
-		)
-		if err != nil {
-			return interfaces, err
+		if iface.ResolveType != nil {
+			err := invariant(
+				iface.ResolveType != nil,
+				fmt.Sprintf(`Interface Type %v does not provide a "resolveType" function `+
+					`and implementing Type %v does not provide a "isTypeOf" `+
+					`function. There is no way to resolve this implementing type `+
+					`during execution.`, iface, ttype),
+			)
+			if err != nil {
+				return interfaces, err
+			}
 		}
 	}
 
@@ -704,7 +706,7 @@ type InputObjectField struct {
 	DefaultValue interface{}
 	Description  string
 }
-type InputObjectConfigFieldMap map[string]InputObjectFieldConfig
+type InputObjectConfigFieldMap map[string]*InputObjectFieldConfig
 type InputObjectFieldMap map[string]InputObjectField
 type InputObjectConfig struct {
 	Name        string
@@ -723,6 +725,7 @@ type GraphQLInputObjectType struct {
 	err error
 }
 
+// TOD: rename InputObjectConfig to GraphQLInputObjecTypeConfig for consistency?
 func NewGraphQLInputObjectType(config InputObjectConfig) *GraphQLInputObjectType {
 	gt := &GraphQLInputObjectType{}
 	err := invariant(config.Name != "", "Type must be named.")
