@@ -25,6 +25,15 @@ func NewGraphQLError(message string, nodes []ast.Node, stack string, source *sou
 	if stack == "" && message != "" {
 		stack = message
 	}
+	if source == nil {
+		for _, node := range nodes {
+			// get source from first node
+			if node.GetLoc() != nil {
+				source = node.GetLoc().Source
+			}
+			break
+		}
+	}
 	if len(positions) == 0 && len(nodes) > 0 {
 		for _, node := range nodes {
 			if node.GetLoc() == nil {

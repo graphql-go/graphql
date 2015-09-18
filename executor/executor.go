@@ -439,7 +439,11 @@ func resolveField(eCtx ExecutionContext, parentType *types.GraphQLObjectType, so
 	// catch panic
 	defer func() (interface{}, bool, []graphqlerrors.GraphQLFormattedError) {
 		if r := recover(); r != nil {
-			errs = append(errs, graphqlerrors.NewGraphQLFormattedError(fmt.Sprintf("%v", r)))
+			err := graphqlerrors.NewLocatedError(
+				fmt.Sprintf("%v", r),
+				graphqlerrors.FieldASTsToNodeASTs(fieldASTs),
+			)
+			errs = append(errs, graphqlerrors.FormatError(err))
 			return result, hasNoFieldDefs, errs
 		}
 		return result, hasNoFieldDefs, errs
@@ -500,7 +504,12 @@ func completeValueCatchingError(eCtx ExecutionContext, returnType types.GraphQLT
 	// catch panic
 	defer func() (interface{}, []graphqlerrors.GraphQLFormattedError) {
 		if r := recover(); r != nil {
-			return completed, append(errs, graphqlerrors.NewGraphQLFormattedError(fmt.Sprintf("%v", r)))
+			err := graphqlerrors.NewLocatedError(
+				fmt.Sprintf("%v", r),
+				graphqlerrors.FieldASTsToNodeASTs(fieldASTs),
+			)
+			errs = append(errs, graphqlerrors.FormatError(err))
+			return completed, errs
 		}
 		return completed, errs
 	}()
