@@ -6,7 +6,6 @@ import (
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
-	"github.com/kr/pretty"
 	"reflect"
 	"testing"
 )
@@ -49,10 +48,10 @@ func checkList(t *testing.T, testType types.GraphQLType, testData interface{}, e
 	}
 	result := testutil.Execute(t, ep)
 	if len(expected.Errors) != len(result.Errors) {
-		t.Fatalf("wrong result, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("wrong result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 
 }

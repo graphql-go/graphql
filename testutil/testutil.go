@@ -5,6 +5,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/types"
+	"github.com/kr/pretty"
 	"strconv"
 	"testing"
 )
@@ -344,7 +345,8 @@ func Parse(t *testing.T, query string) *ast.Document {
 	astDoc, err := parser.Parse(parser.ParseParams{
 		Source: query,
 		Options: parser.ParseOptions{
-			NoSource: true,
+			// include source, for error reporting
+			NoSource: false,
 		},
 	})
 	if err != nil {
@@ -357,4 +359,8 @@ func Execute(t *testing.T, ep executor.ExecuteParams) *types.GraphQLResult {
 	go executor.Execute(ep, resultChannel)
 	result := <-resultChannel
 	return result
+}
+
+func Diff(a, b interface{}) []string {
+	return pretty.Diff(a, b)
 }

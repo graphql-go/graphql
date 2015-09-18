@@ -5,7 +5,6 @@ import (
 	"github.com/chris-ramon/graphql-go/executor"
 	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
-	"github.com/kr/pretty"
 	"reflect"
 	"testing"
 )
@@ -365,6 +364,6 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }

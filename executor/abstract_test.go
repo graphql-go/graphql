@@ -4,8 +4,8 @@ import (
 	"github.com/chris-ramon/graphql-go"
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/location"
+	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
-	"github.com/kr/pretty"
 	"reflect"
 	"testing"
 )
@@ -167,7 +167,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -302,7 +302,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -472,7 +472,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 		t.Fatalf("wrong result, expected errors: %v, got: %v", len(expected.Errors), len(result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -630,6 +630,6 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 		t.Fatalf("wrong result, expected errors: %v, got: %v", len(expected.Errors), len(result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }

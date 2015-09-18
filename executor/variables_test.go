@@ -8,7 +8,6 @@ import (
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
-	"github.com/kr/pretty"
 	"reflect"
 	"testing"
 )
@@ -145,7 +144,7 @@ var testType *types.GraphQLObjectType = types.NewGraphQLObjectType(types.GraphQL
 	},
 })
 
-var schema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+var variablesTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
 	Query: testType,
 })
 
@@ -165,7 +164,7 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_ExecutesWithComplexI
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.Execute(t, ep)
@@ -173,7 +172,7 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_ExecutesWithComplexI
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingInlineStructs_ProperlyParsesSingleValueToList(t *testing.T) {
@@ -192,7 +191,7 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_ProperlyParsesSingle
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.Execute(t, ep)
@@ -200,7 +199,7 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_ProperlyParsesSingle
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingInlineStructs_DoesNotUseIncorrectValue(t *testing.T) {
@@ -219,7 +218,7 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_DoesNotUseIncorrectV
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.Execute(t, ep)
@@ -227,7 +226,7 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_DoesNotUseIncorrectV
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -258,7 +257,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexInput
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -267,7 +266,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexInput
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -288,7 +287,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_UsesDefaultValueWhenNotP
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    withDefaultsAST,
 	}
 	result := testutil.Execute(t, ep)
@@ -296,7 +295,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_UsesDefaultValueWhenNotP
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ProperlyParsesSingleValueToList(t *testing.T) {
@@ -317,7 +316,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ProperlyParsesSingleValu
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -326,7 +325,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ProperlyParsesSingleValu
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexScalarInput(t *testing.T) {
@@ -346,7 +345,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexScala
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -355,7 +354,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexScala
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnNullForNestedNonNull(t *testing.T) {
@@ -386,16 +385,16 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnNullForNestedNon
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
 	result := testutil.Execute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnIncorrectType(t *testing.T) {
@@ -422,16 +421,16 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnIncorrectType(t 
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
 	result := testutil.Execute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNestedNonNull(t *testing.T) {
@@ -461,16 +460,16 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNested
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
 	result := testutil.Execute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknownInputField(t *testing.T) {
@@ -502,16 +501,16 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknow
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
 	result := testutil.Execute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -531,7 +530,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmitted(t *testing.T)
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.Execute(t, ep)
@@ -539,7 +538,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmitted(t *testing.T)
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NullableScalars_AllowsNullableInputsToBeOmittedInAVariable(t *testing.T) {
@@ -558,7 +557,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmittedInAVariable(t 
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.Execute(t, ep)
@@ -566,7 +565,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmittedInAVariable(t 
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NullableScalars_AllowsNullableInputsToBeOmittedInAnUnlistedVariable(t *testing.T) {
@@ -585,7 +584,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmittedInAnUnlistedVa
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.Execute(t, ep)
@@ -593,7 +592,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmittedInAnUnlistedVa
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToNullInAVariable(t *testing.T) {
@@ -615,7 +614,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToNullInAVariable(
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -624,7 +623,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToNullInAVariable(
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueInAVariable(t *testing.T) {
@@ -646,7 +645,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueInAVariabl
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -655,7 +654,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueInAVariabl
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueDirectly(t *testing.T) {
@@ -674,7 +673,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueDirectly(t
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.Execute(t, ep)
@@ -682,7 +681,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueDirectly(t
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -713,15 +712,15 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeOmittedIn
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.Execute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeSetToNullInAVariable(t *testing.T) {
@@ -754,16 +753,16 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeSetToNull
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
 	result := testutil.Execute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NonNullableScalars_AllowsNonNullableInputsToBeSetToAValueInAVariable(t *testing.T) {
@@ -786,7 +785,7 @@ func TestVariables_NonNullableScalars_AllowsNonNullableInputsToBeSetToAValueInAV
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -795,7 +794,7 @@ func TestVariables_NonNullableScalars_AllowsNonNullableInputsToBeSetToAValueInAV
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NonNullableScalars_AllowsNonNullableInputsToBeSetToAValueDirectly(t *testing.T) {
@@ -819,7 +818,7 @@ func TestVariables_NonNullableScalars_AllowsNonNullableInputsToBeSetToAValueDire
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -828,7 +827,7 @@ func TestVariables_NonNullableScalars_AllowsNonNullableInputsToBeSetToAValueDire
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NonNullableScalars_PassesAlongNullForNonNullableInputsIfExplicitlySetInTheQuery(t *testing.T) {
@@ -852,7 +851,7 @@ func TestVariables_NonNullableScalars_PassesAlongNullForNonNullableInputsIfExpli
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -861,7 +860,7 @@ func TestVariables_NonNullableScalars_PassesAlongNullForNonNullableInputsIfExpli
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -884,7 +883,7 @@ func TestVariables_ListsAndNullability_AllowsListsToBeNull(t *testing.T) {
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -893,7 +892,7 @@ func TestVariables_ListsAndNullability_AllowsListsToBeNull(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_AllowsListsToContainValues(t *testing.T) {
@@ -915,7 +914,7 @@ func TestVariables_ListsAndNullability_AllowsListsToContainValues(t *testing.T) 
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -924,7 +923,7 @@ func TestVariables_ListsAndNullability_AllowsListsToContainValues(t *testing.T) 
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_AllowsListsToContainNull(t *testing.T) {
@@ -946,7 +945,7 @@ func TestVariables_ListsAndNullability_AllowsListsToContainNull(t *testing.T) {
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -955,7 +954,7 @@ func TestVariables_ListsAndNullability_AllowsListsToContainNull(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowNonNullListsToBeNull(t *testing.T) {
@@ -982,15 +981,15 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListsToBeNull(t *testi
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.Execute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_AllowsNonNullListsToContainValues(t *testing.T) {
@@ -1011,7 +1010,7 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsToContainValues(t *test
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -1020,7 +1019,7 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsToContainValues(t *test
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_AllowsNonNullListsToContainNull(t *testing.T) {
@@ -1041,7 +1040,7 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsToContainNull(t *testin
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -1050,7 +1049,7 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsToContainNull(t *testin
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToBeNull(t *testing.T) {
@@ -1071,7 +1070,7 @@ func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToBeNull(t *testing.
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -1080,7 +1079,7 @@ func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToBeNull(t *testing.
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToContainValues(t *testing.T) {
@@ -1101,7 +1100,7 @@ func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToContainValues(t *t
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -1110,7 +1109,7 @@ func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToContainValues(t *t
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t *testing.T) {
@@ -1141,16 +1140,16 @@ func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
 	result := testutil.Execute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToBeNull(t *testing.T) {
@@ -1180,16 +1179,16 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToBeNull
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
 	result := testutil.Execute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_AllowsNonNullListsOfNonNulsToContainValues(t *testing.T) {
@@ -1210,16 +1209,16 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsOfNonNulsToContainValue
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
 	result := testutil.Execute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContainNull(t *testing.T) {
@@ -1250,16 +1249,16 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContai
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
 	result := testutil.Execute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowInvalidTypesToBeUsedAsValues(t *testing.T) {
@@ -1291,16 +1290,16 @@ func TestVariables_ListsAndNullability_DoesNotAllowInvalidTypesToBeUsedAsValues(
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
 	result := testutil.Execute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowUnknownTypesToBeUsedAsValues(t *testing.T) {
@@ -1331,16 +1330,16 @@ func TestVariables_ListsAndNullability_DoesNotAllowUnknownTypesToBeUsedAsValues(
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
 	result := testutil.Execute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -1359,15 +1358,15 @@ func TestVariables_UsesArgumentDefaultValues_WhenNoArgumentProvided(t *testing.T
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.Execute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_UsesArgumentDefaultValues_WhenNullableVariableProvided(t *testing.T) {
@@ -1385,15 +1384,15 @@ func TestVariables_UsesArgumentDefaultValues_WhenNullableVariableProvided(t *tes
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.Execute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_UsesArgumentDefaultValues_WhenArgumentProvidedCannotBeParsed(t *testing.T) {
@@ -1411,14 +1410,14 @@ func TestVariables_UsesArgumentDefaultValues_WhenArgumentProvidedCannotBeParsed(
 
 	// execute
 	ep := executor.ExecuteParams{
-		Schema: schema,
+		Schema: variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.Execute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", pretty.Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }

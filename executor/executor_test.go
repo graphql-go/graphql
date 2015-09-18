@@ -8,7 +8,6 @@ import (
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
-	"github.com/kr/pretty"
 	"reflect"
 	"testing"
 )
@@ -204,7 +203,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -291,7 +290,7 @@ func TestMergesParallelFragments(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -334,9 +333,7 @@ func TestThreadsContextCorrectly(t *testing.T) {
 		Root:   data,
 		AST:    ast,
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -420,8 +417,12 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 	}
 	expectedErrors := []graphqlerrors.GraphQLFormattedError{
 		graphqlerrors.GraphQLFormattedError{
-			Message:   "Error getting syncError",
-			Locations: []location.SourceLocation{},
+			Message: "Error getting syncError",
+			Locations: []location.SourceLocation{
+				location.SourceLocation{
+					Line: 3, Column: 7,
+				},
+			},
 		},
 	}
 
@@ -459,17 +460,15 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 		AST:    ast,
 		Root:   data,
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(result.Errors) == 0 {
 		t.Fatalf("wrong result, expected errors, got %v", len(result.Errors))
 	}
 	if !reflect.DeepEqual(expectedData, result.Data) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expectedData, result.Data))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedData, result.Data))
 	}
 	if !reflect.DeepEqual(expectedErrors, result.Errors) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expectedErrors, result.Errors))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
 	}
 }
 
@@ -514,7 +513,7 @@ func TestUsesTheInlineOperationIfNoOperationIsProvided(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -554,14 +553,12 @@ func TestUsesTheOnlyOperationIfNoOperationIsProvided(t *testing.T) {
 		AST:    ast,
 		Root:   data,
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -610,7 +607,7 @@ func TestThrowsIfNoOperationIsProvidedWithMultipleOperations(t *testing.T) {
 		t.Fatalf("wrong result, expected nil result.Data, got %v", result.Data)
 	}
 	if !reflect.DeepEqual(expectedErrors, result.Errors) {
-		t.Fatalf("unexpected result, Diff: %v", pretty.Diff(expectedErrors, result.Errors))
+		t.Fatalf("unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
 	}
 }
 
@@ -660,14 +657,12 @@ func TestUsesTheQuerySchemaForQueries(t *testing.T) {
 		Root:          data,
 		OperationName: "Q",
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -722,7 +717,7 @@ func TestUsesTheMutationSchemaForQueries(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -790,14 +785,12 @@ func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
 		AST:    ast,
 		Root:   data,
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 
 	// TODO: test to ensure key ordering
@@ -864,7 +857,7 @@ func TestAvoidsRecursion(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 
 }
@@ -909,14 +902,12 @@ func TestDoesNotIncludeIllegalFieldsInOutput(t *testing.T) {
 		Schema: schema,
 		AST:    ast,
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
+	result := testutil.Execute(t, ep)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, expected len(%v) errors, got len(%v)", len(expected.Errors), len(result.Errors))
 	}
 	if !reflect.DeepEqual(expected.Data, result.Data) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected.Data, result.Data))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
 }
 
@@ -978,7 +969,7 @@ func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -1059,14 +1050,12 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 		AST:    ast,
 		Root:   data,
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go executor.Execute(ep, resultChannel)
-	result := <-resultChannel
-	//	if len(result.Errors) == 0 {
-	//		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	//	}
+	result := testutil.Execute(t, ep)
+	if len(result.Errors) == 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -1114,6 +1103,6 @@ func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", pretty.Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }

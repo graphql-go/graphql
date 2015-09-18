@@ -7,7 +7,6 @@ import (
 	"github.com/chris-ramon/graphql-go/types"
 
 	"./testutil"
-	"github.com/kr/pretty"
 )
 
 type T struct {
@@ -89,7 +88,7 @@ func testGraphql(test T, p GraphqlParams, t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(result, test.Expected) {
-		t.Fatalf("wrong result, query: %v, graphql result diff: %v", test.Query, pretty.Diff(test.Expected, result))
+		t.Fatalf("wrong result, query: %v, graphql result diff: %v", test.Query, testutil.Diff(test.Expected, result))
 	}
 }
 
@@ -131,7 +130,7 @@ func TestBasicGraphQLExample(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(result.Data, expected) {
-		t.Fatalf("wrong result, query: %v, graphql result diff: %v", query, pretty.Diff(expected, result))
+		t.Fatalf("wrong result, query: %v, graphql result diff: %v", query, testutil.Diff(expected, result))
 	}
 
 }
