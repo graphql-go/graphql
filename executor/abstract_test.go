@@ -450,6 +450,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 					"name":  "Garfield",
 					"meows": bool(false),
 				},
+				nil,
 			},
 		},
 		Errors: []graphqlerrors.GraphQLFormattedError{
@@ -467,7 +468,6 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 		RequestString: query,
 	}, resultChannel)
 	result := <-resultChannel
-
 	if len(result.Errors) == 0 {
 		t.Fatalf("wrong result, expected errors: %v, got: %v", len(expected.Errors), len(result.Errors))
 	}
@@ -608,6 +608,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 					"name":  "Garfield",
 					"meows": bool(false),
 				},
+				nil,
 			},
 		},
 		Errors: []graphqlerrors.GraphQLFormattedError{
@@ -625,7 +626,6 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 		RequestString: query,
 	}, resultChannel)
 	result := <-resultChannel
-
 	if len(result.Errors) == 0 {
 		t.Fatalf("wrong result, expected errors: %v, got: %v", len(expected.Errors), len(result.Errors))
 	}

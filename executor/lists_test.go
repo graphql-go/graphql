@@ -57,7 +57,7 @@ func checkList(t *testing.T, testType types.GraphQLType, testData interface{}, e
 }
 
 // Describe [T] Array<T>
-func TestListsListOfNullableObjectsContainsValues(t *testing.T) {
+func TestLists_ListOfNullableObjects_ContainsValues(t *testing.T) {
 	ttype := types.NewGraphQLList(types.GraphQLInt)
 	data := []interface{}{
 		1, 2,
@@ -73,7 +73,7 @@ func TestListsListOfNullableObjectsContainsValues(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsListOfNullableObjectsContainsNull(t *testing.T) {
+func TestLists_ListOfNullableObjects_ContainsNull(t *testing.T) {
 	ttype := types.NewGraphQLList(types.GraphQLInt)
 	data := []interface{}{
 		1, nil, 2,
@@ -89,7 +89,7 @@ func TestListsListOfNullableObjectsContainsNull(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsListOfNullableObjectsReturnsNull(t *testing.T) {
+func TestLists_ListOfNullableObjects_ReturnsNull(t *testing.T) {
 	ttype := types.NewGraphQLList(types.GraphQLInt)
 	expected := &types.GraphQLResult{
 		Data: map[string]interface{}{
@@ -102,7 +102,7 @@ func TestListsListOfNullableObjectsReturnsNull(t *testing.T) {
 }
 
 // Describe [T] Func()Array<T> // equivalent to Promise<Array<T>>
-func TestListsListOfNullableFuncContainsValues(t *testing.T) {
+func TestLists_ListOfNullableFunc_ContainsValues(t *testing.T) {
 	ttype := types.NewGraphQLList(types.GraphQLInt)
 
 	// `data` is a function that return values
@@ -123,7 +123,7 @@ func TestListsListOfNullableFuncContainsValues(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsListOfNullableFuncContainsNull(t *testing.T) {
+func TestLists_ListOfNullableFunc_ContainsNull(t *testing.T) {
 	ttype := types.NewGraphQLList(types.GraphQLInt)
 
 	// `data` is a function that return values
@@ -144,7 +144,7 @@ func TestListsListOfNullableFuncContainsNull(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsListOfNullableFuncReturnsNull(t *testing.T) {
+func TestLists_ListOfNullableFunc_ReturnsNull(t *testing.T) {
 	ttype := types.NewGraphQLList(types.GraphQLInt)
 
 	// `data` is a function that return values
@@ -163,7 +163,7 @@ func TestListsListOfNullableFuncReturnsNull(t *testing.T) {
 }
 
 // Describe [T] Array<Func()<T>> // equivalent to Array<Promise<T>>
-func TestListsListOfNullableArrayOfFuncContainsValues(t *testing.T) {
+func TestLists_ListOfNullableArrayOfFuncContainsValues(t *testing.T) {
 	ttype := types.NewGraphQLList(types.GraphQLInt)
 
 	// `data` is a slice of functions that return values
@@ -187,7 +187,7 @@ func TestListsListOfNullableArrayOfFuncContainsValues(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsListOfNullableArrayOfFuncContainsNulls(t *testing.T) {
+func TestLists_ListOfNullableArrayOfFuncContainsNulls(t *testing.T) {
 	ttype := types.NewGraphQLList(types.GraphQLInt)
 
 	// `data` is a slice of functions that return values
@@ -216,7 +216,7 @@ func TestListsListOfNullableArrayOfFuncContainsNulls(t *testing.T) {
 }
 
 // Describe [T]! Array<T>
-func TestListsNonNullListOfNullableObjectsContainsValues(t *testing.T) {
+func TestLists_NonNullListOfNullableObjectsContainsValues(t *testing.T) {
 	ttype := types.NewGraphQLNonNull(types.NewGraphQLList(types.GraphQLInt))
 	data := []interface{}{
 		1, 2,
@@ -232,7 +232,7 @@ func TestListsNonNullListOfNullableObjectsContainsValues(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsNonNullListOfNullableObjectsContainsNull(t *testing.T) {
+func TestLists_NonNullListOfNullableObjectsContainsNull(t *testing.T) {
 	ttype := types.NewGraphQLNonNull(types.NewGraphQLList(types.GraphQLInt))
 	data := []interface{}{
 		1, nil, 2,
@@ -248,13 +248,11 @@ func TestListsNonNullListOfNullableObjectsContainsNull(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsNonNullListOfNullableObjectsReturnsNull(t *testing.T) {
+func TestLists_NonNullListOfNullableObjectsReturnsNull(t *testing.T) {
 	ttype := types.NewGraphQLNonNull(types.NewGraphQLList(types.GraphQLInt))
 	expected := &types.GraphQLResult{
 		Data: map[string]interface{}{
-			"nest": map[string]interface{}{
-				"test": nil,
-			},
+			"nest": nil,
 		},
 		Errors: []graphqlerrors.GraphQLFormattedError{
 			graphqlerrors.GraphQLFormattedError{
@@ -272,7 +270,7 @@ func TestListsNonNullListOfNullableObjectsReturnsNull(t *testing.T) {
 }
 
 // Describe [T]! Func()Array<T> // equivalent to Promise<Array<T>>
-func TestListsNonNullListOfNullableFuncContainsValues(t *testing.T) {
+func TestLists_NonNullListOfNullableFunc_ContainsValues(t *testing.T) {
 	ttype := types.NewGraphQLNonNull(types.NewGraphQLList(types.GraphQLInt))
 
 	// `data` is a function that return values
@@ -293,7 +291,7 @@ func TestListsNonNullListOfNullableFuncContainsValues(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsNonNullListOfNullableFuncContainsNull(t *testing.T) {
+func TestLists_NonNullListOfNullableFunc_ContainsNull(t *testing.T) {
 	ttype := types.NewGraphQLNonNull(types.NewGraphQLList(types.GraphQLInt))
 
 	// `data` is a function that return values
@@ -314,7 +312,7 @@ func TestListsNonNullListOfNullableFuncContainsNull(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsNonNullListOfNullableFuncReturnsNull(t *testing.T) {
+func TestLists_NonNullListOfNullableFunc_ReturnsNull(t *testing.T) {
 	ttype := types.NewGraphQLNonNull(types.NewGraphQLList(types.GraphQLInt))
 
 	// `data` is a function that return values
@@ -324,9 +322,7 @@ func TestListsNonNullListOfNullableFuncReturnsNull(t *testing.T) {
 	}
 	expected := &types.GraphQLResult{
 		Data: map[string]interface{}{
-			"nest": map[string]interface{}{
-				"test": nil,
-			},
+			"nest": nil,
 		},
 		Errors: []graphqlerrors.GraphQLFormattedError{
 			graphqlerrors.GraphQLFormattedError{
@@ -344,7 +340,7 @@ func TestListsNonNullListOfNullableFuncReturnsNull(t *testing.T) {
 }
 
 // Describe [T]! Array<Func()<T>> // equivalent to Array<Promise<T>>
-func TestListsNonNullListOfNullableArrayOfFuncContainsValues(t *testing.T) {
+func TestLists_NonNullListOfNullableArrayOfFunc_ContainsValues(t *testing.T) {
 	ttype := types.NewGraphQLNonNull(types.NewGraphQLList(types.GraphQLInt))
 
 	// `data` is a slice of functions that return values
@@ -368,7 +364,7 @@ func TestListsNonNullListOfNullableArrayOfFuncContainsValues(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsNonNullListOfNullableArrayOfFuncContainsNulls(t *testing.T) {
+func TestLists_NonNullListOfNullableArrayOfFunc_ContainsNulls(t *testing.T) {
 	ttype := types.NewGraphQLNonNull(types.NewGraphQLList(types.GraphQLInt))
 
 	// `data` is a slice of functions that return values
@@ -397,7 +393,7 @@ func TestListsNonNullListOfNullableArrayOfFuncContainsNulls(t *testing.T) {
 }
 
 // Describe [T!] Array<T>
-func TestListsNullableListOfNonNullObjectsContainsValues(t *testing.T) {
+func TestLists_NullableListOfNonNullObjects_ContainsValues(t *testing.T) {
 	ttype := types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt))
 	data := []interface{}{
 		1, 2,
@@ -413,7 +409,7 @@ func TestListsNullableListOfNonNullObjectsContainsValues(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsNullableListOfNonNullObjectsContainsNull(t *testing.T) {
+func TestLists_NullableListOfNonNullObjects_ContainsNull(t *testing.T) {
 	ttype := types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt))
 	data := []interface{}{
 		1, nil, 2,
@@ -421,12 +417,7 @@ func TestListsNullableListOfNonNullObjectsContainsNull(t *testing.T) {
 	expected := &types.GraphQLResult{
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
-				"test": []interface{}{
-					// if you're looking at this and wondering why "test" != nil like `graphql-js`,
-					// it's because we don't throw errors and don't terminate in the middle of
-					// finding a nil value for GraphQLNonNull
-					1, 2,
-				},
+				"test": nil,
 			},
 		},
 		Errors: []graphqlerrors.GraphQLFormattedError{
@@ -443,7 +434,7 @@ func TestListsNullableListOfNonNullObjectsContainsNull(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsNullableListOfNonNullObjectsReturnsNull(t *testing.T) {
+func TestLists_NullableListOfNonNullObjects_ReturnsNull(t *testing.T) {
 	ttype := types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt))
 
 	expected := &types.GraphQLResult{
@@ -457,7 +448,7 @@ func TestListsNullableListOfNonNullObjectsReturnsNull(t *testing.T) {
 }
 
 // Describe [T!] Func()Array<T> // equivalent to Promise<Array<T>>
-func TestListsNullableListOfNonNullFuncContainsValues(t *testing.T) {
+func TestLists_NullableListOfNonNullFunc_ContainsValues(t *testing.T) {
 	ttype := types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt))
 
 	// `data` is a function that return values
@@ -478,7 +469,7 @@ func TestListsNullableListOfNonNullFuncContainsValues(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsNullableListOfNonNullFuncContainsNull(t *testing.T) {
+func TestLists_NullableListOfNonNullFunc_ContainsNull(t *testing.T) {
 	ttype := types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt))
 
 	// `data` is a function that return values
@@ -491,9 +482,7 @@ func TestListsNullableListOfNonNullFuncContainsNull(t *testing.T) {
 	expected := &types.GraphQLResult{
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
-				"test": []interface{}{
-					1, 2,
-				},
+				"test": nil,
 			},
 		},
 		Errors: []graphqlerrors.GraphQLFormattedError{
@@ -510,7 +499,7 @@ func TestListsNullableListOfNonNullFuncContainsNull(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsNullableListOfNonNullFuncReturnsNull(t *testing.T) {
+func TestLists_NullableListOfNonNullFunc_ReturnsNull(t *testing.T) {
 	ttype := types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt))
 
 	// `data` is a function that return values
@@ -529,7 +518,7 @@ func TestListsNullableListOfNonNullFuncReturnsNull(t *testing.T) {
 }
 
 // Describe [T!] Array<Func()<T>> // equivalent to Array<Promise<T>>
-func TestListsNullableListOfNonNullArrayOfFuncContainsValues(t *testing.T) {
+func TestLists_NullableListOfNonNullArrayOfFunc_ContainsValues(t *testing.T) {
 	ttype := types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt))
 
 	// `data` is a slice of functions that return values
@@ -553,7 +542,7 @@ func TestListsNullableListOfNonNullArrayOfFuncContainsValues(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsNullableListOfNonNullArrayOfFuncContainsNulls(t *testing.T) {
+func TestLists_NullableListOfNonNullArrayOfFunc_ContainsNulls(t *testing.T) {
 	ttype := types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt))
 
 	// `data` is a slice of functions that return values
@@ -582,7 +571,7 @@ func TestListsNullableListOfNonNullArrayOfFuncContainsNulls(t *testing.T) {
 }
 
 // Describe [T!]! Array<T>
-func TestListsNonNullListOfNonNullObjectsContainsValues(t *testing.T) {
+func TestLists_NonNullListOfNonNullObjects_ContainsValues(t *testing.T) {
 	ttype := types.NewGraphQLNonNull(types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt)))
 	data := []interface{}{
 		1, 2,
@@ -598,21 +587,14 @@ func TestListsNonNullListOfNonNullObjectsContainsValues(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsNonNullListOfNonNullObjectsContainsNull(t *testing.T) {
+func TestLists_NonNullListOfNonNullObjects_ContainsNull(t *testing.T) {
 	ttype := types.NewGraphQLNonNull(types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt)))
 	data := []interface{}{
 		1, nil, 2,
 	}
 	expected := &types.GraphQLResult{
 		Data: map[string]interface{}{
-			"nest": map[string]interface{}{
-				"test": []interface{}{
-					// if you're looking at this and wondering why "test" != nil like `graphql-js`,
-					// it's because we don't throw errors and don't terminate in the middle of
-					// finding a nil value for GraphQLNonNull
-					1, 2,
-				},
-			},
+			"nest": nil,
 		},
 		Errors: []graphqlerrors.GraphQLFormattedError{
 			graphqlerrors.GraphQLFormattedError{
@@ -628,8 +610,7 @@ func TestListsNonNullListOfNonNullObjectsContainsNull(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsNonNullListOfNonNullObjectsReturnsNull(t *testing.T) {
-	t.Skip()
+func TestLists_NonNullListOfNonNullObjects_ReturnsNull(t *testing.T) {
 	ttype := types.NewGraphQLNonNull(types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt)))
 
 	expected := &types.GraphQLResult{
@@ -652,7 +633,7 @@ func TestListsNonNullListOfNonNullObjectsReturnsNull(t *testing.T) {
 }
 
 // Describe [T!]! Func()Array<T> // equivalent to Promise<Array<T>>
-func TestListsNonNullListOfNonNullFuncContainsValues(t *testing.T) {
+func TestLists_NonNullListOfNonNullFunc_ContainsValues(t *testing.T) {
 	ttype := types.NewGraphQLNonNull(types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt)))
 
 	// `data` is a function that return values
@@ -673,7 +654,7 @@ func TestListsNonNullListOfNonNullFuncContainsValues(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsNonNullListOfNonNullFuncContainsNull(t *testing.T) {
+func TestLists_NonNullListOfNonNullFunc_ContainsNull(t *testing.T) {
 	ttype := types.NewGraphQLNonNull(types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt)))
 
 	// `data` is a function that return values
@@ -685,11 +666,7 @@ func TestListsNonNullListOfNonNullFuncContainsNull(t *testing.T) {
 	}
 	expected := &types.GraphQLResult{
 		Data: map[string]interface{}{
-			"nest": map[string]interface{}{
-				"test": []interface{}{
-					1, 2,
-				},
-			},
+			"nest": nil,
 		},
 		Errors: []graphqlerrors.GraphQLFormattedError{
 			graphqlerrors.GraphQLFormattedError{
@@ -705,8 +682,7 @@ func TestListsNonNullListOfNonNullFuncContainsNull(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsNonNullListOfNonNullFuncReturnsNull(t *testing.T) {
-	t.Skip()
+func TestLists_NonNullListOfNonNullFunc_ReturnsNull(t *testing.T) {
 	ttype := types.NewGraphQLNonNull(types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt)))
 
 	// `data` is a function that return values
@@ -734,7 +710,7 @@ func TestListsNonNullListOfNonNullFuncReturnsNull(t *testing.T) {
 }
 
 // Describe [T!]! Array<Func()<T>> // equivalent to Array<Promise<T>>
-func TestListsNonNullListOfNonNullArrayOfFuncContainsValues(t *testing.T) {
+func TestLists_NonNullListOfNonNullArrayOfFunc_ContainsValues(t *testing.T) {
 	ttype := types.NewGraphQLNonNull(types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt)))
 
 	// `data` is a slice of functions that return values
@@ -758,7 +734,7 @@ func TestListsNonNullListOfNonNullArrayOfFuncContainsValues(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
-func TestListsNonNullListOfNonNullArrayOfFuncContainsNulls(t *testing.T) {
+func TestLists_NonNullListOfNonNullArrayOfFunc_ContainsNulls(t *testing.T) {
 	ttype := types.NewGraphQLNonNull(types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt)))
 
 	// `data` is a slice of functions that return values

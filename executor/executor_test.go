@@ -82,7 +82,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 				"b": "Boring",
 				"c": []interface{}{
 					"Contrived",
-					"",
+					nil,
 					"Confusing",
 				},
 				"deeper": []interface{}{
@@ -906,8 +906,8 @@ func TestDoesNotIncludeIllegalFieldsInOutput(t *testing.T) {
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, expected len(%v) errors, got len(%v)", len(expected.Errors), len(result.Errors))
 	}
-	if !reflect.DeepEqual(expected.Data, result.Data) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -997,6 +997,7 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 				map[string]interface{}{
 					"value": "foo",
 				},
+				nil,
 			},
 		},
 		Errors: []graphqlerrors.GraphQLFormattedError{
