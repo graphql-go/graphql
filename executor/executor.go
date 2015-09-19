@@ -7,11 +7,12 @@ import (
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/types"
 	"reflect"
+	"strings"
 )
 
 type ExecuteParams struct {
 	Schema        types.GraphQLSchema
-	Root          map[string]interface{}
+	Root          interface{}
 	AST           *ast.Document
 	OperationName string
 	Args          map[string]interface{}
@@ -55,7 +56,7 @@ func Execute(p ExecuteParams, resultChan chan *types.GraphQLResult) {
 
 type BuildExecutionCtxParams struct {
 	Schema        types.GraphQLSchema
-	Root          map[string]interface{}
+	Root          interface{}
 	AST           *ast.Document
 	OperationName string
 	Args          map[string]interface{}
@@ -66,7 +67,7 @@ type BuildExecutionCtxParams struct {
 type ExecutionContext struct {
 	Schema         types.GraphQLSchema
 	Fragments      map[string]ast.Definition
-	Root           map[string]interface{}
+	Root           interface{}
 	Operation      ast.Definition
 	VariableValues map[string]interface{}
 	Errors         []graphqlerrors.GraphQLFormattedError
@@ -138,7 +139,7 @@ func buildExecutionContext(p BuildExecutionCtxParams) *ExecutionContext {
 
 type ExecuteOperationParams struct {
 	ExecutionContext *ExecutionContext
-	Root             map[string]interface{}
+	Root             interface{}
 	Operation        ast.Definition
 }
 
@@ -217,15 +218,13 @@ func executeFieldsSerially(p ExecuteFieldsParams, resultChan chan *types.GraphQL
 
 	finalResults := map[string]interface{}{}
 	for responseName, fieldASTs := range p.Fields {
-		resolved, state, errs := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
 		if state.hasNoFieldDefs {
 			continue
 		}
-		for _, err := range errs {
-			result.Errors = append(result.Errors, err)
-		}
 		finalResults[responseName] = resolved
 	}
+	result.Errors = p.ExecutionContext.Errors
 	result.Data = finalResults
 	resultChan <- &result
 }
@@ -240,15 +239,13 @@ func executeFields(p ExecuteFieldsParams) (result types.GraphQLResult) {
 	}
 	finalResults := map[string]interface{}{}
 	for responseName, fieldASTs := range p.Fields {
-		resolved, state, resolvedErrs := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
 		if state.hasNoFieldDefs {
 			continue
 		}
-		for _, err := range resolvedErrs {
-			result.Errors = append(result.Errors, err)
-		}
 		finalResults[responseName] = resolved
 	}
+	result.Errors = p.ExecutionContext.Errors
 	if len(finalResults) > 0 {
 		result.Data = finalResults
 	}
@@ -453,11 +450,12 @@ type resolveFieldResultState struct {
  * then calls completeValue to complete promises, serialize scalars, or execute
  * the sub-selection-set for objects.
  */
-func resolveField(eCtx *ExecutionContext, parentType *types.GraphQLObjectType, source interface{}, fieldASTs []*ast.Field) (result interface{}, resultState resolveFieldResultState, errs []graphqlerrors.GraphQLFormattedError) {
+func resolveField(eCtx *ExecutionContext, parentType *types.GraphQLObjectType, source interface{}, fieldASTs []*ast.Field) (result interface{}, resultState resolveFieldResultState) {
 	// catch panic from resolveFn
 	var returnType types.GraphQLOutputType
-	defer func() (interface{}, resolveFieldResultState, []graphqlerrors.GraphQLFormattedError) {
+	defer func() (interface{}, resolveFieldResultState) {
 		if r := recover(); r != nil {
+
 			var err error
 			if r, ok := r.(string); ok {
 				err = graphqlerrors.NewLocatedError(
@@ -473,9 +471,9 @@ func resolveField(eCtx *ExecutionContext, parentType *types.GraphQLObjectType, s
 				panic(graphqlerrors.FormatError(err))
 			}
 			eCtx.Errors = append(eCtx.Errors, graphqlerrors.FormatError(err))
-			return result, resultState, errs
+			return result, resultState
 		}
-		return result, resultState, errs
+		return result, resultState
 	}()
 
 	fieldAST := fieldASTs[0]
@@ -487,7 +485,7 @@ func resolveField(eCtx *ExecutionContext, parentType *types.GraphQLObjectType, s
 	fieldDef := getFieldDef(eCtx.Schema, parentType, fieldName)
 	if fieldDef == nil {
 		resultState.hasNoFieldDefs = true
-		return nil, resultState, errs
+		return nil, resultState
 	}
 	returnType = fieldDef.Type
 	resolveFn := fieldDef.Resolve
@@ -523,8 +521,9 @@ func resolveField(eCtx *ExecutionContext, parentType *types.GraphQLObjectType, s
 		Args:   args,
 		Info:   info,
 	})
+
 	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
-	return completed, resultState, errs
+	return completed, resultState
 }
 
 func completeValueCatchingError(eCtx *ExecutionContext, returnType types.GraphQLType, fieldASTs []*ast.Field, info types.GraphQLResolveInfo, result interface{}) (completed interface{}) {
@@ -688,12 +687,42 @@ func completeValue(eCtx *ExecutionContext, returnType types.GraphQLType, fieldAS
 		Fields:           subFieldASTs,
 	}
 	results := executeFields(executeFieldsParams)
+
 	return results.Data
 
 }
 
 func defaultResolveFn(p types.GQLFRParams) interface{} {
-	// expects p.Source to be a map
+
+	// try to resolve p.Source as a struct first
+	sourceVal := reflect.ValueOf(p.Source)
+	if sourceVal.Type().Kind() == reflect.Ptr {
+		sourceVal = sourceVal.Elem()
+	}
+	if sourceVal.Type().Kind() == reflect.Struct {
+		// find field based on struct's json tag
+		// we could potentially create a custom `gql` tag, but its unnecessary at this point
+		// since graphql speaks to client in a json-like way anyway
+		// so json tags are a good way to start with
+		for i := 0; i < sourceVal.NumField(); i++ {
+			valueField := sourceVal.Field(i)
+			typeField := sourceVal.Type().Field(i)
+			tag := typeField.Tag
+			jsonTag := tag.Get("json")
+			jsonOptions := strings.Split(jsonTag, ",")
+			if len(jsonOptions) == 0 {
+				continue
+			}
+			if jsonOptions[0] != p.Info.FieldName {
+				continue
+			}
+			return valueField.Interface()
+		}
+		// if we fail, just return back p.Source
+		return p.Source
+	}
+
+	// try p.Source as a map[string]interface
 	if sourceMap, ok := p.Source.(map[string]interface{}); ok {
 		property := sourceMap[p.Info.FieldName]
 		val := reflect.ValueOf(property)
@@ -706,6 +735,8 @@ func defaultResolveFn(p types.GQLFRParams) interface{} {
 		}
 		return property
 	}
+
+	// last resort, return p.Source at it is
 	return p.Source
 }
 
