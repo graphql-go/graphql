@@ -15,27 +15,27 @@ import (
 // - tests that create internal tests structs, we might not want to pollute the package with too many test structs
 
 type testPic struct {
-	Url    string
-	Width  string
-	Height string
+	Url    string `json:"url"`
+	Width  string `json:"width"`
+	Height string `json:"height"`
 }
 
 type testPicFn func(width, height string) *testPic
 
 type testAuthor struct {
-	Id            int
-	Name          string
-	Pic           testPicFn
-	RecentArticle *testArticle
+	Id            int          `json:"id"`
+	Name          string       `json:"name"`
+	Pic           testPicFn    `json:"pic"`
+	RecentArticle *testArticle `json:"recentArticle"`
 }
 type testArticle struct {
-	Id          string
-	IsPublished string
-	Author      *testAuthor
-	Title       string
-	Body        string
-	Hidden      string
-	Keywords    []interface{}
+	Id          string        `json:"id"`
+	IsPublished string        `json:"isPublished"`
+	Author      *testAuthor   `json:"author"`
+	Title       string        `json:"title"`
+	Body        string        `json:"body"`
+	Hidden      string        `json:"hidden"`
+	Keywords    []interface{} `json:"keywords"`
 }
 
 func getPic(id int, width, height string) *testPic {
@@ -92,21 +92,9 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 		Fields: types.GraphQLFieldConfigMap{
 			"id": &types.GraphQLFieldConfig{
 				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
-					if author, ok := p.Source.(*testAuthor); ok {
-						return author.Id
-					}
-					return nil
-				},
 			},
 			"name": &types.GraphQLFieldConfig{
 				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
-					if author, ok := p.Source.(*testAuthor); ok {
-						return author.Name
-					}
-					return nil
-				},
 			},
 			"pic": &types.GraphQLFieldConfig{
 				Type: blogImage,
@@ -135,69 +123,27 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 		Fields: types.GraphQLFieldConfigMap{
 			"id": &types.GraphQLFieldConfig{
 				Type: types.NewGraphQLNonNull(types.GraphQLString),
-				Resolve: func(p types.GQLFRParams) interface{} {
-					if article, ok := p.Source.(*testArticle); ok {
-						return article.Id
-					}
-					return nil
-				},
 			},
 			"isPublished": &types.GraphQLFieldConfig{
 				Type: types.GraphQLBoolean,
-				Resolve: func(p types.GQLFRParams) interface{} {
-					if article, ok := p.Source.(*testArticle); ok {
-						return article.IsPublished
-					}
-					return false
-				},
 			},
 			"author": &types.GraphQLFieldConfig{
 				Type: blogAuthor,
-				Resolve: func(p types.GQLFRParams) interface{} {
-					if article, ok := p.Source.(*testArticle); ok {
-						return article.Author
-					}
-					return nil
-				},
 			},
 			"title": &types.GraphQLFieldConfig{
 				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
-					if article, ok := p.Source.(*testArticle); ok {
-						return article.Title
-					}
-					return nil
-				},
 			},
 			"body": &types.GraphQLFieldConfig{
 				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
-					if article, ok := p.Source.(*testArticle); ok {
-						return article.Body
-					}
-					return nil
-				},
 			},
 			"keywords": &types.GraphQLFieldConfig{
 				Type: types.NewGraphQLList(types.GraphQLString),
-				Resolve: func(p types.GQLFRParams) interface{} {
-					if article, ok := p.Source.(*testArticle); ok {
-						return article.Keywords
-					}
-					return nil
-				},
 			},
 		},
 	})
 
 	blogAuthor.AddFieldConfig("recentArticle", &types.GraphQLFieldConfig{
 		Type: blogArticle,
-		Resolve: func(p types.GQLFRParams) interface{} {
-			if author, ok := p.Source.(*testAuthor); ok {
-				return author.RecentArticle
-			}
-			return nil
-		},
 	})
 
 	blogQuery := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
@@ -285,11 +231,12 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 					"id":   "123",
 					"name": "John Smith",
 					"pic": map[string]interface{}{
-						"url":    "&{cdn://123 640 480}",
-						"width":  int(0),
-						"height": int(0),
+						"url":    "cdn://123",
+						"width":  640,
+						"height": 480,
 					},
 					"recentArticle": map[string]interface{}{
+						"id":          "1",
 						"isPublished": bool(true),
 						"title":       "My Article 1",
 						"body":        "This is a post",
@@ -300,7 +247,6 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 							"true",
 							nil,
 						},
-						"id": "1",
 					},
 				},
 				"id":          "1",
