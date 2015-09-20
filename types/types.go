@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
-	"reflect"
 	"regexp"
 )
 
@@ -181,7 +180,6 @@ type GraphQLInterfaceType struct {
 	err error
 }
 
-// TODO: NewGraphQLInterfaceType
 func NewGraphQLInterfaceType(config GraphQLInterfaceTypeConfig) *GraphQLInterfaceType {
 	it := &GraphQLInterfaceType{}
 
@@ -201,12 +199,6 @@ func NewGraphQLInterfaceType(config GraphQLInterfaceTypeConfig) *GraphQLInterfac
 	it.typeConfig = config
 	it.implementations = []*GraphQLObjectType{}
 
-	it.fields, err = defineFieldMap(it, it.typeConfig.Fields)
-	if err != nil {
-		it.err = err
-		return it
-	}
-
 	return it
 }
 
@@ -215,9 +207,6 @@ func (it *GraphQLInterfaceType) AddFieldConfig(fieldName string, fieldConfig *Gr
 		return
 	}
 	it.typeConfig.Fields[fieldName] = fieldConfig
-
-	// re-define field map
-	it.fields, _ = defineFieldMap(it, it.typeConfig.Fields)
 }
 
 func (it *GraphQLInterfaceType) GetName() string {
@@ -234,7 +223,8 @@ func (it *GraphQLInterfaceType) CoerceLiteral(value interface{}) (r interface{})
 }
 
 func (it *GraphQLInterfaceType) GetFields() (fields GraphQLFieldDefinitionMap) {
-	return fields
+	it.fields, _ = defineFieldMap(it, it.typeConfig.Fields)
+	return it.fields
 }
 
 func (it *GraphQLInterfaceType) GetPossibleTypes() []*GraphQLObjectType {
@@ -242,7 +232,6 @@ func (it *GraphQLInterfaceType) GetPossibleTypes() []*GraphQLObjectType {
 }
 
 func (it *GraphQLInterfaceType) IsPossibleType(ttype *GraphQLObjectType) bool {
-
 	if ttype == nil {
 		return false
 	}
@@ -256,7 +245,6 @@ func (it *GraphQLInterfaceType) IsPossibleType(ttype *GraphQLObjectType) bool {
 		}
 		it.possibleTypes = possibleTypes
 	}
-
 	if val, ok := it.possibleTypes[ttype.Name]; ok {
 		return val
 	}
@@ -267,17 +255,16 @@ func (it *GraphQLInterfaceType) GetObjectType(value interface{}, info GraphQLRes
 	if it.ResolveType != nil {
 		return it.ResolveType(value, info)
 	}
-	return nil
+	return getTypeOf(value, info, it)
 }
 
 func getTypeOf(value interface{}, info GraphQLResolveInfo, abstractType GraphQLAbstractType) *GraphQLObjectType {
 	possibleTypes := abstractType.GetPossibleTypes()
-
 	for _, possibleType := range possibleTypes {
-		possibleTypeVal := reflect.ValueOf(possibleType)
-		if possibleTypeVal.IsValid() &&
-			possibleTypeVal.Kind() == reflect.Func &&
-			possibleType.IsTypeOf(value, info) {
+		if possibleType.IsTypeOf == nil {
+			continue
+		}
+		if res := possibleType.IsTypeOf(value, info); res {
 			return possibleType
 		}
 	}
@@ -536,15 +523,6 @@ func NewGraphQLUnionType(config GraphQLUnionTypeConfig) *GraphQLUnionType {
 	}
 	objectType.Name = config.Name
 	objectType.Description = config.Description
-
-	err = invariant(
-		config.ResolveType != nil,
-		fmt.Sprintf(`%v must provide "resolveType" as a function.`, objectType),
-	)
-	if err != nil {
-		objectType.err = err
-		return objectType
-	}
 	objectType.ResolveType = config.ResolveType
 
 	err = invariant(
@@ -754,7 +732,7 @@ type GraphQLInputObjectType struct {
 	err error
 }
 
-// TOD: rename InputObjectConfig to GraphQLInputObjecTypeConfig for consistency?
+// TODO: rename InputObjectConfig to GraphQLInputObjecTypeConfig for consistency?
 func NewGraphQLInputObjectType(config InputObjectConfig) *GraphQLInputObjectType {
 	gt := &GraphQLInputObjectType{}
 	err := invariant(config.Name != "", "Type must be named.")

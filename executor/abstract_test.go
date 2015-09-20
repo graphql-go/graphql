@@ -26,9 +26,6 @@ type testHuman struct {
 
 func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 
-	var dogType *types.GraphQLObjectType
-	var catType *types.GraphQLObjectType
-
 	petType := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
 		Name: "Pet",
 		Fields: types.GraphQLFieldConfigMap{
@@ -36,18 +33,10 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 				Type: types.GraphQLString,
 			},
 		},
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
-			if _, ok := value.(*testCat); ok {
-				return catType
-			}
-			if _, ok := value.(*testDog); ok {
-				return dogType
-			}
-			return nil
-		},
 	})
 
-	dogType = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	// ie declare that Dog belongs to Pet interface
+	_ = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
 		Name: "Dog",
 		Interfaces: []*types.GraphQLInterfaceType{
 			petType,
@@ -77,7 +66,8 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 			},
 		},
 	})
-	catType = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	// ie declare that Cat belongs to Pet interface
+	_ = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
 		Name: "Cat",
 		Interfaces: []*types.GraphQLInterfaceType{
 			petType,
@@ -162,7 +152,6 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 		RequestString: query,
 	}, resultChannel)
 	result := <-resultChannel
-
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -227,6 +216,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 			},
 		},
 	})
+	// ie declare Pet has Dot and Cat object types
 	petType := types.NewGraphQLUnionType(types.GraphQLUnionTypeConfig{
 		Name: "Pet",
 		Types: []*types.GraphQLObjectType{
