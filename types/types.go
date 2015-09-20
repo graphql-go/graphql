@@ -41,9 +41,9 @@ type GraphQLEnumType struct {
 	Description string
 
 	enumConfig   GraphQLEnumTypeConfig
-	values       []GraphQLEnumValueDefinition
-	valuesLookup map[interface{}]GraphQLEnumValueDefinition
-	nameLookup   map[string]GraphQLEnumValueDefinition
+	values       []*GraphQLEnumValueDefinition
+	valuesLookup map[interface{}]*GraphQLEnumValueDefinition
+	nameLookup   map[string]*GraphQLEnumValueDefinition
 
 	err error
 }
@@ -68,15 +68,15 @@ func NewGraphQLEnumType(config GraphQLEnumTypeConfig) *GraphQLEnumType {
 
 	return gt
 }
-func (gt *GraphQLEnumType) defineEnumValues(valueMap GraphQLEnumValueConfigMap) ([]GraphQLEnumValueDefinition, error) {
-	values := []GraphQLEnumValueDefinition{}
+func (gt *GraphQLEnumType) defineEnumValues(valueMap GraphQLEnumValueConfigMap) ([]*GraphQLEnumValueDefinition, error) {
+	values := []*GraphQLEnumValueDefinition{}
 
 	for valueName, valueConfig := range valueMap {
 		err := assertValidName(valueName)
 		if err != nil {
 			return values, err
 		}
-		value := GraphQLEnumValueDefinition{
+		value := &GraphQLEnumValueDefinition{
 			Name:              valueName,
 			Value:             valueConfig.Value,
 			DeprecationReason: valueConfig.DeprecationReason,
@@ -90,7 +90,7 @@ func (gt *GraphQLEnumType) defineEnumValues(valueMap GraphQLEnumValueConfigMap) 
 	return values, nil
 }
 
-func (gt *GraphQLEnumType) GetValues() []GraphQLEnumValueDefinition {
+func (gt *GraphQLEnumType) GetValues() []*GraphQLEnumValueDefinition {
 	return gt.values
 }
 func (gt *GraphQLEnumType) Serialize(value interface{}) interface{} {
@@ -134,11 +134,11 @@ func (gt *GraphQLEnumType) String() string {
 	return gt.Name
 }
 
-func (gt *GraphQLEnumType) getValueLookup() map[interface{}]GraphQLEnumValueDefinition {
+func (gt *GraphQLEnumType) getValueLookup() map[interface{}]*GraphQLEnumValueDefinition {
 	if len(gt.valuesLookup) > 0 {
 		return gt.valuesLookup
 	}
-	valuesLookup := map[interface{}]GraphQLEnumValueDefinition{}
+	valuesLookup := map[interface{}]*GraphQLEnumValueDefinition{}
 	for _, value := range gt.GetValues() {
 		valuesLookup[value.Value] = value
 	}
@@ -146,11 +146,11 @@ func (gt *GraphQLEnumType) getValueLookup() map[interface{}]GraphQLEnumValueDefi
 	return gt.valuesLookup
 }
 
-func (gt *GraphQLEnumType) getNameLookup() map[string]GraphQLEnumValueDefinition {
+func (gt *GraphQLEnumType) getNameLookup() map[string]*GraphQLEnumValueDefinition {
 	if len(gt.nameLookup) > 0 {
 		return gt.nameLookup
 	}
-	nameLookup := map[string]GraphQLEnumValueDefinition{}
+	nameLookup := map[string]*GraphQLEnumValueDefinition{}
 	for _, value := range gt.GetValues() {
 		nameLookup[value.Name] = value
 	}
@@ -343,12 +343,12 @@ type GraphQLFieldArgument struct {
 }
 
 type GraphQLFieldDefinition struct {
-	Name              string
-	Description       string
-	Type              GraphQLOutputType
-	Args              []*GraphQLArgument
-	Resolve           GraphQLFieldResolveFn
-	DeprecationReason string
+	Name              string                `json:"name"`
+	Description       string                `json:"description"`
+	Type              GraphQLOutputType     `json:"type"`
+	Args              []*GraphQLArgument    `json:"args"`
+	Resolve           GraphQLFieldResolveFn `json:"-"`
+	DeprecationReason string                `json:"deprecationReason"`
 }
 
 type GraphQLFieldDefinitionMap map[string]*GraphQLFieldDefinition
@@ -714,7 +714,7 @@ type InputObjectField struct {
 	Description  string
 }
 type InputObjectConfigFieldMap map[string]*InputObjectFieldConfig
-type InputObjectFieldMap map[string]InputObjectField
+type InputObjectFieldMap map[string]*InputObjectField
 type InputObjectConfig struct {
 	Name        string
 	Fields      InputObjectConfigFieldMap
@@ -756,7 +756,7 @@ func (gt *GraphQLInputObjectType) defineFieldMap() InputObjectFieldMap {
 		if err != nil {
 			continue
 		}
-		field := InputObjectField{}
+		field := &InputObjectField{}
 		field.Name = fieldName
 		field.Type = fieldConfig.Type
 		field.Description = fieldConfig.Description

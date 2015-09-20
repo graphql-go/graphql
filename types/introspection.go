@@ -1,5 +1,9 @@
 package types
 
+import (
+	"fmt"
+)
+
 const (
 	TypeKindScalar      = "SCALAR"
 	TypeKindObject      = "OBJECT"
@@ -79,7 +83,25 @@ func init() {
 			"kind": &GraphQLFieldConfig{
 				Type: NewGraphQLNonNull(__TypeKind),
 				Resolve: func(p GQLFRParams) interface{} {
-					return "TODO: resolveFn for __Type"
+					switch p.Source.(type) {
+					case *GraphQLScalarType:
+						return TypeKindScalar
+					case *GraphQLObjectType:
+						return TypeKindObject
+					case *GraphQLInterfaceType:
+						return TypeKindInterface
+					case *GraphQLUnionType:
+						return TypeKindUnion
+					case *GraphQLEnumType:
+						return TypeKindEnum
+					case *GraphQLInputObjectType:
+						return TypeKindInputObject
+					case *GraphQLList:
+						return TypeKindList
+					case *GraphQLNonNull:
+						return TypeKindNonNull
+					}
+					panic(fmt.Sprintf("Unknown kind of type: %v", p.Source))
 				},
 			},
 			"name": &GraphQLFieldConfig{
@@ -130,7 +152,10 @@ func init() {
 			"args": &GraphQLFieldConfig{
 				Type: NewGraphQLNonNull(NewGraphQLList(NewGraphQLNonNull(__InputValue))),
 				Resolve: func(p GQLFRParams) interface{} {
-					return "TODO: resolveFn for __Field"
+					if field, ok := p.Source.(*GraphQLFieldDefinition); ok {
+						return field.Args
+					}
+					return []interface{}{}
 				},
 			},
 			"type": &GraphQLFieldConfig{
@@ -139,7 +164,10 @@ func init() {
 			"isDeprecated": &GraphQLFieldConfig{
 				Type: NewGraphQLNonNull(GraphQLBoolean),
 				Resolve: func(p GQLFRParams) interface{} {
-					return "TODO: resolveFn for __Field"
+					if field, ok := p.Source.(*GraphQLFieldDefinition); ok {
+						return (field.DeprecationReason != "")
+					}
+					return false
 				},
 			},
 			"deprecationReason": &GraphQLFieldConfig{
@@ -257,19 +285,50 @@ mutation operations.`,
 			},
 		},
 		Resolve: func(p GQLFRParams) interface{} {
-			return "TODO: resolveFn for __Type"
+			includeDeprecated, _ := p.Args["includeDeprecated"].(bool)
+			switch ttype := p.Source.(type) {
+			case *GraphQLObjectType:
+				fields := []*GraphQLFieldDefinition{}
+				for _, field := range ttype.GetFields() {
+					if !includeDeprecated && field.DeprecationReason != "" {
+						continue
+					}
+					fields = append(fields, field)
+				}
+				return fields
+			case *GraphQLInterfaceType:
+				fields := []*GraphQLFieldDefinition{}
+				for _, field := range ttype.GetFields() {
+					if !includeDeprecated && field.DeprecationReason != "" {
+						continue
+					}
+					fields = append(fields, field)
+				}
+				return fields
+			}
+			return nil
 		},
 	})
 	__Type.AddFieldConfig("interfaces", &GraphQLFieldConfig{
 		Type: NewGraphQLList(NewGraphQLNonNull(__Type)),
 		Resolve: func(p GQLFRParams) interface{} {
-			return "TODO: resolveFn for __Type"
+			switch ttype := p.Source.(type) {
+			case *GraphQLObjectType:
+				return ttype.GetInterfaces()
+			}
+			return nil
 		},
 	})
 	__Type.AddFieldConfig("possibleTypes", &GraphQLFieldConfig{
 		Type: NewGraphQLList(NewGraphQLNonNull(__Type)),
 		Resolve: func(p GQLFRParams) interface{} {
-			return "TODO: resolveFn for __Type"
+			switch ttype := p.Source.(type) {
+			case *GraphQLInterfaceType:
+				return ttype.GetPossibleTypes()
+			case *GraphQLUnionType:
+				return ttype.GetPossibleTypes()
+			}
+			return nil
 		},
 	})
 	__Type.AddFieldConfig("enumValues", &GraphQLFieldConfig{
@@ -281,13 +340,36 @@ mutation operations.`,
 			},
 		},
 		Resolve: func(p GQLFRParams) interface{} {
-			return "TODO: resolveFn for __Type"
+			includeDeprecated, _ := p.Args["includeDeprecated"].(bool)
+			switch ttype := p.Source.(type) {
+			case *GraphQLEnumType:
+				if includeDeprecated {
+					return ttype.GetValues()
+				}
+				values := []*GraphQLEnumValueDefinition{}
+				for _, value := range ttype.GetValues() {
+					if value.DeprecationReason != "" {
+						continue
+					}
+					values = append(values, value)
+				}
+				return values
+			}
+			return nil
 		},
 	})
 	__Type.AddFieldConfig("inputFields", &GraphQLFieldConfig{
 		Type: NewGraphQLList(NewGraphQLNonNull(__InputValue)),
 		Resolve: func(p GQLFRParams) interface{} {
-			return "TODO: resolveFn for __Type"
+			switch ttype := p.Source.(type) {
+			case *GraphQLInputObjectType:
+				fields := []*InputObjectField{}
+				for _, field := range ttype.GetFields() {
+					fields = append(fields, field)
+				}
+				return fields
+			}
+			return nil
 		},
 	})
 	__Type.AddFieldConfig("ofType", &GraphQLFieldConfig{

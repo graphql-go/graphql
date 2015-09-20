@@ -740,6 +740,15 @@ func defaultResolveFn(p types.GQLFRParams) interface{} {
 	return p.Source
 }
 
+/**
+ * This method looks up the field on the given type defintion.
+ * It has special casing for the two introspection fields, __schema
+ * and __typename. __typename is special because it can always be
+ * queried as a field, even in situations where no other fields
+ * are allowed, like on a Union. __schema could get automatically
+ * added to the query type, but that would require mutating type
+ * definitions, which would cause issues.
+ */
 func getFieldDef(schema types.GraphQLSchema, parentType *types.GraphQLObjectType, fieldName string) *types.GraphQLFieldDefinition {
 
 	if parentType == nil {
@@ -754,8 +763,7 @@ func getFieldDef(schema types.GraphQLSchema, parentType *types.GraphQLObjectType
 		schema.GetQueryType().Name == parentType.Name {
 		return types.TypeMetaFieldDef
 	}
-	if fieldName == types.TypeNameMetaFieldDef.Name &&
-		schema.GetQueryType().Name == parentType.Name {
+	if fieldName == types.TypeNameMetaFieldDef.Name {
 		return types.TypeNameMetaFieldDef
 	}
 	return parentType.GetFields()[fieldName]
