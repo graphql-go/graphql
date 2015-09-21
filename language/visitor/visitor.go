@@ -43,7 +43,7 @@ var QueryDocumentKeys KeyMap = KeyMap{
 	"InlineFragment": []string{
 		"TypeCondition",
 		"Directives",
-		"selectionSet",
+		"SelectionSet",
 	},
 	"FragmentDefinition": []string{
 		"Name",

@@ -481,7 +481,6 @@ func TestVisitor_VisitsKitchenSink(t *testing.T) {
 
 	_ = visitor.Visit(astDoc, v, nil)
 
-	t.Skip()
 	if !reflect.DeepEqual(visited, expectedVisited) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
 	}
