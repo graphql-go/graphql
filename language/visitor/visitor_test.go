@@ -224,7 +224,7 @@ func TestVisitor_AllowsANamedFunctionsVisitorAPI(t *testing.T) {
 	}
 }
 func TestVisitor_VisitsKitchenSink(t *testing.T) {
-	b, err := ioutil.ReadFile("./kitchen-sink.graphql")
+	b, err := ioutil.ReadFile("./../parser/kitchen-sink.graphql")
 	if err != nil {
 		t.Fatalf("unable to load kitchen-sink.graphql")
 	}
