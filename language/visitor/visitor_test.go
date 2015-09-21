@@ -34,10 +34,10 @@ func TestVisitor_AllowsForEditingOnEnter(t *testing.T) {
 			switch node := p.Node.(type) {
 			case *ast.Field:
 				if node.Name != nil && node.Name.Value == "b" {
-					return "", nil
+					return visitor.ActionUpdate, nil
 				}
 			}
-			return "UNDEFINED", nil
+			return visitor.ActionNoChange, nil
 		},
 	}
 
@@ -59,10 +59,10 @@ func TestVisitor_AllowsForEditingOnLeave(t *testing.T) {
 			switch node := p.Node.(type) {
 			case *ast.Field:
 				if node.Name != nil && node.Name.Value == "b" {
-					return "", nil
+					return visitor.ActionUpdate, nil
 				}
 			}
-			return "UNDEFINED", nil
+			return visitor.ActionNoChange, nil
 		},
 	}
 
@@ -90,7 +90,7 @@ func TestVisitor_VisitsEditedNode(t *testing.T) {
 				if node.Name != nil && node.Name.Value == "a" {
 					s := node.SelectionSet
 					s.Selections = append(s.Selections, addedField)
-					return "", ast.NewField(&ast.Field{
+					return visitor.ActionUpdate, ast.NewField(&ast.Field{
 						SelectionSet: s,
 					})
 				}
@@ -98,7 +98,7 @@ func TestVisitor_VisitsEditedNode(t *testing.T) {
 					didVisitAddedField = true
 				}
 			}
-			return "UNDEFINED", nil
+			return visitor.ActionNoChange, nil
 		},
 	}
 
@@ -139,12 +139,12 @@ func TestVisitor_AllowsSkippingASubTree(t *testing.T) {
 			case *ast.Field:
 				visited = append(visited, []interface{}{ "enter", node.Kind, nil })
 				if node.Name != nil && node.Name.Value == "b" {
-					return "false", nil
+					return visitor.ActionRemove, nil
 				}
 			case ast.Node:
 				visited = append(visited, []interface{}{ "enter", node.GetKind(), nil })
 			}
-			return "UNDEFINED", nil
+			return visitor.ActionNoChange, nil
 		},
 		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
@@ -153,7 +153,7 @@ func TestVisitor_AllowsSkippingASubTree(t *testing.T) {
 			case ast.Node:
 				visited = append(visited, []interface{}{ "leave", node.GetKind(), nil })
 			}
-			return "UNDEFINED", nil
+			return visitor.ActionNoChange, nil
 		},
 	}
 
@@ -191,7 +191,7 @@ func TestVisitor_AllowsANamedFunctionsVisitorAPI(t *testing.T) {
 					case ast.Node:
 						visited = append(visited, []interface{}{"enter", node.GetKind(), nil })
 					}
-					return "UNDEFINED", nil
+					return visitor.ActionNoChange, nil
 				},
 			},
 			"SelectionSet": visitor.NamedVisitFuncs{
@@ -202,7 +202,7 @@ func TestVisitor_AllowsANamedFunctionsVisitorAPI(t *testing.T) {
 					case ast.Node:
 						visited = append(visited, []interface{}{"enter", node.GetKind(), nil })
 					}
-					return "UNDEFINED", nil
+					return visitor.ActionNoChange, nil
 				},
 				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 					switch node := p.Node.(type) {
@@ -211,7 +211,7 @@ func TestVisitor_AllowsANamedFunctionsVisitorAPI(t *testing.T) {
 					case ast.Node:
 						visited = append(visited, []interface{}{"leave", node.GetKind(), nil })
 					}
-					return "UNDEFINED", nil
+					return visitor.ActionNoChange, nil
 				},
 			},
 		},
@@ -462,7 +462,7 @@ func TestVisitor_VisitsKitchenSink(t *testing.T) {
 				visited = append(visited, []interface{}{"enter", node.GetKind(), p.Key, parentKind })
 			}
 
-			return "UNDEFINED", nil
+			return visitor.ActionNoChange, nil
 		},
 		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 			var parentKind interface{}
@@ -475,7 +475,7 @@ func TestVisitor_VisitsKitchenSink(t *testing.T) {
 			if ok {
 				visited = append(visited, []interface{}{"leave", node.GetKind(), p.Key, parentKind })
 			}
-			return "UNDEFINED", nil
+			return visitor.ActionNoChange, nil
 		},
 	}
 

@@ -5,6 +5,12 @@ import (
 	"fmt"
 )
 
+const (
+	ActionNoChange = "NOCHANGE"
+	ActionBreak    = "BREAK"
+	ActionRemove   = "REMOVE"
+	ActionUpdate   = ""
+)
 type KeyMap map[string][]string
 
 // note that the keys are in Capital letters, equivalent to the ast.Node field Names
@@ -311,18 +317,18 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) ast.Node {
 					Path: path,
 					Ancestors: ancestors,
 				}
-				str := ""
-				str, result = visitFn(p)
-				if str == "BREAK" {
+				action := ActionUpdate
+				action, result = visitFn(p)
+				if action == ActionBreak {
 					break Loop
 				}
-				if str == "false" {
+				if action == ActionRemove {
 					if isLeaving {
 						_, path = pop(path)
 						continue
 					}
 				}
-				if str != "UNDEFINED" {
+				if action != ActionNoChange {
 					resultIsUndefined = false
 					edits = append(edits, &edit{
 						Key: key,
@@ -582,125 +588,3 @@ func getVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitF
 	}
 	return nil
 }
-
-/**
-
-
----editedAst &ast.Document{
-    Kind:        "Document",
-    Loc:         (*ast.Location)(nil),
-    Definitions: {
-        &ast.OperationDefinition{
-            Kind:                "OperationDefinition",
-            Loc:                 (*ast.Location)(nil),
-            Operation:           "query",
-            Name:                (*ast.Name)(nil),
-            VariableDefinitions: nil,
-            Directives:          {
-            },
-            SelectionSet: &ast.SelectionSet{
-                Kind:       "SelectionSet",
-                Loc:        (*ast.Location)(nil),
-                Selections: {
-                    &ast.Field{
-                        Kind:  "Field",
-                        Loc:   (*ast.Location)(nil),
-                        Alias: (*ast.Name)(nil),
-                        Name:  &ast.Name{
-                            Kind:  "Name",
-                            Loc:   (*ast.Location)(nil),
-                            Value: "a",
-                        },
-                        Arguments: {
-                        },
-                        Directives: {
-                        },
-                        SelectionSet: (*ast.SelectionSet)(nil),
-                    },
-                    &ast.Field{
-                        Kind:  "Field",
-                        Loc:   (*ast.Location)(nil),
-                        Alias: (*ast.Name)(nil),
-                        Name:  &ast.Name{
-                            Kind:  "Name",
-                            Loc:   (*ast.Location)(nil),
-                            Value: "b",
-                        },
-                        Arguments: {
-                        },
-                        Directives: {
-                        },
-                        SelectionSet: (*ast.SelectionSet)(nil),
-                    },
-                    &ast.Field{
-                        Kind:  "Field",
-                        Loc:   (*ast.Location)(nil),
-                        Alias: (*ast.Name)(nil),
-                        Name:  &ast.Name{
-                            Kind:  "Name",
-                            Loc:   (*ast.Location)(nil),
-                            Value: "c",
-                        },
-                        Arguments: {
-                        },
-                        Directives: {
-                        },
-                        SelectionSet: &ast.SelectionSet{
-                            Kind:       "SelectionSet",
-                            Loc:        (*ast.Location)(nil),
-                            Selections: {
-                                &ast.Field{
-                                    Kind:  "Field",
-                                    Loc:   (*ast.Location)(nil),
-                                    Alias: (*ast.Name)(nil),
-                                    Name:  &ast.Name{
-                                        Kind:  "Name",
-                                        Loc:   (*ast.Location)(nil),
-                                        Value: "a",
-                                    },
-                                    Arguments: {
-                                    },
-                                    Directives: {
-                                    },
-                                    SelectionSet: (*ast.SelectionSet)(nil),
-                                },
-                                &ast.Field{
-                                    Kind:  "Field",
-                                    Loc:   (*ast.Location)(nil),
-                                    Alias: (*ast.Name)(nil),
-                                    Name:  &ast.Name{
-                                        Kind:  "Name",
-                                        Loc:   (*ast.Location)(nil),
-                                        Value: "b",
-                                    },
-                                    Arguments: {
-                                    },
-                                    Directives: {
-                                    },
-                                    SelectionSet: (*ast.SelectionSet)(nil),
-                                },
-                                &ast.Field{
-                                    Kind:  "Field",
-                                    Loc:   (*ast.Location)(nil),
-                                    Alias: (*ast.Name)(nil),
-                                    Name:  &ast.Name{
-                                        Kind:  "Name",
-                                        Loc:   (*ast.Location)(nil),
-                                        Value: "c",
-                                    },
-                                    Arguments: {
-                                    },
-                                    Directives: {
-                                    },
-                                    SelectionSet: (*ast.SelectionSet)(nil),
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-        },
-    },
-}
-
- */
