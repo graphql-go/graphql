@@ -125,6 +125,13 @@ type stack struct {
 	InArray bool
 	Prev    *stack
 }
+type edit struct {
+	Key          interface{}
+	Value        interface{}
+	Change       VisitFuncResults
+	UpdateParent bool
+	ChildNode    interface{}
+}
 
 type VisitFuncParams struct {
 	Node      interface{}
@@ -155,60 +162,6 @@ type VisitorOptions struct {
 
 	EnterKindMap map[string]VisitFunc // 4) Parallel visitors for entering and leaving nodes of a specific kind
 	LeaveKindMap map[string]VisitFunc // 4) Parallel visitors for entering and leaving nodes of a specific kind
-}
-
-func isSlice(Value interface{}) bool {
-	val := reflect.ValueOf(Value)
-	if val.IsValid() && val.Type().Kind() == reflect.Slice {
-		return true
-	}
-	return false
-}
-
-func pop(a []interface{}) (x interface{}, aa []interface{}) {
-	if len(a) == 0 {
-		return x, aa
-	}
-	x, aa = a[len(a)-1], a[:len(a)-1]
-	return x, aa
-}
-func copy(a []interface{}) []interface{} {
-	return append([]interface{}(nil), a...)
-}
-func spliceSelections(a []ast.Selection, i int) []ast.Selection {
-	if i >= len(a) {
-		return a
-	}
-	if i < 0 {
-		return []ast.Selection{}
-	}
-	return append(a[:i], a[i+1:]...)
-}
-func spliceNodes(a []ast.Node, i int) []ast.Node {
-	if i >= len(a) {
-		return a
-	}
-	if i < 0 {
-		return []ast.Node{}
-	}
-	return append(a[:i], a[i+1:]...)
-}
-func splice(a []interface{}, i int) []interface{} {
-	if i >= len(a) {
-		return a
-	}
-	if i < 0 {
-		return []interface{}{}
-	}
-	return append(a[:i], a[i+1:]...)
-}
-
-type edit struct {
-	Key          interface{}
-	Value        interface{}
-	Change       VisitFuncResults
-	UpdateParent bool
-	ChildNode    interface{}
 }
 
 func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) interface{} {
@@ -446,6 +399,23 @@ Loop:
 	return newRoot
 }
 
+func pop(a []interface{}) (x interface{}, aa []interface{}) {
+	if len(a) == 0 {
+		return x, aa
+	}
+	x, aa = a[len(a)-1], a[:len(a)-1]
+	return x, aa
+}
+func splice(a []interface{}, i int) []interface{} {
+	if i >= len(a) {
+		return a
+	}
+	if i < 0 {
+		return []interface{}{}
+	}
+	return append(a[:i], a[i+1:]...)
+}
+
 func getField(obj interface{}, key interface{}) interface{} {
 	val := reflect.ValueOf(obj)
 	if val.Type().Kind() == reflect.Ptr {
@@ -487,37 +457,13 @@ func getField(obj interface{}, key interface{}) interface{} {
 	return nil
 }
 
-func setField(obj interface{}, key interface{}, value interface{}) {
-	val := reflect.ValueOf(obj)
-	if !val.IsValid() {
-		return
+func isSlice(Value interface{}) bool {
+	val := reflect.ValueOf(Value)
+	if val.IsValid() && val.Type().Kind() == reflect.Slice {
+		return true
 	}
-	if val.Type().Kind() == reflect.Ptr {
-		val = val.Elem()
-	}
-	if val.Type().Kind() == reflect.Struct {
-		keyStr, ok := key.(string)
-		if !ok {
-			return
-		}
-		valField := val.FieldByName(keyStr)
-		if valField.CanSet() {
-
-			valueVal := reflect.ValueOf(value)
-			if valueVal.IsValid() {
-				valField.Set(valueVal)
-			} else {
-				// set to zero
-				valueVal = reflect.New(val.Type().Elem())
-				valField.Set(valueVal)
-			}
-
-		}
-		return
-	}
-	return
+	return false
 }
-
 func isNode(node interface{}) bool {
 	val := reflect.ValueOf(node)
 	if !val.IsValid() {
@@ -551,19 +497,6 @@ func isNilNode(node interface{}) bool {
 		return val.Interface().(bool)
 	}
 	return val.Interface() == nil
-}
-func copyNode(node interface{}) ast.Node {
-	val := reflect.ValueOf(node)
-	if !val.IsValid() {
-		return nil
-	}
-	switch node := node.(type) {
-	case *ast.Document:
-		n := *node
-		return &n
-	default:
-		return node.(ast.Node)
-	}
 }
 
 func getVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitFunc {

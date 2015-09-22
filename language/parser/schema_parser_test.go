@@ -684,14 +684,14 @@ input Hello {
           ^
 4: }
 `,
-		Stack:   `Syntax Error GraphQL (3:8) Expected :, found (
+		Stack: `Syntax Error GraphQL (3:8) Expected :, found (
 
 2: input Hello {
 3:   world(foo: Int): String
           ^
 4: }
 `,
-		Nodes:   []ast.Node{},
+		Nodes: []ast.Node{},
 		Source: &source.Source{
 			Body: `
 input Hello {
