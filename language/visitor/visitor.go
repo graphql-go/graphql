@@ -3,6 +3,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"reflect"
 	"fmt"
+	"encoding/json"
 )
 
 const (
@@ -192,6 +193,15 @@ func spliceNodes(a []ast.Node, i int) ([]ast.Node) {
 	}
 	return append(a[:i], a[i + 1:]...)
 }
+func splice(a []interface{}, i int) ([]interface{}) {
+	if i >= len(a) {
+		return a
+	}
+	if i < 0 {
+		return []interface{}{}
+	}
+	return append(a[:i], a[i + 1:]...)
+}
 type edit struct {
 	Key          interface{}
 	Value        interface{}
@@ -199,21 +209,29 @@ type edit struct {
 	UpdateParent bool
 	ChildNode    interface{}
 }
-func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) ast.Node {
+
+func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) interface{} {
 	visitorKeys := keyMap
 	if visitorKeys == nil {
 		visitorKeys = QueryDocumentKeys
 	}
 
+	// convert ast.Node into map[string]interface{}
+	b, err := json.Marshal(root)
+	if err != nil {
+		panic(fmt.Sprintf("Invalid root AST Node: %v", root))
+	}
+	var newRoot interface{}
+	_ = json.Unmarshal(b, &newRoot)
+
 	var sstack *stack
 	var parent interface{}
-	inArray := isSlice(root)
-	keys := []interface{}{root }
+	inArray := isSlice(newRoot)
+	keys := []interface{}{newRoot }
 	index := -1
 	edits := []*edit{}
 	path := []interface{}{}
 	ancestors := []interface{}{}
-	newRoot := root
 	Loop:
 	for {
 		index = index + 1
@@ -242,27 +260,29 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) ast.Node {
 						arrayEditKey = edit.Key.(int)
 					}
 					if inArray && isNilNode(edit.Value) {
-						if n, ok := node.([]ast.Selection); ok {
-							node = spliceSelections(n, arrayEditKey)
-						} else if n, ok := node.([]ast.Node); ok {
-							node = spliceNodes(n, arrayEditKey)
+						if n, ok := node.([]interface{}); ok {
+							node = splice(n, arrayEditKey)
 						} else {
 							panic(fmt.Sprintf("1 Invalid AST Node: %v", node))
 						}
 						editOffset = editOffset + 1
 					} else {
 						if inArray {
-							if n, ok := node.([]ast.Selection); ok {
-								n[arrayEditKey] = edit.Value.(ast.Selection)
-								node = n
-							} else if n, ok := node.([]ast.Node); ok {
-								n[arrayEditKey] = edit.Value.(ast.Node)
+							if n, ok := node.([]interface{}); ok {
+								n[arrayEditKey] = edit.Value
 								node = n
 							} else {
 								panic(fmt.Sprintf("2 Invalid AST Node: %v", node))
 							}
 						} else {
-							setField(node, edit.Key, edit.Value)
+							if n, ok := node.(map[string]interface{}); ok {
+								key := edit.Key.(string)
+								n[key] = edit.Value
+								node = n
+							} else {
+								panic(fmt.Sprintf("2 Invalid AST Node: %v", node))
+							}
+//							setField(node, edit.Key, edit.Value)
 						}
 					}
 				}
@@ -304,11 +324,15 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) ast.Node {
 		var result interface{}
 		resultIsUndefined := true
 		if !isSlice(node) && !isNilNode(node) {
-			astNode, ok := node.(ast.Node)
+			astNode, ok := node.(map[string]interface{})
 			if !ok {
 				panic(fmt.Sprintf("3 Invalid AST Node: %v", node))
 			}
-			visitFn := getVisitFn(visitorOpts, isLeaving, astNode.GetKind())
+			kind, ok := astNode["Kind"].(string)
+			if !ok {
+				kind = ""
+			}
+			visitFn := getVisitFn(visitorOpts, isLeaving, kind)
 			if visitFn != nil {
 				p := VisitFuncParams{
 					Node: node,
@@ -335,10 +359,8 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) ast.Node {
 						Value: result,
 					})
 					if !isLeaving {
-						if n, ok := result.(ast.Selection); ok {
-							node = n
-						} else if n, ok := result.(ast.Node); ok {
-							node = n
+						if isNode(result) {
+							node = result
 						} else {
 							_, path = pop(path)
 							continue
@@ -346,7 +368,6 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) ast.Node {
 					}
 				} else {
 					resultIsUndefined = true
-
 				}
 			}
 
@@ -376,31 +397,7 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) ast.Node {
 			if !isNilNode(node) {
 				if inArray {
 					// get keys
-					if n, ok := node.([]ast.Node); ok {
-						for _, m := range n {
-							keys = append(keys, m)
-						}
-					} else if n, ok := node.([]ast.Selection); ok {
-						for _, m := range n {
-							keys = append(keys, m)
-						}
-					} else if n, ok := node.([]*ast.VariableDefinition); ok {
-						for _, m := range n {
-							keys = append(keys, m)
-						}
-					} else if n, ok := node.([]*ast.Argument); ok {
-						for _, m := range n {
-							keys = append(keys, m)
-						}
-					} else if n, ok := node.([]*ast.Directive); ok {
-						for _, m := range n {
-							keys = append(keys, m)
-						}
-					} else if n, ok := node.([]*ast.ObjectField); ok {
-						for _, m := range n {
-							keys = append(keys, m)
-						}
-					} else if n, ok := node.([]ast.Value); ok {
+					if n, ok := node.([]interface{}); ok {
 						for _, m := range n {
 							keys = append(keys, m)
 						}
@@ -409,8 +406,12 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) ast.Node {
 					}
 
 				} else {
-					if n, ok := node.(ast.Node); ok {
-						if n, ok := visitorKeys[n.GetKind()]; ok {
+					if n, ok := node.(map[string]interface{}); ok {
+						kind, ok := n["Kind"].(string)
+						if !ok {
+							kind = ""
+						}
+						if n, ok := visitorKeys[kind]; ok {
 							for _, m := range n {
 								keys = append(keys, m)
 							}
@@ -435,7 +436,7 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) ast.Node {
 		}
 	}
 	if len(edits) != 0 {
-		newRoot = edits[0].Value.(ast.Node)
+		newRoot = edits[0].Value
 	}
 	return newRoot
 }
@@ -512,6 +513,21 @@ func setField(obj interface{}, key interface{}, value interface{}) {
 	return
 }
 
+func isNode(node interface{}) bool {
+	val := reflect.ValueOf(node)
+	if !val.IsValid() {
+		return false
+	}
+	if val.Type().Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+	if val.Type().Kind() == reflect.Map {
+		keyVal := reflect.ValueOf("Kind")
+		valField := val.MapIndex(keyVal)
+		return valField.IsValid()
+	}
+	return false
+}
 func isNilNode(node interface{}) bool {
 	val := reflect.ValueOf(node)
 	if !val.IsValid() {
