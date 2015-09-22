@@ -24,6 +24,8 @@ func parse(t *testing.T, query string) *ast.Document {
 	return astDoc
 }
 
+// Helper functions to get map value by key
+// Allow keys to specify dot paths (e.g `Name.Value`)
 func getMapValue(m map[string]interface{}, key string) interface{} {
 	tokens := strings.Split(key, ".")
 	valMap := m

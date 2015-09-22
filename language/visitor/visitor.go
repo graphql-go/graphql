@@ -223,7 +223,10 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) interface{
 		panic(fmt.Sprintf("Invalid root AST Node: %v", root))
 	}
 	var newRoot interface{}
-	_ = json.Unmarshal(b, &newRoot)
+	err = json.Unmarshal(b, &newRoot)
+	if err != nil || newRoot == nil {
+		panic(fmt.Sprintf("Invalid root AST Node: %v", root))
+	}
 
 	var sstack *stack
 	var parent interface{}

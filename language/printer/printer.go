@@ -330,7 +330,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
 			interfaces := toSliceString(getMapValue(node, "Interfaces"))
-			fields := toSliceString(getMapValue(node, "Fields"))
+			fields := getMapValue(node, "Fields")
 			str := "type " + name + " " + wrap("implements ", join(interfaces, ", "), " ") + block(fields)
 			return visitor.ActionUpdate, str
 		}
@@ -362,7 +362,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
-			fields := toSliceString(getMapValue(node, "Fields"))
+			fields := getMapValue(node, "Fields")
 			str := "interface " + name + " " + block(fields)
 			return visitor.ActionUpdate, str
 		}
@@ -391,7 +391,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
-			values := toSliceString(getMapValue(node, "Values"))
+			values := getMapValue(node, "Values")
 			str := "enum " + name + " " + block(values)
 			return visitor.ActionUpdate, str
 		}
@@ -409,7 +409,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
-			fields := toSliceString(getMapValue(node, "Fields"))
+			fields := getMapValue(node, "Fields")
 			return visitor.ActionUpdate, "input " + name + " " + block(fields)
 		}
 		return visitor.ActionNoChange, nil
@@ -417,7 +417,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 	"TypeExtensionDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
-			definition := getMapValueString(node, "definition")
+			definition := getMapValueString(node, "Definition")
 			str := "extend " + definition
 			return visitor.ActionUpdate, str
 		}
