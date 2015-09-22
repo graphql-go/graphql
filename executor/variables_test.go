@@ -358,7 +358,6 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexScala
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnNullForNestedNonNull(t *testing.T) {
-	t.Skipf("Skipped, pending till `print()` and `visit()` gets implemented")
 	params := map[string]interface{}{
 		"input": map[string]interface{}{
 			"a": "foo",
@@ -398,7 +397,6 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnNullForNestedNon
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnIncorrectType(t *testing.T) {
-	t.Skipf("Skipped, pending till `print()` and `visit()` gets implemented")
 	params := map[string]interface{}{
 		"input": "foo bar",
 	}
@@ -434,7 +432,6 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnIncorrectType(t 
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNestedNonNull(t *testing.T) {
-	t.Skipf("Skipped, pending till `print()` and `visit()` gets implemented")
 	params := map[string]interface{}{
 		"input": map[string]interface{}{
 			"a": "foo",
@@ -446,7 +443,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNested
 		Errors: []graphqlerrors.GraphQLFormattedError{
 			graphqlerrors.GraphQLFormattedError{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
-					`got: "foo bar".`,
+					`got: {"a":"foo","b":"bar"}.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
 						Line: 2, Column: 17,
@@ -473,7 +470,6 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNested
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknownInputField(t *testing.T) {
-	t.Skipf("Skipped, pending till `print()` and `visit()` gets implemented")
 	params := map[string]interface{}{
 		"input": map[string]interface{}{
 			"a": "foo",
@@ -487,7 +483,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknow
 		Errors: []graphqlerrors.GraphQLFormattedError{
 			graphqlerrors.GraphQLFormattedError{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
-					`got: "foo bar".`,
+					`got: {"a":"foo","b":"bar","c":"baz","d":"dog"}.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
 						Line: 2, Column: 17,
@@ -686,7 +682,6 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueDirectly(t
 }
 
 func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeOmittedInAVariable(t *testing.T) {
-	t.Skipf("Skipped, pending till `print()` and `visit()` gets implemented")
 
 	doc := `
         query SetsNonNullable($value: String!) {
@@ -724,8 +719,6 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeOmittedIn
 	}
 }
 func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeSetToNullInAVariable(t *testing.T) {
-	t.Skipf("Skipped, pending till `print()` and `visit()` gets implemented")
-
 	doc := `
         query SetsNonNullable($value: String!) {
           fieldWithNonNullableStringInput(input: $value)
@@ -958,7 +951,6 @@ func TestVariables_ListsAndNullability_AllowsListsToContainNull(t *testing.T) {
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowNonNullListsToBeNull(t *testing.T) {
-	t.Skipf("Skipped, pending till `print()` and `visit()` gets implemented")
 	doc := `
         query q($input: [String]!) {
           nnList(input: $input)
@@ -1113,7 +1105,6 @@ func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToContainValues(t *t
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t *testing.T) {
-	t.Skipf("Skipped, pending till `print()` and `visit()` gets implemented")
 	doc := `
         query q($input: [String!]) {
           listNN(input: $input)
@@ -1153,7 +1144,6 @@ func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToBeNull(t *testing.T) {
-	t.Skipf("Skipped, pending till `print()` and `visit()` gets implemented")
 	doc := `
         query q($input: [String!]!) {
           nnListNN(input: $input)
@@ -1222,7 +1212,6 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsOfNonNulsToContainValue
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContainNull(t *testing.T) {
-	t.Skipf("Skipped, pending till `print()` and `visit()` gets implemented")
 	doc := `
         query q($input: [String!]!) {
           nnListNN(input: $input)
@@ -1235,7 +1224,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContai
 		Data: nil,
 		Errors: []graphqlerrors.GraphQLFormattedError{
 			graphqlerrors.GraphQLFormattedError{
-				Message: `Variable "$input" expected value of type "[String!]" but got: ` +
+				Message: `Variable "$input" expected value of type "[String!]!" but got: ` +
 					`["A",null,"B"].`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -1262,7 +1251,6 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContai
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowInvalidTypesToBeUsedAsValues(t *testing.T) {
-	t.Skipf("Skipped, pending till `print()` and `visit()` gets implemented")
 	doc := `
         query q($input: TestType!) {
           fieldWithObjectInput(input: $input)
@@ -1303,8 +1291,6 @@ func TestVariables_ListsAndNullability_DoesNotAllowInvalidTypesToBeUsedAsValues(
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowUnknownTypesToBeUsedAsValues(t *testing.T) {
-	t.Skipf("Skipped, pending till `print()` and `visit()` gets implemented")
-
 	doc := `
         query q($input: UnknownType!) {
           fieldWithObjectInput(input: $input)
