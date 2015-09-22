@@ -1,9 +1,10 @@
 package visitor
+
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"reflect"
-	"fmt"
-	"encoding/json"
 )
 
 const (
@@ -12,11 +13,12 @@ const (
 	ActionRemove   = "REMOVE"
 	ActionUpdate   = ""
 )
+
 type KeyMap map[string][]string
 
 // note that the keys are in Capital letters, equivalent to the ast.Node field Names
 var QueryDocumentKeys KeyMap = KeyMap{
-	"Name": []string{},
+	"Name":     []string{},
 	"Document": []string{"Definitions"},
 	"OperationDefinition": []string{
 		"Name",
@@ -29,7 +31,7 @@ var QueryDocumentKeys KeyMap = KeyMap{
 		"Type",
 		"DefaultValue",
 	},
-	"Variable": []string{"Name"},
+	"Variable":     []string{"Name"},
 	"SelectionSet": []string{"Selections"},
 	"Field": []string{
 		"Alias",
@@ -59,13 +61,13 @@ var QueryDocumentKeys KeyMap = KeyMap{
 		"SelectionSet",
 	},
 
-	"IntValue": []string{},
-	"FloatValue": []string{},
-	"StringValue": []string{},
+	"IntValue":     []string{},
+	"FloatValue":   []string{},
+	"StringValue":  []string{},
 	"BooleanValue": []string{},
-	"EnumValue": []string{},
-	"ListValue": []string{"Values" },
-	"ObjectValue": []string{"Fields" },
+	"EnumValue":    []string{},
+	"ListValue":    []string{"Values"},
+	"ObjectValue":  []string{"Fields"},
 	"ObjectField": []string{
 		"Name",
 		"Value",
@@ -76,9 +78,9 @@ var QueryDocumentKeys KeyMap = KeyMap{
 		"Arguments",
 	},
 
-	"NamedType": []string{"Name" },
-	"ListType": []string{"Type" },
-	"NonNullType": []string{"Type" },
+	"NamedType":   []string{"Name"},
+	"ListType":    []string{"Type"},
+	"NonNullType": []string{"Type"},
 
 	"ObjectTypeDefinition": []string{
 		"Name",
@@ -103,18 +105,17 @@ var QueryDocumentKeys KeyMap = KeyMap{
 		"Name",
 		"Types",
 	},
-	"ScalarTypeDefinition": []string{"Name" },
+	"ScalarTypeDefinition": []string{"Name"},
 	"EnumTypeDefinition": []string{
 		"Name",
 		"Values",
 	},
-	"EnumValueDefinition": []string{"Name" },
+	"EnumValueDefinition": []string{"Name"},
 	"InputObjectTypeDefinition": []string{
 		"Name",
 		"Fields",
 	},
-	"TypeExtensionDefinition": []string{"Definition" },
-
+	"TypeExtensionDefinition": []string{"Definition"},
 }
 
 type stack struct {
@@ -123,7 +124,6 @@ type stack struct {
 	Edits   []*edit
 	InArray bool
 	Prev    *stack
-
 }
 
 type VisitFuncParams struct {
@@ -149,9 +149,9 @@ type NamedVisitFuncs struct {
 }
 
 type VisitorOptions struct {
-	KindFuncMap  map[string]NamedVisitFuncs
-	Enter        VisitFunc            // 3) Generic visitors that trigger upon entering and leaving any node.
-	Leave        VisitFunc            // 3) Generic visitors that trigger upon entering and leaving any node.
+	KindFuncMap map[string]NamedVisitFuncs
+	Enter       VisitFunc // 3) Generic visitors that trigger upon entering and leaving any node.
+	Leave       VisitFunc // 3) Generic visitors that trigger upon entering and leaving any node.
 
 	EnterKindMap map[string]VisitFunc // 4) Parallel visitors for entering and leaving nodes of a specific kind
 	LeaveKindMap map[string]VisitFunc // 4) Parallel visitors for entering and leaving nodes of a specific kind
@@ -169,39 +169,40 @@ func pop(a []interface{}) (x interface{}, aa []interface{}) {
 	if len(a) == 0 {
 		return x, aa
 	}
-	x, aa = a[len(a) - 1], a[:len(a) - 1]
+	x, aa = a[len(a)-1], a[:len(a)-1]
 	return x, aa
 }
-func copy(a []interface{}) ([]interface{}) {
+func copy(a []interface{}) []interface{} {
 	return append([]interface{}(nil), a...)
 }
-func spliceSelections(a []ast.Selection, i int) ([]ast.Selection) {
+func spliceSelections(a []ast.Selection, i int) []ast.Selection {
 	if i >= len(a) {
 		return a
 	}
 	if i < 0 {
 		return []ast.Selection{}
 	}
-	return append(a[:i], a[i + 1:]...)
+	return append(a[:i], a[i+1:]...)
 }
-func spliceNodes(a []ast.Node, i int) ([]ast.Node) {
+func spliceNodes(a []ast.Node, i int) []ast.Node {
 	if i >= len(a) {
 		return a
 	}
 	if i < 0 {
 		return []ast.Node{}
 	}
-	return append(a[:i], a[i + 1:]...)
+	return append(a[:i], a[i+1:]...)
 }
-func splice(a []interface{}, i int) ([]interface{}) {
+func splice(a []interface{}, i int) []interface{} {
 	if i >= len(a) {
 		return a
 	}
 	if i < 0 {
 		return []interface{}{}
 	}
-	return append(a[:i], a[i + 1:]...)
+	return append(a[:i], a[i+1:]...)
 }
+
 type edit struct {
 	Key          interface{}
 	Value        interface{}
@@ -227,19 +228,19 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) interface{
 	var sstack *stack
 	var parent interface{}
 	inArray := isSlice(newRoot)
-	keys := []interface{}{newRoot }
+	keys := []interface{}{newRoot}
 	index := -1
 	edits := []*edit{}
 	path := []interface{}{}
 	ancestors := []interface{}{}
-	Loop:
+Loop:
 	for {
 		index = index + 1
 
 		isLeaving := (len(keys) == index)
 		var key interface{}
 		var node interface{}
-		isEdited := (isLeaving && len(edits) != 0 )
+		isEdited := (isLeaving && len(edits) != 0)
 
 		if isLeaving {
 			if len(ancestors) == 0 {
@@ -268,7 +269,9 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) interface{
 						editOffset = editOffset + 1
 					} else {
 						if inArray {
+
 							if n, ok := node.([]interface{}); ok {
+
 								n[arrayEditKey] = edit.Value
 								node = n
 							} else {
@@ -282,7 +285,6 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) interface{
 							} else {
 								panic(fmt.Sprintf("2 Invalid AST Node: %v", node))
 							}
-//							setField(node, edit.Key, edit.Value)
 						}
 					}
 				}
@@ -335,10 +337,10 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) interface{
 			visitFn := getVisitFn(visitorOpts, isLeaving, kind)
 			if visitFn != nil {
 				p := VisitFuncParams{
-					Node: node,
-					Key: key,
-					Parent: parent,
-					Path: path,
+					Node:      node,
+					Key:       key,
+					Parent:    parent,
+					Path:      path,
 					Ancestors: ancestors,
 				}
 				action := ActionUpdate
@@ -355,7 +357,7 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) interface{
 				if action != ActionNoChange {
 					resultIsUndefined = false
 					edits = append(edits, &edit{
-						Key: key,
+						Key:   key,
 						Value: result,
 					})
 					if !isLeaving {
@@ -374,7 +376,7 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) interface{
 		}
 		if resultIsUndefined && isEdited {
 			edits = append(edits, &edit{
-				Key: key,
+				Key:   key,
 				Value: node,
 			})
 		}
@@ -385,10 +387,10 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) interface{
 			prevStack := sstack
 			sstack = &stack{
 				InArray: inArray,
-				Index: index,
-				Keys: keys,
-				Edits: edits,
-				Prev: prevStack,
+				Index:   index,
+				Keys:    keys,
+				Edits:   edits,
+				Prev:    prevStack,
 			}
 
 			// replace keys
@@ -545,7 +547,7 @@ func isNilNode(node interface{}) bool {
 	if val.Type().Kind() == reflect.Bool {
 		return val.Interface().(bool)
 	}
-	return true
+	return val.Interface() == nil
 }
 func copyNode(node interface{}) ast.Node {
 	val := reflect.ValueOf(node)

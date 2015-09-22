@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"encoding/json"
 	"github.com/chris-ramon/graphql-go/executor"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/parser"
@@ -10,7 +11,6 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
-	"encoding/json"
 )
 
 var (
