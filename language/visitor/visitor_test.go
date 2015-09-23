@@ -519,3 +519,21 @@ func TestVisitor_VisitsKitchenSink(t *testing.T) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
 	}
 }
+
+func TestVisitor_ProducesHelpfulErrorMessages(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			err := r.(string)
+			expectedErr := `Invalid AST Node (4): map[random:Data]`
+			if err != expectedErr {
+				t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(err, expectedErr))
+			}
+			return
+		}
+		t.Fatalf("expected to panic")
+	}()
+	astDoc := map[string]interface{}{
+		"random": "Data",
+	}
+	_ = visitor.Visit(astDoc, nil, nil)
+}

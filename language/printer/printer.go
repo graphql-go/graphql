@@ -425,8 +425,15 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 	},
 }
 
-func Print(ast ast.Node) interface{} {
-	return visitor.Visit(ast, &visitor.VisitorOptions{
+func Print(astNode ast.Node) (printed interface{}) {
+	defer func() interface{} {
+		if r := recover(); r != nil {
+			return fmt.Sprintf("%v", astNode)
+		}
+		return printed
+	}()
+	printed = visitor.Visit(astNode, &visitor.VisitorOptions{
 		LeaveKindMap: printDocASTReducer,
 	}, nil)
+	return printed
 }

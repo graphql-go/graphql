@@ -3,7 +3,6 @@ package visitor
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/chris-ramon/graphql-go/language/ast"
 	"reflect"
 )
 
@@ -126,11 +125,9 @@ type stack struct {
 	Prev    *stack
 }
 type edit struct {
-	Key          interface{}
-	Value        interface{}
-	Change       VisitFuncResults
-	UpdateParent bool
-	ChildNode    interface{}
+	Key    interface{}
+	Value  interface{}
+	Change VisitFuncResults
 }
 
 type VisitFuncParams struct {
@@ -164,21 +161,21 @@ type VisitorOptions struct {
 	LeaveKindMap map[string]VisitFunc // 4) Parallel visitors for entering and leaving nodes of a specific kind
 }
 
-func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) interface{} {
+func Visit(root interface{}, visitorOpts *VisitorOptions, keyMap KeyMap) interface{} {
 	visitorKeys := keyMap
 	if visitorKeys == nil {
 		visitorKeys = QueryDocumentKeys
 	}
 
-	// convert ast.Node into map[string]interface{}
+	var newRoot interface{}
+	// convert any interface{} into map[string]interface{}
 	b, err := json.Marshal(root)
 	if err != nil {
 		panic(fmt.Sprintf("Invalid root AST Node: %v", root))
 	}
-	var newRoot interface{}
 	err = json.Unmarshal(b, &newRoot)
 	if err != nil || newRoot == nil {
-		panic(fmt.Sprintf("Invalid root AST Node: %v", root))
+		panic(fmt.Sprintf("Invalid root AST Node (2): %v", root))
 	}
 
 	var sstack *stack
@@ -220,18 +217,16 @@ Loop:
 						if n, ok := node.([]interface{}); ok {
 							node = splice(n, arrayEditKey)
 						} else {
-							panic(fmt.Sprintf("1 Invalid AST Node: %v", node))
+							panic(fmt.Sprintf("Invalid AST Node (1): %v", node))
 						}
 						editOffset = editOffset + 1
 					} else {
 						if inArray {
-
 							if n, ok := node.([]interface{}); ok {
-
 								n[arrayEditKey] = edit.Value
 								node = n
 							} else {
-								panic(fmt.Sprintf("2 Invalid AST Node: %v", node))
+								panic(fmt.Sprintf("Invalid AST Node (2): %v", node))
 							}
 						} else {
 							if n, ok := node.(map[string]interface{}); ok {
@@ -239,7 +234,7 @@ Loop:
 								n[key] = edit.Value
 								node = n
 							} else {
-								panic(fmt.Sprintf("2 Invalid AST Node: %v", node))
+								panic(fmt.Sprintf("Invalid AST Node (3): %v", node))
 							}
 						}
 					}
@@ -282,11 +277,14 @@ Loop:
 		var result interface{}
 		resultIsUndefined := true
 		if !isSlice(node) && !isNilNode(node) {
-			astNode, ok := node.(map[string]interface{})
-			if !ok {
-				panic(fmt.Sprintf("3 Invalid AST Node: %v", node))
+			if !isNode(node) {
+				panic(fmt.Sprintf("Invalid AST Node (4): %v", node))
 			}
-			kind, ok := astNode["Kind"].(string)
+			n, ok := node.(map[string]interface{})
+			if !ok {
+				panic(fmt.Sprintf("Invalid AST Node (5): %v", node))
+			}
+			kind, ok := n["Kind"].(string)
 			if !ok {
 				kind = ""
 			}
@@ -360,7 +358,7 @@ Loop:
 							keys = append(keys, m)
 						}
 					} else {
-						panic(fmt.Sprintf("4 Invalid AST Node: %v", node))
+						panic(fmt.Sprintf("Invalid AST Node (6): %v", node))
 					}
 
 				} else {
@@ -375,7 +373,7 @@ Loop:
 							}
 						}
 					} else {
-						panic(fmt.Sprintf("5 Invalid AST Node: %v", node))
+						panic(fmt.Sprintf("Invalid AST Node (7): %v", node))
 					}
 				}
 			}
@@ -500,6 +498,9 @@ func isNilNode(node interface{}) bool {
 }
 
 func getVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitFunc {
+	if visitorOpts == nil {
+		return nil
+	}
 	kindVisitor, ok := visitorOpts.KindFuncMap[kind]
 	if ok {
 		if !isLeaving && kindVisitor.Kind != nil {
