@@ -183,7 +183,7 @@ func TestVisitor_AllowsSkippingASubTree(t *testing.T) {
 			case map[string]interface{}:
 				visited = append(visited, []interface{}{"enter", getMapValue(node, "Kind"), getMapValue(node, "Value")})
 				if getMapValueString(node, "Kind") == "Field" && getMapValueString(node, "Name.Value") == "b" {
-					return visitor.ActionUpdate, nil
+					return visitor.ActionSkip, nil
 				}
 			}
 			return visitor.ActionNoChange, nil

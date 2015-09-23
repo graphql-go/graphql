@@ -9,7 +9,7 @@ import (
 const (
 	ActionNoChange = ""
 	ActionBreak    = "BREAK"
-	ActionRemove   = "REMOVE"
+	ActionSkip     = "SKIP"
 	ActionUpdate   = "UPDATE"
 )
 
@@ -294,7 +294,7 @@ Loop:
 				if action == ActionBreak {
 					break Loop
 				}
-				if action == ActionRemove {
+				if action == ActionSkip {
 					if isLeaving {
 						_, path = pop(path)
 						continue
