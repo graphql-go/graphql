@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	ActionNoChange = "NOCHANGE"
+	ActionNoChange = ""
 	ActionBreak    = "BREAK"
 	ActionRemove   = "REMOVE"
-	ActionUpdate   = ""
+	ActionUpdate   = "UPDATE"
 )
 
 type KeyMap map[string][]string
@@ -127,7 +127,6 @@ type stack struct {
 type edit struct {
 	Key    interface{}
 	Value  interface{}
-	Change VisitFuncResults
 }
 
 type VisitFuncParams struct {
@@ -136,13 +135,6 @@ type VisitFuncParams struct {
 	Parent    interface{}
 	Path      []interface{}
 	Ancestors []interface{}
-}
-type VisitFuncResults struct {
-	Break      bool        // set to true to stop traversal, default false
-	Skip       bool        // set to true to skip over sub-tree, default false
-	Remove     bool        // set to true to remove node, default false
-	Edit       bool        // set to true to edit node, default false
-	EditedNode interface{} // default nil
 }
 type VisitFunc func(p VisitFuncParams) (string, interface{})
 
