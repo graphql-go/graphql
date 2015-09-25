@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"encoding/json"
 	"github.com/chris-ramon/graphql-go/executor"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/parser"
@@ -390,4 +391,17 @@ func EqualSet(a, b interface{}) bool {
 	xx := mapset.NewSetFromSlice(aa)
 	yy := mapset.NewSetFromSlice(bb)
 	return xx.Equal(yy)
+}
+
+func ASTToJSON(t *testing.T, a ast.Node) interface{} {
+	b, err := json.Marshal(a)
+	if err != nil {
+		t.Fatalf("Failed to marshal ast.Node %v", err)
+	}
+	var f interface{}
+	err = json.Unmarshal(b, &f)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal ast.Node %v", err)
+	}
+	return f
 }

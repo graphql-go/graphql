@@ -1,10 +1,12 @@
 package executor
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/kinds"
+	"github.com/chris-ramon/graphql-go/language/printer"
 	"github.com/chris-ramon/graphql-go/types"
 	"math"
 	"reflect"
@@ -70,7 +72,7 @@ func getVariableValue(schema types.GraphQLSchema, definitionAST *ast.VariableDef
 	if ttype == nil || !types.IsInputType(ttype) {
 		return "", graphqlerrors.NewGraphQLError(
 			fmt.Sprintf(`Variable "$%v" expected value of type `+
-				`"%v" which cannot be used as an input type.`, variable.Name.Value, printerStub(definitionAST.Type)),
+				`"%v" which cannot be used as an input type.`, variable.Name.Value, printer.Print(definitionAST.Type)),
 			[]ast.Node{definitionAST},
 			"",
 			nil,
@@ -91,27 +93,27 @@ func getVariableValue(schema types.GraphQLSchema, definitionAST *ast.VariableDef
 	}
 	if isNullish(input) {
 		return "", graphqlerrors.NewGraphQLError(
-			fmt.Sprintf(`Variable "$%v" of required type
-			"%v" was not provided.`, variable.Name.Value, printerStub(definitionAST.Type)),
+			fmt.Sprintf(`Variable "$%v" of required type `+
+				`"%v" was not provided.`, variable.Name.Value, printer.Print(definitionAST.Type)),
 			[]ast.Node{definitionAST},
 			"",
 			nil,
 			[]int{},
 		)
 	}
+	inputStr := ""
+	b, err := json.Marshal(input)
+	if err == nil {
+		inputStr = string(b)
+	}
 	return "", graphqlerrors.NewGraphQLError(
-		fmt.Sprintf(`Variable "$%v" expected value of type
-			"%v" but got: %v.`, variable.Name.Value, printerStub(definitionAST.Type), input),
+		fmt.Sprintf(`Variable "$%v" expected value of type `+
+			`"%v" but got: %v.`, variable.Name.Value, printer.Print(definitionAST.Type), inputStr),
 		[]ast.Node{definitionAST},
 		"",
 		nil,
 		[]int{},
 	)
-}
-
-func printerStub(astType ast.Type) string {
-	// TODO: port printer()
-	return fmt.Sprintf("%v", astType)
 }
 
 // Given a type and any value, return a runtime value coerced to match the type.

@@ -6,6 +6,7 @@ import (
 
 type Type interface {
 	GetKind() string
+	GetLoc() *Location
 	String() string
 }
 
