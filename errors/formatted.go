@@ -21,6 +21,13 @@ func NewGraphQLFormattedError(message string) GraphQLFormattedError {
 
 func FormatError(err error) GraphQLFormattedError {
 	switch err := err.(type) {
+	case GraphQLFormattedError:
+		return err
+	case *GraphQLError:
+		return GraphQLFormattedError{
+			Message:   err.Error(),
+			Locations: err.Locations,
+		}
 	case GraphQLError:
 		return GraphQLFormattedError{
 			Message:   err.Error(),

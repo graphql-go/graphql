@@ -475,11 +475,11 @@ func parseFragmentDefinition(parser *Parser) (*ast.FragmentDefinition, error) {
 	if err != nil {
 		return nil, err
 	}
-	selectionSet, err := parseSelectionSet(parser)
+	directives, err := parseDirectives(parser)
 	if err != nil {
 		return nil, err
 	}
-	directives, err := parseDirectives(parser)
+	selectionSet, err := parseSelectionSet(parser)
 	if err != nil {
 		return nil, err
 	}
@@ -683,7 +683,7 @@ func parseDirective(parser *Parser) (*ast.Directive, error) {
 func parseType(parser *Parser) (ast.Type, error) {
 	start := parser.Token.Start
 	var ttype ast.Type
-	if skip(parser, lexer.TokenKind[lexer.BRACE_L]) {
+	if skip(parser, lexer.TokenKind[lexer.BRACKET_L]) {
 		t, err := parseType(parser)
 		if err != nil {
 			return t, err
@@ -838,9 +838,12 @@ func parseInputValueDef(parser *Parser) (interface{}, error) {
 	}
 	var defaultValue ast.Value
 	if skip(parser, lexer.TokenKind[lexer.EQUALS]) {
-		defaultValue, err = parseConstValue(parser)
+		val, err := parseConstValue(parser)
 		if err != nil {
 			return nil, err
+		}
+		if val, ok := val.(ast.Value); ok {
+			defaultValue = val
 		}
 	}
 	return ast.NewInputValueDefinition(&ast.InputValueDefinition{
