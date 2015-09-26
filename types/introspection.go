@@ -34,41 +34,41 @@ func init() {
 		Name:        "__TypeKind",
 		Description: "An enum describing what kind of type a given __Type is",
 		Values: GraphQLEnumValueConfigMap{
-			"SCALAR": GraphQLEnumValueConfig{
+			"SCALAR": &GraphQLEnumValueConfig{
 				Value:       TypeKindScalar,
 				Description: "Indicates this type is a scalar.",
 			},
-			"OBJECT": GraphQLEnumValueConfig{
+			"OBJECT": &GraphQLEnumValueConfig{
 				Value: TypeKindObject,
 				Description: "Indicates this type is an object. " +
 					"`fields` and `interfaces` are valid fields.",
 			},
-			"INTERFACE": GraphQLEnumValueConfig{
+			"INTERFACE": &GraphQLEnumValueConfig{
 				Value: TypeKindInterface,
 				Description: "Indicates this type is an interface. " +
 					"`fields` and `possibleTypes` are valid fields.",
 			},
-			"UNION": GraphQLEnumValueConfig{
+			"UNION": &GraphQLEnumValueConfig{
 				Value: TypeKindUnion,
 				Description: "Indicates this type is an interface. " +
 					"`fields` and `possibleTypes` are valid fields.",
 			},
-			"ENUM": GraphQLEnumValueConfig{
+			"ENUM": &GraphQLEnumValueConfig{
 				Value: TypeKindEnum,
 				Description: "Indicates this type is an enum. " +
 					"`enumValues` are valid fields.",
 			},
-			"INPUT_OBJECT": GraphQLEnumValueConfig{
+			"INPUT_OBJECT": &GraphQLEnumValueConfig{
 				Value: TypeKindInputObject,
 				Description: "Indicates this type is an input object. " +
 					"`inputFields` is a valid field.",
 			},
-			"LIST": GraphQLEnumValueConfig{
+			"LIST": &GraphQLEnumValueConfig{
 				Value: TypeKindList,
 				Description: "Indicates this type is a list. " +
 					"`ofType` is a valid field.",
 			},
-			"NON_NULL": GraphQLEnumValueConfig{
+			"NON_NULL": &GraphQLEnumValueConfig{
 				Value: TypeKindNonNull,
 				Description: "Indicates this type is a non-null. " +
 					"`ofType` is a valid field.",

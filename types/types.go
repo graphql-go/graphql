@@ -18,7 +18,7 @@ func (gqR *GraphQLResult) HasErrors() bool {
 	return (len(gqR.Errors) > 0)
 }
 
-type GraphQLEnumValueConfigMap map[string]GraphQLEnumValueConfig
+type GraphQLEnumValueConfigMap map[string]*GraphQLEnumValueConfig
 type GraphQLEnumValueConfig struct {
 	Value             interface{} `json:"value"`
 	DeprecationReason string      `json:"deprecationReason"`

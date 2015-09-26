@@ -25,7 +25,7 @@ type boolSerializationTest struct {
 	Expected bool
 }
 
-func TestSerializesOutputInt(t *testing.T) {
+func TestTypeSystem_Scalar_SerializesOutputInt(t *testing.T) {
 	tests := []intSerializationTest{
 		{1, 1},
 		{0, 0},
@@ -53,7 +53,7 @@ func TestSerializesOutputInt(t *testing.T) {
 	}
 }
 
-func TestSerializesOutputFloat(t *testing.T) {
+func TestTypeSystem_Scalar_SerializesOutputFloat(t *testing.T) {
 	tests := []float32SerializationTest{
 		{int(1), 1.0},
 		{int(0), 0.0},
@@ -76,7 +76,7 @@ func TestSerializesOutputFloat(t *testing.T) {
 	}
 }
 
-func TestSerializesOutputStrings(t *testing.T) {
+func TestTypeSystem_Scalar_SerializesOutputStrings(t *testing.T) {
 	tests := []stringSerializationTest{
 		{"string", "string"},
 		{int(1), "1"},
@@ -94,7 +94,7 @@ func TestSerializesOutputStrings(t *testing.T) {
 	}
 }
 
-func TestSerializesOutputBoolean(t *testing.T) {
+func TestTypeSystem_Scalar_SerializesOutputBoolean(t *testing.T) {
 	tests := []boolSerializationTest{
 		{"true", true},
 		{"false", false},

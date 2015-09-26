@@ -102,15 +102,15 @@ func init() {
 		Name:        "Episode",
 		Description: "One of the films in the Star Wars Trilogy",
 		Values: types.GraphQLEnumValueConfigMap{
-			"NEWHOPE": types.GraphQLEnumValueConfig{
+			"NEWHOPE": &types.GraphQLEnumValueConfig{
 				Value:       4,
 				Description: "Released in 1977.",
 			},
-			"EMPIRE": types.GraphQLEnumValueConfig{
+			"EMPIRE": &types.GraphQLEnumValueConfig{
 				Value:       5,
 				Description: "Released in 1980.",
 			},
-			"JEDI": types.GraphQLEnumValueConfig{
+			"JEDI": &types.GraphQLEnumValueConfig{
 				Value:       6,
 				Description: "Released in 1983.",
 			},
