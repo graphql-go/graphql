@@ -13,7 +13,7 @@ type GraphqlParams struct {
 	Schema         types.GraphQLSchema
 	RequestString  string
 	RootObject     map[string]interface{}
-	VariableValues map[string]string
+	VariableValues map[string]interface{}
 	OperationName  string
 }
 
@@ -31,6 +31,7 @@ func Graphql(p GraphqlParams, resultChannel chan *types.GraphQLResult) {
 		return
 	}
 	validationResult := validator.ValidateDocument(p.Schema, AST)
+
 	if !validationResult.IsValid {
 		result := types.GraphQLResult{
 			Errors: validationResult.Errors,

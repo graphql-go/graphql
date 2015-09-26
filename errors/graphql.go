@@ -1,7 +1,6 @@
 package graphqlerrors
 
 import (
-
 	"fmt"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/location"
@@ -26,10 +25,14 @@ func NewGraphQLError(message string, nodes []ast.Node, stack string, source *sou
 	if stack == "" && message != "" {
 		stack = message
 	}
-	locations := []location.SourceLocation{}
-	for _, pos := range positions {
-		loc := location.GetLocation(source, pos)
-		locations = append(locations, loc)
+	if source == nil {
+		for _, node := range nodes {
+			// get source from first node
+			if node.GetLoc() != nil {
+				source = node.GetLoc().Source
+			}
+			break
+		}
 	}
 	if len(positions) == 0 && len(nodes) > 0 {
 		for _, node := range nodes {
@@ -38,6 +41,11 @@ func NewGraphQLError(message string, nodes []ast.Node, stack string, source *sou
 			}
 			positions = append(positions, node.GetLoc().Start)
 		}
+	}
+	locations := []location.SourceLocation{}
+	for _, pos := range positions {
+		loc := location.GetLocation(source, pos)
+		locations = append(locations, loc)
 	}
 	return &GraphQLError{
 		Message:   message,

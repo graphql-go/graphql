@@ -5,6 +5,9 @@ import (
 )
 
 type Type interface {
+	GetKind() string
+	GetLoc() *Location
+	String() string
 }
 
 // Ensure that all value types implements Value interface
@@ -38,6 +41,10 @@ func (t *NamedType) GetLoc() *Location {
 	return t.Loc
 }
 
+func (t *NamedType) String() string {
+	return t.GetKind()
+}
+
 // ListType implements Node, Type
 type ListType struct {
 	Kind string
@@ -64,6 +71,10 @@ func (t *ListType) GetLoc() *Location {
 	return t.Loc
 }
 
+func (t *ListType) String() string {
+	return t.GetKind()
+}
+
 // NonNullType implements Node, Type
 type NonNullType struct {
 	Kind string
@@ -88,4 +99,8 @@ func (t *NonNullType) GetKind() string {
 
 func (t *NonNullType) GetLoc() *Location {
 	return t.Loc
+}
+
+func (t *NonNullType) String() string {
+	return t.GetKind()
 }
