@@ -125,8 +125,8 @@ type stack struct {
 	Prev    *stack
 }
 type edit struct {
-	Key    interface{}
-	Value  interface{}
+	Key   interface{}
+	Value interface{}
 }
 
 type VisitFuncParams struct {

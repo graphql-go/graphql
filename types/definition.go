@@ -23,10 +23,10 @@ var _ GraphQLType = (*GraphQLList)(nil)
 var _ GraphQLType = (*GraphQLNonNull)(nil)
 
 type GraphQLArgument struct {
-	Name         string
-	Type         GraphQLInputType
-	DefaultValue interface{}
-	Description  string
+	Name         string           `json:"name"`
+	Type         GraphQLInputType `json:"type"`
+	DefaultValue interface{}      `json:"defaultValue"`
+	Description  string           `json:"description"`
 }
 
 //type GraphQLNonNull interface {
@@ -38,7 +38,8 @@ type GraphQLArgument struct {
 //}
 
 type GraphQLNonNull struct {
-	OfType GraphQLType
+	Name   string      `json:"name"` // added to conform with introspection for NonNull.Name = nil
+	OfType GraphQLType `json:"ofType"`
 }
 
 func NewGraphQLNonNull(ofType GraphQLType) *GraphQLNonNull {

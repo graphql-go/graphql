@@ -10,8 +10,8 @@ import (
 type Schema interface{}
 
 type GraphQLResult struct {
-	Data   interface{}
-	Errors []graphqlerrors.GraphQLFormattedError
+	Data   interface{}                           `json:"data"`
+	Errors []graphqlerrors.GraphQLFormattedError `json:"errors"`
 }
 
 func (gqR *GraphQLResult) HasErrors() bool {
@@ -20,25 +20,25 @@ func (gqR *GraphQLResult) HasErrors() bool {
 
 type GraphQLEnumValueConfigMap map[string]GraphQLEnumValueConfig
 type GraphQLEnumValueConfig struct {
-	Value             interface{}
-	DeprecationReason string
-	Description       string
+	Value             interface{} `json:"value"`
+	DeprecationReason string      `json:"deprecationReason"`
+	Description       string      `json:"description"`
 }
 type GraphQLEnumTypeConfig struct {
-	Name        string
-	Values      GraphQLEnumValueConfigMap
-	Description string
+	Name        string                    `json:"name"`
+	Values      GraphQLEnumValueConfigMap `json:"values"`
+	Description string                    `json:"description"`
 }
 type GraphQLEnumValueDefinition struct {
-	Name              string
-	Value             interface{}
-	DeprecationReason string
-	Description       string
+	Name              string      `json:"name"`
+	Value             interface{} `json:"value"`
+	DeprecationReason string      `json:"deprecationReason"`
+	Description       string      `json:"description"`
 }
 
 type GraphQLEnumType struct {
-	Name        string
-	Description string
+	Name        string `json:"name"`
+	Description string `json:"description"`
 
 	enumConfig   GraphQLEnumTypeConfig
 	values       []*GraphQLEnumValueDefinition
@@ -159,16 +159,16 @@ func (gt *GraphQLEnumType) getNameLookup() map[string]*GraphQLEnumValueDefinitio
 }
 
 type GraphQLInterfaceTypeConfig struct {
-	Name        string
-	Fields      GraphQLFieldConfigMap
+	Name        string                `json:"name"`
+	Fields      GraphQLFieldConfigMap `json:"fields"`
 	ResolveType ResolveTypeFn
-	Description string
+	Description string `json:"description"`
 }
 
 type ResolveTypeFn func(value interface{}, info GraphQLResolveInfo) *GraphQLObjectType
 type GraphQLInterfaceType struct {
-	Name        string
-	Description string
+	Name        string `json:"name"`
+	Description string `json:"description"`
 	ResolveType ResolveTypeFn
 
 	typeConfig      GraphQLInterfaceTypeConfig
@@ -278,15 +278,16 @@ func (it *GraphQLInterfaceType) String() string {
 type GQLFRParams struct {
 	Source interface{}
 	Args   map[string]interface{}
+	Info   GraphQLResolveInfo
+
 	//	Context    interface{}
-	FieldAST   interface{}
-	FieldType  interface{}
-	ParentType interface{}
+	//	FieldAST   interface{}
+	//	FieldType  interface{}
+	//	ParentType interface{}
+	//
+	Schema GraphQLSchema
+	//	Directive GraphQLDirective
 
-	Schema    GraphQLSchema
-	Directive GraphQLDirective
-
-	Info GraphQLResolveInfo
 }
 
 // TODO: relook at GraphQLFieldResolveFn params
@@ -336,10 +337,10 @@ func IsInputType(ttype GraphQLType) bool {
 }
 
 type GraphQLFieldArgument struct {
-	Name         string
-	Type         GraphQLType
-	DefaultValue interface{}
-	Description  string
+	Name         string      `json:"name"`
+	Type         GraphQLType `json:"type"`
+	DefaultValue interface{} `json:"defaultValue"`
+	Description  string      `json:"description"`
 }
 
 type GraphQLFieldDefinition struct {
@@ -356,15 +357,15 @@ type GraphQLFieldDefinitionMap map[string]*GraphQLFieldDefinition
 type IsTypeOfFn func(value interface{}, info GraphQLResolveInfo) bool
 
 type GraphQLObjectTypeConfig struct {
-	Name        string
-	Interfaces  []*GraphQLInterfaceType
-	Fields      GraphQLFieldConfigMap
-	IsTypeOf    IsTypeOfFn
-	Description string
+	Name        string                  `json:"description"`
+	Interfaces  []*GraphQLInterfaceType `json:"interfaces"`
+	Fields      GraphQLFieldConfigMap   `json:"fields"`
+	IsTypeOf    IsTypeOfFn              `json:"isTypeOf"`
+	Description string                  `json:"description"`
 }
 type GraphQLObjectType struct {
-	Name        string
-	Description string
+	Name        string `json:"name"`
+	Description string `json:"description"`
 	IsTypeOf    IsTypeOfFn
 
 	typeConfig GraphQLObjectTypeConfig
@@ -447,23 +448,24 @@ func (gt *GraphQLObjectType) GetInterfaces() []*GraphQLInterfaceType {
 type GraphQLFieldConfigMap map[string]*GraphQLFieldConfig
 
 type GraphQLFieldConfig struct {
-	Type              GraphQLOutputType
-	Args              GraphQLFieldConfigArgumentMap
+	Name              string                        `json:"name"` // used by graphlql-relay
+	Type              GraphQLOutputType             `json:"type"`
+	Args              GraphQLFieldConfigArgumentMap `json:"args"`
 	Resolve           GraphQLFieldResolveFn
-	DeprecationReason string
-	Description       string
+	DeprecationReason string `json:"deprecationReason"`
+	Description       string `json:"description"`
 }
 
 type GraphQLFieldConfigArgumentMap map[string]*GraphQLArgumentConfig
 
 type GraphQLArgumentConfig struct {
-	Type         GraphQLInputType
-	DefaultValue interface{}
-	Description  string
+	Type         GraphQLInputType `json:"type"`
+	DefaultValue interface{}      `json:"defaultValue"`
+	Description  string           `json:"description"`
 }
 
 type GraphQLList struct {
-	OfType GraphQLType
+	OfType GraphQLType `json:"ofType"`
 }
 
 func NewGraphQLList(ofType GraphQLType) *GraphQLList {
@@ -491,14 +493,14 @@ func (gl *GraphQLList) String() string {
 }
 
 type GraphQLUnionTypeConfig struct {
-	Name        string
-	Types       []*GraphQLObjectType
+	Name        string               `json:"name"`
+	Types       []*GraphQLObjectType `json:"types"`
 	ResolveType ResolveTypeFn
-	Description string
+	Description string `json:"description"`
 }
 type GraphQLUnionType struct {
-	Name        string
-	Description string
+	Name        string `json:"name"`
+	Description string `json:"description"`
 	ResolveType ResolveTypeFn
 
 	typeConfig    GraphQLUnionTypeConfig
@@ -703,28 +705,28 @@ func defineInterfaces(ttype *GraphQLObjectType, interfaces []*GraphQLInterfaceTy
 }
 
 type InputObjectFieldConfig struct {
-	Type         GraphQLInputType
-	DefaultValue interface{}
-	Description  string
+	Type         GraphQLInputType `json:"type"`
+	DefaultValue interface{}      `json:"defaultValue"`
+	Description  string           `json:"description"`
 }
 type InputObjectField struct {
-	Name         string
-	Type         GraphQLInputType
-	DefaultValue interface{}
-	Description  string
+	Name         string           `json:"name"`
+	Type         GraphQLInputType `json:"type"`
+	DefaultValue interface{}      `json:"defaultValue"`
+	Description  string           `json:"description"`
 }
 type InputObjectConfigFieldMap map[string]*InputObjectFieldConfig
 type InputObjectFieldMap map[string]*InputObjectField
 type InputObjectConfig struct {
-	Name        string
-	Fields      InputObjectConfigFieldMap
-	Description string
+	Name        string                    `json:"name"`
+	Fields      InputObjectConfigFieldMap `json:"fields"`
+	Description string                    `json:"description"`
 }
 
 // TODO: GraphQLInputObjectType is more of a map in Golang
 type GraphQLInputObjectType struct {
-	Name        string
-	Description string
+	Name        string `json:"name"`
+	Description string `json:"description"`
 
 	typeConfig InputObjectConfig
 	fields     InputObjectFieldMap

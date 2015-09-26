@@ -185,7 +185,13 @@ func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLType
 				return typeMap, err
 			}
 		}
-		//	case *GraphQLInputObjectType:
+	case *GraphQLInputObjectType:
+		for _, field := range objectType.GetFields() {
+			typeMap, err = typeMapReducer(typeMap, field.Type)
+			if err != nil {
+				return typeMap, err
+			}
+		}
 	}
 	return typeMap, nil
 }

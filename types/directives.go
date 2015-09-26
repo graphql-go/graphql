@@ -1,12 +1,12 @@
 package types
 
 type GraphQLDirective struct {
-	Name        string
-	Description string
-	Args        []*GraphQLArgument
-	OnOperation bool
-	OnFragment  bool
-	OnField     bool
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	Args        []*GraphQLArgument `json:"args"`
+	OnOperation bool               `json:"onOperation"`
+	OnFragment  bool               `json:"onFragment"`
+	OnField     bool               `json:"onField"`
 }
 
 func NewGraphQLDirective(config *GraphQLDirective) *GraphQLDirective {

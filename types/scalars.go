@@ -10,8 +10,8 @@ type SerializeFn func(value interface{}) interface{}
 type ParseValueFn func(value interface{}) interface{}
 type ParseLiteralFn func(valueAST ast.Value) interface{}
 type GraphQLScalarTypeConfig struct {
-	Name         string
-	Description  string
+	Name         string `json:"name"`
+	Description  string `json:"description"`
 	Serialize    SerializeFn
 	ParseValue   ParseValueFn
 	ParseLiteral ParseLiteralFn
@@ -21,8 +21,8 @@ type GraphQLScalarTypeConfig struct {
 // 								GraphQLOutputType, etc
 // (TODO: find out what other interfaces GraphQLScalarType implements)
 type GraphQLScalarType struct {
-	Name        string
-	Description string
+	Name        string `json:"name"`
+	Description string `json:"description"`
 
 	scalarConfig GraphQLScalarTypeConfig
 

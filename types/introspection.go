@@ -133,9 +133,6 @@ func init() {
 			},
 			"defaultValue": &GraphQLFieldConfig{
 				Type: GraphQLString,
-				Resolve: func(p GQLFRParams) interface{} {
-					return "TODO: resolveFn for __InputValue"
-				},
 			},
 		},
 	})
@@ -190,7 +187,7 @@ func init() {
 					NewGraphQLNonNull(__InputValue),
 				)),
 				Resolve: func(p GQLFRParams) interface{} {
-					return p.Directive.Args
+					return "TODO: resolveFn for __Directive"
 				},
 			},
 			"onOperation": &GraphQLFieldConfig{
@@ -218,19 +215,24 @@ mutation operations.`,
 					NewGraphQLNonNull(__Type),
 				)),
 				Resolve: func(p GQLFRParams) interface{} {
-					typeMap := p.Schema.GetTypeMap()
-					results := []GraphQLType{}
-					for _, ttype := range typeMap {
-						results = append(results, ttype)
+					if schema, ok := p.Source.(GraphQLSchema); ok {
+						results := []GraphQLType{}
+						for _, ttype := range schema.GetTypeMap() {
+							results = append(results, ttype)
+						}
+						return results
 					}
-					return results
+					return []GraphQLType{}
 				},
 			},
 			"queryType": &GraphQLFieldConfig{
 				Description: "The type that query operations will be rooted at.",
 				Type:        NewGraphQLNonNull(__Type),
 				Resolve: func(p GQLFRParams) interface{} {
-					return p.Schema.GetQueryType()
+					if schema, ok := p.Source.(GraphQLSchema); ok {
+						return schema.GetQueryType()
+					}
+					return "-----"
 				},
 			},
 			"mutationType": &GraphQLFieldConfig{
@@ -238,7 +240,10 @@ mutation operations.`,
 					`mutation operations will be rooted at.`,
 				Type: __Type,
 				Resolve: func(p GQLFRParams) interface{} {
-					return p.Schema.GetMutationType()
+					if schema, ok := p.Source.(GraphQLSchema); ok {
+						return schema.GetMutationType()
+					}
+					return nil
 				},
 			},
 			"directives": &GraphQLFieldConfig{
@@ -247,7 +252,10 @@ mutation operations.`,
 					NewGraphQLNonNull(__Directive),
 				)),
 				Resolve: func(p GQLFRParams) interface{} {
-					return p.Schema.GetDirectives()
+					if schema, ok := p.Source.(GraphQLSchema); ok {
+						return schema.GetDirectives()
+					}
+					return nil
 				},
 			},
 		},
@@ -288,6 +296,9 @@ mutation operations.`,
 			includeDeprecated, _ := p.Args["includeDeprecated"].(bool)
 			switch ttype := p.Source.(type) {
 			case *GraphQLObjectType:
+				if ttype == nil {
+					return nil
+				}
 				fields := []*GraphQLFieldDefinition{}
 				for _, field := range ttype.GetFields() {
 					if !includeDeprecated && field.DeprecationReason != "" {
@@ -297,6 +308,9 @@ mutation operations.`,
 				}
 				return fields
 			case *GraphQLInterfaceType:
+				if ttype == nil {
+					return nil
+				}
 				fields := []*GraphQLFieldDefinition{}
 				for _, field := range ttype.GetFields() {
 					if !includeDeprecated && field.DeprecationReason != "" {
@@ -387,7 +401,7 @@ mutation operations.`,
 		Description: "Access the current type schema of this server.",
 		Args:        []*GraphQLArgument{},
 		Resolve: func(p GQLFRParams) interface{} {
-			return p.Schema
+			return p.Info.Schema
 		},
 	}
 	TypeMetaFieldDef = &GraphQLFieldDefinition{
