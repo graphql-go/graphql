@@ -267,8 +267,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
-func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNulableFieldThatThrowsSynchronously(t *testing.T) {
-	t.Skipf("Promises not implemented")
+func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldThatThrowsSynchronously(t *testing.T) {
 	doc := `
       query Q {
         promiseNest {
