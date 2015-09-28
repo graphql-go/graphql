@@ -1,13 +1,15 @@
 package executor_test
 
 import (
+	"reflect"
+	"sort"
+	"testing"
+
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/executor"
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
-	"reflect"
-	"testing"
 )
 
 var syncError = "sync"
@@ -497,8 +499,9 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
-	t.Skipf("Testing equality for slice of errors in results")
-	if !testutil.EqualSet(expected.Errors, result.Errors) {
+	sort.Sort(graphqlerrors.GQLFormattedErrorSlice(expected.Errors))
+	sort.Sort(graphqlerrors.GQLFormattedErrorSlice(result.Errors))
+	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 }
