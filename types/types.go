@@ -71,8 +71,24 @@ func NewGraphQLEnumType(config GraphQLEnumTypeConfig) *GraphQLEnumType {
 func (gt *GraphQLEnumType) defineEnumValues(valueMap GraphQLEnumValueConfigMap) ([]*GraphQLEnumValueDefinition, error) {
 	values := []*GraphQLEnumValueDefinition{}
 
+	err := invariant(
+		len(valueMap) > 0,
+		fmt.Sprintf(`%v values must be an object with value names as keys.`, gt),
+	)
+	if err != nil {
+		return values, err
+	}
+
 	for valueName, valueConfig := range valueMap {
-		err := assertValidName(valueName)
+		err := invariant(
+			valueConfig != nil,
+			fmt.Sprintf(`%v.%v must refer to an object with a "value" key `+
+				`representing an internal value but got: %v.`, gt, valueName, valueConfig),
+		)
+		if err != nil {
+			return values, err
+		}
+		err = assertValidName(valueName)
 		if err != nil {
 			return values, err
 		}
@@ -133,7 +149,9 @@ func (gt *GraphQLEnumType) CoerceLiteral(value interface{}) interface{} {
 func (gt *GraphQLEnumType) String() string {
 	return gt.Name
 }
-
+func (gt *GraphQLEnumType) GetError() error {
+	return gt.err
+}
 func (gt *GraphQLEnumType) getValueLookup() map[interface{}]*GraphQLEnumValueDefinition {
 	if len(gt.valuesLookup) > 0 {
 		return gt.valuesLookup
@@ -223,7 +241,7 @@ func (it *GraphQLInterfaceType) CoerceLiteral(value interface{}) (r interface{})
 }
 
 func (it *GraphQLInterfaceType) GetFields() (fields GraphQLFieldDefinitionMap) {
-	it.fields, _ = defineFieldMap(it, it.typeConfig.Fields)
+	it.fields, it.err = defineFieldMap(it, it.typeConfig.Fields)
 	return it.fields
 }
 
@@ -273,6 +291,9 @@ func getTypeOf(value interface{}, info GraphQLResolveInfo, abstractType GraphQLA
 func (it *GraphQLInterfaceType) String() string {
 	return it.Name
 }
+func (it *GraphQLInterfaceType) GetError() error {
+	return it.err
+}
 
 // TODO: clean up GQLFRParams fields
 type GQLFRParams struct {
@@ -299,6 +320,7 @@ type GraphQLOutputType interface {
 	Coerce(value interface{}) (r interface{})
 	CoerceLiteral(value interface{}) (r interface{})
 	String() string
+	GetError() error
 }
 
 var _ GraphQLOutputType = (*GraphQLScalarType)(nil)
@@ -315,6 +337,7 @@ type GraphQLInputType interface {
 	Coerce(value interface{}) interface{}
 	CoerceLiteral(value interface{}) interface{}
 	String() string
+	GetError() error
 }
 
 var _ GraphQLInputType = (*GraphQLScalarType)(nil)
@@ -444,6 +467,9 @@ func (gt *GraphQLObjectType) GetInterfaces() []*GraphQLInterfaceType {
 	gt.interfaces = interfaces
 	return gt.interfaces
 }
+func (gt *GraphQLObjectType) GetError() error {
+	return gt.err
+}
 
 type GraphQLFieldConfigMap map[string]*GraphQLFieldConfig
 
@@ -466,15 +492,24 @@ type GraphQLArgumentConfig struct {
 
 type GraphQLList struct {
 	OfType GraphQLType `json:"ofType"`
+
+	err error
 }
 
 func NewGraphQLList(ofType GraphQLType) *GraphQLList {
-	return &GraphQLList{
-		OfType: ofType,
+	gl := &GraphQLList{}
+
+	err := invariant(ofType != nil, fmt.Sprintf(`Can only create List of a GraphQLType but got: %v.`, ofType))
+	if err != nil {
+		gl.err = err
+		return gl
 	}
+
+	gl.OfType = ofType
+	return gl
 }
 func (gl *GraphQLList) GetName() string {
-	return fmt.Sprintf("%v", gl.OfType)
+	return fmt.Sprintf("[%v]", gl.OfType)
 }
 func (gl *GraphQLList) GetDescription() string {
 	return ""
@@ -490,6 +525,9 @@ func (gl *GraphQLList) String() string {
 		return gl.OfType.GetName()
 	}
 	return ""
+}
+func (gl *GraphQLList) GetError() error {
+	return gl.err
 }
 
 type GraphQLUnionTypeConfig struct {
@@ -529,13 +567,35 @@ func NewGraphQLUnionType(config GraphQLUnionTypeConfig) *GraphQLUnionType {
 
 	err = invariant(
 		len(config.Types) > 0,
-		fmt.Sprintf(`Must provide Array of types for Union %v`, config.Name),
+		fmt.Sprintf(`Must provide Array of types for Union %v.`, config.Name),
 	)
 	if err != nil {
 		objectType.err = err
 		return objectType
 	}
-
+	for _, ttype := range config.Types {
+		err := invariant(
+			ttype != nil,
+			fmt.Sprintf(`%v may only contain Object types, it cannot contain: %v.`, objectType, ttype),
+		)
+		if err != nil {
+			objectType.err = err
+			return objectType
+		}
+		if objectType.ResolveType == nil {
+			err = invariant(
+				ttype.IsTypeOf != nil,
+				fmt.Sprintf(`Union Type %v does not provide a "resolveType" function `+
+					`and possible Type %v does not provide a "isTypeOf" `+
+					`function. There is no way to resolve this possible type `+
+					`during execution.`, objectType, ttype),
+			)
+			if err != nil {
+				objectType.err = err
+				return objectType
+			}
+		}
+	}
 	objectType.types = config.Types
 	objectType.typeConfig = config
 
@@ -588,6 +648,9 @@ func (ut *GraphQLUnionType) Coerce(value interface{}) (r interface{}) {
 func (ut *GraphQLUnionType) CoerceLiteral(value interface{}) (r interface{}) {
 	return value
 }
+func (ut *GraphQLUnionType) GetError() error {
+	return ut.err
+}
 
 // These named types do not include modifiers like List or NonNull.
 type GraphQLNamedType interface {
@@ -600,7 +663,6 @@ var (
 	_ GraphQLNamedType = (*GraphQLInterfaceType)(nil)
 	_ GraphQLNamedType = (*GraphQLUnionType)(nil)
 	_ GraphQLNamedType = (*GraphQLEnumType)(nil)
-
 	_ GraphQLNamedType = (*GraphQLInputObjectType)(nil)
 )
 
@@ -643,14 +705,27 @@ func defineFieldMap(ttype GraphQLNamedType, fields GraphQLFieldConfigMap) (Graph
 
 	err := invariant(
 		len(fields) > 0,
-		fmt.Sprintf(`%v fields must be an object with field names as keys`, ttype),
+		fmt.Sprintf(`%v fields must be an object with field names as keys.`, ttype),
 	)
 	if err != nil {
 		return resultFieldMap, err
 	}
 
 	for fieldName, field := range fields {
-		err := assertValidName(fieldName)
+		if field == nil {
+			continue
+		}
+		err = invariant(
+			field.Type != nil,
+			fmt.Sprintf(`%v.%v field type must be Output Type but got: %v.`, ttype, fieldName, field.Type),
+		)
+		if err != nil {
+			return resultFieldMap, err
+		}
+		if field.Type.GetError() != nil {
+			return resultFieldMap, field.Type.GetError()
+		}
+		err = assertValidName(fieldName)
 		if err != nil {
 			return resultFieldMap, err
 		}
@@ -668,6 +743,20 @@ func defineFieldMap(ttype GraphQLNamedType, fields GraphQLFieldConfigMap) (Graph
 			if err != nil {
 				return resultFieldMap, err
 			}
+			err = invariant(
+				arg != nil,
+				fmt.Sprintf(`%v.%v args must be an object with argument names as keys.`, ttype, fieldName),
+			)
+			if err != nil {
+				return resultFieldMap, err
+			}
+			err = invariant(
+				arg.Type != nil,
+				fmt.Sprintf(`%v.%v(%v:) argument type must be Input Type but got: %v.`, ttype, fieldName, argName, arg.Type),
+			)
+			if err != nil {
+				return resultFieldMap, err
+			}
 			fieldArg := &GraphQLArgument{
 				Name:         argName,
 				Description:  arg.Description,
@@ -682,13 +771,21 @@ func defineFieldMap(ttype GraphQLNamedType, fields GraphQLFieldConfigMap) (Graph
 }
 
 func defineInterfaces(ttype *GraphQLObjectType, interfaces []*GraphQLInterfaceType) ([]*GraphQLInterfaceType, error) {
-	if len(interfaces) == 0 {
-		return interfaces, nil
-	}
+	ifaces := []*GraphQLInterfaceType{}
 
+	if len(interfaces) == 0 {
+		return ifaces, nil
+	}
 	for _, iface := range interfaces {
+		err := invariant(
+			iface != nil,
+			fmt.Sprintf(`%v may only implement Interface types, it cannot implement: %v.`, ttype, iface),
+		)
+		if err != nil {
+			return ifaces, err
+		}
 		if iface.ResolveType != nil {
-			err := invariant(
+			err = invariant(
 				iface.ResolveType != nil,
 				fmt.Sprintf(`Interface Type %v does not provide a "resolveType" function `+
 					`and implementing Type %v does not provide a "isTypeOf" `+
@@ -696,12 +793,13 @@ func defineInterfaces(ttype *GraphQLObjectType, interfaces []*GraphQLInterfaceTy
 					`during execution.`, iface, ttype),
 			)
 			if err != nil {
-				return interfaces, err
+				return ifaces, err
 			}
 		}
+		ifaces = append(ifaces, iface)
 	}
 
-	return interfaces, nil
+	return ifaces, nil
 }
 
 type InputObjectFieldConfig struct {
@@ -753,10 +851,31 @@ func NewGraphQLInputObjectType(config InputObjectConfig) *GraphQLInputObjectType
 func (gt *GraphQLInputObjectType) defineFieldMap() InputObjectFieldMap {
 	fieldMap := gt.typeConfig.Fields
 	resultFieldMap := InputObjectFieldMap{}
+
+	err := invariant(
+		len(fieldMap) > 0,
+		fmt.Sprintf(`%v fields must be an object with field names as keys.`, gt),
+	)
+	if err != nil {
+		gt.err = err
+		return resultFieldMap
+	}
+
 	for fieldName, fieldConfig := range fieldMap {
+		if fieldConfig == nil {
+			continue
+		}
 		err := assertValidName(fieldName)
 		if err != nil {
 			continue
+		}
+		err = invariant(
+			fieldConfig.Type != nil,
+			fmt.Sprintf(`%v.%v field type must be Input Type but got: %v.`, gt, fieldName, fieldConfig.Type),
+		)
+		if err != nil {
+			gt.err = err
+			return resultFieldMap
 		}
 		field := &InputObjectField{}
 		field.Name = fieldName
@@ -784,4 +903,8 @@ func (gt *GraphQLInputObjectType) CoerceLiteral(value interface{}) interface{} {
 }
 func (gt *GraphQLInputObjectType) String() string {
 	return gt.Name
+}
+
+func (gt *GraphQLInputObjectType) GetError() error {
+	return gt.err
 }

@@ -11,6 +11,7 @@ type GraphQLType interface {
 	Coerce(value interface{}) interface{}
 	CoerceLiteral(value interface{}) interface{}
 	String() string
+	GetError() error
 }
 
 var _ GraphQLType = (*GraphQLScalarType)(nil)
@@ -40,15 +41,23 @@ type GraphQLArgument struct {
 type GraphQLNonNull struct {
 	Name   string      `json:"name"` // added to conform with introspection for NonNull.Name = nil
 	OfType GraphQLType `json:"ofType"`
+
+	err error
 }
 
 func NewGraphQLNonNull(ofType GraphQLType) *GraphQLNonNull {
-	return &GraphQLNonNull{
-		OfType: ofType,
+	gl := &GraphQLNonNull{}
+
+	err := invariant(ofType != nil, fmt.Sprintf(`Can only create NonNull of a Nullable GraphQLType but got: %v.`, ofType))
+	if err != nil {
+		gl.err = err
+		return gl
 	}
+	gl.OfType = ofType
+	return gl
 }
 func (gl *GraphQLNonNull) GetName() string {
-	return fmt.Sprintf("%v", gl.OfType)
+	return fmt.Sprintf("%v!", gl.OfType)
 }
 func (gl *GraphQLNonNull) GetDescription() string {
 	return ""
@@ -61,9 +70,12 @@ func (gl *GraphQLNonNull) CoerceLiteral(value interface{}) interface{} {
 }
 func (gl *GraphQLNonNull) String() string {
 	if gl.OfType != nil {
-		return gl.OfType.GetName()
+		return gl.GetName()
 	}
 	return ""
+}
+func (gl *GraphQLNonNull) GetError() error {
+	return gl.err
 }
 
 type GraphQLResolveInfo struct {

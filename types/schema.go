@@ -34,6 +34,11 @@ func NewGraphQLSchema(config GraphQLSchemaConfig) (GraphQLSchema, error) {
 
 	schema := GraphQLSchema{}
 
+	err = invariant(config.Query != nil, "Schema query must be Object Type but got: nil.")
+	if err != nil {
+		return schema, err
+	}
+
 	// if schema config contains error at creation time, return those errors
 	if config.Query != nil && config.Query.err != nil {
 		return schema, config.Query.err
@@ -56,6 +61,9 @@ func NewGraphQLSchema(config GraphQLSchemaConfig) (GraphQLSchema, error) {
 		if objectType == nil {
 			continue
 		}
+		if objectType.err != nil {
+			return schema, objectType.err
+		}
 		typeMap, err = typeMapReducer(typeMap, objectType)
 		if err != nil {
 			return schema, err
@@ -67,7 +75,10 @@ func NewGraphQLSchema(config GraphQLSchemaConfig) (GraphQLSchema, error) {
 		switch ttype := ttype.(type) {
 		case *GraphQLObjectType:
 			for _, iface := range ttype.GetInterfaces() {
-				assertObjectImplementsInterface(ttype, iface)
+				err := assertObjectImplementsInterface(ttype, iface)
+				if err != nil {
+					return schema, err
+				}
 			}
 		}
 	}
@@ -111,8 +122,8 @@ func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLType
 			return typeMapReducer(typeMap, objectType.OfType)
 		}
 	case *GraphQLObjectType:
-		if objectType.GetName() == "__Type" && objectType.err != nil {
-			return typeMap, nil
+		if objectType.err != nil {
+			return typeMap, objectType.err
 		}
 	}
 
@@ -134,21 +145,42 @@ func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLType
 
 	switch objectType := objectType.(type) {
 	case *GraphQLUnionType:
-		for _, innerObjectType := range objectType.GetPossibleTypes() {
+		types := objectType.GetPossibleTypes()
+		if objectType.err != nil {
+			return typeMap, objectType.err
+		}
+		for _, innerObjectType := range types {
+			if innerObjectType.err != nil {
+				return typeMap, innerObjectType.err
+			}
 			typeMap, err = typeMapReducer(typeMap, innerObjectType)
 			if err != nil {
 				return typeMap, err
 			}
 		}
 	case *GraphQLInterfaceType:
-		for _, innerObjectType := range objectType.GetPossibleTypes() {
+		types := objectType.GetPossibleTypes()
+		if objectType.err != nil {
+			return typeMap, objectType.err
+		}
+		for _, innerObjectType := range types {
+			if innerObjectType.err != nil {
+				return typeMap, innerObjectType.err
+			}
 			typeMap, err = typeMapReducer(typeMap, innerObjectType)
 			if err != nil {
 				return typeMap, err
 			}
 		}
 	case *GraphQLObjectType:
-		for _, innerObjectType := range objectType.GetInterfaces() {
+		interfaces := objectType.GetInterfaces()
+		if objectType.err != nil {
+			return typeMap, objectType.err
+		}
+		for _, innerObjectType := range interfaces {
+			if innerObjectType.err != nil {
+				return typeMap, innerObjectType.err
+			}
 			typeMap, err = typeMapReducer(typeMap, innerObjectType)
 			if err != nil {
 				return typeMap, err
@@ -159,6 +191,9 @@ func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLType
 	switch objectType := objectType.(type) {
 	case *GraphQLObjectType:
 		fieldMap := objectType.GetFields()
+		if objectType.err != nil {
+			return typeMap, objectType.err
+		}
 		for _, field := range fieldMap {
 			for _, arg := range field.Args {
 				typeMap, err = typeMapReducer(typeMap, arg.Type)
@@ -173,6 +208,9 @@ func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLType
 		}
 	case *GraphQLInterfaceType:
 		fieldMap := objectType.GetFields()
+		if objectType.err != nil {
+			return typeMap, objectType.err
+		}
 		for _, field := range fieldMap {
 			for _, arg := range field.Args {
 				typeMap, err = typeMapReducer(typeMap, arg.Type)
@@ -186,7 +224,11 @@ func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLType
 			}
 		}
 	case *GraphQLInputObjectType:
-		for _, field := range objectType.GetFields() {
+		fieldMap := objectType.GetFields()
+		if objectType.err != nil {
+			return typeMap, objectType.err
+		}
+		for _, field := range fieldMap {
 			typeMap, err = typeMapReducer(typeMap, field.Type)
 			if err != nil {
 				return typeMap, err
@@ -255,7 +297,7 @@ func assertObjectImplementsInterface(object *GraphQLObjectType, iface *GraphQLIn
 				isEqualType(ifaceArg.Type, objectArg.Type),
 				fmt.Sprintf(
 					`%v.%v(%v:) expects type "%v" `+
-						`but %v.%v($%v:) provides `+
+						`but %v.%v(%v:) provides `+
 						`type "%v".`,
 					iface, fieldName, argName, ifaceArg.Type,
 					object, fieldName, argName, objectArg.Type),
@@ -290,22 +332,15 @@ func assertObjectImplementsInterface(object *GraphQLObjectType, iface *GraphQLIn
 }
 
 func isEqualType(typeA GraphQLType, typeB GraphQLType) bool {
-	switch typeA := typeA.(type) {
-	case *GraphQLNonNull:
-		switch typeB := typeB.(type) {
-		case *GraphQLNonNull:
+	if typeA, ok := typeA.(*GraphQLNonNull); ok {
+		if typeB, ok := typeB.(*GraphQLNonNull); ok {
 			return isEqualType(typeA.OfType, typeB.OfType)
-		default:
-			return typeA.GetName() == typeB.GetName()
 		}
-	case *GraphQLList:
-		switch typeB := typeB.(type) {
-		case *GraphQLList:
-			return isEqualType(typeA.OfType, typeB.OfType)
-		default:
-			return typeA.GetName() == typeB.GetName()
-		}
-	default:
-		return typeA.GetName() == typeB.GetName()
 	}
+	if typeA, ok := typeA.(*GraphQLList); ok {
+		if typeB, ok := typeB.(*GraphQLList); ok {
+			return isEqualType(typeA.OfType, typeB.OfType)
+		}
+	}
+	return typeA == typeB
 }

@@ -56,6 +56,16 @@ func NewGraphQLScalarType(config GraphQLScalarTypeConfig) *GraphQLScalarType {
 		st.err = err
 		return st
 	}
+	if config.ParseValue != nil || config.ParseLiteral != nil {
+		err = invariant(
+			config.ParseValue != nil && config.ParseLiteral != nil,
+			fmt.Sprintf(`%v must provide both "parseValue" and "parseLiteral" functions.`, st),
+		)
+		if err != nil {
+			st.err = err
+			return st
+		}
+	}
 
 	st.scalarConfig = config
 	return st
@@ -89,6 +99,9 @@ func (st *GraphQLScalarType) GetDescription() string {
 }
 func (st *GraphQLScalarType) String() string {
 	return st.Name
+}
+func (st *GraphQLScalarType) GetError() error {
+	return st.err
 }
 
 // TODO: GraphQLScalarType.Coerce() Check if we need this
