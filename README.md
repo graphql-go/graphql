@@ -5,7 +5,7 @@ An *work in progress* implementation of GraphQL for Go.
 #### Roadmap
 - [x] Lexer
 - [x] Parser
-- [ ] Schema Parser
+- [x] Schema Parser
 - [ ] Printer
 - [ ] Schema Printer
 - [ ] Visitor
