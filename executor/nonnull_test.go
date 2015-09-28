@@ -150,7 +150,6 @@ func TestNonNull_NullsANullableFieldThatThrowsSynchronously(t *testing.T) {
 	}
 }
 func TestNonNull_NullsANullableFieldThatThrowsInAPromise(t *testing.T) {
-	t.Skipf("Promises not implemented")
 	doc := `
       query Q {
         promise
