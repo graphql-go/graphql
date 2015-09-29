@@ -998,8 +998,9 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldReturnsNullInALongChainOf
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
-	t.Skipf("Testing equality for slice of errors in results")
-	if !testutil.EqualSet(expected.Errors, result.Errors) {
+	sort.Sort(graphqlerrors.GQLFormattedErrorSlice(expected.Errors))
+	sort.Sort(graphqlerrors.GQLFormattedErrorSlice(result.Errors))
+	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 }
