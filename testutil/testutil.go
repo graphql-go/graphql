@@ -367,33 +367,6 @@ func Diff(a, b interface{}) []string {
 	return pretty.Diff(a, b)
 }
 
-// TODO: EqualSet, commenting by now
-// perhaps not need to depend on
-// github.com/deckarep/golang-set
-//func EqualSet(a, b interface{}) bool {
-
-//aa := []interface{}{}
-//bb := []interface{}{}
-
-//aVal := reflect.ValueOf(a)
-//bVal := reflect.ValueOf(b)
-//if aVal.Type().Kind() == reflect.Slice {
-//for i := 0; i < aVal.Len(); i++ {
-//val := aVal.Index(i).Interface()
-//aa = append(aa, &val)
-//}
-//}
-//if bVal.Type().Kind() == reflect.Slice {
-//for i := 0; i < bVal.Len(); i++ {
-//val := bVal.Index(i).Interface()
-//bb = append(bb, &val)
-//}
-//}
-//xx := mapset.NewSetFromSlice(aa)
-//yy := mapset.NewSetFromSlice(bb)
-//return xx.Equal(yy)
-//}
-
 func ASTToJSON(t *testing.T, a ast.Node) interface{} {
 	b, err := json.Marshal(a)
 	if err != nil {
