@@ -2,15 +2,14 @@ package testutil
 
 import (
 	"encoding/json"
+	"strconv"
+	"testing"
+
 	"github.com/chris-ramon/graphql-go/executor"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/types"
-	"github.com/deckarep/golang-set"
 	"github.com/kr/pretty"
-	"reflect"
-	"strconv"
-	"testing"
 )
 
 var (
@@ -366,31 +365,6 @@ func Execute(t *testing.T, ep executor.ExecuteParams) *types.GraphQLResult {
 
 func Diff(a, b interface{}) []string {
 	return pretty.Diff(a, b)
-}
-
-// TODO: EqualSet
-func EqualSet(a, b interface{}) bool {
-
-	aa := []interface{}{}
-	bb := []interface{}{}
-
-	aVal := reflect.ValueOf(a)
-	bVal := reflect.ValueOf(b)
-	if aVal.Type().Kind() == reflect.Slice {
-		for i := 0; i < aVal.Len(); i++ {
-			val := aVal.Index(i).Interface()
-			aa = append(aa, &val)
-		}
-	}
-	if bVal.Type().Kind() == reflect.Slice {
-		for i := 0; i < bVal.Len(); i++ {
-			val := bVal.Index(i).Interface()
-			bb = append(bb, &val)
-		}
-	}
-	xx := mapset.NewSetFromSlice(aa)
-	yy := mapset.NewSetFromSlice(bb)
-	return xx.Equal(yy)
 }
 
 func ASTToJSON(t *testing.T, a ast.Node) interface{} {

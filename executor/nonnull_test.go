@@ -634,7 +634,7 @@ func TestNonNull_NullsANullableFieldThatSynchronouslyReturnsNull(t *testing.T) {
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
-	if !testutil.EqualSet(expected.Errors, result.Errors) {
+	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 }
@@ -665,7 +665,7 @@ func TestNonNull_NullsANullableFieldThatSynchronouslyReturnsNullInAPromise(t *te
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
-	if !testutil.EqualSet(expected.Errors, result.Errors) {
+	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 }
@@ -895,7 +895,7 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatReturnNull(t *testing.T) {
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
-	if !testutil.EqualSet(expected.Errors, result.Errors) {
+	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 }
