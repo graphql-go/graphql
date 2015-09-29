@@ -1,13 +1,15 @@
 package executor_test
 
 import (
+	"reflect"
+	"sort"
+	"testing"
+
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/executor"
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
-	"reflect"
-	"testing"
 )
 
 var syncError = "sync"
@@ -148,7 +150,6 @@ func TestNonNull_NullsANullableFieldThatThrowsSynchronously(t *testing.T) {
 	}
 }
 func TestNonNull_NullsANullableFieldThatThrowsInAPromise(t *testing.T) {
-	t.Skipf("Promises not implemented")
 	doc := `
       query Q {
         promise
@@ -226,8 +227,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANullableFieldThat
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
-func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANullableFieldThatThrowsInAPromise(t *testing.T) {
-	t.Skipf("Promises not implemented")
+func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldThatThrowsInAPromise(t *testing.T) {
 	doc := `
       query Q {
         nest {
@@ -267,8 +267,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANullableFieldThat
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
-func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNulableFieldThatThrowsSynchronously(t *testing.T) {
-	t.Skipf("Promises not implemented")
+func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldThatThrowsSynchronously(t *testing.T) {
 	doc := `
       query Q {
         promiseNest {
@@ -308,8 +307,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNulableFieldThat
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
-func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNulableFieldThatThrowsInAPromise(t *testing.T) {
-	t.Skipf("Promises not implemented")
+func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldThatThrowsInAPromise(t *testing.T) {
 	doc := `
       query Q {
         promiseNest {
@@ -497,8 +495,9 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
-	t.Skipf("Testing equality for slice of errors in results")
-	if !testutil.EqualSet(expected.Errors, result.Errors) {
+	sort.Sort(graphqlerrors.GQLFormattedErrorSlice(expected.Errors))
+	sort.Sort(graphqlerrors.GQLFormattedErrorSlice(result.Errors))
+	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 }
@@ -560,25 +559,25 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
 		},
 		Errors: []graphqlerrors.GraphQLFormattedError{
 			graphqlerrors.GraphQLFormattedError{
-				Message: `Cannot return null for non-nullable field DataType.nonNullSync.`,
+				Message: nonNullSyncError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 8, Column: 19},
 				},
 			},
 			graphqlerrors.GraphQLFormattedError{
-				Message: `Cannot return null for non-nullable field DataType.nonNullSync.`,
+				Message: nonNullSyncError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 19, Column: 19},
 				},
 			},
 			graphqlerrors.GraphQLFormattedError{
-				Message: `Cannot return null for non-nullable field DataType.nonNullPromise.`,
+				Message: nonNullPromiseError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 30, Column: 19},
 				},
 			},
 			graphqlerrors.GraphQLFormattedError{
-				Message: `Cannot return null for non-nullable field DataType.nonNullPromise.`,
+				Message: nonNullPromiseError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 41, Column: 19},
 				},
@@ -601,8 +600,9 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
-	t.Skipf("Testing equality for slice of errors in results")
-	if !testutil.EqualSet(expected.Errors, result.Errors) {
+	sort.Sort(graphqlerrors.GQLFormattedErrorSlice(expected.Errors))
+	sort.Sort(graphqlerrors.GQLFormattedErrorSlice(result.Errors))
+	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 
@@ -998,8 +998,9 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldReturnsNullInALongChainOf
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
-	t.Skipf("Testing equality for slice of errors in results")
-	if !testutil.EqualSet(expected.Errors, result.Errors) {
+	sort.Sort(graphqlerrors.GQLFormattedErrorSlice(expected.Errors))
+	sort.Sort(graphqlerrors.GQLFormattedErrorSlice(result.Errors))
+	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 }
