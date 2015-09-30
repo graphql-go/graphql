@@ -26,7 +26,7 @@ type GraphQLTypeMap map[string]GraphQLType
 type GraphQLSchema struct {
 	schemaConfig GraphQLSchemaConfig
 	typeMap      GraphQLTypeMap
-	directives   []GraphQLDirective
+	directives   []*GraphQLDirective
 }
 
 func NewGraphQLSchema(config GraphQLSchemaConfig) (GraphQLSchema, error) {
@@ -94,7 +94,13 @@ func (gq *GraphQLSchema) GetMutationType() *GraphQLObjectType {
 	return gq.schemaConfig.Mutation
 }
 
-func (gq *GraphQLSchema) GetDirectives() []GraphQLDirective {
+func (gq *GraphQLSchema) GetDirectives() []*GraphQLDirective {
+	if len(gq.directives) == 0 {
+		gq.directives = []*GraphQLDirective{
+			GraphQLIncludeDirective,
+			GraphQLSkipDirective,
+		}
+	}
 	return gq.directives
 }
 

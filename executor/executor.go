@@ -693,13 +693,15 @@ func completeValue(eCtx *ExecutionContext, returnType types.GraphQLType, fieldAS
 }
 
 func defaultResolveFn(p types.GQLFRParams) interface{} {
-
 	// try to resolve p.Source as a struct first
 	sourceVal := reflect.ValueOf(p.Source)
 	if sourceVal.IsValid() && sourceVal.Type().Kind() == reflect.Ptr {
 		sourceVal = sourceVal.Elem()
 	}
-	if sourceVal.IsValid() && sourceVal.Type().Kind() == reflect.Struct {
+	if !sourceVal.IsValid() {
+		return nil
+	}
+	if sourceVal.Type().Kind() == reflect.Struct {
 		// find field based on struct's json tag
 		// we could potentially create a custom `gql` tag, but its unnecessary at this point
 		// since graphql speaks to client in a json-like way anyway

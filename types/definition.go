@@ -22,12 +22,34 @@ var _ GraphQLType = (*GraphQLEnumType)(nil)
 var _ GraphQLType = (*GraphQLInputObjectType)(nil)
 var _ GraphQLType = (*GraphQLList)(nil)
 var _ GraphQLType = (*GraphQLNonNull)(nil)
+var _ GraphQLType = (*GraphQLArgument)(nil)
 
 type GraphQLArgument struct {
 	Name         string           `json:"name"`
 	Type         GraphQLInputType `json:"type"`
 	DefaultValue interface{}      `json:"defaultValue"`
 	Description  string           `json:"description"`
+}
+
+func (st *GraphQLArgument) GetName() string {
+	return st.Name
+}
+func (st *GraphQLArgument) GetDescription() string {
+	return st.Description
+
+}
+func (st *GraphQLArgument) String() string {
+	return st.Name
+}
+func (st *GraphQLArgument) GetError() error {
+	return nil
+}
+func (st *GraphQLArgument) Coerce(value interface{}) (r interface{}) {
+	return value
+
+}
+func (st *GraphQLArgument) CoerceLiteral(value interface{}) (r interface{}) {
+	return value
 }
 
 //type GraphQLNonNull interface {

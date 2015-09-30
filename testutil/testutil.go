@@ -412,7 +412,6 @@ func ContainSubsetSlice(super []interface{}, sub []interface{}) bool {
 	}
 subLoop:
 	for _, subVal := range sub {
-		// check if subVal exists in super
 		found := false
 	innerLoop:
 		for _, superVal := range super {
@@ -425,7 +424,6 @@ subLoop:
 						continue
 					}
 				} else {
-					// superVal is not a map as well, fail
 					return false
 				}
 
@@ -439,7 +437,6 @@ subLoop:
 						continue
 					}
 				} else {
-					// superVal is not a slice as well, fail
 					return false
 				}
 			}
@@ -470,7 +467,6 @@ func ContainSubset(super map[string]interface{}, sub map[string]interface{}) boo
 						return false
 					}
 				} else {
-					// subVal is not a slice as well, so fail
 					return false
 				}
 			case map[string]interface{}:
@@ -479,7 +475,6 @@ func ContainSubset(super map[string]interface{}, sub map[string]interface{}) boo
 						return false
 					}
 				} else {
-					// subVal is not a map as well, so fail
 					return false
 				}
 			default:
@@ -488,7 +483,6 @@ func ContainSubset(super map[string]interface{}, sub map[string]interface{}) boo
 				}
 			}
 		} else {
-			// superset does not have subset key, fail
 			return false
 		}
 	}

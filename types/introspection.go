@@ -2,6 +2,10 @@ package types
 
 import (
 	"fmt"
+	"github.com/chris-ramon/graphql-go/language/ast"
+	"github.com/chris-ramon/graphql-go/language/printer"
+	"math"
+	"reflect"
 )
 
 const (
@@ -50,13 +54,13 @@ func init() {
 			},
 			"UNION": &GraphQLEnumValueConfig{
 				Value: TypeKindUnion,
-				Description: "Indicates this type is an interface. " +
-					"`fields` and `possibleTypes` are valid fields.",
+				Description: "Indicates this type is a union. " +
+					"`possibleTypes` is a valid field.",
 			},
 			"ENUM": &GraphQLEnumValueConfig{
 				Value: TypeKindEnum,
 				Description: "Indicates this type is an enum. " +
-					"`enumValues` are valid fields.",
+					"`enumValues` is a valid field.",
 			},
 			"INPUT_OBJECT": &GraphQLEnumValueConfig{
 				Value: TypeKindInputObject,
@@ -133,6 +137,23 @@ func init() {
 			},
 			"defaultValue": &GraphQLFieldConfig{
 				Type: GraphQLString,
+				Resolve: func(p GQLFRParams) interface{} {
+					if inputVal, ok := p.Source.(*GraphQLArgument); ok {
+						if inputVal.DefaultValue == nil {
+							return nil
+						}
+						astVal := astFromValue(inputVal.DefaultValue, inputVal)
+						return printer.Print(astVal)
+					}
+					if inputVal, ok := p.Source.(*InputObjectField); ok {
+						if inputVal.DefaultValue == nil {
+							return nil
+						}
+						astVal := astFromValue(inputVal.DefaultValue, inputVal)
+						return printer.Print(astVal)
+					}
+					return nil
+				},
 			},
 		},
 	})
@@ -186,9 +207,6 @@ func init() {
 				Type: NewGraphQLNonNull(NewGraphQLList(
 					NewGraphQLNonNull(__InputValue),
 				)),
-				Resolve: func(p GQLFRParams) interface{} {
-					return "TODO: resolveFn for __Directive"
-				},
 			},
 			"onOperation": &GraphQLFieldConfig{
 				Type: NewGraphQLNonNull(GraphQLBoolean),
@@ -232,7 +250,7 @@ mutation operations.`,
 					if schema, ok := p.Source.(GraphQLSchema); ok {
 						return schema.GetQueryType()
 					}
-					return "-----"
+					return nil
 				},
 			},
 			"mutationType": &GraphQLFieldConfig{
@@ -241,7 +259,9 @@ mutation operations.`,
 				Type: __Type,
 				Resolve: func(p GQLFRParams) interface{} {
 					if schema, ok := p.Source.(GraphQLSchema); ok {
-						return schema.GetMutationType()
+						if schema.GetMutationType() != nil {
+							return schema.GetMutationType()
+						}
 					}
 					return nil
 				},
@@ -273,7 +293,10 @@ mutation operations.`,
 			"isDeprecated": &GraphQLFieldConfig{
 				Type: NewGraphQLNonNull(GraphQLBoolean),
 				Resolve: func(p GQLFRParams) interface{} {
-					return "TODO: resolveFn for __EnumValue"
+					if field, ok := p.Source.(*GraphQLEnumValueDefinition); ok {
+						return (field.DeprecationReason != "")
+					}
+					return false
 				},
 			},
 			"deprecationReason": &GraphQLFieldConfig{
@@ -433,4 +456,131 @@ mutation operations.`,
 		},
 	}
 
+}
+
+/**
+ * Produces a GraphQL Value AST given a Golang value.
+ *
+ * Optionally, a GraphQL type may be provided, which will be used to
+ * disambiguate between value primitives.
+ *
+ * | JSON Value    | GraphQL Value        |
+ * | ------------- | -------------------- |
+ * | Object        | Input Object         |
+ * | Array         | List                 |
+ * | Boolean       | Boolean              |
+ * | String        | String / Enum Value  |
+ * | Number        | Int / Float          |
+ *
+ */
+func astFromValue(value interface{}, ttype GraphQLType) ast.Value {
+
+	if ttype, ok := ttype.(*GraphQLNonNull); ok {
+		// Note: we're not checking that the result is non-null.
+		// This function is not responsible for validating the input value.
+		val := astFromValue(value, ttype.OfType)
+		return val
+	}
+	if isNullish(value) {
+		return nil
+	}
+	valueVal := reflect.ValueOf(value)
+	if !valueVal.IsValid() {
+		return nil
+	}
+	if valueVal.Type().Kind() == reflect.Ptr {
+		valueVal = valueVal.Elem()
+	}
+	if !valueVal.IsValid() {
+		return nil
+	}
+
+	// Convert Golang slice to GraphQL list. If the GraphQLType is a list, but
+	// the value is not an array, convert the value using the list's item type.
+	if ttype, ok := ttype.(*GraphQLList); ok {
+		if valueVal.Type().Kind() == reflect.Slice {
+			itemType := ttype.OfType
+			values := []ast.Value{}
+			for i := 0; i < valueVal.Len(); i++ {
+				item := valueVal.Index(i).Interface()
+				itemAST := astFromValue(item, itemType)
+				if itemAST != nil {
+					values = append(values, itemAST)
+				}
+			}
+			return ast.NewListValue(&ast.ListValue{
+				Values: values,
+			})
+		} else {
+			// Because GraphQL will accept single values as a "list of one" when
+			// expecting a list, if there's a non-array value and an expected list type,
+			// create an AST using the list's item type.
+			val := astFromValue(value, ttype.OfType)
+			return val
+		}
+	}
+
+	if valueVal.Type().Kind() == reflect.Map {
+		// TODO: implement astFromValue from Map to ast.Value
+	}
+
+	if value, ok := value.(bool); ok {
+		return ast.NewBooleanValue(&ast.BooleanValue{
+			Value: value,
+		})
+	}
+	if value, ok := value.(int); ok {
+		if ttype == GraphQLFloat {
+			return ast.NewIntValue(&ast.IntValue{
+				Value: fmt.Sprintf("%v.0", value),
+			})
+		}
+		return ast.NewIntValue(&ast.IntValue{
+			Value: fmt.Sprintf("%v", value),
+		})
+	}
+	if value, ok := value.(float32); ok {
+		return ast.NewFloatValue(&ast.FloatValue{
+			Value: fmt.Sprintf("%v", value),
+		})
+	}
+	if value, ok := value.(float64); ok {
+		return ast.NewFloatValue(&ast.FloatValue{
+			Value: fmt.Sprintf("%v", value),
+		})
+	}
+
+	if value, ok := value.(string); ok {
+		if _, ok := ttype.(*GraphQLEnumType); ok {
+			return ast.NewEnumValue(&ast.EnumValue{
+				Value: fmt.Sprintf("%v", value),
+			})
+		}
+		return ast.NewStringValue(&ast.StringValue{
+			Value: fmt.Sprintf("%v", value),
+		})
+	}
+
+	// fallback, treat as string
+	return ast.NewStringValue(&ast.StringValue{
+		Value: fmt.Sprintf("%v", value),
+	})
+}
+
+// Returns true if a value is null, undefined, or NaN.
+// TODO: move isNullish to utilities. This is a copy of isNullish in `executor`
+func isNullish(value interface{}) bool {
+	if value, ok := value.(string); ok {
+		return value == ""
+	}
+	if value, ok := value.(int); ok {
+		return math.IsNaN(float64(value))
+	}
+	if value, ok := value.(float32); ok {
+		return math.IsNaN(float64(value))
+	}
+	if value, ok := value.(float64); ok {
+		return math.IsNaN(value)
+	}
+	return value == nil
 }

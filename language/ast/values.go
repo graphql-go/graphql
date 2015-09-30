@@ -6,6 +6,8 @@ import (
 
 type Value interface {
 	GetValue() interface{}
+	GetKind() string
+	GetLoc() *Location
 }
 
 // Ensure that all value types implements Value interface

@@ -814,6 +814,28 @@ type InputObjectField struct {
 	DefaultValue interface{}      `json:"defaultValue"`
 	Description  string           `json:"description"`
 }
+
+func (st *InputObjectField) GetName() string {
+	return st.Name
+}
+func (st *InputObjectField) GetDescription() string {
+	return st.Description
+
+}
+func (st *InputObjectField) String() string {
+	return st.Name
+}
+func (st *InputObjectField) GetError() error {
+	return nil
+}
+func (st *InputObjectField) Coerce(value interface{}) (r interface{}) {
+	return value
+
+}
+func (st *InputObjectField) CoerceLiteral(value interface{}) (r interface{}) {
+	return value
+}
+
 type InputObjectConfigFieldMap map[string]*InputObjectFieldConfig
 type InputObjectFieldMap map[string]*InputObjectField
 type InputObjectConfig struct {
@@ -882,7 +904,7 @@ func (gt *GraphQLInputObjectType) defineFieldMap() InputObjectFieldMap {
 		field.Name = fieldName
 		field.Type = fieldConfig.Type
 		field.Description = fieldConfig.Description
-		field.DefaultValue = field.DefaultValue
+		field.DefaultValue = fieldConfig.DefaultValue
 		resultFieldMap[fieldName] = field
 	}
 	return resultFieldMap
