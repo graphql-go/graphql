@@ -459,10 +459,7 @@ func resolveField(eCtx *ExecutionContext, parentType *gqltypes.GraphQLObjectType
 
 			var err error
 			if r, ok := r.(string); ok {
-				err = graphqlerrors.NewLocatedError(
-					fmt.Sprintf("%v", r),
-					graphqlerrors.FieldASTsToNodeASTs(fieldASTs),
-				)
+				err = graphqlerrors.NewLocatedError(r, graphqlerrors.FieldASTsToNodeASTs(fieldASTs))
 			}
 			if r, ok := r.(error); ok {
 				err = graphqlerrors.FormatError(r)
