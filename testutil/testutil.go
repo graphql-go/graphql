@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"encoding/json"
+	"reflect"
 	"strconv"
 	"testing"
 
