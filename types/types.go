@@ -140,12 +140,6 @@ func (gt *GraphQLEnumType) GetName() string {
 func (gt *GraphQLEnumType) GetDescription() string {
 	return ""
 }
-func (gt *GraphQLEnumType) Coerce(value interface{}) interface{} {
-	return value
-}
-func (gt *GraphQLEnumType) CoerceLiteral(value interface{}) interface{} {
-	return value
-}
 func (gt *GraphQLEnumType) String() string {
 	return gt.Name
 }
@@ -233,13 +227,6 @@ func (it *GraphQLInterfaceType) GetName() string {
 func (it *GraphQLInterfaceType) GetDescription() string {
 	return it.Description
 }
-func (it *GraphQLInterfaceType) Coerce(value interface{}) (r interface{}) {
-	return value
-}
-func (it *GraphQLInterfaceType) CoerceLiteral(value interface{}) (r interface{}) {
-	return value
-}
-
 func (it *GraphQLInterfaceType) GetFields() (fields GraphQLFieldDefinitionMap) {
 	it.fields, it.err = defineFieldMap(it, it.typeConfig.Fields)
 	return it.fields
@@ -317,8 +304,6 @@ type GraphQLFieldResolveFn func(p GQLFRParams) interface{}
 type GraphQLOutputType interface {
 	GetName() string
 	GetDescription() string
-	Coerce(value interface{}) (r interface{})
-	CoerceLiteral(value interface{}) (r interface{})
 	String() string
 	GetError() error
 }
@@ -334,8 +319,6 @@ var _ GraphQLOutputType = (*GraphQLNonNull)(nil)
 type GraphQLInputType interface {
 	GetName() string
 	GetDescription() string
-	Coerce(value interface{}) interface{}
-	CoerceLiteral(value interface{}) interface{}
 	String() string
 	GetError() error
 }
@@ -445,12 +428,6 @@ func (gt *GraphQLObjectType) GetName() string {
 func (gt *GraphQLObjectType) GetDescription() string {
 	return ""
 }
-func (gt *GraphQLObjectType) Coerce(value interface{}) interface{} {
-	return value
-}
-func (gt *GraphQLObjectType) CoerceLiteral(value interface{}) interface{} {
-	return value
-}
 func (gt *GraphQLObjectType) String() string {
 	return gt.Name
 }
@@ -514,12 +491,6 @@ func (gl *GraphQLList) GetName() string {
 }
 func (gl *GraphQLList) GetDescription() string {
 	return ""
-}
-func (gl *GraphQLList) Coerce(value interface{}) interface{} {
-	return value
-}
-func (gl *GraphQLList) CoerceLiteral(value interface{}) interface{} {
-	return value
 }
 func (gl *GraphQLList) String() string {
 	if gl.OfType != nil {
@@ -642,12 +613,6 @@ func (ut *GraphQLUnionType) GetName() string {
 }
 func (ut *GraphQLUnionType) GetDescription() string {
 	return ut.Description
-}
-func (ut *GraphQLUnionType) Coerce(value interface{}) (r interface{}) {
-	return value
-}
-func (ut *GraphQLUnionType) CoerceLiteral(value interface{}) (r interface{}) {
-	return value
 }
 func (ut *GraphQLUnionType) GetError() error {
 	return ut.err
@@ -828,13 +793,6 @@ func (st *InputObjectField) String() string {
 func (st *InputObjectField) GetError() error {
 	return nil
 }
-func (st *InputObjectField) Coerce(value interface{}) (r interface{}) {
-	return value
-
-}
-func (st *InputObjectField) CoerceLiteral(value interface{}) (r interface{}) {
-	return value
-}
 
 type InputObjectConfigFieldMap map[string]*InputObjectFieldConfig
 type InputObjectFieldMap map[string]*InputObjectField
@@ -917,12 +875,6 @@ func (gt *GraphQLInputObjectType) GetName() string {
 }
 func (gt *GraphQLInputObjectType) GetDescription() string {
 	return gt.Description
-}
-func (gt *GraphQLInputObjectType) Coerce(value interface{}) interface{} {
-	return value
-}
-func (gt *GraphQLInputObjectType) CoerceLiteral(value interface{}) interface{} {
-	return value
 }
 func (gt *GraphQLInputObjectType) String() string {
 	return gt.Name

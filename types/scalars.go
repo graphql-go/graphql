@@ -104,15 +104,6 @@ func (st *GraphQLScalarType) GetError() error {
 	return st.err
 }
 
-// TODO: GraphQLScalarType.Coerce() Check if we need this
-func (st *GraphQLScalarType) Coerce(value interface{}) (r interface{}) {
-	return value
-
-}
-func (st *GraphQLScalarType) CoerceLiteral(value interface{}) (r interface{}) {
-	return value
-}
-
 func coerceInt(value interface{}) interface{} {
 	switch value := value.(type) {
 	case bool:

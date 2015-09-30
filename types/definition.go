@@ -8,8 +8,6 @@ import (
 type GraphQLType interface {
 	GetName() string
 	GetDescription() string
-	Coerce(value interface{}) interface{}
-	CoerceLiteral(value interface{}) interface{}
 	String() string
 	GetError() error
 }
@@ -44,21 +42,6 @@ func (st *GraphQLArgument) String() string {
 func (st *GraphQLArgument) GetError() error {
 	return nil
 }
-func (st *GraphQLArgument) Coerce(value interface{}) (r interface{}) {
-	return value
-
-}
-func (st *GraphQLArgument) CoerceLiteral(value interface{}) (r interface{}) {
-	return value
-}
-
-//type GraphQLNonNull interface {
-//	GetName() string
-//	GetDescription() string
-//	Coerce(value interface{}) interface{}
-//	CoerceLiteral(value interface{}) interface{}
-//	ToString() string
-//}
 
 type GraphQLNonNull struct {
 	Name   string      `json:"name"` // added to conform with introspection for NonNull.Name = nil
@@ -84,12 +67,6 @@ func (gl *GraphQLNonNull) GetName() string {
 }
 func (gl *GraphQLNonNull) GetDescription() string {
 	return ""
-}
-func (gl *GraphQLNonNull) Coerce(value interface{}) interface{} {
-	return value
-}
-func (gl *GraphQLNonNull) CoerceLiteral(value interface{}) interface{} {
-	return value
 }
 func (gl *GraphQLNonNull) String() string {
 	if gl.OfType != nil {
