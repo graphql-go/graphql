@@ -34,7 +34,6 @@ var GraphQLInt *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeConfig
 	Serialize:  coerceInt,
 	ParseValue: coerceInt,
 	ParseLiteral: func(valueAST ast.Value) interface{} {
-		// TODO: can move this into each ast.Value.GetValue() implementation
 		switch valueAST := valueAST.(type) {
 		case *ast.IntValue:
 			if intValue, err := strconv.Atoi(valueAST.Value); err == nil {
@@ -73,7 +72,6 @@ var GraphQLFloat *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeConf
 	Serialize:  coerceFloat32,
 	ParseValue: coerceFloat32,
 	ParseLiteral: func(valueAST ast.Value) interface{} {
-		// TODO: can move this into each ast.Value.GetValue() implementation
 		switch valueAST := valueAST.(type) {
 		case *ast.FloatValue:
 			if floatValue, err := strconv.ParseFloat(valueAST.Value, 32); err == nil {
@@ -97,7 +95,6 @@ var GraphQLString *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeCon
 	Serialize:  coerceString,
 	ParseValue: coerceString,
 	ParseLiteral: func(valueAST ast.Value) interface{} {
-		// TODO: can move this into each ast.Value.GetValue() implementation
 		switch valueAST := valueAST.(type) {
 		case *ast.StringValue:
 			return valueAST.Value
@@ -139,7 +136,6 @@ var GraphQLBoolean *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeCo
 	Serialize:  coerceBool,
 	ParseValue: coerceBool,
 	ParseLiteral: func(valueAST ast.Value) interface{} {
-		// TODO: can move this into each ast.Value.GetValue() implementation
 		switch valueAST := valueAST.(type) {
 		case *ast.BooleanValue:
 			return valueAST.Value
@@ -153,7 +149,6 @@ var GraphQLID *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeConfig{
 	Serialize:  coerceString,
 	ParseValue: coerceString,
 	ParseLiteral: func(valueAST ast.Value) interface{} {
-		// TODO: can move this into each ast.Value.GetValue() implementation
 		switch valueAST := valueAST.(type) {
 		case *ast.IntValue:
 			return valueAST.Value
