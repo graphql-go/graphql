@@ -9,6 +9,10 @@ type GraphQLDirective struct {
 	OnField     bool               `json:"onField"`
 }
 
+/**
+ * Directives are used by the GraphQL runtime as a way of modifying execution
+ * behavior. Type system creators will usually not create these directly.
+ */
 func NewGraphQLDirective(config *GraphQLDirective) *GraphQLDirective {
 	if config == nil {
 		config = &GraphQLDirective{}
@@ -23,6 +27,9 @@ func NewGraphQLDirective(config *GraphQLDirective) *GraphQLDirective {
 	}
 }
 
+/**
+ * Used to conditionally include fields or fragments
+ */
 var GraphQLIncludeDirective *GraphQLDirective = NewGraphQLDirective(&GraphQLDirective{
 	Name: "include",
 	Description: "Directs the executor to include this field or fragment only when " +
@@ -39,6 +46,9 @@ var GraphQLIncludeDirective *GraphQLDirective = NewGraphQLDirective(&GraphQLDire
 	OnField:     true,
 })
 
+/**
+ * Used to conditionally skip (exclude) fields or fragments
+ */
 var GraphQLSkipDirective *GraphQLDirective = NewGraphQLDirective(&GraphQLDirective{
 	Name: "skip",
 	Description: "Directs the executor to skip this field or fragment when the `if` " +
