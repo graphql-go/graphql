@@ -405,3 +405,92 @@ func ASTToJSON(t *testing.T, a ast.Node) interface{} {
 	}
 	return f
 }
+
+func ContainSubsetSlice(super []interface{}, sub []interface{}) bool {
+	if len(sub) == 0 {
+		return true
+	}
+subLoop:
+	for _, subVal := range sub {
+		// check if subVal exists in super
+		found := false
+	innerLoop:
+		for _, superVal := range super {
+			if subVal, ok := subVal.(map[string]interface{}); ok {
+				if superVal, ok := superVal.(map[string]interface{}); ok {
+					if ContainSubset(superVal, subVal) {
+						found = true
+						break innerLoop
+					} else {
+						continue
+					}
+				} else {
+					// superVal is not a map as well, fail
+					return false
+				}
+
+			}
+			if subVal, ok := subVal.([]interface{}); ok {
+				if superVal, ok := superVal.([]interface{}); ok {
+					if ContainSubsetSlice(superVal, subVal) {
+						found = true
+						break innerLoop
+					} else {
+						continue
+					}
+				} else {
+					// superVal is not a slice as well, fail
+					return false
+				}
+			}
+			if reflect.DeepEqual(superVal, subVal) {
+				found = true
+				break innerLoop
+			}
+		}
+		if !found {
+			return false
+		} else {
+			continue subLoop
+		}
+	}
+	return true
+}
+
+func ContainSubset(super map[string]interface{}, sub map[string]interface{}) bool {
+	if len(sub) == 0 {
+		return true
+	}
+	for subKey, subVal := range sub {
+		if superVal, ok := super[subKey]; ok {
+			switch superVal := superVal.(type) {
+			case []interface{}:
+				if subVal, ok := subVal.([]interface{}); ok {
+					if !ContainSubsetSlice(superVal, subVal) {
+						return false
+					}
+				} else {
+					// subVal is not a slice as well, so fail
+					return false
+				}
+			case map[string]interface{}:
+				if subVal, ok := subVal.(map[string]interface{}); ok {
+					if !ContainSubset(superVal, subVal) {
+						return false
+					}
+				} else {
+					// subVal is not a map as well, so fail
+					return false
+				}
+			default:
+				if !reflect.DeepEqual(superVal, subVal) {
+					return false
+				}
+			}
+		} else {
+			// superset does not have subset key, fail
+			return false
+		}
+	}
+	return true
+}
