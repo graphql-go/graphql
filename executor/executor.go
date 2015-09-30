@@ -3,24 +3,25 @@ package executor
 import (
 	"fmt"
 
-	"github.com/chris-ramon/graphql-go/errors"
-	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/chris-ramon/graphql-go/types"
 	"reflect"
 	"strings"
+
+	"github.com/chris-ramon/graphql-go/errors"
+	"github.com/chris-ramon/graphql-go/gqltypes"
+	"github.com/chris-ramon/graphql-go/language/ast"
 )
 
 type ExecuteParams struct {
-	Schema        types.GraphQLSchema
+	Schema        gqltypes.GraphQLSchema
 	Root          interface{}
 	AST           *ast.Document
 	OperationName string
 	Args          map[string]interface{}
 }
 
-func Execute(p ExecuteParams, resultChan chan *types.GraphQLResult) {
+func Execute(p ExecuteParams, resultChan chan *gqltypes.GraphQLResult) {
 	var errors []graphqlerrors.GraphQLFormattedError
-	var result types.GraphQLResult
+	var result gqltypes.GraphQLResult
 	params := BuildExecutionCtxParams{
 		Schema:        p.Schema,
 		Root:          p.Root,
@@ -55,17 +56,17 @@ func Execute(p ExecuteParams, resultChan chan *types.GraphQLResult) {
 }
 
 type BuildExecutionCtxParams struct {
-	Schema        types.GraphQLSchema
+	Schema        gqltypes.GraphQLSchema
 	Root          interface{}
 	AST           *ast.Document
 	OperationName string
 	Args          map[string]interface{}
 	Errors        []graphqlerrors.GraphQLFormattedError
-	Result        *types.GraphQLResult
-	ResultChan    chan *types.GraphQLResult
+	Result        *gqltypes.GraphQLResult
+	ResultChan    chan *gqltypes.GraphQLResult
 }
 type ExecutionContext struct {
-	Schema         types.GraphQLSchema
+	Schema         gqltypes.GraphQLSchema
 	Fragments      map[string]ast.Definition
 	Root           interface{}
 	Operation      ast.Definition
@@ -143,8 +144,8 @@ type ExecuteOperationParams struct {
 	Operation        ast.Definition
 }
 
-func executeOperation(p ExecuteOperationParams, resultChan chan *types.GraphQLResult) {
-	var results types.GraphQLResult
+func executeOperation(p ExecuteOperationParams, resultChan chan *gqltypes.GraphQLResult) {
+	var results gqltypes.GraphQLResult
 	operationType := getOperationRootType(p.ExecutionContext.Schema, p.Operation, resultChan)
 
 	collectFieldsParams := CollectFieldsParams{
@@ -169,9 +170,9 @@ func executeOperation(p ExecuteOperationParams, resultChan chan *types.GraphQLRe
 }
 
 // Extracts the root type of the operation from the schema.
-func getOperationRootType(schema types.GraphQLSchema, operation ast.Definition, r chan *types.GraphQLResult) (objType *types.GraphQLObjectType) {
+func getOperationRootType(schema gqltypes.GraphQLSchema, operation ast.Definition, r chan *gqltypes.GraphQLResult) (objType *gqltypes.GraphQLObjectType) {
 	if operation == nil {
-		var result types.GraphQLResult
+		var result gqltypes.GraphQLResult
 		err := graphqlerrors.NewGraphQLFormattedError("Can only execute queries and mutations")
 		result.Errors = append(result.Errors, err)
 		r <- &result
@@ -183,7 +184,7 @@ func getOperationRootType(schema types.GraphQLSchema, operation ast.Definition, 
 	case "mutation":
 		mutationType := schema.GetMutationType()
 		if mutationType.Name == "" {
-			var result types.GraphQLResult
+			var result gqltypes.GraphQLResult
 			err := graphqlerrors.NewGraphQLFormattedError("Schema is not configured for mutations")
 			result.Errors = append(result.Errors, err)
 			r <- &result
@@ -191,7 +192,7 @@ func getOperationRootType(schema types.GraphQLSchema, operation ast.Definition, 
 		}
 		return mutationType
 	default:
-		var result types.GraphQLResult
+		var result gqltypes.GraphQLResult
 		err := graphqlerrors.NewGraphQLFormattedError("Can only execute queries and mutations")
 		result.Errors = append(result.Errors, err)
 		r <- &result
@@ -201,20 +202,20 @@ func getOperationRootType(schema types.GraphQLSchema, operation ast.Definition, 
 
 type ExecuteFieldsParams struct {
 	ExecutionContext *ExecutionContext
-	ParentType       *types.GraphQLObjectType
+	ParentType       *gqltypes.GraphQLObjectType
 	Source           interface{}
 	Fields           map[string][]*ast.Field
 }
 
 // Implements the "Evaluating selection sets" section of the spec for "write" mode.
-func executeFieldsSerially(p ExecuteFieldsParams, resultChan chan *types.GraphQLResult) {
+func executeFieldsSerially(p ExecuteFieldsParams, resultChan chan *gqltypes.GraphQLResult) {
 	if p.Source == nil {
 		p.Source = map[string]interface{}{}
 	}
 	if p.Fields == nil {
 		p.Fields = map[string][]*ast.Field{}
 	}
-	var result types.GraphQLResult
+	var result gqltypes.GraphQLResult
 
 	finalResults := map[string]interface{}{}
 	for responseName, fieldASTs := range p.Fields {
@@ -230,7 +231,7 @@ func executeFieldsSerially(p ExecuteFieldsParams, resultChan chan *types.GraphQL
 }
 
 // Implements the "Evaluating selection sets" section of the spec for "read" mode.
-func executeFields(p ExecuteFieldsParams) (result types.GraphQLResult) {
+func executeFields(p ExecuteFieldsParams) (result gqltypes.GraphQLResult) {
 	if p.Source == nil {
 		p.Source = map[string]interface{}{}
 	}
@@ -254,7 +255,7 @@ func executeFields(p ExecuteFieldsParams) (result types.GraphQLResult) {
 
 type CollectFieldsParams struct {
 	ExeContext           *ExecutionContext
-	OperationType        *types.GraphQLObjectType
+	OperationType        *gqltypes.GraphQLObjectType
 	SelectionSet         *ast.SelectionSet
 	Fields               map[string][]*ast.Field
 	VisitedFragmentNames map[string]bool
@@ -345,14 +346,14 @@ func shouldIncludeNode(eCtx *ExecutionContext, directives []*ast.Directive) bool
 		if directive == nil || directive.Name == nil {
 			continue
 		}
-		if directive.Name.Value == types.GraphQLSkipDirective.Name {
+		if directive.Name.Value == gqltypes.GraphQLSkipDirective.Name {
 			skipAST = directive
 			break
 		}
 	}
 	if skipAST != nil {
 		argValues, err := getArgumentValues(
-			types.GraphQLSkipDirective.Args,
+			gqltypes.GraphQLSkipDirective.Args,
 			skipAST.Arguments,
 			eCtx.VariableValues,
 		)
@@ -370,14 +371,14 @@ func shouldIncludeNode(eCtx *ExecutionContext, directives []*ast.Directive) bool
 		if directive == nil || directive.Name == nil {
 			continue
 		}
-		if directive.Name.Value == types.GraphQLIncludeDirective.Name {
+		if directive.Name.Value == gqltypes.GraphQLIncludeDirective.Name {
 			includeAST = directive
 			break
 		}
 	}
 	if includeAST != nil {
 		argValues, err := getArgumentValues(
-			types.GraphQLIncludeDirective.Args,
+			gqltypes.GraphQLIncludeDirective.Args,
 			includeAST.Arguments,
 			eCtx.VariableValues,
 		)
@@ -395,7 +396,7 @@ func shouldIncludeNode(eCtx *ExecutionContext, directives []*ast.Directive) bool
 }
 
 // Determines if a fragment is applicable to the given type.
-func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment ast.Node, ttype *types.GraphQLObjectType) bool {
+func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment ast.Node, ttype *gqltypes.GraphQLObjectType) bool {
 
 	switch fragment := fragment.(type) {
 	case *ast.FragmentDefinition:
@@ -407,7 +408,7 @@ func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment ast.Node, ttype
 			return true
 		}
 
-		if conditionalType, ok := conditionalType.(types.GraphQLAbstractType); ok {
+		if conditionalType, ok := conditionalType.(gqltypes.GraphQLAbstractType); ok {
 			return conditionalType.IsPossibleType(ttype)
 		}
 	case *ast.InlineFragment:
@@ -419,7 +420,7 @@ func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment ast.Node, ttype
 			return true
 		}
 
-		if conditionalType, ok := conditionalType.(types.GraphQLAbstractType); ok {
+		if conditionalType, ok := conditionalType.(gqltypes.GraphQLAbstractType); ok {
 			return conditionalType.IsPossibleType(ttype)
 		}
 	}
@@ -450,9 +451,9 @@ type resolveFieldResultState struct {
  * then calls completeValue to complete promises, serialize scalars, or execute
  * the sub-selection-set for objects.
  */
-func resolveField(eCtx *ExecutionContext, parentType *types.GraphQLObjectType, source interface{}, fieldASTs []*ast.Field) (result interface{}, resultState resolveFieldResultState) {
+func resolveField(eCtx *ExecutionContext, parentType *gqltypes.GraphQLObjectType, source interface{}, fieldASTs []*ast.Field) (result interface{}, resultState resolveFieldResultState) {
 	// catch panic from resolveFn
-	var returnType types.GraphQLOutputType
+	var returnType gqltypes.GraphQLOutputType
 	defer func() (interface{}, resolveFieldResultState) {
 		if r := recover(); r != nil {
 
@@ -467,7 +468,7 @@ func resolveField(eCtx *ExecutionContext, parentType *types.GraphQLObjectType, s
 				err = graphqlerrors.FormatError(r)
 			}
 			// send panic upstream
-			if _, ok := returnType.(*types.GraphQLNonNull); ok {
+			if _, ok := returnType.(*gqltypes.GraphQLNonNull); ok {
 				panic(graphqlerrors.FormatError(err))
 			}
 			eCtx.Errors = append(eCtx.Errors, graphqlerrors.FormatError(err))
@@ -500,7 +501,7 @@ func resolveField(eCtx *ExecutionContext, parentType *types.GraphQLObjectType, s
 
 	// The resolve function's optional third argument is a collection of
 	// information about the current execution state.
-	info := types.GraphQLResolveInfo{
+	info := gqltypes.GraphQLResolveInfo{
 		FieldName:      fieldName,
 		FieldASTs:      fieldASTs,
 		ReturnType:     returnType,
@@ -516,7 +517,7 @@ func resolveField(eCtx *ExecutionContext, parentType *types.GraphQLObjectType, s
 	// it is wrapped as a GraphQLError with locations. Log this error and return
 	// null if allowed, otherwise throw the error so the parent field can handle
 	// it.
-	result = resolveFn(types.GQLFRParams{
+	result = resolveFn(gqltypes.GQLFRParams{
 		Source: source,
 		Args:   args,
 		Info:   info,
@@ -526,12 +527,12 @@ func resolveField(eCtx *ExecutionContext, parentType *types.GraphQLObjectType, s
 	return completed, resultState
 }
 
-func completeValueCatchingError(eCtx *ExecutionContext, returnType types.GraphQLType, fieldASTs []*ast.Field, info types.GraphQLResolveInfo, result interface{}) (completed interface{}) {
+func completeValueCatchingError(eCtx *ExecutionContext, returnType gqltypes.GraphQLType, fieldASTs []*ast.Field, info gqltypes.GraphQLResolveInfo, result interface{}) (completed interface{}) {
 	// catch panic
 	defer func() interface{} {
 		if r := recover(); r != nil {
 			//send panic upstream
-			if _, ok := returnType.(*types.GraphQLNonNull); ok {
+			if _, ok := returnType.(*gqltypes.GraphQLNonNull); ok {
 				panic(r)
 			}
 			if err, ok := r.(graphqlerrors.GraphQLFormattedError); ok {
@@ -542,7 +543,7 @@ func completeValueCatchingError(eCtx *ExecutionContext, returnType types.GraphQL
 		return completed
 	}()
 
-	if returnType, ok := returnType.(*types.GraphQLNonNull); ok {
+	if returnType, ok := returnType.(*gqltypes.GraphQLNonNull); ok {
 		completed := completeValue(eCtx, returnType, fieldASTs, info, result)
 		return completed
 	}
@@ -558,7 +559,7 @@ func completeValueCatchingError(eCtx *ExecutionContext, returnType types.GraphQL
 	return completed
 }
 
-func completeValue(eCtx *ExecutionContext, returnType types.GraphQLType, fieldASTs []*ast.Field, info types.GraphQLResolveInfo, result interface{}) interface{} {
+func completeValue(eCtx *ExecutionContext, returnType gqltypes.GraphQLType, fieldASTs []*ast.Field, info gqltypes.GraphQLResolveInfo, result interface{}) interface{} {
 
 	// TODO: explore resolving go-routines in completeValue
 
@@ -571,7 +572,7 @@ func completeValue(eCtx *ExecutionContext, returnType types.GraphQLType, fieldAS
 		panic(graphqlerrors.FormatError(err))
 	}
 
-	if returnType, ok := returnType.(*types.GraphQLNonNull); ok {
+	if returnType, ok := returnType.(*gqltypes.GraphQLNonNull); ok {
 		completed := completeValue(eCtx, returnType.OfType, fieldASTs, info, result)
 		if completed == nil {
 			err := graphqlerrors.NewLocatedError(
@@ -588,7 +589,7 @@ func completeValue(eCtx *ExecutionContext, returnType types.GraphQLType, fieldAS
 	}
 
 	// If field type is List, complete each item in the list with the inner type
-	if returnType, ok := returnType.(*types.GraphQLList); ok {
+	if returnType, ok := returnType.(*gqltypes.GraphQLList); ok {
 
 		resultVal := reflect.ValueOf(result)
 		err := invariant(
@@ -611,7 +612,7 @@ func completeValue(eCtx *ExecutionContext, returnType types.GraphQLType, fieldAS
 
 	// If field type is Scalar or Enum, serialize to a valid value, returning
 	// null if serialization is not possible.
-	if returnType, ok := returnType.(*types.GraphQLScalarType); ok {
+	if returnType, ok := returnType.(*gqltypes.GraphQLScalarType); ok {
 		err := invariant(returnType.Serialize != nil, "Missing serialize method on type")
 		if err != nil {
 			panic(graphqlerrors.FormatError(err))
@@ -622,7 +623,7 @@ func completeValue(eCtx *ExecutionContext, returnType types.GraphQLType, fieldAS
 		}
 		return serializedResult
 	}
-	if returnType, ok := returnType.(*types.GraphQLEnumType); ok {
+	if returnType, ok := returnType.(*gqltypes.GraphQLEnumType); ok {
 		err := invariant(returnType.Serialize != nil, "Missing serialize method on type")
 		if err != nil {
 			panic(graphqlerrors.FormatError(err))
@@ -635,11 +636,11 @@ func completeValue(eCtx *ExecutionContext, returnType types.GraphQLType, fieldAS
 	}
 
 	// Field type must be Object, Interface or Union and expect sub-selections.
-	var objectType *types.GraphQLObjectType
+	var objectType *gqltypes.GraphQLObjectType
 	switch returnType := returnType.(type) {
-	case *types.GraphQLObjectType:
+	case *gqltypes.GraphQLObjectType:
 		objectType = returnType
-	case types.GraphQLAbstractType:
+	case gqltypes.GraphQLAbstractType:
 		objectType = returnType.GetObjectType(result, info)
 		if objectType != nil && !returnType.IsPossibleType(objectType) {
 			panic(graphqlerrors.NewGraphQLFormattedError(
@@ -692,7 +693,7 @@ func completeValue(eCtx *ExecutionContext, returnType types.GraphQLType, fieldAS
 
 }
 
-func defaultResolveFn(p types.GQLFRParams) interface{} {
+func defaultResolveFn(p gqltypes.GQLFRParams) interface{} {
 
 	// try to resolve p.Source as a struct first
 	sourceVal := reflect.ValueOf(p.Source)
@@ -749,22 +750,22 @@ func defaultResolveFn(p types.GQLFRParams) interface{} {
  * added to the query type, but that would require mutating type
  * definitions, which would cause issues.
  */
-func getFieldDef(schema types.GraphQLSchema, parentType *types.GraphQLObjectType, fieldName string) *types.GraphQLFieldDefinition {
+func getFieldDef(schema gqltypes.GraphQLSchema, parentType *gqltypes.GraphQLObjectType, fieldName string) *gqltypes.GraphQLFieldDefinition {
 
 	if parentType == nil {
 		return nil
 	}
 
-	if fieldName == types.SchemaMetaFieldDef.Name &&
+	if fieldName == gqltypes.SchemaMetaFieldDef.Name &&
 		schema.GetQueryType().Name == parentType.Name {
-		return types.SchemaMetaFieldDef
+		return gqltypes.SchemaMetaFieldDef
 	}
-	if fieldName == types.TypeMetaFieldDef.Name &&
+	if fieldName == gqltypes.TypeMetaFieldDef.Name &&
 		schema.GetQueryType().Name == parentType.Name {
-		return types.TypeMetaFieldDef
+		return gqltypes.TypeMetaFieldDef
 	}
-	if fieldName == types.TypeNameMetaFieldDef.Name {
-		return types.TypeNameMetaFieldDef
+	if fieldName == gqltypes.TypeNameMetaFieldDef.Name {
+		return gqltypes.TypeNameMetaFieldDef
 	}
 	return parentType.GetFields()[fieldName]
 }

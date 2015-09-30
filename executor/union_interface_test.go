@@ -1,11 +1,12 @@
 package executor_test
 
 import (
-	"github.com/chris-ramon/graphql-go/executor"
-	"github.com/chris-ramon/graphql-go/testutil"
-	"github.com/chris-ramon/graphql-go/types"
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql-go/executor"
+	"github.com/chris-ramon/graphql-go/gqltypes"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
 type testNamedType interface {
@@ -28,56 +29,56 @@ type testPerson struct {
 	Friends []testNamedType `json:"friends"`
 }
 
-var namedType = types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+var namedType = gqltypes.NewGraphQLInterfaceType(gqltypes.GraphQLInterfaceTypeConfig{
 	Name: "Named",
-	Fields: types.GraphQLFieldConfigMap{
-		"name": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+	Fields: gqltypes.GraphQLFieldConfigMap{
+		"name": &gqltypes.GraphQLFieldConfig{
+			Type: gqltypes.GraphQLString,
 		},
 	},
 })
-var dogType = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var dogType = gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 	Name: "Dog",
-	Interfaces: []*types.GraphQLInterfaceType{
+	Interfaces: []*gqltypes.GraphQLInterfaceType{
 		namedType,
 	},
-	Fields: types.GraphQLFieldConfigMap{
-		"name": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+	Fields: gqltypes.GraphQLFieldConfigMap{
+		"name": &gqltypes.GraphQLFieldConfig{
+			Type: gqltypes.GraphQLString,
 		},
-		"barks": &types.GraphQLFieldConfig{
-			Type: types.GraphQLBoolean,
+		"barks": &gqltypes.GraphQLFieldConfig{
+			Type: gqltypes.GraphQLBoolean,
 		},
 	},
-	IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
+	IsTypeOf: func(value interface{}, info gqltypes.GraphQLResolveInfo) bool {
 		_, ok := value.(*testDog2)
 		return ok
 	},
 })
-var catType = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var catType = gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 	Name: "Cat",
-	Interfaces: []*types.GraphQLInterfaceType{
+	Interfaces: []*gqltypes.GraphQLInterfaceType{
 		namedType,
 	},
-	Fields: types.GraphQLFieldConfigMap{
-		"name": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+	Fields: gqltypes.GraphQLFieldConfigMap{
+		"name": &gqltypes.GraphQLFieldConfig{
+			Type: gqltypes.GraphQLString,
 		},
-		"meows": &types.GraphQLFieldConfig{
-			Type: types.GraphQLBoolean,
+		"meows": &gqltypes.GraphQLFieldConfig{
+			Type: gqltypes.GraphQLBoolean,
 		},
 	},
-	IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
+	IsTypeOf: func(value interface{}, info gqltypes.GraphQLResolveInfo) bool {
 		_, ok := value.(*testCat2)
 		return ok
 	},
 })
-var petType = types.NewGraphQLUnionType(types.GraphQLUnionTypeConfig{
+var petType = gqltypes.NewGraphQLUnionType(gqltypes.GraphQLUnionTypeConfig{
 	Name: "Pet",
-	Types: []*types.GraphQLObjectType{
+	Types: []*gqltypes.GraphQLObjectType{
 		dogType, catType,
 	},
-	ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+	ResolveType: func(value interface{}, info gqltypes.GraphQLResolveInfo) *gqltypes.GraphQLObjectType {
 		if _, ok := value.(*testCat2); ok {
 			return catType
 		}
@@ -87,29 +88,29 @@ var petType = types.NewGraphQLUnionType(types.GraphQLUnionTypeConfig{
 		return nil
 	},
 })
-var personType = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var personType = gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 	Name: "Person",
-	Interfaces: []*types.GraphQLInterfaceType{
+	Interfaces: []*gqltypes.GraphQLInterfaceType{
 		namedType,
 	},
-	Fields: types.GraphQLFieldConfigMap{
-		"name": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+	Fields: gqltypes.GraphQLFieldConfigMap{
+		"name": &gqltypes.GraphQLFieldConfig{
+			Type: gqltypes.GraphQLString,
 		},
-		"pets": &types.GraphQLFieldConfig{
-			Type: types.NewGraphQLList(petType),
+		"pets": &gqltypes.GraphQLFieldConfig{
+			Type: gqltypes.NewGraphQLList(petType),
 		},
-		"friends": &types.GraphQLFieldConfig{
-			Type: types.NewGraphQLList(namedType),
+		"friends": &gqltypes.GraphQLFieldConfig{
+			Type: gqltypes.NewGraphQLList(namedType),
 		},
 	},
-	IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
+	IsTypeOf: func(value interface{}, info gqltypes.GraphQLResolveInfo) bool {
 		_, ok := value.(*testPerson)
 		return ok
 	},
 })
 
-var unionInterfaceTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+var unionInterfaceTestSchema, _ = gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
 	Query: personType,
 })
 
@@ -151,7 +152,7 @@ func TestUnionIntersectionTypes_CanIntrospectOnUnionAndIntersectionTypes(t *test
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"Named": map[string]interface{}{
 				"kind": "INTERFACE",
@@ -224,7 +225,7 @@ func TestUnionIntersectionTypes_ExecutesUsingUnionTypes(t *testing.T) {
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"__typename": "Person",
 			"name":       "John",
@@ -278,7 +279,7 @@ func TestUnionIntersectionTypes_ExecutesUnionTypesWithInlineFragments(t *testing
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"__typename": "Person",
 			"name":       "John",
@@ -328,7 +329,7 @@ func TestUnionIntersectionTypes_ExecutesUsingInterfaceTypes(t *testing.T) {
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"__typename": "Person",
 			"name":       "John",
@@ -381,7 +382,7 @@ func TestUnionIntersectionTypes_ExecutesInterfaceTypesWithInlineFragments(t *tes
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"__typename": "Person",
 			"name":       "John",
@@ -449,7 +450,7 @@ func TestUnionIntersectionTypes_AllowsFragmentConditionsToBeAbstractTypes(t *tes
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"__typename": "Person",
 			"name":       "John",
@@ -497,41 +498,41 @@ func TestUnionIntersectionTypes_AllowsFragmentConditionsToBeAbstractTypes(t *tes
 }
 func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 
-	var encounteredSchema *types.GraphQLSchema
+	var encounteredSchema *gqltypes.GraphQLSchema
 	var encounteredRootValue interface{}
 
-	var personType2 *types.GraphQLObjectType
+	var personType2 *gqltypes.GraphQLObjectType
 
-	namedType2 := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	namedType2 := gqltypes.NewGraphQLInterfaceType(gqltypes.GraphQLInterfaceTypeConfig{
 		Name: "Named",
-		Fields: types.GraphQLFieldConfigMap{
-			"name": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: gqltypes.GraphQLFieldConfigMap{
+			"name": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.GraphQLString,
 			},
 		},
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info gqltypes.GraphQLResolveInfo) *gqltypes.GraphQLObjectType {
 			encounteredSchema = &info.Schema
 			encounteredRootValue = info.RootValue
 			return personType2
 		},
 	})
 
-	personType2 = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	personType2 = gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 		Name: "Person",
-		Interfaces: []*types.GraphQLInterfaceType{
+		Interfaces: []*gqltypes.GraphQLInterfaceType{
 			namedType2,
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"name": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: gqltypes.GraphQLFieldConfigMap{
+			"name": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.GraphQLString,
 			},
-			"friends": &types.GraphQLFieldConfig{
-				Type: types.NewGraphQLList(namedType2),
+			"friends": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.NewGraphQLList(namedType2),
 			},
 		},
 	})
 
-	schema2, _ := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	schema2, _ := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
 		Query: personType2,
 	})
 
@@ -543,7 +544,7 @@ func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 	}
 
 	doc := `{ name, friends { name } }`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"name": "John",
 			"friends": []interface{}{

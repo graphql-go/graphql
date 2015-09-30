@@ -1,22 +1,23 @@
 package executor_test
 
 import (
-	"github.com/chris-ramon/graphql-go/executor"
-	"github.com/chris-ramon/graphql-go/testutil"
-	"github.com/chris-ramon/graphql-go/types"
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql-go/executor"
+	"github.com/chris-ramon/graphql-go/gqltypes"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
-var directivesTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-	Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var directivesTestSchema, _ = gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
+	Query: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 		Name: "TestType",
-		Fields: types.GraphQLFieldConfigMap{
-			"a": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: gqltypes.GraphQLFieldConfigMap{
+			"a": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.GraphQLString,
 			},
-			"b": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"b": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.GraphQLString,
 			},
 		},
 	}),
@@ -27,7 +28,7 @@ var directivesTestData map[string]interface{} = map[string]interface{}{
 	"b": func() interface{} { return "b" },
 }
 
-func executeDirectivesTestQuery(t *testing.T, doc string) *types.GraphQLResult {
+func executeDirectivesTestQuery(t *testing.T, doc string) *gqltypes.GraphQLResult {
 	ast := testutil.Parse(t, doc)
 	ep := executor.ExecuteParams{
 		Schema: directivesTestSchema,
@@ -39,7 +40,7 @@ func executeDirectivesTestQuery(t *testing.T, doc string) *types.GraphQLResult {
 
 func TestDirectivesWorksWithoutDirectives(t *testing.T) {
 	query := `{ a, b }`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -56,7 +57,7 @@ func TestDirectivesWorksWithoutDirectives(t *testing.T) {
 
 func TestDirectivesWorksOnScalarsIfTrueIncludesScalar(t *testing.T) {
 	query := `{ a, b @include(if: true) }`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -73,7 +74,7 @@ func TestDirectivesWorksOnScalarsIfTrueIncludesScalar(t *testing.T) {
 
 func TestDirectivesWorksOnScalarsIfFalseOmitsOnScalar(t *testing.T) {
 	query := `{ a, b @include(if: false) }`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -89,7 +90,7 @@ func TestDirectivesWorksOnScalarsIfFalseOmitsOnScalar(t *testing.T) {
 
 func TestDirectivesWorksOnScalarsUnlessFalseIncludesScalar(t *testing.T) {
 	query := `{ a, b @skip(if: false) }`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -106,7 +107,7 @@ func TestDirectivesWorksOnScalarsUnlessFalseIncludesScalar(t *testing.T) {
 
 func TestDirectivesWorksOnScalarsUnlessTrueOmitsScalar(t *testing.T) {
 	query := `{ a, b @skip(if: true) }`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -130,7 +131,7 @@ func TestDirectivesWorksOnFragmentSpreadsIfFalseOmitsFragmentSpread(t *testing.T
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -154,7 +155,7 @@ func TestDirectivesWorksOnFragmentSpreadsIfTrueIncludesFragmentSpread(t *testing
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -179,7 +180,7 @@ func TestDirectivesWorksOnFragmentSpreadsUnlessFalseIncludesFragmentSpread(t *te
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -204,7 +205,7 @@ func TestDirectivesWorksOnFragmentSpreadsUnlessTrueOmitsFragmentSpread(t *testin
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -230,7 +231,7 @@ func TestDirectivesWorksOnInlineFragmentIfFalseOmitsInlineFragment(t *testing.T)
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -256,7 +257,7 @@ func TestDirectivesWorksOnInlineFragmentIfTrueIncludesInlineFragment(t *testing.
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -283,7 +284,7 @@ func TestDirectivesWorksOnInlineFragmentUnlessFalseIncludesInlineFragment(t *tes
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -310,7 +311,7 @@ func TestDirectivesWorksOnInlineFragmentUnlessTrueIncludesInlineFragment(t *test
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -334,7 +335,7 @@ func TestDirectivesWorksOnFragmentIfFalseOmitsFragment(t *testing.T) {
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -358,7 +359,7 @@ func TestDirectivesWorksOnFragmentIfTrueIncludesFragment(t *testing.T) {
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -383,7 +384,7 @@ func TestDirectivesWorksOnFragmentUnlessFalseIncludesFragment(t *testing.T) {
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -408,7 +409,7 @@ func TestDirectivesWorksOnFragmentUnlessTrueOmitsFragment(t *testing.T) {
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
