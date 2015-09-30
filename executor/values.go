@@ -3,19 +3,20 @@ package executor
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"reflect"
+
 	"github.com/chris-ramon/graphql-go/errors"
+	"github.com/chris-ramon/graphql-go/gqltypes"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/kinds"
 	"github.com/chris-ramon/graphql-go/language/printer"
-	"github.com/chris-ramon/graphql-go/types"
-	"math"
-	"reflect"
 )
 
 // Prepares an object map of variableValues of the correct type based on the
 // provided variable definitions and arbitrary input. If the input cannot be
 // parsed to match the variable definitions, a GraphQLError will be returned.
-func getVariableValues(schema types.GraphQLSchema, definitionASTs []*ast.VariableDefinition, inputs map[string]interface{}) (map[string]interface{}, error) {
+func getVariableValues(schema gqltypes.GraphQLSchema, definitionASTs []*ast.VariableDefinition, inputs map[string]interface{}) (map[string]interface{}, error) {
 	values := map[string]interface{}{}
 	for _, defAST := range definitionASTs {
 		if defAST == nil || defAST.Variable == nil || defAST.Variable.Name == nil {
@@ -33,7 +34,7 @@ func getVariableValues(schema types.GraphQLSchema, definitionASTs []*ast.Variabl
 
 // Prepares an object map of argument values given a list of argument
 // definitions and list of argument AST nodes.
-func getArgumentValues(argDefs []*types.GraphQLArgument, argASTs []*ast.Argument, variableVariables map[string]interface{}) (map[string]interface{}, error) {
+func getArgumentValues(argDefs []*gqltypes.GraphQLArgument, argASTs []*ast.Argument, variableVariables map[string]interface{}) (map[string]interface{}, error) {
 
 	argASTMap := map[string]*ast.Argument{}
 	for _, argAST := range argASTs {
@@ -62,14 +63,14 @@ func getArgumentValues(argDefs []*types.GraphQLArgument, argASTs []*ast.Argument
 
 // Given a variable definition, and any value of input, return a value which
 // adheres to the variable definition, or throw an error.
-func getVariableValue(schema types.GraphQLSchema, definitionAST *ast.VariableDefinition, input interface{}) (interface{}, error) {
+func getVariableValue(schema gqltypes.GraphQLSchema, definitionAST *ast.VariableDefinition, input interface{}) (interface{}, error) {
 	ttype, err := typeFromAST(schema, definitionAST.Type)
 	if err != nil {
 		return nil, err
 	}
 	variable := definitionAST.Variable
 
-	if ttype == nil || !types.IsInputType(ttype) {
+	if ttype == nil || !gqltypes.IsInputType(ttype) {
 		return "", graphqlerrors.NewGraphQLError(
 			fmt.Sprintf(`Variable "$%v" expected value of type `+
 				`"%v" which cannot be used as an input type.`, variable.Name.Value, printer.Print(definitionAST.Type)),
@@ -117,14 +118,14 @@ func getVariableValue(schema types.GraphQLSchema, definitionAST *ast.VariableDef
 }
 
 // Given a type and any value, return a runtime value coerced to match the type.
-func coerceValue(ttype types.GraphQLInputType, value interface{}) interface{} {
-	if ttype, ok := ttype.(*types.GraphQLNonNull); ok {
+func coerceValue(ttype gqltypes.GraphQLInputType, value interface{}) interface{} {
+	if ttype, ok := ttype.(*gqltypes.GraphQLNonNull); ok {
 		return coerceValue(ttype.OfType, value)
 	}
 	if isNullish(value) {
 		return nil
 	}
-	if ttype, ok := ttype.(*types.GraphQLList); ok {
+	if ttype, ok := ttype.(*gqltypes.GraphQLList); ok {
 		itemType := ttype.OfType
 		valType := reflect.ValueOf(value)
 		if valType.Kind() == reflect.Slice {
@@ -139,7 +140,7 @@ func coerceValue(ttype types.GraphQLInputType, value interface{}) interface{} {
 		val := coerceValue(itemType, value)
 		return []interface{}{val}
 	}
-	if ttype, ok := ttype.(*types.GraphQLInputObjectType); ok {
+	if ttype, ok := ttype.(*gqltypes.GraphQLInputObjectType); ok {
 
 		valueMap, ok := value.(map[string]interface{})
 		if !ok {
@@ -161,12 +162,12 @@ func coerceValue(ttype types.GraphQLInputType, value interface{}) interface{} {
 	}
 
 	switch ttype := ttype.(type) {
-	case *types.GraphQLScalarType:
+	case *gqltypes.GraphQLScalarType:
 		parsed := ttype.ParseValue(value)
 		if !isNullish(parsed) {
 			return parsed
 		}
-	case *types.GraphQLEnumType:
+	case *gqltypes.GraphQLEnumType:
 		parsed := ttype.ParseValue(value)
 		if !isNullish(parsed) {
 			return parsed
@@ -178,20 +179,20 @@ func coerceValue(ttype types.GraphQLInputType, value interface{}) interface{} {
 // graphql-js/src/utilities.js`
 // TODO: figure out where to organize utils
 
-func typeFromAST(schema types.GraphQLSchema, inputTypeAST ast.Type) (types.GraphQLType, error) {
+func typeFromAST(schema gqltypes.GraphQLSchema, inputTypeAST ast.Type) (gqltypes.GraphQLType, error) {
 	switch inputTypeAST := inputTypeAST.(type) {
 	case *ast.ListType:
 		innerType, err := typeFromAST(schema, inputTypeAST.Type)
 		if err != nil {
 			return nil, err
 		}
-		return types.NewGraphQLList(innerType), nil
+		return gqltypes.NewGraphQLList(innerType), nil
 	case *ast.NonNullType:
 		innerType, err := typeFromAST(schema, inputTypeAST.Type)
 		if err != nil {
 			return nil, err
 		}
-		return types.NewGraphQLNonNull(innerType), nil
+		return gqltypes.NewGraphQLNonNull(innerType), nil
 	case *ast.NamedType:
 		nameValue := ""
 		if inputTypeAST.Name != nil {
@@ -208,8 +209,8 @@ func typeFromAST(schema types.GraphQLSchema, inputTypeAST ast.Type) (types.Graph
 // Given a value and a GraphQL type, determine if the value will be
 // accepted for that type. This is primarily useful for validating the
 // runtime values of query variables.
-func isValidInputValue(value interface{}, ttype types.GraphQLInputType) bool {
-	if ttype, ok := ttype.(*types.GraphQLNonNull); ok {
+func isValidInputValue(value interface{}, ttype gqltypes.GraphQLInputType) bool {
+	if ttype, ok := ttype.(*gqltypes.GraphQLNonNull); ok {
 		if isNullish(value) {
 			return false
 		}
@@ -221,7 +222,7 @@ func isValidInputValue(value interface{}, ttype types.GraphQLInputType) bool {
 	}
 
 	switch ttype := ttype.(type) {
-	case *types.GraphQLList:
+	case *gqltypes.GraphQLList:
 		itemType := ttype.OfType
 		valType := reflect.ValueOf(value)
 		if valType.Kind() == reflect.Ptr {
@@ -238,7 +239,7 @@ func isValidInputValue(value interface{}, ttype types.GraphQLInputType) bool {
 		}
 		return isValidInputValue(value, itemType)
 
-	case *types.GraphQLInputObjectType:
+	case *gqltypes.GraphQLInputObjectType:
 		valueMap, ok := value.(map[string]interface{})
 		if !ok {
 			return false
@@ -262,10 +263,10 @@ func isValidInputValue(value interface{}, ttype types.GraphQLInputType) bool {
 	}
 
 	switch ttype := ttype.(type) {
-	case *types.GraphQLScalarType:
+	case *gqltypes.GraphQLScalarType:
 		parsedVal := ttype.ParseValue(value)
 		return !isNullish(parsedVal)
-	case *types.GraphQLEnumType:
+	case *gqltypes.GraphQLEnumType:
 		parsedVal := ttype.ParseValue(value)
 		return !isNullish(parsedVal)
 	}
@@ -304,9 +305,9 @@ func isNullish(value interface{}) bool {
  * | Int / Float          | Number        |
  *
  */
-func valueFromAST(valueAST ast.Value, ttype types.GraphQLInputType, variables map[string]interface{}) interface{} {
+func valueFromAST(valueAST ast.Value, ttype gqltypes.GraphQLInputType, variables map[string]interface{}) interface{} {
 
-	if ttype, ok := ttype.(*types.GraphQLNonNull); ok {
+	if ttype, ok := ttype.(*gqltypes.GraphQLNonNull); ok {
 		val := valueFromAST(valueAST, ttype.OfType, variables)
 		return val
 	}
@@ -333,7 +334,7 @@ func valueFromAST(valueAST ast.Value, ttype types.GraphQLInputType, variables ma
 		return variableVal
 	}
 
-	if ttype, ok := ttype.(*types.GraphQLList); ok {
+	if ttype, ok := ttype.(*gqltypes.GraphQLList); ok {
 		itemType := ttype.OfType
 		if valueAST, ok := valueAST.(*ast.ListValue); ok && valueAST.Kind == kinds.ListValue {
 			values := []interface{}{}
@@ -347,7 +348,7 @@ func valueFromAST(valueAST ast.Value, ttype types.GraphQLInputType, variables ma
 		return []interface{}{v}
 	}
 
-	if ttype, ok := ttype.(*types.GraphQLInputObjectType); ok {
+	if ttype, ok := ttype.(*gqltypes.GraphQLInputObjectType); ok {
 		valueAST, ok := valueAST.(*ast.ObjectValue)
 		if !ok {
 			return nil
@@ -379,12 +380,12 @@ func valueFromAST(valueAST ast.Value, ttype types.GraphQLInputType, variables ma
 	}
 
 	switch ttype := ttype.(type) {
-	case *types.GraphQLScalarType:
+	case *gqltypes.GraphQLScalarType:
 		parsed := ttype.ParseLiteral(valueAST)
 		if !isNullish(parsed) {
 			return parsed
 		}
-	case *types.GraphQLEnumType:
+	case *gqltypes.GraphQLEnumType:
 		parsed := ttype.ParseLiteral(valueAST)
 		if !isNullish(parsed) {
 			return parsed
