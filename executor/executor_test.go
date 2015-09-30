@@ -3,13 +3,14 @@ package executor_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/chris-ramon/graphql-go/errors"
-	"github.com/chris-ramon/graphql-go/executor"
-	"github.com/chris-ramon/graphql-go/language/location"
-	"github.com/chris-ramon/graphql-go/testutil"
-	"github.com/chris-ramon/graphql-go/types"
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql-go/errors"
+	"github.com/chris-ramon/graphql-go/executor"
+	"github.com/chris-ramon/graphql-go/gqltypes"
+	"github.com/chris-ramon/graphql-go/language/location"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
 func TestExecutesArbitraryCode(t *testing.T) {
@@ -67,7 +68,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
       }
     `
 
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"b": "Banana",
 			"x": "Cookie",
@@ -103,7 +104,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 	}
 
 	// Schema Definitions
-	picResolverFn := func(p types.GQLFRParams) interface{} {
+	picResolverFn := func(p gqltypes.GQLFRParams) interface{} {
 		// get and type assert ResolveFn for this field
 		picResolver, ok := p.Source.(map[string]interface{})["pic"].(func(size int) string)
 		if !ok {
@@ -116,67 +117,67 @@ func TestExecutesArbitraryCode(t *testing.T) {
 		}
 		return picResolver(sizeArg)
 	}
-	dataType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	dataType := gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 		Name: "DataType",
-		Fields: types.GraphQLFieldConfigMap{
-			"a": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: gqltypes.GraphQLFieldConfigMap{
+			"a": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.GraphQLString,
 			},
-			"b": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"b": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.GraphQLString,
 			},
-			"c": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"c": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.GraphQLString,
 			},
-			"d": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"d": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.GraphQLString,
 			},
-			"e": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"e": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.GraphQLString,
 			},
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"f": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.GraphQLString,
 			},
-			"pic": &types.GraphQLFieldConfig{
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"size": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLInt,
+			"pic": &gqltypes.GraphQLFieldConfig{
+				Args: gqltypes.GraphQLFieldConfigArgumentMap{
+					"size": &gqltypes.GraphQLArgumentConfig{
+						Type: gqltypes.GraphQLInt,
 					},
 				},
-				Type:    types.GraphQLString,
+				Type:    gqltypes.GraphQLString,
 				Resolve: picResolverFn,
 			},
 		},
 	})
-	deepDataType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	deepDataType := gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 		Name: "DeepDataType",
-		Fields: types.GraphQLFieldConfigMap{
-			"a": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: gqltypes.GraphQLFieldConfigMap{
+			"a": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.GraphQLString,
 			},
-			"b": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"b": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.GraphQLString,
 			},
-			"c": &types.GraphQLFieldConfig{
-				Type: types.NewGraphQLList(types.GraphQLString),
+			"c": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.NewGraphQLList(gqltypes.GraphQLString),
 			},
-			"deeper": &types.GraphQLFieldConfig{
-				Type: types.NewGraphQLList(dataType),
+			"deeper": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.NewGraphQLList(dataType),
 			},
 		},
 	})
 
 	// Exploring a way to have a GraphQLObjectType within itself
 	// in this case DataType has DeepDataType has DataType
-	dataType.AddFieldConfig("deep", &types.GraphQLFieldConfig{
+	dataType.AddFieldConfig("deep", &gqltypes.GraphQLFieldConfig{
 		Type: deepDataType,
 	})
 	// in this case DataType has DataType
-	dataType.AddFieldConfig("promise", &types.GraphQLFieldConfig{
+	dataType.AddFieldConfig("promise", &gqltypes.GraphQLFieldConfig{
 		Type: dataType,
 	})
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	schema, err := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
 		Query: dataType,
 	})
 	if err != nil {
@@ -223,7 +224,7 @@ func TestMergesParallelFragments(t *testing.T) {
       }
     `
 
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "Apple",
 			"b": "Banana",
@@ -239,38 +240,38 @@ func TestMergesParallelFragments(t *testing.T) {
 		},
 	}
 
-	typeObjectType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	typeObjectType := gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 		Name: "Type",
-		Fields: types.GraphQLFieldConfigMap{
-			"a": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+		Fields: gqltypes.GraphQLFieldConfigMap{
+			"a": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.GraphQLString,
+				Resolve: func(p gqltypes.GQLFRParams) interface{} {
 					return "Apple"
 				},
 			},
-			"b": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+			"b": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.GraphQLString,
+				Resolve: func(p gqltypes.GQLFRParams) interface{} {
 					return "Banana"
 				},
 			},
-			"c": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+			"c": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.GraphQLString,
+				Resolve: func(p gqltypes.GQLFRParams) interface{} {
 					return "Cherry"
 				},
 			},
 		},
 	})
-	deepTypeFieldConfig := &types.GraphQLFieldConfig{
+	deepTypeFieldConfig := &gqltypes.GraphQLFieldConfig{
 		Type: typeObjectType,
-		Resolve: func(p types.GQLFRParams) interface{} {
+		Resolve: func(p gqltypes.GQLFRParams) interface{} {
 			return p.Source
 		},
 	}
 	typeObjectType.AddFieldConfig("deep", deepTypeFieldConfig)
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	schema, err := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
 		Query: typeObjectType,
 	})
 	if err != nil {
@@ -306,13 +307,13 @@ func TestThreadsContextCorrectly(t *testing.T) {
 
 	var resolvedContext map[string]interface{}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
+		Query: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
-					Resolve: func(p types.GQLFRParams) interface{} {
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"a": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
+					Resolve: func(p gqltypes.GQLFRParams) interface{} {
 						resolvedContext = p.Source.(map[string]interface{})
 						return resolvedContext
 					},
@@ -354,21 +355,21 @@ func TestCorrectlyThreadsArguments(t *testing.T) {
 
 	var resolvedArgs map[string]interface{}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
+		Query: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"b": &types.GraphQLFieldConfig{
-					Args: types.GraphQLFieldConfigArgumentMap{
-						"numArg": &types.GraphQLArgumentConfig{
-							Type: types.GraphQLInt,
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"b": &gqltypes.GraphQLFieldConfig{
+					Args: gqltypes.GraphQLFieldConfigArgumentMap{
+						"numArg": &gqltypes.GraphQLArgumentConfig{
+							Type: gqltypes.GraphQLInt,
 						},
-						"stringArg": &types.GraphQLArgumentConfig{
-							Type: types.GraphQLString,
+						"stringArg": &gqltypes.GraphQLArgumentConfig{
+							Type: gqltypes.GraphQLString,
 						},
 					},
-					Type: types.GraphQLString,
-					Resolve: func(p types.GQLFRParams) interface{} {
+					Type: gqltypes.GraphQLString,
+					Resolve: func(p gqltypes.GQLFRParams) interface{} {
 						resolvedArgs = p.Args
 						return resolvedArgs
 					},
@@ -434,15 +435,15 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 			panic("Error getting syncError")
 		},
 	}
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
+		Query: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"sync": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"sync": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
-				"syncError": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+				"syncError": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
 			},
 		}),
@@ -479,18 +480,18 @@ func TestUsesTheInlineOperationIfNoOperationIsProvided(t *testing.T) {
 		"a": "b",
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "b",
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
+		Query: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"a": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
 			},
 		}),
@@ -524,18 +525,18 @@ func TestUsesTheOnlyOperationIfNoOperationIsProvided(t *testing.T) {
 		"a": "b",
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "b",
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
+		Query: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"a": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
 			},
 		}),
@@ -576,12 +577,12 @@ func TestThrowsIfNoOperationIsProvidedWithMultipleOperations(t *testing.T) {
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
+		Query: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"a": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
 			},
 		}),
@@ -619,26 +620,26 @@ func TestUsesTheQuerySchemaForQueries(t *testing.T) {
 		"c": "d",
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "b",
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
+		Query: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "Q",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"a": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
 			},
 		}),
-		Mutation: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+		Mutation: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "M",
-			Fields: types.GraphQLFieldConfigMap{
-				"c": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"c": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
 			},
 		}),
@@ -674,26 +675,26 @@ func TestUsesTheMutationSchemaForQueries(t *testing.T) {
 		"c": "d",
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"c": "d",
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
+		Query: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "Q",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"a": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
 			},
 		}),
-		Mutation: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+		Mutation: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "M",
-			Fields: types.GraphQLFieldConfigMap{
-				"c": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"c": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
 			},
 		}),
@@ -740,7 +741,7 @@ func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
 		"e": func() interface{} { return "e" },
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -750,24 +751,24 @@ func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
+		Query: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"a": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
-				"b": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+				"b": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
-				"c": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+				"c": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
-				"d": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+				"d": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
-				"e": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+				"e": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
 			},
 		}),
@@ -822,18 +823,18 @@ func TestAvoidsRecursion(t *testing.T) {
 		"a": "b",
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"a": "b",
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
+		Query: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"a": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
 			},
 		}),
@@ -868,24 +869,24 @@ func TestDoesNotIncludeIllegalFieldsInOutput(t *testing.T) {
       thisIsIllegalDontIncludeMe
     }`
 
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
+		Query: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "Q",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"a": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
 			},
 		}),
-		Mutation: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+		Mutation: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "M",
-			Fields: types.GraphQLFieldConfigMap{
-				"c": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"c": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
 			},
 		}),
@@ -915,36 +916,36 @@ func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
 
 	doc := `{ field(a: true, c: false, e: 0) }`
 
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"field": `{"a":true,"c":false,"e":0}`,
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
+		Query: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"field": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
-					Args: types.GraphQLFieldConfigArgumentMap{
-						"a": &types.GraphQLArgumentConfig{
-							Type: types.GraphQLBoolean,
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"field": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
+					Args: gqltypes.GraphQLFieldConfigArgumentMap{
+						"a": &gqltypes.GraphQLArgumentConfig{
+							Type: gqltypes.GraphQLBoolean,
 						},
-						"b": &types.GraphQLArgumentConfig{
-							Type: types.GraphQLBoolean,
+						"b": &gqltypes.GraphQLArgumentConfig{
+							Type: gqltypes.GraphQLBoolean,
 						},
-						"c": &types.GraphQLArgumentConfig{
-							Type: types.GraphQLBoolean,
+						"c": &gqltypes.GraphQLArgumentConfig{
+							Type: gqltypes.GraphQLBoolean,
 						},
-						"d": &types.GraphQLArgumentConfig{
-							Type: types.GraphQLInt,
+						"d": &gqltypes.GraphQLArgumentConfig{
+							Type: gqltypes.GraphQLInt,
 						},
-						"e": &types.GraphQLArgumentConfig{
-							Type: types.GraphQLInt,
+						"e": &gqltypes.GraphQLArgumentConfig{
+							Type: gqltypes.GraphQLInt,
 						},
 					},
-					Resolve: func(p types.GQLFRParams) interface{} {
+					Resolve: func(p gqltypes.GQLFRParams) interface{} {
 						args, _ := json.Marshal(p.Args)
 						return string(args)
 					},
@@ -991,7 +992,7 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 		},
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"specials": []interface{}{
 				map[string]interface{}{
@@ -1008,30 +1009,30 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 		},
 	}
 
-	specialType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	specialType := gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 		Name: "SpecialType",
-		IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
+		IsTypeOf: func(value interface{}, info gqltypes.GraphQLResolveInfo) bool {
 			if _, ok := value.(testSpecialType); ok {
 				return true
 			}
 			return false
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"value": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+		Fields: gqltypes.GraphQLFieldConfigMap{
+			"value": &gqltypes.GraphQLFieldConfig{
+				Type: gqltypes.GraphQLString,
+				Resolve: func(p gqltypes.GQLFRParams) interface{} {
 					return p.Source.(testSpecialType).Value
 				},
 			},
 		},
 	})
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
+		Query: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "Query",
-			Fields: types.GraphQLFieldConfigMap{
-				"specials": &types.GraphQLFieldConfig{
-					Type: types.NewGraphQLList(specialType),
-					Resolve: func(p types.GQLFRParams) interface{} {
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"specials": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.NewGraphQLList(specialType),
+					Resolve: func(p gqltypes.GQLFRParams) interface{} {
 						return p.Source.(map[string]interface{})["specials"]
 					},
 				},
@@ -1067,7 +1068,7 @@ func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
 
       type Query { foo: String }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: nil,
 		Errors: []graphqlerrors.GraphQLFormattedError{
 			graphqlerrors.GraphQLFormattedError{
@@ -1077,12 +1078,12 @@ func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
+		Query: gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 			Name: "Query",
-			Fields: types.GraphQLFieldConfigMap{
-				"foo": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: gqltypes.GraphQLFieldConfigMap{
+				"foo": &gqltypes.GraphQLFieldConfig{
+					Type: gqltypes.GraphQLString,
 				},
 			},
 		}),

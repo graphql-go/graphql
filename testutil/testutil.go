@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/chris-ramon/graphql-go/executor"
+	"github.com/chris-ramon/graphql-go/gqltypes"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/parser"
-	"github.com/chris-ramon/graphql-go/types"
 	"github.com/kr/pretty"
 )
 
@@ -22,10 +22,10 @@ var (
 	Artoo          StarWarsChar
 	HumanData      map[int]StarWarsChar
 	DroidData      map[int]StarWarsChar
-	StarWarsSchema types.GraphQLSchema
+	StarWarsSchema gqltypes.GraphQLSchema
 
-	humanType *types.GraphQLObjectType
-	droidType *types.GraphQLObjectType
+	humanType *gqltypes.GraphQLObjectType
+	droidType *gqltypes.GraphQLObjectType
 )
 
 type StarWarsChar struct {
@@ -97,43 +97,43 @@ func init() {
 		2001: Artoo,
 	}
 
-	episodeEnum := types.NewGraphQLEnumType(types.GraphQLEnumTypeConfig{
+	episodeEnum := gqltypes.NewGraphQLEnumType(gqltypes.GraphQLEnumTypeConfig{
 		Name:        "Episode",
 		Description: "One of the films in the Star Wars Trilogy",
-		Values: types.GraphQLEnumValueConfigMap{
-			"NEWHOPE": types.GraphQLEnumValueConfig{
+		Values: gqltypes.GraphQLEnumValueConfigMap{
+			"NEWHOPE": gqltypes.GraphQLEnumValueConfig{
 				Value:       4,
 				Description: "Released in 1977.",
 			},
-			"EMPIRE": types.GraphQLEnumValueConfig{
+			"EMPIRE": gqltypes.GraphQLEnumValueConfig{
 				Value:       5,
 				Description: "Released in 1980.",
 			},
-			"JEDI": types.GraphQLEnumValueConfig{
+			"JEDI": gqltypes.GraphQLEnumValueConfig{
 				Value:       6,
 				Description: "Released in 1983.",
 			},
 		},
 	})
 
-	characterInterface := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	characterInterface := gqltypes.NewGraphQLInterfaceType(gqltypes.GraphQLInterfaceTypeConfig{
 		Name:        "Character",
 		Description: "A character in the Star Wars Trilogy",
-		Fields: types.GraphQLFieldConfigMap{
-			"id": &types.GraphQLFieldConfig{
-				Type:        types.NewGraphQLNonNull(types.GraphQLString),
+		Fields: gqltypes.GraphQLFieldConfigMap{
+			"id": &gqltypes.GraphQLFieldConfig{
+				Type:        gqltypes.NewGraphQLNonNull(gqltypes.GraphQLString),
 				Description: "The id of the character.",
 			},
-			"name": &types.GraphQLFieldConfig{
-				Type:        types.GraphQLString,
+			"name": &gqltypes.GraphQLFieldConfig{
+				Type:        gqltypes.GraphQLString,
 				Description: "The name of the character.",
 			},
-			"appearsIn": &types.GraphQLFieldConfig{
-				Type:        types.NewGraphQLList(episodeEnum),
+			"appearsIn": &gqltypes.GraphQLFieldConfig{
+				Type:        gqltypes.NewGraphQLList(episodeEnum),
 				Description: "Which movies they appear in.",
 			},
 		},
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info gqltypes.GraphQLResolveInfo) *gqltypes.GraphQLObjectType {
 			if character, ok := value.(StarWarsChar); ok {
 				id, _ := strconv.Atoi(character.Id)
 				human := GetHuman(id)
@@ -144,59 +144,59 @@ func init() {
 			return droidType
 		},
 	})
-	characterInterface.AddFieldConfig("friends", &types.GraphQLFieldConfig{
-		Type:        types.NewGraphQLList(characterInterface),
+	characterInterface.AddFieldConfig("friends", &gqltypes.GraphQLFieldConfig{
+		Type:        gqltypes.NewGraphQLList(characterInterface),
 		Description: "The friends of the character, or an empty list if they have none.",
 	})
 
-	humanType = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	humanType = gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 		Name:        "Human",
 		Description: "A humanoid creature in the Star Wars universe.",
-		Fields: types.GraphQLFieldConfigMap{
-			"id": &types.GraphQLFieldConfig{
-				Type:        types.NewGraphQLNonNull(types.GraphQLString),
+		Fields: gqltypes.GraphQLFieldConfigMap{
+			"id": &gqltypes.GraphQLFieldConfig{
+				Type:        gqltypes.NewGraphQLNonNull(gqltypes.GraphQLString),
 				Description: "The id of the human.",
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(p gqltypes.GQLFRParams) interface{} {
 					if human, ok := p.Source.(StarWarsChar); ok {
 						return human.Id
 					}
 					return nil
 				},
 			},
-			"name": &types.GraphQLFieldConfig{
-				Type:        types.GraphQLString,
+			"name": &gqltypes.GraphQLFieldConfig{
+				Type:        gqltypes.GraphQLString,
 				Description: "The name of the human.",
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(p gqltypes.GQLFRParams) interface{} {
 					if human, ok := p.Source.(StarWarsChar); ok {
 						return human.Name
 					}
 					return nil
 				},
 			},
-			"friends": &types.GraphQLFieldConfig{
-				Type:        types.NewGraphQLList(characterInterface),
+			"friends": &gqltypes.GraphQLFieldConfig{
+				Type:        gqltypes.NewGraphQLList(characterInterface),
 				Description: "The friends of the human, or an empty list if they have none.",
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(p gqltypes.GQLFRParams) interface{} {
 					if human, ok := p.Source.(StarWarsChar); ok {
 						return human.Friends
 					}
 					return []interface{}{}
 				},
 			},
-			"appearsIn": &types.GraphQLFieldConfig{
-				Type:        types.NewGraphQLList(episodeEnum),
+			"appearsIn": &gqltypes.GraphQLFieldConfig{
+				Type:        gqltypes.NewGraphQLList(episodeEnum),
 				Description: "Which movies they appear in.",
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(p gqltypes.GQLFRParams) interface{} {
 					if human, ok := p.Source.(StarWarsChar); ok {
 						return human.AppearsIn
 					}
 					return nil
 				},
 			},
-			"homePlanet": &types.GraphQLFieldConfig{
-				Type:        types.GraphQLString,
+			"homePlanet": &gqltypes.GraphQLFieldConfig{
+				Type:        gqltypes.GraphQLString,
 				Description: "The home planet of the human, or null if unknown.",
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(p gqltypes.GQLFRParams) interface{} {
 					if human, ok := p.Source.(StarWarsChar); ok {
 						return human.HomePlanet
 					}
@@ -204,38 +204,38 @@ func init() {
 				},
 			},
 		},
-		Interfaces: []*types.GraphQLInterfaceType{
+		Interfaces: []*gqltypes.GraphQLInterfaceType{
 			characterInterface,
 		},
 	})
-	droidType = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	droidType = gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 		Name:        "Droid",
 		Description: "A mechanical creature in the Star Wars universe.",
-		Fields: types.GraphQLFieldConfigMap{
-			"id": &types.GraphQLFieldConfig{
-				Type:        types.NewGraphQLNonNull(types.GraphQLString),
+		Fields: gqltypes.GraphQLFieldConfigMap{
+			"id": &gqltypes.GraphQLFieldConfig{
+				Type:        gqltypes.NewGraphQLNonNull(gqltypes.GraphQLString),
 				Description: "The id of the droid.",
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(p gqltypes.GQLFRParams) interface{} {
 					if droid, ok := p.Source.(StarWarsChar); ok {
 						return droid.Id
 					}
 					return nil
 				},
 			},
-			"name": &types.GraphQLFieldConfig{
-				Type:        types.GraphQLString,
+			"name": &gqltypes.GraphQLFieldConfig{
+				Type:        gqltypes.GraphQLString,
 				Description: "The name of the droid.",
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(p gqltypes.GQLFRParams) interface{} {
 					if droid, ok := p.Source.(StarWarsChar); ok {
 						return droid.Name
 					}
 					return nil
 				},
 			},
-			"friends": &types.GraphQLFieldConfig{
-				Type:        types.NewGraphQLList(characterInterface),
+			"friends": &gqltypes.GraphQLFieldConfig{
+				Type:        gqltypes.NewGraphQLList(characterInterface),
 				Description: "The friends of the droid, or an empty list if they have none.",
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(p gqltypes.GQLFRParams) interface{} {
 					if droid, ok := p.Source.(StarWarsChar); ok {
 						friends := []map[string]interface{}{}
 						for _, friend := range droid.Friends {
@@ -249,20 +249,20 @@ func init() {
 					return []interface{}{}
 				},
 			},
-			"appearsIn": &types.GraphQLFieldConfig{
-				Type:        types.NewGraphQLList(episodeEnum),
+			"appearsIn": &gqltypes.GraphQLFieldConfig{
+				Type:        gqltypes.NewGraphQLList(episodeEnum),
 				Description: "Which movies they appear in.",
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(p gqltypes.GQLFRParams) interface{} {
 					if droid, ok := p.Source.(StarWarsChar); ok {
 						return droid.AppearsIn
 					}
 					return nil
 				},
 			},
-			"primaryFunction": &types.GraphQLFieldConfig{
-				Type:        types.GraphQLString,
+			"primaryFunction": &gqltypes.GraphQLFieldConfig{
+				Type:        gqltypes.GraphQLString,
 				Description: "The primary function of the droid.",
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(p gqltypes.GQLFRParams) interface{} {
 					if droid, ok := p.Source.(StarWarsChar); ok {
 						return droid.PrimaryFunction
 					}
@@ -270,54 +270,54 @@ func init() {
 				},
 			},
 		},
-		Interfaces: []*types.GraphQLInterfaceType{
+		Interfaces: []*gqltypes.GraphQLInterfaceType{
 			characterInterface,
 		},
 	})
 
-	queryType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	queryType := gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 		Name: "Query",
-		Fields: types.GraphQLFieldConfigMap{
-			"hero": &types.GraphQLFieldConfig{
+		Fields: gqltypes.GraphQLFieldConfigMap{
+			"hero": &gqltypes.GraphQLFieldConfig{
 				Type: characterInterface,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"episode": &types.GraphQLArgumentConfig{
+				Args: gqltypes.GraphQLFieldConfigArgumentMap{
+					"episode": &gqltypes.GraphQLArgumentConfig{
 						Description: "If omitted, returns the hero of the whole saga. If " +
 							"provided, returns the hero of that particular episode.",
 						Type: episodeEnum,
 					},
 				},
-				Resolve: func(p types.GQLFRParams) (r interface{}) {
+				Resolve: func(p gqltypes.GQLFRParams) (r interface{}) {
 					return GetHero(p.Args["episode"])
 				},
 			},
-			"human": &types.GraphQLFieldConfig{
+			"human": &gqltypes.GraphQLFieldConfig{
 				Type: humanType,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"id": &types.GraphQLArgumentConfig{
+				Args: gqltypes.GraphQLFieldConfigArgumentMap{
+					"id": &gqltypes.GraphQLArgumentConfig{
 						Description: "id of the human",
-						Type:        types.NewGraphQLNonNull(types.GraphQLString),
+						Type:        gqltypes.NewGraphQLNonNull(gqltypes.GraphQLString),
 					},
 				},
-				Resolve: func(p types.GQLFRParams) (r interface{}) {
+				Resolve: func(p gqltypes.GQLFRParams) (r interface{}) {
 					return GetHuman(p.Args["id"].(int))
 				},
 			},
-			"droid": &types.GraphQLFieldConfig{
+			"droid": &gqltypes.GraphQLFieldConfig{
 				Type: droidType,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"id": &types.GraphQLArgumentConfig{
+				Args: gqltypes.GraphQLFieldConfigArgumentMap{
+					"id": &gqltypes.GraphQLArgumentConfig{
 						Description: "id of the droid",
-						Type:        types.NewGraphQLNonNull(types.GraphQLString),
+						Type:        gqltypes.NewGraphQLNonNull(gqltypes.GraphQLString),
 					},
 				},
-				Resolve: func(p types.GQLFRParams) (r interface{}) {
+				Resolve: func(p gqltypes.GQLFRParams) (r interface{}) {
 					return GetDroid(p.Args["id"].(int))
 				},
 			},
 		},
 	})
-	StarWarsSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	StarWarsSchema, _ = gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
 		Query: queryType,
 	})
 }
@@ -356,8 +356,8 @@ func Parse(t *testing.T, query string) *ast.Document {
 	}
 	return astDoc
 }
-func Execute(t *testing.T, ep executor.ExecuteParams) *types.GraphQLResult {
-	resultChannel := make(chan *types.GraphQLResult)
+func Execute(t *testing.T, ep executor.ExecuteParams) *gqltypes.GraphQLResult {
+	resultChannel := make(chan *gqltypes.GraphQLResult)
 	go executor.Execute(ep, resultChannel)
 	result := <-resultChannel
 	return result

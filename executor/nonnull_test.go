@@ -7,9 +7,9 @@ import (
 
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/executor"
+	"github.com/chris-ramon/graphql-go/gqltypes"
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/testutil"
-	"github.com/chris-ramon/graphql-go/types"
 )
 
 var syncError = "sync"
@@ -47,25 +47,25 @@ var nullingData = map[string]interface{}{
 	},
 }
 
-var dataType = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var dataType = gqltypes.NewGraphQLObjectType(gqltypes.GraphQLObjectTypeConfig{
 	Name: "DataType",
-	Fields: types.GraphQLFieldConfigMap{
-		"sync": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+	Fields: gqltypes.GraphQLFieldConfigMap{
+		"sync": &gqltypes.GraphQLFieldConfig{
+			Type: gqltypes.GraphQLString,
 		},
-		"nonNullSync": &types.GraphQLFieldConfig{
-			Type: types.NewGraphQLNonNull(types.GraphQLString),
+		"nonNullSync": &gqltypes.GraphQLFieldConfig{
+			Type: gqltypes.NewGraphQLNonNull(gqltypes.GraphQLString),
 		},
-		"promise": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+		"promise": &gqltypes.GraphQLFieldConfig{
+			Type: gqltypes.GraphQLString,
 		},
-		"nonNullPromise": &types.GraphQLFieldConfig{
-			Type: types.NewGraphQLNonNull(types.GraphQLString),
+		"nonNullPromise": &gqltypes.GraphQLFieldConfig{
+			Type: gqltypes.NewGraphQLNonNull(gqltypes.GraphQLString),
 		},
 	},
 })
 
-var nonNullTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+var nonNullTestSchema, _ = gqltypes.NewGraphQLSchema(gqltypes.GraphQLSchemaConfig{
 	Query: dataType,
 })
 
@@ -96,17 +96,17 @@ func init() {
 		return nullingData
 	}
 
-	dataType.AddFieldConfig("nest", &types.GraphQLFieldConfig{
+	dataType.AddFieldConfig("nest", &gqltypes.GraphQLFieldConfig{
 		Type: dataType,
 	})
-	dataType.AddFieldConfig("nonNullNest", &types.GraphQLFieldConfig{
-		Type: types.NewGraphQLNonNull(dataType),
+	dataType.AddFieldConfig("nonNullNest", &gqltypes.GraphQLFieldConfig{
+		Type: gqltypes.NewGraphQLNonNull(dataType),
 	})
-	dataType.AddFieldConfig("promiseNest", &types.GraphQLFieldConfig{
+	dataType.AddFieldConfig("promiseNest", &gqltypes.GraphQLFieldConfig{
 		Type: dataType,
 	})
-	dataType.AddFieldConfig("nonNullPromiseNest", &types.GraphQLFieldConfig{
-		Type: types.NewGraphQLNonNull(dataType),
+	dataType.AddFieldConfig("nonNullPromiseNest", &gqltypes.GraphQLFieldConfig{
+		Type: gqltypes.NewGraphQLNonNull(dataType),
 	})
 }
 
@@ -117,7 +117,7 @@ func TestNonNull_NullsANullableFieldThatThrowsSynchronously(t *testing.T) {
         sync
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"sync": nil,
 		},
@@ -155,7 +155,7 @@ func TestNonNull_NullsANullableFieldThatThrowsInAPromise(t *testing.T) {
         promise
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"promise": nil,
 		},
@@ -195,7 +195,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANullableFieldThat
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
@@ -235,7 +235,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
@@ -275,7 +275,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"promiseNest": nil,
 		},
@@ -315,7 +315,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"promiseNest": nil,
 		},
@@ -377,7 +377,7 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"sync":    nil,
@@ -550,7 +550,7 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"nest":               nil,
 			"promiseNest":        nil,
@@ -613,7 +613,7 @@ func TestNonNull_NullsANullableFieldThatSynchronouslyReturnsNull(t *testing.T) {
         sync
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"sync": nil,
 		},
@@ -644,7 +644,7 @@ func TestNonNull_NullsANullableFieldThatSynchronouslyReturnsNullInAPromise(t *te
         promise
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"promise": nil,
 		},
@@ -677,7 +677,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
@@ -715,7 +715,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
@@ -754,7 +754,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"promiseNest": nil,
 		},
@@ -792,7 +792,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"promiseNest": nil,
 		},
@@ -851,7 +851,7 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatReturnNull(t *testing.T) {
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"sync":    nil,
@@ -948,7 +948,7 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldReturnsNullInALongChainOf
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: map[string]interface{}{
 			"nest":               nil,
 			"promiseNest":        nil,
@@ -1009,7 +1009,7 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldThrows(t *testing.T) {
 	doc := `
       query Q { nonNullSync }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: nil,
 		Errors: []graphqlerrors.GraphQLFormattedError{
 			graphqlerrors.GraphQLFormattedError{
@@ -1041,7 +1041,7 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldErrors(t *testing.T) {
 	doc := `
       query Q { nonNullPromise }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: nil,
 		Errors: []graphqlerrors.GraphQLFormattedError{
 			graphqlerrors.GraphQLFormattedError{
@@ -1073,7 +1073,7 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldReturnsNull(t *testing.T)
 	doc := `
       query Q { nonNullSync }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: nil,
 		Errors: []graphqlerrors.GraphQLFormattedError{
 			graphqlerrors.GraphQLFormattedError{
@@ -1105,7 +1105,7 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldResolvesNull(t *testing.T
 	doc := `
       query Q { nonNullPromise }
 	`
-	expected := &types.GraphQLResult{
+	expected := &gqltypes.GraphQLResult{
 		Data: nil,
 		Errors: []graphqlerrors.GraphQLFormattedError{
 			graphqlerrors.GraphQLFormattedError{
