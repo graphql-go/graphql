@@ -1320,7 +1320,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 		Interfaces: []*types.GraphQLInterfaceType{anotherInterface},
 		Fields: types.GraphQLFieldConfigMap{
 			"field": &types.GraphQLFieldConfig{
-				Type: types.NewGraphQLNonNull(types.NewGraphQLList(types.GraphQLString)),
+				Type: types.NewGraphQLNonNull(types.GraphQLString),
 			},
 		},
 	})

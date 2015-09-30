@@ -344,6 +344,7 @@ var _ GraphQLInputType = (*GraphQLScalarType)(nil)
 var _ GraphQLInputType = (*GraphQLEnumType)(nil)
 var _ GraphQLInputType = (*GraphQLInputObjectType)(nil)
 var _ GraphQLInputType = (*GraphQLList)(nil)
+var _ GraphQLInputType = (*GraphQLNonNull)(nil)
 
 func IsInputType(ttype GraphQLType) bool {
 	namedType := GetNamedType(ttype)
@@ -509,7 +510,7 @@ func NewGraphQLList(ofType GraphQLType) *GraphQLList {
 	return gl
 }
 func (gl *GraphQLList) GetName() string {
-	return fmt.Sprintf("[%v]", gl.OfType)
+	return fmt.Sprintf("%v", gl.OfType)
 }
 func (gl *GraphQLList) GetDescription() string {
 	return ""
@@ -522,7 +523,7 @@ func (gl *GraphQLList) CoerceLiteral(value interface{}) interface{} {
 }
 func (gl *GraphQLList) String() string {
 	if gl.OfType != nil {
-		return gl.OfType.GetName()
+		return fmt.Sprintf("[%v]", gl.OfType)
 	}
 	return ""
 }

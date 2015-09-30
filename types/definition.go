@@ -48,7 +48,8 @@ type GraphQLNonNull struct {
 func NewGraphQLNonNull(ofType GraphQLType) *GraphQLNonNull {
 	gl := &GraphQLNonNull{}
 
-	err := invariant(ofType != nil, fmt.Sprintf(`Can only create NonNull of a Nullable GraphQLType but got: %v.`, ofType))
+	_, isOfTypeNonNull := ofType.(*GraphQLNonNull)
+	err := invariant(ofType != nil && !isOfTypeNonNull, fmt.Sprintf(`Can only create NonNull of a Nullable GraphQLType but got: %v.`, ofType))
 	if err != nil {
 		gl.err = err
 		return gl
