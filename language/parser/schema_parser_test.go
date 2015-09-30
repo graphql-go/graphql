@@ -1,13 +1,14 @@
 package parser_test
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/language/source"
-	"reflect"
-	"testing"
 )
 
 func parse(t *testing.T, query string) *ast.Document {
@@ -62,6 +63,51 @@ type Hello {
 						}),
 					}),
 				},
+			}),
+		},
+	})
+	if !reflect.DeepEqual(astDoc, expected) {
+		t.Fatalf("unexpected document, expected: %v, got: %v", expected, astDoc)
+	}
+}
+
+func TestSchemaParser_SimpleExtension(t *testing.T) {
+
+	body := `
+extend type Hello {
+  world: String
+}`
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
+		Loc: loc(1, 38),
+		Definitions: []ast.Node{
+			ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
+				Loc: loc(1, 38),
+				Definition: ast.NewObjectTypeDefinition(&ast.ObjectTypeDefinition{
+					Loc: loc(8, 38),
+					Name: ast.NewName(&ast.Name{
+						Value: "Hello",
+						Loc:   loc(13, 18),
+					}),
+					Interfaces: []*ast.NamedType{},
+					Fields: []*ast.FieldDefinition{
+						ast.NewFieldDefinition(&ast.FieldDefinition{
+							Loc: loc(23, 36),
+							Name: ast.NewName(&ast.Name{
+								Value: "world",
+								Loc:   loc(23, 28),
+							}),
+							Arguments: []*ast.InputValueDefinition{},
+							Type: ast.NewNamedType(&ast.NamedType{
+								Loc: loc(30, 36),
+								Name: ast.NewName(&ast.Name{
+									Value: "String",
+									Loc:   loc(30, 36),
+								}),
+							}),
+						}),
+					},
+				}),
 			}),
 		},
 	})
