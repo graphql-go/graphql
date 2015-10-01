@@ -76,7 +76,7 @@ func coerceFloat32(value interface{}) interface{} {
 	case string:
 		val, err := strconv.ParseFloat(value, 0)
 		if err != nil {
-			return float32(0)
+			return nil
 		}
 		return coerceFloat32(val)
 	}

@@ -11,7 +11,7 @@ type intSerializationTest struct {
 }
 type float32SerializationTest struct {
 	Value    interface{}
-	Expected float32
+	Expected interface{}
 }
 
 type stringSerializationTest struct {
@@ -54,23 +54,23 @@ func TestTypeSystem_Scalar_SerializesOutputInt(t *testing.T) {
 
 func TestTypeSystem_Scalar_SerializesOutputFloat(t *testing.T) {
 	tests := []float32SerializationTest{
-		{int(1), 1.0},
-		{int(0), 0.0},
-		{int(-1), -1.0},
-		{float32(0.1), 0.1},
-		{float32(1.1), 1.1},
-		{float32(-1.1), -1.1},
-		{"-1.1", -1.1},
-		{"one", 0.0},
-		{false, 0.0},
-		{true, 1.0},
+		{int(1), float32(1.0)},
+		{int(0), float32(0.0)},
+		{int(-1), float32(-1.0)},
+		{float32(0.1), float32(0.1)},
+		{float32(1.1), float32(1.1)},
+		{float32(-1.1), float32(-1.1)},
+		{"-1.1", float32(-1.1)},
+		{"one", nil},
+		{false, float32(0.0)},
+		{true, float32(1.0)},
 	}
 
-	for _, test := range tests {
+	for i, test := range tests {
 		val := GraphQLFloat.Serialize(test.Value)
 		if val != test.Expected {
 			reflectedValue := reflect.ValueOf(test.Value)
-			t.Fatalf("Failed GraphQLFloat.Serialize(%v(%v)), expected: %v, got %v", reflectedValue.Type(), test.Value, test.Expected, val)
+			t.Fatalf("Failed test #%d - GraphQLFloat.Serialize(%v(%v)), expected: %v, got %v", i, reflectedValue.Type(), test.Value, test.Expected, val)
 		}
 	}
 }
