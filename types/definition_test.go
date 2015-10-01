@@ -334,7 +334,7 @@ func TestTypeSystem_DefinitionExample_StringifiesSimpleTypes(t *testing.T) {
 	}
 }
 
-func TestTypeSystem_IdentifiesInputTypes(t *testing.T) {
+func TestTypeSystem_DefinitionExample_IdentifiesInputTypes(t *testing.T) {
 	type Test struct {
 		ttype    types.GraphQLType
 		expected bool
@@ -361,7 +361,7 @@ func TestTypeSystem_IdentifiesInputTypes(t *testing.T) {
 	}
 }
 
-func TestTypeSystem_IdentifiesOutputTypes(t *testing.T) {
+func TestTypeSystem_DefinitionExample_IdentifiesOutputTypes(t *testing.T) {
 	type Test struct {
 		ttype    types.GraphQLType
 		expected bool
