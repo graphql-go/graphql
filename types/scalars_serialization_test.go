@@ -1,14 +1,13 @@
 package types
 
 import (
-	"math"
 	"reflect"
 	"testing"
 )
 
 type intSerializationTest struct {
 	Value    interface{}
-	Expected int
+	Expected interface{}
 }
 type float32SerializationTest struct {
 	Value    interface{}
@@ -36,8 +35,8 @@ func TestTypeSystem_Scalar_SerializesOutputInt(t *testing.T) {
 		{float32(1e5), 100000}, // Bigger than 2^32, but still representable as an Int
 		{9876504321, 9876504321},
 		{-9876504321, -9876504321},
-		{float64(1e100), math.MinInt64},
-		{float64(-1e100), math.MinInt64},
+		{float64(1e100), nil},
+		{float64(-1e100), nil},
 		{"-1.1", -1},
 		{"one", 0},
 		{false, 0},
