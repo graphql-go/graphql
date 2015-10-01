@@ -8,7 +8,7 @@ type Schema interface{}
 
 type GraphQLResult struct {
 	Data   interface{}                           `json:"data"`
-	Errors []graphqlerrors.GraphQLFormattedError `json:"errors"`
+	Errors []graphqlerrors.GraphQLFormattedError `json:"errors,omitempty"`
 }
 
 func (gqR *GraphQLResult) HasErrors() bool {
