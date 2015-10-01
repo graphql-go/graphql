@@ -54,6 +54,26 @@ func IsInputType(ttype GraphQLType) bool {
 	return false
 }
 
+func IsOutputType(ttype GraphQLType) bool {
+	namedType := GetNamedType(ttype)
+	if _, ok := namedType.(*GraphQLScalarType); ok {
+		return true
+	}
+	if _, ok := namedType.(*GraphQLObjectType); ok {
+		return true
+	}
+	if _, ok := namedType.(*GraphQLInterfaceType); ok {
+		return true
+	}
+	if _, ok := namedType.(*GraphQLUnionType); ok {
+		return true
+	}
+	if _, ok := namedType.(*GraphQLEnumType); ok {
+		return true
+	}
+	return false
+}
+
 // These types may be used as output types as the result of fields.
 type GraphQLOutputType interface {
 	GetName() string
