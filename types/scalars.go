@@ -2,8 +2,14 @@ package types
 
 import (
 	"fmt"
-	"github.com/chris-ramon/graphql-go/language/ast"
 	"strconv"
+
+	"github.com/chris-ramon/graphql-go/language/ast"
+)
+
+var (
+	MaxInt = 9007199254740991
+	MinInt = -9007199254740991
 )
 
 func coerceInt(value interface{}) interface{} {
@@ -16,9 +22,9 @@ func coerceInt(value interface{}) interface{} {
 	case int:
 		return value
 	case float32:
-		return int(value)
+		return intOrNil(int(value))
 	case float64:
-		return int(value)
+		return intOrNil(int(value))
 	case string:
 		val, err := strconv.ParseFloat(value, 0)
 		if err != nil {
@@ -27,6 +33,16 @@ func coerceInt(value interface{}) interface{} {
 		return coerceInt(val)
 	}
 	return int(0)
+}
+
+// Integers are only safe when between -(2^53 - 1) and 2^53 - 1 due to being
+// encoded in JavaScript and represented in JSON as double-precision floating
+// point numbers, as specified by IEEE 754.
+func intOrNil(value int) interface{} {
+	if value <= MaxInt && value >= MinInt {
+		return value
+	}
+	return nil
 }
 
 var GraphQLInt *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeConfig{
