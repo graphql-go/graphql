@@ -97,7 +97,7 @@ func TestTypeSystem_Scalar_SerializesOutputBoolean(t *testing.T) {
 	tests := []boolSerializationTest{
 		{"true", true},
 		{"false", false},
-		{"string", false},
+		{"string", true},
 		{"", false},
 		{int(1), true},
 		{int(0), false},

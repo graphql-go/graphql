@@ -124,10 +124,11 @@ func coerceBool(value interface{}) interface{} {
 	case bool:
 		return value
 	case string:
-		if value == "true" {
-			return true
+		switch value {
+		case "", "false":
+			return false
 		}
-		return false
+		return true
 	case float64:
 		if value != 0 {
 			return true
