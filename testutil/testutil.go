@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"encoding/json"
+	"reflect"
 	"strconv"
 	"testing"
 
@@ -101,15 +102,15 @@ func init() {
 		Name:        "Episode",
 		Description: "One of the films in the Star Wars Trilogy",
 		Values: types.GraphQLEnumValueConfigMap{
-			"NEWHOPE": types.GraphQLEnumValueConfig{
+			"NEWHOPE": &types.GraphQLEnumValueConfig{
 				Value:       4,
 				Description: "Released in 1977.",
 			},
-			"EMPIRE": types.GraphQLEnumValueConfig{
+			"EMPIRE": &types.GraphQLEnumValueConfig{
 				Value:       5,
 				Description: "Released in 1980.",
 			},
-			"JEDI": types.GraphQLEnumValueConfig{
+			"JEDI": &types.GraphQLEnumValueConfig{
 				Value:       6,
 				Description: "Released in 1983.",
 			},
@@ -378,4 +379,87 @@ func ASTToJSON(t *testing.T, a ast.Node) interface{} {
 		t.Fatalf("Failed to unmarshal ast.Node %v", err)
 	}
 	return f
+}
+
+func ContainSubsetSlice(super []interface{}, sub []interface{}) bool {
+	if len(sub) == 0 {
+		return true
+	}
+subLoop:
+	for _, subVal := range sub {
+		found := false
+	innerLoop:
+		for _, superVal := range super {
+			if subVal, ok := subVal.(map[string]interface{}); ok {
+				if superVal, ok := superVal.(map[string]interface{}); ok {
+					if ContainSubset(superVal, subVal) {
+						found = true
+						break innerLoop
+					} else {
+						continue
+					}
+				} else {
+					return false
+				}
+
+			}
+			if subVal, ok := subVal.([]interface{}); ok {
+				if superVal, ok := superVal.([]interface{}); ok {
+					if ContainSubsetSlice(superVal, subVal) {
+						found = true
+						break innerLoop
+					} else {
+						continue
+					}
+				} else {
+					return false
+				}
+			}
+			if reflect.DeepEqual(superVal, subVal) {
+				found = true
+				break innerLoop
+			}
+		}
+		if !found {
+			return false
+		} else {
+			continue subLoop
+		}
+	}
+	return true
+}
+
+func ContainSubset(super map[string]interface{}, sub map[string]interface{}) bool {
+	if len(sub) == 0 {
+		return true
+	}
+	for subKey, subVal := range sub {
+		if superVal, ok := super[subKey]; ok {
+			switch superVal := superVal.(type) {
+			case []interface{}:
+				if subVal, ok := subVal.([]interface{}); ok {
+					if !ContainSubsetSlice(superVal, subVal) {
+						return false
+					}
+				} else {
+					return false
+				}
+			case map[string]interface{}:
+				if subVal, ok := subVal.(map[string]interface{}); ok {
+					if !ContainSubset(superVal, subVal) {
+						return false
+					}
+				} else {
+					return false
+				}
+			default:
+				if !reflect.DeepEqual(superVal, subVal) {
+					return false
+				}
+			}
+		} else {
+			return false
+		}
+	}
+	return true
 }
