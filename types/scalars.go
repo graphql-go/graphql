@@ -28,7 +28,7 @@ func coerceInt(value interface{}) interface{} {
 	case string:
 		val, err := strconv.ParseFloat(value, 0)
 		if err != nil {
-			return int(0)
+			return nil
 		}
 		return coerceInt(val)
 	}

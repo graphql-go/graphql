@@ -38,7 +38,7 @@ func TestTypeSystem_Scalar_SerializesOutputInt(t *testing.T) {
 		{float64(1e100), nil},
 		{float64(-1e100), nil},
 		{"-1.1", -1},
-		{"one", 0},
+		{"one", nil},
 		{false, 0},
 		{true, 1},
 	}
