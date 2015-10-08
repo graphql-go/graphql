@@ -146,6 +146,9 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 	if articleFieldType.GetName() != "Article" {
 		t.Fatalf("articleFieldType.Name expected to equal `Article`, got: %v", articleField.Type.GetName())
 	}
+	if articleField.Name != "article" {
+		t.Fatalf("articleField.Name expected to equal `article`, got: %v", articleField.Name)
+	}
 	articleFieldTypeObject, ok := articleFieldType.(*types.GraphQLObjectType)
 	if !ok {
 		t.Fatalf("expected articleFieldType to be *types.GraphQLObjectType`, got: %v", articleField)
