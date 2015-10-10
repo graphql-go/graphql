@@ -425,7 +425,7 @@ func defineFieldMap(ttype GraphQLNamedType, fields GraphQLFieldConfigMap) (Graph
 
 	err := invariant(
 		len(fields) > 0,
-		fmt.Sprintf(`%v fields must be an object with field names as keys.`, ttype),
+		fmt.Sprintf(`%v fields must be an object with field names as keys or a function which return such an object.`, ttype),
 	)
 	if err != nil {
 		return resultFieldMap, err
@@ -1086,7 +1086,7 @@ func (gt *GraphQLInputObjectType) defineFieldMap() InputObjectFieldMap {
 
 	err := invariant(
 		len(fieldMap) > 0,
-		fmt.Sprintf(`%v fields must be an object with field names as keys.`, gt),
+		fmt.Sprintf(`%v fields must be an object with field names as keys or a function which return such an object.`, gt),
 	)
 	if err != nil {
 		gt.err = err

@@ -1,9 +1,10 @@
 package types_test
 
 import (
+	"testing"
+
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/types"
-	"testing"
 )
 
 var someScalarType = types.NewGraphQLScalarType(types.GraphQLScalarTypeConfig{
@@ -435,7 +436,7 @@ func TestTypeSystem_ObjectsMustHaveFields_RejectsAnObjectTypeWithMissingFields(t
 		Name: "SomeObject",
 	})
 	_, err := schemaWithFieldType(badObject)
-	expectedError := `SomeObject fields must be an object with field names as keys.`
+	expectedError := `SomeObject fields must be an object with field names as keys or a function which return such an object.`
 	if err == nil || err.Error() != expectedError {
 		t.Fatalf("Expected error: %v, got %v", expectedError, err)
 	}
@@ -461,7 +462,7 @@ func TestTypeSystem_ObjectsMustHaveFields_RejectsAnObjectTypeWithEmptyFields(t *
 		Fields: types.GraphQLFieldConfigMap{},
 	})
 	_, err := schemaWithFieldType(badObject)
-	expectedError := `SomeObject fields must be an object with field names as keys.`
+	expectedError := `SomeObject fields must be an object with field names as keys or a function which return such an object.`
 	if err == nil || err.Error() != expectedError {
 		t.Fatalf("Expected error: %v, got %v", expectedError, err)
 	}
