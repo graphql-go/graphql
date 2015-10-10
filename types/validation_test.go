@@ -538,6 +538,34 @@ func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithArrayInte
 		},
 	})
 	_, err := schemaWithFieldType(types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+		Name: "SomeObject",
+		Interfaces: (types.GraphQLInterfacesThunk)(func() []*types.GraphQLInterfaceType {
+			return []*types.GraphQLInterfaceType{anotherInterfaceType}
+		}),
+		Fields: types.GraphQLFieldConfigMap{
+			"f": &types.GraphQLFieldConfig{
+				Type: types.GraphQLString,
+			},
+		},
+	}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithInterfacesAsFunctionReturningAnArray(t *testing.T) {
+	anotherInterfaceType := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+		Name: "AnotherInterface",
+		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+			return nil
+		},
+		Fields: types.GraphQLFieldConfigMap{
+			"f": &types.GraphQLFieldConfig{
+				Type: types.GraphQLString,
+			},
+		},
+	})
+	_, err := schemaWithFieldType(types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
 		Name:       "SomeObject",
 		Interfaces: []*types.GraphQLInterfaceType{anotherInterfaceType},
 		Fields: types.GraphQLFieldConfigMap{
