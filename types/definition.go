@@ -1,7 +1,9 @@
 package types
 
 import (
+	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
 
 	"github.com/chris-ramon/graphql-go/errors"
@@ -293,13 +295,17 @@ type GraphQLObjectType struct {
 	// Interim alternative to throwing an error during schema definition at run-time
 	err error
 }
+
 type IsTypeOfFn func(value interface{}, info GraphQLResolveInfo) bool
+
+type GraphQLInterfacesThunk func() []*GraphQLInterfaceType
+
 type GraphQLObjectTypeConfig struct {
-	Name        string                  `json:"description"`
-	Interfaces  []*GraphQLInterfaceType `json:"interfaces"`
-	Fields      GraphQLFieldConfigMap   `json:"fields"`
-	IsTypeOf    IsTypeOfFn              `json:"isTypeOf"`
-	Description string                  `json:"description"`
+	Name        string                `json:"description"`
+	Interfaces  interface{}           `json:"interfaces"`
+	Fields      GraphQLFieldConfigMap `json:"fields"`
+	IsTypeOf    IsTypeOfFn            `json:"isTypeOf"`
+	Description string                `json:"description"`
 }
 
 func NewGraphQLObjectType(config GraphQLObjectTypeConfig) *GraphQLObjectType {
@@ -328,7 +334,11 @@ func NewGraphQLObjectType(config GraphQLObjectTypeConfig) *GraphQLObjectType {
 		 	implementations, but avoids an expensive "getPossibleTypes"
 		 	implementation for Interface types.
 	*/
-	for _, iface := range objectType.GetInterfaces() {
+	interfaces := objectType.GetInterfaces()
+	if interfaces == nil {
+		return objectType
+	}
+	for _, iface := range interfaces {
 		iface.implementations = append(iface.implementations, objectType)
 	}
 
@@ -357,7 +367,18 @@ func (gt *GraphQLObjectType) GetFields() GraphQLFieldDefinitionMap {
 	return gt.fields
 }
 func (gt *GraphQLObjectType) GetInterfaces() []*GraphQLInterfaceType {
-	interfaces, err := defineInterfaces(gt, gt.typeConfig.Interfaces)
+	var configInterfaces []*GraphQLInterfaceType
+	switch gt.typeConfig.Interfaces.(type) {
+	case GraphQLInterfacesThunk:
+		configInterfaces = gt.typeConfig.Interfaces.(GraphQLInterfacesThunk)()
+	case []*GraphQLInterfaceType:
+		configInterfaces = gt.typeConfig.Interfaces.([]*GraphQLInterfaceType)
+	case nil:
+	default:
+		gt.err = errors.New(fmt.Sprintf("Unknown GraphQLObjectType.Interfaces type: %v", reflect.TypeOf(gt.typeConfig.Interfaces)))
+		return nil
+	}
+	interfaces, err := defineInterfaces(gt, configInterfaces)
 	gt.err = err
 	gt.interfaces = interfaces
 	return gt.interfaces
