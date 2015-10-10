@@ -310,6 +310,49 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesSubTypesInTheTypeMap(t *
 	}
 }
 
+func TestTypeSystem_DefinitionExample_IncludesInterfacesThunkSubtypesInTheTypeMap(t *testing.T) {
+
+	someInterface := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+		Name: "SomeInterface",
+		Fields: types.GraphQLFieldConfigMap{
+			"f": &types.GraphQLFieldConfig{
+				Type: types.GraphQLInt,
+			},
+		},
+	})
+
+	someSubType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+		Name: "SomeSubtype",
+		Fields: types.GraphQLFieldConfigMap{
+			"f": &types.GraphQLFieldConfig{
+				Type: types.GraphQLInt,
+			},
+		},
+		Interfaces: (types.GraphQLInterfacesThunk)(func() []*types.GraphQLInterfaceType {
+			return []*types.GraphQLInterfaceType{someInterface}
+		}),
+		IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
+			return true
+		},
+	})
+	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+			Name: "Query",
+			Fields: types.GraphQLFieldConfigMap{
+				"iface": &types.GraphQLFieldConfig{
+					Type: someInterface,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error, got: %v", err)
+	}
+	if schema.GetType("SomeSubtype") != someSubType {
+		t.Fatalf(`schema.GetType("SomeSubtype") expected to equal someSubType, got: %v`, schema.GetType("SomeSubtype"))
+	}
+}
+
 func TestTypeSystem_DefinitionExample_StringifiesSimpleTypes(t *testing.T) {
 
 	type Test struct {
