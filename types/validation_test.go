@@ -1,9 +1,10 @@
 package types_test
 
 import (
+	"testing"
+
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/types"
-	"testing"
 )
 
 var someScalarType = types.NewGraphQLScalarType(types.GraphQLScalarTypeConfig{
@@ -435,7 +436,7 @@ func TestTypeSystem_ObjectsMustHaveFields_RejectsAnObjectTypeWithMissingFields(t
 		Name: "SomeObject",
 	})
 	_, err := schemaWithFieldType(badObject)
-	expectedError := `SomeObject fields must be an object with field names as keys.`
+	expectedError := `SomeObject fields must be an object with field names as keys or a function which return such an object.`
 	if err == nil || err.Error() != expectedError {
 		t.Fatalf("Expected error: %v, got %v", expectedError, err)
 	}
@@ -461,7 +462,7 @@ func TestTypeSystem_ObjectsMustHaveFields_RejectsAnObjectTypeWithEmptyFields(t *
 		Fields: types.GraphQLFieldConfigMap{},
 	})
 	_, err := schemaWithFieldType(badObject)
-	expectedError := `SomeObject fields must be an object with field names as keys.`
+	expectedError := `SomeObject fields must be an object with field names as keys or a function which return such an object.`
 	if err == nil || err.Error() != expectedError {
 		t.Fatalf("Expected error: %v, got %v", expectedError, err)
 	}
@@ -525,6 +526,34 @@ func TestTypeSystem_FieldsArgsMustBeObjects_AcceptsAnObjectTypeWithFieldArgs(t *
 }
 
 func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithArrayInterfaces(t *testing.T) {
+	anotherInterfaceType := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+		Name: "AnotherInterface",
+		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+			return nil
+		},
+		Fields: types.GraphQLFieldConfigMap{
+			"f": &types.GraphQLFieldConfig{
+				Type: types.GraphQLString,
+			},
+		},
+	})
+	_, err := schemaWithFieldType(types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+		Name: "SomeObject",
+		Interfaces: (types.GraphQLInterfacesThunk)(func() []*types.GraphQLInterfaceType {
+			return []*types.GraphQLInterfaceType{anotherInterfaceType}
+		}),
+		Fields: types.GraphQLFieldConfigMap{
+			"f": &types.GraphQLFieldConfig{
+				Type: types.GraphQLString,
+			},
+		},
+	}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithInterfacesAsFunctionReturningAnArray(t *testing.T) {
 	anotherInterfaceType := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
 		Name: "AnotherInterface",
 		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
@@ -603,11 +632,28 @@ func TestTypeSystem_InputObjectsMustHaveFields_AcceptsAnInputObjectTypeWithField
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestTypeSystem_InputObjectsMustHaveFields_AcceptsAnInputObjectTypeWithAFieldFunction(t *testing.T) {
+	_, err := schemaWithInputObject(types.NewGraphQLInputObjectType(types.InputObjectConfig{
+		Name: "SomeInputObject",
+		Fields: (types.InputObjectConfigFieldMapThunk)(func() types.InputObjectConfigFieldMap {
+			return types.InputObjectConfigFieldMap{
+				"f": &types.InputObjectFieldConfig{
+					Type: types.GraphQLString,
+				},
+			}
+		}),
+	}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestTypeSystem_InputObjectsMustHaveFields_RejectsAnInputObjectTypeWithMissingFields(t *testing.T) {
 	_, err := schemaWithInputObject(types.NewGraphQLInputObjectType(types.InputObjectConfig{
 		Name: "SomeInputObject",
 	}))
-	expectedError := "SomeInputObject fields must be an object with field names as keys."
+	expectedError := "SomeInputObject fields must be an object with field names as keys or a function which return such an object."
 	if err == nil || err.Error() != expectedError {
 		t.Fatalf("Expected error: %v, got %v", expectedError, err)
 	}
@@ -617,7 +663,7 @@ func TestTypeSystem_InputObjectsMustHaveFields_RejectsAnInputObjectTypeWithEmpty
 		Name:   "SomeInputObject",
 		Fields: types.InputObjectConfigFieldMap{},
 	}))
-	expectedError := "SomeInputObject fields must be an object with field names as keys."
+	expectedError := "SomeInputObject fields must be an object with field names as keys or a function which return such an object."
 	if err == nil || err.Error() != expectedError {
 		t.Fatalf("Expected error: %v, got %v", expectedError, err)
 	}
@@ -670,6 +716,36 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceWithImpleme
 
 	anotherInterfaceType := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
 		Name: "AnotherInterface",
+		Fields: types.GraphQLFieldConfigMap{
+			"f": &types.GraphQLFieldConfig{
+				Type: types.GraphQLString,
+			},
+		},
+	})
+	_, err := schemaWithFieldType(types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+		Name:       "SomeObject",
+		Interfaces: []*types.GraphQLInterfaceType{anotherInterfaceType},
+		IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
+			return true
+		},
+		Fields: types.GraphQLFieldConfigMap{
+			"f": &types.GraphQLFieldConfig{
+				Type: types.GraphQLString,
+			},
+		},
+	}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceTypeDefiningResolveTypeWithImplementingTypeDefiningIsTypeOf(t *testing.T) {
+
+	anotherInterfaceType := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+		Name: "AnotherInterface",
+		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+			return nil
+		},
 		Fields: types.GraphQLFieldConfigMap{
 			"f": &types.GraphQLFieldConfig{
 				Type: types.GraphQLString,

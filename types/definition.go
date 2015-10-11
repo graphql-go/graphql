@@ -1,7 +1,9 @@
 package types
 
 import (
+	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
 
 	"github.com/chris-ramon/graphql-go/errors"
@@ -49,6 +51,26 @@ func IsInputType(ttype GraphQLType) bool {
 		return true
 	}
 	if _, ok := namedType.(*GraphQLInputObjectType); ok {
+		return true
+	}
+	return false
+}
+
+func IsOutputType(ttype GraphQLType) bool {
+	namedType := GetNamedType(ttype)
+	if _, ok := namedType.(*GraphQLScalarType); ok {
+		return true
+	}
+	if _, ok := namedType.(*GraphQLObjectType); ok {
+		return true
+	}
+	if _, ok := namedType.(*GraphQLInterfaceType); ok {
+		return true
+	}
+	if _, ok := namedType.(*GraphQLUnionType); ok {
+		return true
+	}
+	if _, ok := namedType.(*GraphQLEnumType); ok {
 		return true
 	}
 	return false
@@ -273,13 +295,17 @@ type GraphQLObjectType struct {
 	// Interim alternative to throwing an error during schema definition at run-time
 	err error
 }
+
 type IsTypeOfFn func(value interface{}, info GraphQLResolveInfo) bool
+
+type GraphQLInterfacesThunk func() []*GraphQLInterfaceType
+
 type GraphQLObjectTypeConfig struct {
-	Name        string                  `json:"description"`
-	Interfaces  []*GraphQLInterfaceType `json:"interfaces"`
-	Fields      GraphQLFieldConfigMap   `json:"fields"`
-	IsTypeOf    IsTypeOfFn              `json:"isTypeOf"`
-	Description string                  `json:"description"`
+	Name        string                `json:"description"`
+	Interfaces  interface{}           `json:"interfaces"`
+	Fields      GraphQLFieldConfigMap `json:"fields"`
+	IsTypeOf    IsTypeOfFn            `json:"isTypeOf"`
+	Description string                `json:"description"`
 }
 
 func NewGraphQLObjectType(config GraphQLObjectTypeConfig) *GraphQLObjectType {
@@ -308,7 +334,11 @@ func NewGraphQLObjectType(config GraphQLObjectTypeConfig) *GraphQLObjectType {
 		 	implementations, but avoids an expensive "getPossibleTypes"
 		 	implementation for Interface types.
 	*/
-	for _, iface := range objectType.GetInterfaces() {
+	interfaces := objectType.GetInterfaces()
+	if interfaces == nil {
+		return objectType
+	}
+	for _, iface := range interfaces {
 		iface.implementations = append(iface.implementations, objectType)
 	}
 
@@ -337,7 +367,18 @@ func (gt *GraphQLObjectType) GetFields() GraphQLFieldDefinitionMap {
 	return gt.fields
 }
 func (gt *GraphQLObjectType) GetInterfaces() []*GraphQLInterfaceType {
-	interfaces, err := defineInterfaces(gt, gt.typeConfig.Interfaces)
+	var configInterfaces []*GraphQLInterfaceType
+	switch gt.typeConfig.Interfaces.(type) {
+	case GraphQLInterfacesThunk:
+		configInterfaces = gt.typeConfig.Interfaces.(GraphQLInterfacesThunk)()
+	case []*GraphQLInterfaceType:
+		configInterfaces = gt.typeConfig.Interfaces.([]*GraphQLInterfaceType)
+	case nil:
+	default:
+		gt.err = errors.New(fmt.Sprintf("Unknown GraphQLObjectType.Interfaces type: %v", reflect.TypeOf(gt.typeConfig.Interfaces)))
+		return nil
+	}
+	interfaces, err := defineInterfaces(gt, configInterfaces)
 	gt.err = err
 	gt.interfaces = interfaces
 	return gt.interfaces
@@ -384,7 +425,7 @@ func defineFieldMap(ttype GraphQLNamedType, fields GraphQLFieldConfigMap) (Graph
 
 	err := invariant(
 		len(fields) > 0,
-		fmt.Sprintf(`%v fields must be an object with field names as keys.`, ttype),
+		fmt.Sprintf(`%v fields must be an object with field names as keys or a function which return such an object.`, ttype),
 	)
 	if err != nil {
 		return resultFieldMap, err
@@ -1017,10 +1058,11 @@ func (st *InputObjectField) GetError() error {
 
 type InputObjectConfigFieldMap map[string]*InputObjectFieldConfig
 type InputObjectFieldMap map[string]*InputObjectField
+type InputObjectConfigFieldMapThunk func() InputObjectConfigFieldMap
 type InputObjectConfig struct {
-	Name        string                    `json:"name"`
-	Fields      InputObjectConfigFieldMap `json:"fields"`
-	Description string                    `json:"description"`
+	Name        string      `json:"name"`
+	Fields      interface{} `json:"fields"`
+	Description string      `json:"description"`
 }
 
 // TODO: rename InputObjectConfig to GraphQLInputObjecTypeConfig for consistency?
@@ -1040,12 +1082,18 @@ func NewGraphQLInputObjectType(config InputObjectConfig) *GraphQLInputObjectType
 }
 
 func (gt *GraphQLInputObjectType) defineFieldMap() InputObjectFieldMap {
-	fieldMap := gt.typeConfig.Fields
+	var fieldMap InputObjectConfigFieldMap
+	switch gt.typeConfig.Fields.(type) {
+	case InputObjectConfigFieldMap:
+		fieldMap = gt.typeConfig.Fields.(InputObjectConfigFieldMap)
+	case InputObjectConfigFieldMapThunk:
+		fieldMap = gt.typeConfig.Fields.(InputObjectConfigFieldMapThunk)()
+	}
 	resultFieldMap := InputObjectFieldMap{}
 
 	err := invariant(
 		len(fieldMap) > 0,
-		fmt.Sprintf(`%v fields must be an object with field names as keys.`, gt),
+		fmt.Sprintf(`%v fields must be an object with field names as keys or a function which return such an object.`, gt),
 	)
 	if err != nil {
 		gt.err = err

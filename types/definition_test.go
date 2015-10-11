@@ -2,10 +2,11 @@ package types_test
 
 import (
 	"fmt"
-	"github.com/chris-ramon/graphql-go/testutil"
-	"github.com/chris-ramon/graphql-go/types"
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql-go/testutil"
+	"github.com/chris-ramon/graphql-go/types"
 )
 
 var blogImage = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
@@ -144,6 +145,9 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 	}
 	if articleFieldType.GetName() != "Article" {
 		t.Fatalf("articleFieldType.Name expected to equal `Article`, got: %v", articleField.Type.GetName())
+	}
+	if articleField.Name != "article" {
+		t.Fatalf("articleField.Name expected to equal `article`, got: %v", articleField.Name)
 	}
 	articleFieldTypeObject, ok := articleFieldType.(*types.GraphQLObjectType)
 	if !ok {
@@ -306,6 +310,49 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesSubTypesInTheTypeMap(t *
 	}
 }
 
+func TestTypeSystem_DefinitionExample_IncludesInterfacesThunkSubtypesInTheTypeMap(t *testing.T) {
+
+	someInterface := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+		Name: "SomeInterface",
+		Fields: types.GraphQLFieldConfigMap{
+			"f": &types.GraphQLFieldConfig{
+				Type: types.GraphQLInt,
+			},
+		},
+	})
+
+	someSubType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+		Name: "SomeSubtype",
+		Fields: types.GraphQLFieldConfigMap{
+			"f": &types.GraphQLFieldConfig{
+				Type: types.GraphQLInt,
+			},
+		},
+		Interfaces: (types.GraphQLInterfacesThunk)(func() []*types.GraphQLInterfaceType {
+			return []*types.GraphQLInterfaceType{someInterface}
+		}),
+		IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
+			return true
+		},
+	})
+	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+			Name: "Query",
+			Fields: types.GraphQLFieldConfigMap{
+				"iface": &types.GraphQLFieldConfig{
+					Type: someInterface,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error, got: %v", err)
+	}
+	if schema.GetType("SomeSubtype") != someSubType {
+		t.Fatalf(`schema.GetType("SomeSubtype") expected to equal someSubType, got: %v`, schema.GetType("SomeSubtype"))
+	}
+}
+
 func TestTypeSystem_DefinitionExample_StringifiesSimpleTypes(t *testing.T) {
 
 	type Test struct {
@@ -328,6 +375,60 @@ func TestTypeSystem_DefinitionExample_StringifiesSimpleTypes(t *testing.T) {
 	for _, test := range tests {
 		ttypeStr := fmt.Sprintf("%v", test.ttype)
 		if ttypeStr != test.expected {
+			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
+		}
+	}
+}
+
+func TestTypeSystem_DefinitionExample_IdentifiesInputTypes(t *testing.T) {
+	type Test struct {
+		ttype    types.GraphQLType
+		expected bool
+	}
+	tests := []Test{
+		Test{types.GraphQLInt, true},
+		Test{objectType, false},
+		Test{interfaceType, false},
+		Test{unionType, false},
+		Test{enumType, true},
+		Test{inputObjectType, true},
+	}
+	for _, test := range tests {
+		ttypeStr := fmt.Sprintf("%v", test.ttype)
+		if types.IsInputType(test.ttype) != test.expected {
+			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
+		}
+		if types.IsInputType(types.NewGraphQLList(test.ttype)) != test.expected {
+			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
+		}
+		if types.IsInputType(types.NewGraphQLNonNull(test.ttype)) != test.expected {
+			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
+		}
+	}
+}
+
+func TestTypeSystem_DefinitionExample_IdentifiesOutputTypes(t *testing.T) {
+	type Test struct {
+		ttype    types.GraphQLType
+		expected bool
+	}
+	tests := []Test{
+		Test{types.GraphQLInt, true},
+		Test{objectType, true},
+		Test{interfaceType, true},
+		Test{unionType, true},
+		Test{enumType, true},
+		Test{inputObjectType, false},
+	}
+	for _, test := range tests {
+		ttypeStr := fmt.Sprintf("%v", test.ttype)
+		if types.IsOutputType(test.ttype) != test.expected {
+			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
+		}
+		if types.IsOutputType(types.NewGraphQLList(test.ttype)) != test.expected {
+			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
+		}
+		if types.IsOutputType(types.NewGraphQLNonNull(test.ttype)) != test.expected {
 			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
 		}
 	}
