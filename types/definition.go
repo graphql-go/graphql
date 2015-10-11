@@ -1058,10 +1058,11 @@ func (st *InputObjectField) GetError() error {
 
 type InputObjectConfigFieldMap map[string]*InputObjectFieldConfig
 type InputObjectFieldMap map[string]*InputObjectField
+type InputObjectConfigFieldMapThunk func() InputObjectConfigFieldMap
 type InputObjectConfig struct {
-	Name        string                    `json:"name"`
-	Fields      InputObjectConfigFieldMap `json:"fields"`
-	Description string                    `json:"description"`
+	Name        string      `json:"name"`
+	Fields      interface{} `json:"fields"`
+	Description string      `json:"description"`
 }
 
 // TODO: rename InputObjectConfig to GraphQLInputObjecTypeConfig for consistency?
@@ -1081,7 +1082,13 @@ func NewGraphQLInputObjectType(config InputObjectConfig) *GraphQLInputObjectType
 }
 
 func (gt *GraphQLInputObjectType) defineFieldMap() InputObjectFieldMap {
-	fieldMap := gt.typeConfig.Fields
+	var fieldMap InputObjectConfigFieldMap
+	switch gt.typeConfig.Fields.(type) {
+	case InputObjectConfigFieldMap:
+		fieldMap = gt.typeConfig.Fields.(InputObjectConfigFieldMap)
+	case InputObjectConfigFieldMapThunk:
+		fieldMap = gt.typeConfig.Fields.(InputObjectConfigFieldMapThunk)()
+	}
 	resultFieldMap := InputObjectFieldMap{}
 
 	err := invariant(
