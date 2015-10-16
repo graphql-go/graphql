@@ -6,14 +6,14 @@ import (
 	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/language/source"
 	"github.com/chris-ramon/graphql-go/types"
-	"golang.org/x/net/context"
 	"github.com/chris-ramon/graphql-go/validator"
+	"golang.org/x/net/context"
 )
 
 type GraphqlParams struct {
 	Schema         types.GraphQLSchema
 	RequestString  string
-	Ctx						 context.Context
+	Ctx            context.Context
 	RootObject     map[string]interface{}
 	VariableValues map[string]interface{}
 	OperationName  string
