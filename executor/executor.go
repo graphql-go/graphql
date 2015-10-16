@@ -6,6 +6,7 @@ import (
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/types"
+	"golang.org/x/net/context"
 	"reflect"
 	"strings"
 )
@@ -13,6 +14,7 @@ import (
 type ExecuteParams struct {
 	Schema        types.GraphQLSchema
 	Root          interface{}
+	Ctx           context.Context
 	AST           *ast.Document
 	OperationName string
 	Args          map[string]interface{}
@@ -25,6 +27,7 @@ func Execute(p ExecuteParams, resultChan chan *types.GraphQLResult) {
 		Schema:        p.Schema,
 		Root:          p.Root,
 		AST:           p.AST,
+		Ctx:           context.Context,
 		OperationName: p.OperationName,
 		Args:          p.Args,
 		Errors:        errors,
@@ -58,6 +61,7 @@ type BuildExecutionCtxParams struct {
 	Schema        types.GraphQLSchema
 	Root          interface{}
 	AST           *ast.Document
+	Ctx           context.Context
 	OperationName string
 	Args          map[string]interface{}
 	Errors        []graphqlerrors.GraphQLFormattedError
@@ -66,6 +70,7 @@ type BuildExecutionCtxParams struct {
 }
 type ExecutionContext struct {
 	Schema         types.GraphQLSchema
+	Ctx            context.Context
 	Fragments      map[string]ast.Definition
 	Root           interface{}
 	Operation      ast.Definition
@@ -129,6 +134,7 @@ func buildExecutionContext(p BuildExecutionCtxParams) *ExecutionContext {
 	}
 
 	eCtx.Schema = p.Schema
+	eCtx.Ctx = p.Ctx
 	eCtx.Fragments = fragments
 	eCtx.Root = p.Root
 	eCtx.Operation = operation
@@ -516,7 +522,7 @@ func resolveField(eCtx *ExecutionContext, parentType *types.GraphQLObjectType, s
 	// it is wrapped as a GraphQLError with locations. Log this error and return
 	// null if allowed, otherwise throw the error so the parent field can handle
 	// it.
-	result = resolveFn(types.GQLFRParams{
+	result = resolveFn(eCtx.Ctx, types.GQLFRParams{
 		Source: source,
 		Args:   args,
 		Info:   info,
@@ -692,7 +698,7 @@ func completeValue(eCtx *ExecutionContext, returnType types.GraphQLType, fieldAS
 
 }
 
-func defaultResolveFn(p types.GQLFRParams) interface{} {
+func defaultResolveFn(ctx context.Context, p types.GQLFRParams) interface{} {
 	// try to resolve p.Source as a struct first
 	sourceVal := reflect.ValueOf(p.Source)
 	if sourceVal.IsValid() && sourceVal.Type().Kind() == reflect.Ptr {

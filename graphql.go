@@ -2,16 +2,18 @@ package gql
 
 import (
 	"github.com/chris-ramon/graphql-go/errors"
-	"github.com/chris-ramon/graphql-go/executor"
+	"github.com/tallstreet/graphql-go/executor"
 	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/language/source"
 	"github.com/chris-ramon/graphql-go/types"
+	"golang.org/x/net/context"
 	"github.com/chris-ramon/graphql-go/validator"
 )
 
 type GraphqlParams struct {
 	Schema         types.GraphQLSchema
 	RequestString  string
+	Ctx						 context.Context
 	RootObject     map[string]interface{}
 	VariableValues map[string]interface{}
 	OperationName  string
@@ -43,6 +45,7 @@ func Graphql(p GraphqlParams, resultChannel chan *types.GraphQLResult) {
 			Schema:        p.Schema,
 			Root:          p.RootObject,
 			AST:           AST,
+			Ctx:           Ctx,
 			OperationName: p.OperationName,
 			Args:          p.VariableValues,
 		}
