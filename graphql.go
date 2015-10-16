@@ -5,9 +5,9 @@ import (
 	"github.com/tallstreet/graphql-go/executor"
 	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/language/source"
-	"github.com/chris-ramon/graphql-go/types"
+	"github.com/tallstreet/graphql-go/types"
 	"golang.org/x/net/context"
-	"github.com/chris-ramon/graphql-go/validator"
+	"github.com/tallstreet/graphql-go/validator"
 )
 
 type GraphqlParams struct {
@@ -45,7 +45,7 @@ func Graphql(p GraphqlParams, resultChannel chan *types.GraphQLResult) {
 			Schema:        p.Schema,
 			Root:          p.RootObject,
 			AST:           AST,
-			Ctx:           Ctx,
+			Ctx:           p.Ctx,
 			OperationName: p.OperationName,
 			Args:          p.VariableValues,
 		}

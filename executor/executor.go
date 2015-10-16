@@ -5,7 +5,7 @@ import (
 
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/chris-ramon/graphql-go/types"
+	"github.com/tallstreet/graphql-go/types"
 	"golang.org/x/net/context"
 	"reflect"
 	"strings"
@@ -27,7 +27,7 @@ func Execute(p ExecuteParams, resultChan chan *types.GraphQLResult) {
 		Schema:        p.Schema,
 		Root:          p.Root,
 		AST:           p.AST,
-		Ctx:           context.Context,
+		Ctx:           p.Ctx,
 		OperationName: p.OperationName,
 		Args:          p.Args,
 		Errors:        errors,
