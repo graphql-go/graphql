@@ -5,7 +5,7 @@ import (
 
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/tallstreet/graphql-go/types"
+	"github.com/chris-ramon/graphql-go/types"
 	"golang.org/x/net/context"
 	"reflect"
 	"strings"

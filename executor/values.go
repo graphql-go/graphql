@@ -7,7 +7,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/kinds"
 	"github.com/chris-ramon/graphql-go/language/printer"
-	"github.com/tallstreet/graphql-go/types"
+	"github.com/chris-ramon/graphql-go/types"
 	"math"
 	"reflect"
 )
