@@ -6,6 +6,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
+	"golang.org/x/net/context"
 	"reflect"
 	"testing"
 )
@@ -25,7 +26,7 @@ func checkList(t *testing.T, testType types.GraphQLType, testData interface{}, e
 	})
 	dataType.AddFieldConfig("nest", &types.GraphQLFieldConfig{
 		Type: dataType,
-		Resolve: func(p types.GQLFRParams) interface{} {
+		Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 			return data
 		},
 	})

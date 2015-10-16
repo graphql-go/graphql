@@ -6,6 +6,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
+	"golang.org/x/net/context"
 	"reflect"
 	"testing"
 )
@@ -48,7 +49,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 		Fields: types.GraphQLFieldConfigMap{
 			"name": &types.GraphQLFieldConfig{
 				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if dog, ok := p.Source.(*testDog); ok {
 						return dog.Name
 					}
@@ -57,7 +58,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 			},
 			"woofs": &types.GraphQLFieldConfig{
 				Type: types.GraphQLBoolean,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if dog, ok := p.Source.(*testDog); ok {
 						return dog.Woofs
 					}
@@ -79,7 +80,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 		Fields: types.GraphQLFieldConfigMap{
 			"name": &types.GraphQLFieldConfig{
 				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if cat, ok := p.Source.(*testCat); ok {
 						return cat.Name
 					}
@@ -88,7 +89,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 			},
 			"meows": &types.GraphQLFieldConfig{
 				Type: types.GraphQLBoolean,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if cat, ok := p.Source.(*testCat); ok {
 						return cat.Meows
 					}
@@ -103,7 +104,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 			Fields: types.GraphQLFieldConfigMap{
 				"pets": &types.GraphQLFieldConfig{
 					Type: types.NewGraphQLList(petType),
-					Resolve: func(p types.GQLFRParams) interface{} {
+					Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 						return []interface{}{
 							&testDog{"Odie", true},
 							&testCat{"Garfield", false},
@@ -171,7 +172,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 		Fields: types.GraphQLFieldConfigMap{
 			"name": &types.GraphQLFieldConfig{
 				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if dog, ok := p.Source.(*testDog); ok {
 						return dog.Name
 					}
@@ -180,7 +181,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 			},
 			"woofs": &types.GraphQLFieldConfig{
 				Type: types.GraphQLBoolean,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if dog, ok := p.Source.(*testDog); ok {
 						return dog.Woofs
 					}
@@ -198,7 +199,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 		Fields: types.GraphQLFieldConfigMap{
 			"name": &types.GraphQLFieldConfig{
 				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if cat, ok := p.Source.(*testCat); ok {
 						return cat.Name
 					}
@@ -207,7 +208,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 			},
 			"meows": &types.GraphQLFieldConfig{
 				Type: types.GraphQLBoolean,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if cat, ok := p.Source.(*testCat); ok {
 						return cat.Meows
 					}
@@ -238,7 +239,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 			Fields: types.GraphQLFieldConfigMap{
 				"pets": &types.GraphQLFieldConfig{
 					Type: types.NewGraphQLList(petType),
-					Resolve: func(p types.GQLFRParams) interface{} {
+					Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 						return []interface{}{
 							&testDog{"Odie", true},
 							&testCat{"Garfield", false},
@@ -327,7 +328,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 		Fields: types.GraphQLFieldConfigMap{
 			"name": &types.GraphQLFieldConfig{
 				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if human, ok := p.Source.(*testHuman); ok {
 						return human.Name
 					}
@@ -348,7 +349,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 		Fields: types.GraphQLFieldConfigMap{
 			"name": &types.GraphQLFieldConfig{
 				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if dog, ok := p.Source.(*testDog); ok {
 						return dog.Name
 					}
@@ -357,7 +358,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 			},
 			"woofs": &types.GraphQLFieldConfig{
 				Type: types.GraphQLBoolean,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if dog, ok := p.Source.(*testDog); ok {
 						return dog.Woofs
 					}
@@ -378,7 +379,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 		Fields: types.GraphQLFieldConfigMap{
 			"name": &types.GraphQLFieldConfig{
 				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if cat, ok := p.Source.(*testCat); ok {
 						return cat.Name
 					}
@@ -387,7 +388,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 			},
 			"meows": &types.GraphQLFieldConfig{
 				Type: types.GraphQLBoolean,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if cat, ok := p.Source.(*testCat); ok {
 						return cat.Meows
 					}
@@ -402,7 +403,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 			Fields: types.GraphQLFieldConfigMap{
 				"pets": &types.GraphQLFieldConfig{
 					Type: types.NewGraphQLList(petType),
-					Resolve: func(p types.GQLFRParams) interface{} {
+					Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 						return []interface{}{
 							&testDog{"Odie", true},
 							&testCat{"Garfield", false},
@@ -473,7 +474,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 		Fields: types.GraphQLFieldConfigMap{
 			"name": &types.GraphQLFieldConfig{
 				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if human, ok := p.Source.(*testHuman); ok {
 						return human.Name
 					}
@@ -491,7 +492,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 		Fields: types.GraphQLFieldConfigMap{
 			"name": &types.GraphQLFieldConfig{
 				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if dog, ok := p.Source.(*testDog); ok {
 						return dog.Name
 					}
@@ -500,7 +501,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 			},
 			"woofs": &types.GraphQLFieldConfig{
 				Type: types.GraphQLBoolean,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if dog, ok := p.Source.(*testDog); ok {
 						return dog.Woofs
 					}
@@ -518,7 +519,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 		Fields: types.GraphQLFieldConfigMap{
 			"name": &types.GraphQLFieldConfig{
 				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if cat, ok := p.Source.(*testCat); ok {
 						return cat.Name
 					}
@@ -527,7 +528,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 			},
 			"meows": &types.GraphQLFieldConfig{
 				Type: types.GraphQLBoolean,
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if cat, ok := p.Source.(*testCat); ok {
 						return cat.Meows
 					}
@@ -560,7 +561,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 			Fields: types.GraphQLFieldConfigMap{
 				"pets": &types.GraphQLFieldConfig{
 					Type: types.NewGraphQLList(petType),
-					Resolve: func(p types.GQLFRParams) interface{} {
+					Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 						return []interface{}{
 							&testDog{"Odie", true},
 							&testCat{"Garfield", false},

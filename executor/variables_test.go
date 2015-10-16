@@ -8,6 +8,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
+	"golang.org/x/net/context"
 	"reflect"
 	"testing"
 )
@@ -53,7 +54,7 @@ var testInputObject *types.GraphQLInputObjectType = types.NewGraphQLInputObjectT
 	},
 })
 
-func inputResolved(p types.GQLFRParams) interface{} {
+func inputResolved(ctx context.Context, p types.GQLFRParams) interface{} {
 	input, ok := p.Args["input"]
 	if !ok {
 		return nil

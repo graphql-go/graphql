@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/chris-ramon/graphql-go/types"
+	"golang.org/x/net/context"
 
 	"./testutil"
 )
@@ -95,7 +96,7 @@ func testGraphql(test T, p GraphqlParams, t *testing.T) {
 func TestBasicGraphQLExample(t *testing.T) {
 	// taken from `graphql-js` README
 
-	helloFieldResolved := func(p types.GQLFRParams) interface{} {
+	helloFieldResolved := func(ctx context.Context, p types.GQLFRParams) interface{} {
 		return "world"
 	}
 
