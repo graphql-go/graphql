@@ -102,7 +102,7 @@ func main() {
 	http.Handle("/graphql", h)
 
 	fmt.Println("Now server is running on port 8080")
-	fmt.Println("Test with Post: curl -XPOST http://localhost:8080/graphql -H 'Content-Type: application/graphql'  -d 'query Root{ user(id:'1'){name}  }'")
+	fmt.Println("Test with Post: curl -XPOST http://localhost:8080/graphql -H 'Content-Type: application/graphql'  -d 'query Root{ user(id:\"1\"){name}  }'")
 	fmt.Println("Test with Get: http://localhost:8080/graphql?query={user(id:%221%22){name}}")
 	// and serve!
 	http.ListenAndServe(":8080", nil)
