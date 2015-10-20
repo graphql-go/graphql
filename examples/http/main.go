@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/chris-ramon/graphql-go/types"
-	"github.com/sogko/graphql-go-handler"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/chris-ramon/graphql-go/types"
+	"github.com/sogko/graphql-go-handler"
 )
 
 /*
