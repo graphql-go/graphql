@@ -3,11 +3,11 @@ package executor
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/chris-ramon/graphql-go/errors"
-	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/chris-ramon/graphql-go/language/kinds"
-	"github.com/chris-ramon/graphql-go/language/printer"
-	"github.com/chris-ramon/graphql-go/types"
+	"github.com/chris-ramon/graphql/errors"
+	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/chris-ramon/graphql/language/kinds"
+	"github.com/chris-ramon/graphql/language/printer"
+	"github.com/chris-ramon/graphql/types"
 	"math"
 	"reflect"
 )

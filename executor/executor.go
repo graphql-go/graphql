@@ -3,9 +3,9 @@ package executor
 import (
 	"fmt"
 
-	"github.com/chris-ramon/graphql-go/errors"
-	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/chris-ramon/graphql-go/types"
+	"github.com/chris-ramon/graphql/errors"
+	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/chris-ramon/graphql/types"
 	"reflect"
 	"strings"
 )

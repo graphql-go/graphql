@@ -1,9 +1,9 @@
 package executor_test
 
 import (
-	"github.com/chris-ramon/graphql-go/executor"
-	"github.com/chris-ramon/graphql-go/testutil"
-	"github.com/chris-ramon/graphql-go/types"
+	"github.com/chris-ramon/graphql/executor"
+	"github.com/chris-ramon/graphql/testutil"
+	"github.com/chris-ramon/graphql/types"
 	"reflect"
 	"testing"
 )

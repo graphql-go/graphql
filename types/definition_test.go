@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/chris-ramon/graphql-go/testutil"
-	"github.com/chris-ramon/graphql-go/types"
+	"github.com/chris-ramon/graphql/testutil"
+	"github.com/chris-ramon/graphql/types"
 )
 
 var blogImage = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{

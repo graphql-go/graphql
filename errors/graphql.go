@@ -2,9 +2,9 @@ package graphqlerrors
 
 import (
 	"fmt"
-	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/chris-ramon/graphql-go/language/location"
-	"github.com/chris-ramon/graphql-go/language/source"
+	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/chris-ramon/graphql/language/location"
+	"github.com/chris-ramon/graphql/language/source"
 )
 
 type GraphQLError struct {

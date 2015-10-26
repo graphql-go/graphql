@@ -3,11 +3,11 @@ package executor_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/chris-ramon/graphql-go/errors"
-	"github.com/chris-ramon/graphql-go/executor"
-	"github.com/chris-ramon/graphql-go/language/location"
-	"github.com/chris-ramon/graphql-go/testutil"
-	"github.com/chris-ramon/graphql-go/types"
+	"github.com/chris-ramon/graphql/errors"
+	"github.com/chris-ramon/graphql/executor"
+	"github.com/chris-ramon/graphql/language/location"
+	"github.com/chris-ramon/graphql/testutil"
+	"github.com/chris-ramon/graphql/types"
 	"reflect"
 	"testing"
 )

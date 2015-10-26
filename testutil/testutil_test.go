@@ -1,7 +1,7 @@
 package testutil_test
 
 import (
-	"github.com/chris-ramon/graphql-go/testutil"
+	"github.com/chris-ramon/graphql/testutil"
 	"testing"
 )
 

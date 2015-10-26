@@ -1,12 +1,12 @@
 package gql
 
 import (
-	"github.com/chris-ramon/graphql-go/errors"
-	"github.com/chris-ramon/graphql-go/executor"
-	"github.com/chris-ramon/graphql-go/language/parser"
-	"github.com/chris-ramon/graphql-go/language/source"
-	"github.com/chris-ramon/graphql-go/types"
-	"github.com/chris-ramon/graphql-go/validator"
+	"github.com/chris-ramon/graphql/errors"
+	"github.com/chris-ramon/graphql/executor"
+	"github.com/chris-ramon/graphql/language/parser"
+	"github.com/chris-ramon/graphql/language/source"
+	"github.com/chris-ramon/graphql/types"
+	"github.com/chris-ramon/graphql/validator"
 )
 
 type GraphqlParams struct {

@@ -2,8 +2,8 @@ package printer
 
 import (
 	"fmt"
-	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/chris-ramon/graphql-go/language/visitor"
+	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/chris-ramon/graphql/language/visitor"
 	"strings"
 )
 

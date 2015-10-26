@@ -3,8 +3,8 @@ package types_test
 import (
 	"testing"
 
-	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/chris-ramon/graphql-go/types"
+	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/chris-ramon/graphql/types"
 )
 
 var someScalarType = types.NewGraphQLScalarType(types.GraphQLScalarTypeConfig{

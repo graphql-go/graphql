@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/chris-ramon/graphql-go/types"
+	"github.com/chris-ramon/graphql/types"
 
 	"./testutil"
 )
