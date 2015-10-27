@@ -10,9 +10,9 @@ import (
 	"testing"
 )
 
-func graphql(t *testing.T, p gql.GraphqlParams) *types.GraphQLResult {
+func g(t *testing.T, p graphql.GraphqlParams) *types.GraphQLResult {
 	resultChannel := make(chan *types.GraphQLResult)
-	go gql.Graphql(p, resultChannel)
+	go graphql.Graphql(p, resultChannel)
 	result := <-resultChannel
 	return result
 }
@@ -738,7 +738,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.GraphqlParams{
 		Schema:        emptySchema,
 		RequestString: testutil.IntrospectionQuery,
 	})
@@ -850,7 +850,7 @@ func TestIntrospection_ExecutesAnInputObject(t *testing.T) {
 		},
 	}
 
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.GraphqlParams{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -889,7 +889,7 @@ func TestIntrospection_SupportsThe__TypeRootField(t *testing.T) {
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.GraphqlParams{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -948,7 +948,7 @@ func TestIntrospection_IdentifiesDeprecatedFields(t *testing.T) {
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.GraphqlParams{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1017,7 +1017,7 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForFields(t *testing
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.GraphqlParams{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1092,7 +1092,7 @@ func TestIntrospection_IdentifiesDeprecatedEnumValues(t *testing.T) {
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.GraphqlParams{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1181,7 +1181,7 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForEnumValues(t *tes
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.GraphqlParams{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1223,7 +1223,7 @@ func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testin
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.GraphqlParams{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1291,7 +1291,7 @@ mutation operations.`,
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.GraphqlParams{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1369,7 +1369,7 @@ func TestIntrospection_ExposesDescriptionsOnEnums(t *testing.T) {
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.GraphqlParams{
 		Schema:        schema,
 		RequestString: query,
 	})

@@ -147,7 +147,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 
 	resultChannel := make(chan *types.GraphQLResult)
 
-	go gql.Graphql(gql.GraphqlParams{
+	go graphql.Graphql(graphql.GraphqlParams{
 		Schema:        schema,
 		RequestString: query,
 	}, resultChannel)
@@ -282,7 +282,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 
 	resultChannel := make(chan *types.GraphQLResult)
 
-	go gql.Graphql(gql.GraphqlParams{
+	go graphql.Graphql(graphql.GraphqlParams{
 		Schema:        schema,
 		RequestString: query,
 	}, resultChannel)
@@ -453,7 +453,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 
 	resultChannel := make(chan *types.GraphQLResult)
 
-	go gql.Graphql(gql.GraphqlParams{
+	go graphql.Graphql(graphql.GraphqlParams{
 		Schema:        schema,
 		RequestString: query,
 	}, resultChannel)
@@ -611,7 +611,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 
 	resultChannel := make(chan *types.GraphQLResult)
 
-	go gql.Graphql(gql.GraphqlParams{
+	go graphql.Graphql(graphql.GraphqlParams{
 		Schema:        schema,
 		RequestString: query,
 	}, resultChannel)

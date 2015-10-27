@@ -703,7 +703,7 @@ func defaultResolveFn(p types.GQLFRParams) interface{} {
 	}
 	if sourceVal.Type().Kind() == reflect.Struct {
 		// find field based on struct's json tag
-		// we could potentially create a custom `gql` tag, but its unnecessary at this point
+		// we could potentially create a custom `graphql` tag, but its unnecessary at this point
 		// since graphql speaks to client in a json-like way anyway
 		// so json tags are a good way to start with
 		for i := 0; i < sourceVal.NumField(); i++ {

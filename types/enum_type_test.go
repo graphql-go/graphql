@@ -99,14 +99,14 @@ var enumTypeTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
 })
 
 func executeEnumTypeTest(t *testing.T, query string) *types.GraphQLResult {
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.GraphqlParams{
 		Schema:        enumTypeTestSchema,
 		RequestString: query,
 	})
 	return result
 }
 func executeEnumTypeTestWithParams(t *testing.T, query string, params map[string]interface{}) *types.GraphQLResult {
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.GraphqlParams{
 		Schema:         enumTypeTestSchema,
 		RequestString:  query,
 		VariableValues: params,

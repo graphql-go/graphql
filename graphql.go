@@ -1,4 +1,4 @@
-package gql
+package graphql
 
 import (
 	"github.com/chris-ramon/graphql/errors"
