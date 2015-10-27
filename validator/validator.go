@@ -8,10 +8,10 @@ import (
 
 type ValidationResult struct {
 	IsValid bool
-	Errors  []graphqlerrors.GraphQLFormattedError
+	Errors  []graphqlerrors.FormattedError
 }
 
-func ValidateDocument(schema types.GraphQLSchema, ast *ast.Document) (vr ValidationResult) {
+func ValidateDocument(schema types.Schema, ast *ast.Document) (vr ValidationResult) {
 	vr.IsValid = true
 	return vr
 }

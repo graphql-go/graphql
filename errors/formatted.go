@@ -5,44 +5,44 @@ import (
 	"github.com/chris-ramon/graphql/language/location"
 )
 
-type GraphQLFormattedError struct {
+type FormattedError struct {
 	Message   string
 	Locations []location.SourceLocation
 }
 
-func (g GraphQLFormattedError) Error() string {
+func (g FormattedError) Error() string {
 	return g.Message
 }
 
-func NewGraphQLFormattedError(message string) GraphQLFormattedError {
+func NewFormattedError(message string) FormattedError {
 	err := errors.New(message)
 	return FormatError(err)
 }
 
-func FormatError(err error) GraphQLFormattedError {
+func FormatError(err error) FormattedError {
 	switch err := err.(type) {
-	case GraphQLFormattedError:
+	case FormattedError:
 		return err
-	case *GraphQLError:
-		return GraphQLFormattedError{
+	case *Error:
+		return FormattedError{
 			Message:   err.Error(),
 			Locations: err.Locations,
 		}
-	case GraphQLError:
-		return GraphQLFormattedError{
+	case Error:
+		return FormattedError{
 			Message:   err.Error(),
 			Locations: err.Locations,
 		}
 	default:
-		return GraphQLFormattedError{
+		return FormattedError{
 			Message:   err.Error(),
 			Locations: []location.SourceLocation{},
 		}
 	}
 }
 
-func FormatErrors(errs ...error) []GraphQLFormattedError {
-	formattedErrors := []GraphQLFormattedError{}
+func FormatErrors(errs ...error) []FormattedError {
+	formattedErrors := []FormattedError{}
 	for _, err := range errs {
 		formattedErrors = append(formattedErrors, FormatError(err))
 	}

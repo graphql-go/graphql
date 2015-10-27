@@ -2,7 +2,7 @@ package graphqlerrors
 
 import "bytes"
 
-type GQLFormattedErrorSlice []GraphQLFormattedError
+type GQLFormattedErrorSlice []FormattedError
 
 func (errs GQLFormattedErrorSlice) Len() int {
 	return len(errs)

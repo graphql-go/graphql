@@ -47,25 +47,25 @@ var nullingData = map[string]interface{}{
 	},
 }
 
-var dataType = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var dataType = types.NewObject(types.ObjectConfig{
 	Name: "DataType",
-	Fields: types.GraphQLFieldConfigMap{
-		"sync": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+	Fields: types.FieldConfigMap{
+		"sync": &types.FieldConfig{
+			Type: types.String,
 		},
-		"nonNullSync": &types.GraphQLFieldConfig{
-			Type: types.NewGraphQLNonNull(types.GraphQLString),
+		"nonNullSync": &types.FieldConfig{
+			Type: types.NewNonNull(types.String),
 		},
-		"promise": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+		"promise": &types.FieldConfig{
+			Type: types.String,
 		},
-		"nonNullPromise": &types.GraphQLFieldConfig{
-			Type: types.NewGraphQLNonNull(types.GraphQLString),
+		"nonNullPromise": &types.FieldConfig{
+			Type: types.NewNonNull(types.String),
 		},
 	},
 })
 
-var nonNullTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+var nonNullTestSchema, _ = types.NewSchema(types.SchemaConfig{
 	Query: dataType,
 })
 
@@ -96,17 +96,17 @@ func init() {
 		return nullingData
 	}
 
-	dataType.AddFieldConfig("nest", &types.GraphQLFieldConfig{
+	dataType.AddFieldConfig("nest", &types.FieldConfig{
 		Type: dataType,
 	})
-	dataType.AddFieldConfig("nonNullNest", &types.GraphQLFieldConfig{
-		Type: types.NewGraphQLNonNull(dataType),
+	dataType.AddFieldConfig("nonNullNest", &types.FieldConfig{
+		Type: types.NewNonNull(dataType),
 	})
-	dataType.AddFieldConfig("promiseNest", &types.GraphQLFieldConfig{
+	dataType.AddFieldConfig("promiseNest", &types.FieldConfig{
 		Type: dataType,
 	})
-	dataType.AddFieldConfig("nonNullPromiseNest", &types.GraphQLFieldConfig{
-		Type: types.NewGraphQLNonNull(dataType),
+	dataType.AddFieldConfig("nonNullPromiseNest", &types.FieldConfig{
+		Type: types.NewNonNull(dataType),
 	})
 }
 
@@ -117,12 +117,12 @@ func TestNonNull_NullsANullableFieldThatThrowsSynchronously(t *testing.T) {
         sync
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"sync": nil,
 		},
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: syncError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -155,12 +155,12 @@ func TestNonNull_NullsANullableFieldThatThrowsInAPromise(t *testing.T) {
         promise
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"promise": nil,
 		},
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: promiseError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -195,12 +195,12 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANullableFieldThat
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: nonNullSyncError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -235,12 +235,12 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: nonNullPromiseError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -275,12 +275,12 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"promiseNest": nil,
 		},
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: nonNullSyncError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -315,12 +315,12 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"promiseNest": nil,
 		},
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: nonNullPromiseError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -377,7 +377,7 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"sync":    nil,
@@ -404,74 +404,74 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				},
 			},
 		},
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: syncError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 4, Column: 11},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: syncError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 7, Column: 13},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: syncError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 11, Column: 13},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: syncError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 16, Column: 11},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: syncError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 19, Column: 13},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: syncError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 23, Column: 13},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: promiseError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 5, Column: 11},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: promiseError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 8, Column: 13},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: promiseError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 12, Column: 13},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: promiseError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 17, Column: 11},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: promiseError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 20, Column: 13},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: promiseError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 24, Column: 13},
@@ -550,33 +550,33 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"nest":               nil,
 			"promiseNest":        nil,
 			"anotherNest":        nil,
 			"anotherPromiseNest": nil,
 		},
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: nonNullSyncError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 8, Column: 19},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: nonNullSyncError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 19, Column: 19},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: nonNullPromiseError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 30, Column: 19},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: nonNullPromiseError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 41, Column: 19},
@@ -613,7 +613,7 @@ func TestNonNull_NullsANullableFieldThatSynchronouslyReturnsNull(t *testing.T) {
         sync
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"sync": nil,
 		},
@@ -644,7 +644,7 @@ func TestNonNull_NullsANullableFieldThatSynchronouslyReturnsNullInAPromise(t *te
         promise
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"promise": nil,
 		},
@@ -677,12 +677,12 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullSync.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 4, Column: 11},
@@ -715,12 +715,12 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullPromise.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 4, Column: 11},
@@ -754,12 +754,12 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"promiseNest": nil,
 		},
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullSync.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 4, Column: 11},
@@ -792,12 +792,12 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"promiseNest": nil,
 		},
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullPromise.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 4, Column: 11},
@@ -851,7 +851,7 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatReturnNull(t *testing.T) {
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"sync":    nil,
@@ -948,33 +948,33 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldReturnsNullInALongChainOf
         }
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"nest":               nil,
 			"promiseNest":        nil,
 			"anotherNest":        nil,
 			"anotherPromiseNest": nil,
 		},
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullSync.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 8, Column: 19},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullSync.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 19, Column: 19},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullPromise.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 30, Column: 19},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullPromise.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 41, Column: 19},
@@ -1009,10 +1009,10 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldThrows(t *testing.T) {
 	doc := `
       query Q { nonNullSync }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: nonNullSyncError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 2, Column: 17},
@@ -1041,10 +1041,10 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldErrors(t *testing.T) {
 	doc := `
       query Q { nonNullPromise }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: nonNullPromiseError,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 2, Column: 17},
@@ -1073,10 +1073,10 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldReturnsNull(t *testing.T)
 	doc := `
       query Q { nonNullSync }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullSync.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 2, Column: 17},
@@ -1105,10 +1105,10 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldResolvesNull(t *testing.T
 	doc := `
       query Q { nonNullPromise }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullPromise.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 2, Column: 17},

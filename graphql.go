@@ -9,22 +9,22 @@ import (
 	"github.com/chris-ramon/graphql/validator"
 )
 
-type GraphqlParams struct {
-	Schema         types.GraphQLSchema
+type Params struct {
+	Schema         types.Schema
 	RequestString  string
 	RootObject     map[string]interface{}
 	VariableValues map[string]interface{}
 	OperationName  string
 }
 
-func Graphql(p GraphqlParams, resultChannel chan *types.GraphQLResult) {
+func Graphql(p Params, resultChannel chan *types.Result) {
 	source := source.NewSource(&source.Source{
 		Body: p.RequestString,
 		Name: "GraphQL request",
 	})
 	AST, err := parser.Parse(parser.ParseParams{Source: source})
 	if err != nil {
-		result := types.GraphQLResult{
+		result := types.Result{
 			Errors: graphqlerrors.FormatErrors(err),
 		}
 		resultChannel <- &result
@@ -33,7 +33,7 @@ func Graphql(p GraphqlParams, resultChannel chan *types.GraphQLResult) {
 	validationResult := validator.ValidateDocument(p.Schema, AST)
 
 	if !validationResult.IsValid {
-		result := types.GraphQLResult{
+		result := types.Result{
 			Errors: validationResult.Errors,
 		}
 		resultChannel <- &result

@@ -39,7 +39,7 @@ type Hello {
 	expected := ast.NewDocument(&ast.Document{
 		Loc: loc(1, 31),
 		Definitions: []ast.Node{
-			ast.NewObjectTypeDefinition(&ast.ObjectTypeDefinition{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
 				Loc: loc(1, 31),
 				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
@@ -54,7 +54,7 @@ type Hello {
 							Loc:   loc(16, 21),
 						}),
 						Arguments: []*ast.InputValueDefinition{},
-						Type: ast.NewNamedType(&ast.NamedType{
+						Type: ast.NewNamed(&ast.NamedType{
 							Loc: loc(23, 29),
 							Name: ast.NewName(&ast.Name{
 								Value: "String",
@@ -83,7 +83,7 @@ extend type Hello {
 		Definitions: []ast.Node{
 			ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
 				Loc: loc(1, 38),
-				Definition: ast.NewObjectTypeDefinition(&ast.ObjectTypeDefinition{
+				Definition: ast.NewObjectDefinition(&ast.ObjectDefinition{
 					Loc: loc(8, 38),
 					Name: ast.NewName(&ast.Name{
 						Value: "Hello",
@@ -98,7 +98,7 @@ extend type Hello {
 								Loc:   loc(23, 28),
 							}),
 							Arguments: []*ast.InputValueDefinition{},
-							Type: ast.NewNamedType(&ast.NamedType{
+							Type: ast.NewNamed(&ast.NamedType{
 								Loc: loc(30, 36),
 								Name: ast.NewName(&ast.Name{
 									Value: "String",
@@ -126,7 +126,7 @@ type Hello {
 	expected := ast.NewDocument(&ast.Document{
 		Loc: loc(1, 32),
 		Definitions: []ast.Node{
-			ast.NewObjectTypeDefinition(&ast.ObjectTypeDefinition{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
 				Loc: loc(1, 32),
 				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
@@ -144,7 +144,7 @@ type Hello {
 						Type: ast.NewNonNullType(&ast.NonNullType{
 							Kind: "NonNullType",
 							Loc:  loc(23, 30),
-							Type: ast.NewNamedType(&ast.NamedType{
+							Type: ast.NewNamed(&ast.NamedType{
 								Loc: loc(23, 29),
 								Name: ast.NewName(&ast.Name{
 									Value: "String",
@@ -168,14 +168,14 @@ func TestSchemaParser_SimpleTypeInheritingInterface(t *testing.T) {
 	expected := ast.NewDocument(&ast.Document{
 		Loc: loc(0, 31),
 		Definitions: []ast.Node{
-			ast.NewObjectTypeDefinition(&ast.ObjectTypeDefinition{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
 				Loc: loc(0, 31),
 				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   loc(5, 10),
 				}),
 				Interfaces: []*ast.NamedType{
-					ast.NewNamedType(&ast.NamedType{
+					ast.NewNamed(&ast.NamedType{
 						Name: ast.NewName(&ast.Name{
 							Value: "World",
 							Loc:   loc(22, 27),
@@ -198,21 +198,21 @@ func TestSchemaParser_SimpleTypeInheritingMultipleInterfaces(t *testing.T) {
 	expected := ast.NewDocument(&ast.Document{
 		Loc: loc(0, 33),
 		Definitions: []ast.Node{
-			ast.NewObjectTypeDefinition(&ast.ObjectTypeDefinition{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
 				Loc: loc(0, 33),
 				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   loc(5, 10),
 				}),
 				Interfaces: []*ast.NamedType{
-					ast.NewNamedType(&ast.NamedType{
+					ast.NewNamed(&ast.NamedType{
 						Name: ast.NewName(&ast.Name{
 							Value: "Wo",
 							Loc:   loc(22, 24),
 						}),
 						Loc: loc(22, 24),
 					}),
-					ast.NewNamedType(&ast.NamedType{
+					ast.NewNamed(&ast.NamedType{
 						Name: ast.NewName(&ast.Name{
 							Value: "rld",
 							Loc:   loc(26, 29),
@@ -235,7 +235,7 @@ func TestSchemaParser_SingleValueEnum(t *testing.T) {
 	expected := ast.NewDocument(&ast.Document{
 		Loc: loc(0, 20),
 		Definitions: []ast.Node{
-			ast.NewEnumTypeDefinition(&ast.EnumTypeDefinition{
+			ast.NewEnumTypeDefinition(&ast.EnumDefinition{
 				Loc: loc(0, 20),
 				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
@@ -264,7 +264,7 @@ func TestSchemaParser_DoubleValueEnum(t *testing.T) {
 	expected := ast.NewDocument(&ast.Document{
 		Loc: loc(0, 22),
 		Definitions: []ast.Node{
-			ast.NewEnumTypeDefinition(&ast.EnumTypeDefinition{
+			ast.NewEnumTypeDefinition(&ast.EnumDefinition{
 				Loc: loc(0, 22),
 				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
@@ -303,7 +303,7 @@ interface Hello {
 	expected := ast.NewDocument(&ast.Document{
 		Loc: loc(1, 36),
 		Definitions: []ast.Node{
-			ast.NewInterfaceTypeDefinition(&ast.InterfaceTypeDefinition{
+			ast.NewInterfaceTypeDefinition(&ast.InterfaceDefinition{
 				Loc: loc(1, 36),
 				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
@@ -317,7 +317,7 @@ interface Hello {
 							Loc:   loc(21, 26),
 						}),
 						Arguments: []*ast.InputValueDefinition{},
-						Type: ast.NewNamedType(&ast.NamedType{
+						Type: ast.NewNamed(&ast.NamedType{
 							Loc: loc(28, 34),
 							Name: ast.NewName(&ast.Name{
 								Value: "String",
@@ -343,7 +343,7 @@ type Hello {
 	expected := ast.NewDocument(&ast.Document{
 		Loc: loc(1, 46),
 		Definitions: []ast.Node{
-			ast.NewObjectTypeDefinition(&ast.ObjectTypeDefinition{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
 				Loc: loc(1, 46),
 				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
@@ -364,7 +364,7 @@ type Hello {
 									Value: "flag",
 									Loc:   loc(22, 26),
 								}),
-								Type: ast.NewNamedType(&ast.NamedType{
+								Type: ast.NewNamed(&ast.NamedType{
 									Loc: loc(28, 35),
 									Name: ast.NewName(&ast.Name{
 										Value: "Boolean",
@@ -374,7 +374,7 @@ type Hello {
 								DefaultValue: nil,
 							}),
 						},
-						Type: ast.NewNamedType(&ast.NamedType{
+						Type: ast.NewNamed(&ast.NamedType{
 							Loc: loc(38, 44),
 							Name: ast.NewName(&ast.Name{
 								Value: "String",
@@ -400,7 +400,7 @@ type Hello {
 	expected := ast.NewDocument(&ast.Document{
 		Loc: loc(1, 53),
 		Definitions: []ast.Node{
-			ast.NewObjectTypeDefinition(&ast.ObjectTypeDefinition{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
 				Loc: loc(1, 53),
 				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
@@ -421,7 +421,7 @@ type Hello {
 									Value: "flag",
 									Loc:   loc(22, 26),
 								}),
-								Type: ast.NewNamedType(&ast.NamedType{
+								Type: ast.NewNamed(&ast.NamedType{
 									Loc: loc(28, 35),
 									Name: ast.NewName(&ast.Name{
 										Value: "Boolean",
@@ -434,7 +434,7 @@ type Hello {
 								}),
 							}),
 						},
-						Type: ast.NewNamedType(&ast.NamedType{
+						Type: ast.NewNamed(&ast.NamedType{
 							Loc: loc(45, 51),
 							Name: ast.NewName(&ast.Name{
 								Value: "String",
@@ -460,7 +460,7 @@ type Hello {
 	expected := ast.NewDocument(&ast.Document{
 		Loc: loc(1, 49),
 		Definitions: []ast.Node{
-			ast.NewObjectTypeDefinition(&ast.ObjectTypeDefinition{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
 				Loc: loc(1, 49),
 				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
@@ -483,7 +483,7 @@ type Hello {
 								}),
 								Type: ast.NewListType(&ast.ListType{
 									Loc: loc(30, 38),
-									Type: ast.NewNamedType(&ast.NamedType{
+									Type: ast.NewNamed(&ast.NamedType{
 										Loc: loc(31, 37),
 										Name: ast.NewName(&ast.Name{
 											Value: "String",
@@ -494,7 +494,7 @@ type Hello {
 								DefaultValue: nil,
 							}),
 						},
-						Type: ast.NewNamedType(&ast.NamedType{
+						Type: ast.NewNamed(&ast.NamedType{
 							Loc: loc(41, 47),
 							Name: ast.NewName(&ast.Name{
 								Value: "String",
@@ -520,7 +520,7 @@ type Hello {
 	expected := ast.NewDocument(&ast.Document{
 		Loc: loc(1, 61),
 		Definitions: []ast.Node{
-			ast.NewObjectTypeDefinition(&ast.ObjectTypeDefinition{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
 				Loc: loc(1, 61),
 				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
@@ -541,7 +541,7 @@ type Hello {
 									Value: "argOne",
 									Loc:   loc(22, 28),
 								}),
-								Type: ast.NewNamedType(&ast.NamedType{
+								Type: ast.NewNamed(&ast.NamedType{
 									Loc: loc(30, 37),
 									Name: ast.NewName(&ast.Name{
 										Value: "Boolean",
@@ -556,7 +556,7 @@ type Hello {
 									Value: "argTwo",
 									Loc:   loc(39, 45),
 								}),
-								Type: ast.NewNamedType(&ast.NamedType{
+								Type: ast.NewNamed(&ast.NamedType{
 									Loc: loc(47, 50),
 									Name: ast.NewName(&ast.Name{
 										Value: "Int",
@@ -566,7 +566,7 @@ type Hello {
 								DefaultValue: nil,
 							}),
 						},
-						Type: ast.NewNamedType(&ast.NamedType{
+						Type: ast.NewNamed(&ast.NamedType{
 							Loc: loc(53, 59),
 							Name: ast.NewName(&ast.Name{
 								Value: "String",
@@ -589,14 +589,14 @@ func TestSchemaParser_SimpleUnion(t *testing.T) {
 	expected := ast.NewDocument(&ast.Document{
 		Loc: loc(0, 19),
 		Definitions: []ast.Node{
-			ast.NewUnionTypeDefinition(&ast.UnionTypeDefinition{
+			ast.NewUnionTypeDefinition(&ast.UnionDefinition{
 				Loc: loc(0, 19),
 				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   loc(6, 11),
 				}),
 				Types: []*ast.NamedType{
-					ast.NewNamedType(&ast.NamedType{
+					ast.NewNamed(&ast.NamedType{
 						Loc: loc(14, 19),
 						Name: ast.NewName(&ast.Name{
 							Value: "World",
@@ -618,21 +618,21 @@ func TestSchemaParser_UnionWithTwoTypes(t *testing.T) {
 	expected := ast.NewDocument(&ast.Document{
 		Loc: loc(0, 22),
 		Definitions: []ast.Node{
-			ast.NewUnionTypeDefinition(&ast.UnionTypeDefinition{
+			ast.NewUnionTypeDefinition(&ast.UnionDefinition{
 				Loc: loc(0, 22),
 				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   loc(6, 11),
 				}),
 				Types: []*ast.NamedType{
-					ast.NewNamedType(&ast.NamedType{
+					ast.NewNamed(&ast.NamedType{
 						Loc: loc(14, 16),
 						Name: ast.NewName(&ast.Name{
 							Value: "Wo",
 							Loc:   loc(14, 16),
 						}),
 					}),
-					ast.NewNamedType(&ast.NamedType{
+					ast.NewNamed(&ast.NamedType{
 						Loc: loc(19, 22),
 						Name: ast.NewName(&ast.Name{
 							Value: "Rld",
@@ -654,7 +654,7 @@ func TestSchemaParser_Scalar(t *testing.T) {
 	expected := ast.NewDocument(&ast.Document{
 		Loc: loc(0, 12),
 		Definitions: []ast.Node{
-			ast.NewScalarTypeDefinition(&ast.ScalarTypeDefinition{
+			ast.NewScalarTypeDefinition(&ast.ScalarDefinition{
 				Loc: loc(0, 12),
 				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
@@ -677,7 +677,7 @@ input Hello {
 	expected := ast.NewDocument(&ast.Document{
 		Loc: loc(1, 32),
 		Definitions: []ast.Node{
-			ast.NewInputObjectTypeDefinition(&ast.InputObjectTypeDefinition{
+			ast.NewInputObjectTypeDefinition(&ast.InputObjectDefinition{
 				Loc: loc(1, 32),
 				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
@@ -690,7 +690,7 @@ input Hello {
 							Value: "world",
 							Loc:   loc(17, 22),
 						}),
-						Type: ast.NewNamedType(&ast.NamedType{
+						Type: ast.NewNamed(&ast.NamedType{
 							Loc: loc(24, 30),
 							Name: ast.NewName(&ast.Name{
 								Value: "String",
@@ -722,7 +722,7 @@ input Hello {
 		},
 	})
 
-	expectedError := &graphqlerrors.GraphQLError{
+	expectedError := &graphqlerrors.Error{
 		Message: `Syntax Error GraphQL (3:8) Expected :, found (
 
 2: input Hello {

@@ -7,7 +7,7 @@ import (
 	"github.com/chris-ramon/graphql/types"
 )
 
-var someScalarType = types.NewGraphQLScalarType(types.GraphQLScalarTypeConfig{
+var someScalarType = types.NewScalar(types.ScalarConfig{
 	Name: "SomeScalar",
 	Serialize: func(value interface{}) interface{} {
 		return nil
@@ -19,111 +19,111 @@ var someScalarType = types.NewGraphQLScalarType(types.GraphQLScalarTypeConfig{
 		return nil
 	},
 })
-var someObjectType = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var someObjectType = types.NewObject(types.ObjectConfig{
 	Name: "SomeObject",
-	Fields: types.GraphQLFieldConfigMap{
-		"f": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+	Fields: types.FieldConfigMap{
+		"f": &types.FieldConfig{
+			Type: types.String,
 		},
 	},
 })
-var objectWithIsTypeOf = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var objectWithIsTypeOf = types.NewObject(types.ObjectConfig{
 	Name: "ObjectWithIsTypeOf",
-	IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
+	IsTypeOf: func(value interface{}, info types.ResolveInfo) bool {
 		return true
 	},
-	Fields: types.GraphQLFieldConfigMap{
-		"f": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+	Fields: types.FieldConfigMap{
+		"f": &types.FieldConfig{
+			Type: types.String,
 		},
 	},
 })
-var someUnionType = types.NewGraphQLUnionType(types.GraphQLUnionTypeConfig{
+var someUnionType = types.NewUnion(types.UnionConfig{
 	Name: "SomeUnion",
-	ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+	ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 		return nil
 	},
-	Types: []*types.GraphQLObjectType{
+	Types: []*types.Object{
 		someObjectType,
 	},
 })
-var someInterfaceType = types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+var someInterfaceType = types.NewInterface(types.InterfaceConfig{
 	Name: "SomeInterface",
-	ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+	ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 		return nil
 	},
-	Fields: types.GraphQLFieldConfigMap{
-		"f": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+	Fields: types.FieldConfigMap{
+		"f": &types.FieldConfig{
+			Type: types.String,
 		},
 	},
 })
-var someEnumType = types.NewGraphQLEnumType(types.GraphQLEnumTypeConfig{
+var someEnumType = types.NewEnum(types.EnumConfig{
 	Name: "SomeEnum",
-	Values: types.GraphQLEnumValueConfigMap{
-		"ONLY": &types.GraphQLEnumValueConfig{},
+	Values: types.EnumValueConfigMap{
+		"ONLY": &types.EnumValueConfig{},
 	},
 })
-var someInputObject = types.NewGraphQLInputObjectType(types.InputObjectConfig{
+var someInputObject = types.NewInputObject(types.InputObjectConfig{
 	Name: "SomeInputObject",
 	Fields: types.InputObjectConfigFieldMap{
 		"f": &types.InputObjectFieldConfig{
-			Type:         types.GraphQLString,
+			Type:         types.String,
 			DefaultValue: "Hello",
 		},
 	},
 })
 
-func withModifiers(ttypes []types.GraphQLType) []types.GraphQLType {
+func withModifiers(ttypes []types.Type) []types.Type {
 	res := ttypes
 	for _, ttype := range ttypes {
-		res = append(res, types.NewGraphQLList(ttype))
+		res = append(res, types.NewList(ttype))
 	}
 	for _, ttype := range ttypes {
-		res = append(res, types.NewGraphQLNonNull(ttype))
+		res = append(res, types.NewNonNull(ttype))
 	}
 	for _, ttype := range ttypes {
-		res = append(res, types.NewGraphQLNonNull(types.NewGraphQLList(ttype)))
+		res = append(res, types.NewNonNull(types.NewList(ttype)))
 	}
 	return res
 }
 
-var outputTypes = withModifiers([]types.GraphQLType{
-	types.GraphQLString,
+var outputTypes = withModifiers([]types.Type{
+	types.String,
 	someScalarType,
 	someEnumType,
 	someObjectType,
 	someUnionType,
 	someInterfaceType,
 })
-var inputTypes = withModifiers([]types.GraphQLType{
-	types.GraphQLString,
+var inputTypes = withModifiers([]types.Type{
+	types.String,
 	someScalarType,
 	someEnumType,
 	someInputObject,
 })
 
-func schemaWithFieldType(ttype types.GraphQLOutputType) (types.GraphQLSchema, error) {
-	return types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+func schemaWithFieldType(ttype types.Output) (types.Schema, error) {
+	return types.NewSchema(types.SchemaConfig{
+		Query: types.NewObject(types.ObjectConfig{
 			Name: "Query",
-			Fields: types.GraphQLFieldConfigMap{
-				"f": &types.GraphQLFieldConfig{
+			Fields: types.FieldConfigMap{
+				"f": &types.FieldConfig{
 					Type: ttype,
 				},
 			},
 		}),
 	})
 }
-func schemaWithInputObject(ttype types.GraphQLInputType) (types.GraphQLSchema, error) {
-	return types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+func schemaWithInputObject(ttype types.Input) (types.Schema, error) {
+	return types.NewSchema(types.SchemaConfig{
+		Query: types.NewObject(types.ObjectConfig{
 			Name: "Query",
-			Fields: types.GraphQLFieldConfigMap{
-				"f": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
-					Args: types.GraphQLFieldConfigArgumentMap{
-						"args": &types.GraphQLArgumentConfig{
+			Fields: types.FieldConfigMap{
+				"f": &types.FieldConfig{
+					Type: types.String,
+					Args: types.FieldConfigArgument{
+						"args": &types.ArgumentConfig{
 							Type: ttype,
 						},
 					},
@@ -132,119 +132,119 @@ func schemaWithInputObject(ttype types.GraphQLInputType) (types.GraphQLSchema, e
 		}),
 	})
 }
-func schemaWithObjectFieldOfType(fieldType types.GraphQLInputType) (types.GraphQLSchema, error) {
+func schemaWithObjectFieldOfType(fieldType types.Input) (types.Schema, error) {
 
-	badObjectType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	badObjectType := types.NewObject(types.ObjectConfig{
 		Name: "BadObject",
-		Fields: types.GraphQLFieldConfigMap{
-			"badField": &types.GraphQLFieldConfig{
+		Fields: types.FieldConfigMap{
+			"badField": &types.FieldConfig{
 				Type: fieldType,
 			},
 		},
 	})
-	return types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	return types.NewSchema(types.SchemaConfig{
+		Query: types.NewObject(types.ObjectConfig{
 			Name: "Query",
-			Fields: types.GraphQLFieldConfigMap{
-				"f": &types.GraphQLFieldConfig{
+			Fields: types.FieldConfigMap{
+				"f": &types.FieldConfig{
 					Type: badObjectType,
 				},
 			},
 		}),
 	})
 }
-func schemaWithObjectImplementingType(implementedType *types.GraphQLInterfaceType) (types.GraphQLSchema, error) {
+func schemaWithObjectImplementingType(implementedType *types.Interface) (types.Schema, error) {
 
-	badObjectType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	badObjectType := types.NewObject(types.ObjectConfig{
 		Name:       "BadObject",
-		Interfaces: []*types.GraphQLInterfaceType{implementedType},
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Interfaces: []*types.Interface{implementedType},
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
-	return types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	return types.NewSchema(types.SchemaConfig{
+		Query: types.NewObject(types.ObjectConfig{
 			Name: "Query",
-			Fields: types.GraphQLFieldConfigMap{
-				"f": &types.GraphQLFieldConfig{
+			Fields: types.FieldConfigMap{
+				"f": &types.FieldConfig{
 					Type: badObjectType,
 				},
 			},
 		}),
 	})
 }
-func schemaWithUnionOfType(ttype *types.GraphQLObjectType) (types.GraphQLSchema, error) {
+func schemaWithUnionOfType(ttype *types.Object) (types.Schema, error) {
 
-	badObjectType := types.NewGraphQLUnionType(types.GraphQLUnionTypeConfig{
+	badObjectType := types.NewUnion(types.UnionConfig{
 		Name: "BadUnion",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Types: []*types.GraphQLObjectType{ttype},
+		Types: []*types.Object{ttype},
 	})
-	return types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	return types.NewSchema(types.SchemaConfig{
+		Query: types.NewObject(types.ObjectConfig{
 			Name: "Query",
-			Fields: types.GraphQLFieldConfigMap{
-				"f": &types.GraphQLFieldConfig{
+			Fields: types.FieldConfigMap{
+				"f": &types.FieldConfig{
 					Type: badObjectType,
 				},
 			},
 		}),
 	})
 }
-func schemaWithInterfaceFieldOfType(ttype types.GraphQLType) (types.GraphQLSchema, error) {
+func schemaWithInterfaceFieldOfType(ttype types.Type) (types.Schema, error) {
 
-	badInterfaceType := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	badInterfaceType := types.NewInterface(types.InterfaceConfig{
 		Name: "BadInterface",
-		Fields: types.GraphQLFieldConfigMap{
-			"badField": &types.GraphQLFieldConfig{
+		Fields: types.FieldConfigMap{
+			"badField": &types.FieldConfig{
 				Type: ttype,
 			},
 		},
 	})
-	return types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	return types.NewSchema(types.SchemaConfig{
+		Query: types.NewObject(types.ObjectConfig{
 			Name: "Query",
-			Fields: types.GraphQLFieldConfigMap{
-				"f": &types.GraphQLFieldConfig{
+			Fields: types.FieldConfigMap{
+				"f": &types.FieldConfig{
 					Type: badInterfaceType,
 				},
 			},
 		}),
 	})
 }
-func schemaWithArgOfType(ttype types.GraphQLType) (types.GraphQLSchema, error) {
+func schemaWithArgOfType(ttype types.Type) (types.Schema, error) {
 
-	badObject := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	badObject := types.NewObject(types.ObjectConfig{
 		Name: "BadObject",
-		Fields: types.GraphQLFieldConfigMap{
-			"badField": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"badArg": &types.GraphQLArgumentConfig{
+		Fields: types.FieldConfigMap{
+			"badField": &types.FieldConfig{
+				Type: types.String,
+				Args: types.FieldConfigArgument{
+					"badArg": &types.ArgumentConfig{
 						Type: ttype,
 					},
 				},
 			},
 		},
 	})
-	return types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	return types.NewSchema(types.SchemaConfig{
+		Query: types.NewObject(types.ObjectConfig{
 			Name: "Query",
-			Fields: types.GraphQLFieldConfigMap{
-				"f": &types.GraphQLFieldConfig{
+			Fields: types.FieldConfigMap{
+				"f": &types.FieldConfig{
 					Type: badObject,
 				},
 			},
 		}),
 	})
 }
-func schemaWithInputFieldOfType(ttype types.GraphQLType) (types.GraphQLSchema, error) {
+func schemaWithInputFieldOfType(ttype types.Type) (types.Schema, error) {
 
-	badInputObject := types.NewGraphQLInputObjectType(types.InputObjectConfig{
+	badInputObject := types.NewInputObject(types.InputObjectConfig{
 		Name: "BadInputObject",
 		Fields: types.InputObjectConfigFieldMap{
 			"badField": &types.InputObjectFieldConfig{
@@ -252,14 +252,14 @@ func schemaWithInputFieldOfType(ttype types.GraphQLType) (types.GraphQLSchema, e
 			},
 		},
 	})
-	return types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	return types.NewSchema(types.SchemaConfig{
+		Query: types.NewObject(types.ObjectConfig{
 			Name: "Query",
-			Fields: types.GraphQLFieldConfigMap{
-				"f": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
-					Args: types.GraphQLFieldConfigArgumentMap{
-						"badArg": &types.GraphQLArgumentConfig{
+			Fields: types.FieldConfigMap{
+				"f": &types.FieldConfig{
+					Type: types.String,
+					Args: types.FieldConfigArgument{
+						"badArg": &types.ArgumentConfig{
 							Type: badInputObject,
 						},
 					},
@@ -270,7 +270,7 @@ func schemaWithInputFieldOfType(ttype types.GraphQLType) (types.GraphQLSchema, e
 }
 
 func TestTypeSystem_SchemaMustHaveObjectRootTypes_AcceptsASchemaWhoseQueryTypeIsAnObjectType(t *testing.T) {
-	_, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	_, err := types.NewSchema(types.SchemaConfig{
 		Query: someObjectType,
 	})
 	if err != nil {
@@ -278,15 +278,15 @@ func TestTypeSystem_SchemaMustHaveObjectRootTypes_AcceptsASchemaWhoseQueryTypeIs
 	}
 }
 func TestTypeSystem_SchemaMustHaveObjectRootTypes_AcceptsASchemaWhoseQueryAndMutationTypesAreObjectType(t *testing.T) {
-	mutationObject := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	mutationObject := types.NewObject(types.ObjectConfig{
 		Name: "Mutation",
-		Fields: types.GraphQLFieldConfigMap{
-			"edit": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"edit": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
-	_, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	_, err := types.NewSchema(types.SchemaConfig{
 		Query:    someObjectType,
 		Mutation: mutationObject,
 	})
@@ -295,7 +295,7 @@ func TestTypeSystem_SchemaMustHaveObjectRootTypes_AcceptsASchemaWhoseQueryAndMut
 	}
 }
 func TestTypeSystem_SchemaMustHaveObjectRootTypes_RejectsASchemaWithoutAQueryType(t *testing.T) {
-	_, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{})
+	_, err := types.NewSchema(types.SchemaConfig{})
 	expectedError := "Schema query must be Object Type but got: nil."
 	if err == nil || err.Error() != expectedError {
 		t.Fatalf("Expected error: %v, got %v", expectedError, err)
@@ -304,24 +304,24 @@ func TestTypeSystem_SchemaMustHaveObjectRootTypes_RejectsASchemaWithoutAQueryTyp
 
 func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichRedefinesABuiltInType(t *testing.T) {
 
-	fakeString := types.NewGraphQLScalarType(types.GraphQLScalarTypeConfig{
+	fakeString := types.NewScalar(types.ScalarConfig{
 		Name: "String",
 		Serialize: func(value interface{}) interface{} {
 			return nil
 		},
 	})
-	queryType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	queryType := types.NewObject(types.ObjectConfig{
 		Name: "Query",
-		Fields: types.GraphQLFieldConfigMap{
-			"normal": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"normal": &types.FieldConfig{
+				Type: types.String,
 			},
-			"fake": &types.GraphQLFieldConfig{
+			"fake": &types.FieldConfig{
 				Type: fakeString,
 			},
 		},
 	})
-	_, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	_, err := types.NewSchema(types.SchemaConfig{
 		Query: queryType,
 	})
 	expectedError := `Schema must contain unique named types but contains multiple types named "String".`
@@ -331,34 +331,34 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichRedef
 }
 func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichDefinesAnObjectTypeTwice(t *testing.T) {
 
-	a := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	a := types.NewObject(types.ObjectConfig{
 		Name: "SameName",
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
-	b := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	b := types.NewObject(types.ObjectConfig{
 		Name: "SameName",
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
-	queryType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	queryType := types.NewObject(types.ObjectConfig{
 		Name: "Query",
-		Fields: types.GraphQLFieldConfigMap{
-			"a": &types.GraphQLFieldConfig{
+		Fields: types.FieldConfigMap{
+			"a": &types.FieldConfig{
 				Type: a,
 			},
-			"b": &types.GraphQLFieldConfig{
+			"b": &types.FieldConfig{
 				Type: b,
 			},
 		},
 	})
-	_, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	_, err := types.NewSchema(types.SchemaConfig{
 		Query: queryType,
 	})
 	expectedError := `Schema must contain unique named types but contains multiple types named "SameName".`
@@ -368,48 +368,48 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichDefin
 }
 func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichHaveSameNamedObjectsImplementingAnInterface(t *testing.T) {
 
-	anotherInterface := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	anotherInterface := types.NewInterface(types.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
-	_ = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	_ = types.NewObject(types.ObjectConfig{
 		Name: "BadObject",
-		Interfaces: []*types.GraphQLInterfaceType{
+		Interfaces: []*types.Interface{
 			anotherInterface,
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
-	_ = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	_ = types.NewObject(types.ObjectConfig{
 		Name: "BadObject",
-		Interfaces: []*types.GraphQLInterfaceType{
+		Interfaces: []*types.Interface{
 			anotherInterface,
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
-	queryType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	queryType := types.NewObject(types.ObjectConfig{
 		Name: "Query",
-		Fields: types.GraphQLFieldConfigMap{
-			"iface": &types.GraphQLFieldConfig{
+		Fields: types.FieldConfigMap{
+			"iface": &types.FieldConfig{
 				Type: anotherInterface,
 			},
 		},
 	})
-	_, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	_, err := types.NewSchema(types.SchemaConfig{
 		Query: queryType,
 	})
 	expectedError := `Schema must contain unique named types but contains multiple types named "BadObject".`
@@ -419,11 +419,11 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichHaveS
 }
 
 func TestTypeSystem_ObjectsMustHaveFields_AcceptsAnObjectTypeWithFieldsObject(t *testing.T) {
-	_, err := schemaWithFieldType(types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	_, err := schemaWithFieldType(types.NewObject(types.ObjectConfig{
 		Name: "SomeObject",
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	}))
@@ -432,7 +432,7 @@ func TestTypeSystem_ObjectsMustHaveFields_AcceptsAnObjectTypeWithFieldsObject(t 
 	}
 }
 func TestTypeSystem_ObjectsMustHaveFields_RejectsAnObjectTypeWithMissingFields(t *testing.T) {
-	badObject := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	badObject := types.NewObject(types.ObjectConfig{
 		Name: "SomeObject",
 	})
 	_, err := schemaWithFieldType(badObject)
@@ -442,11 +442,11 @@ func TestTypeSystem_ObjectsMustHaveFields_RejectsAnObjectTypeWithMissingFields(t
 	}
 }
 func TestTypeSystem_ObjectsMustHaveFields_RejectsAnObjectTypeWithIncorrectlyNamedFields(t *testing.T) {
-	badObject := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	badObject := types.NewObject(types.ObjectConfig{
 		Name: "SomeObject",
-		Fields: types.GraphQLFieldConfigMap{
-			"bad-name-with-dashes": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"bad-name-with-dashes": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
@@ -457,9 +457,9 @@ func TestTypeSystem_ObjectsMustHaveFields_RejectsAnObjectTypeWithIncorrectlyName
 	}
 }
 func TestTypeSystem_ObjectsMustHaveFields_RejectsAnObjectTypeWithEmptyFields(t *testing.T) {
-	badObject := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	badObject := types.NewObject(types.ObjectConfig{
 		Name:   "SomeObject",
-		Fields: types.GraphQLFieldConfigMap{},
+		Fields: types.FieldConfigMap{},
 	})
 	_, err := schemaWithFieldType(badObject)
 	expectedError := `SomeObject fields must be an object with field names as keys or a function which return such an object.`
@@ -469,14 +469,14 @@ func TestTypeSystem_ObjectsMustHaveFields_RejectsAnObjectTypeWithEmptyFields(t *
 }
 
 func TestTypeSystem_FieldsArgsMustBeProperlyNamed_AcceptsFieldArgsWithValidNames(t *testing.T) {
-	_, err := schemaWithFieldType(types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	_, err := schemaWithFieldType(types.NewObject(types.ObjectConfig{
 		Name: "SomeObject",
-		Fields: types.GraphQLFieldConfigMap{
-			"goodField": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"goodArgs": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"goodField": &types.FieldConfig{
+				Type: types.String,
+				Args: types.FieldConfigArgument{
+					"goodArgs": &types.ArgumentConfig{
+						Type: types.String,
 					},
 				},
 			},
@@ -487,14 +487,14 @@ func TestTypeSystem_FieldsArgsMustBeProperlyNamed_AcceptsFieldArgsWithValidNames
 	}
 }
 func TestTypeSystem_FieldsArgsMustBeProperlyNamed_RejectsFieldArgWithInvalidNames(t *testing.T) {
-	_, err := schemaWithFieldType(types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	_, err := schemaWithFieldType(types.NewObject(types.ObjectConfig{
 		Name: "SomeObject",
-		Fields: types.GraphQLFieldConfigMap{
-			"badField": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"bad-name-with-dashes": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"badField": &types.FieldConfig{
+				Type: types.String,
+				Args: types.FieldConfigArgument{
+					"bad-name-with-dashes": &types.ArgumentConfig{
+						Type: types.String,
 					},
 				},
 			},
@@ -507,14 +507,14 @@ func TestTypeSystem_FieldsArgsMustBeProperlyNamed_RejectsFieldArgWithInvalidName
 }
 
 func TestTypeSystem_FieldsArgsMustBeObjects_AcceptsAnObjectTypeWithFieldArgs(t *testing.T) {
-	_, err := schemaWithFieldType(types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	_, err := schemaWithFieldType(types.NewObject(types.ObjectConfig{
 		Name: "SomeObject",
-		Fields: types.GraphQLFieldConfigMap{
-			"goodField": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"goodArgs": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"goodField": &types.FieldConfig{
+				Type: types.String,
+				Args: types.FieldConfigArgument{
+					"goodArgs": &types.ArgumentConfig{
+						Type: types.String,
 					},
 				},
 			},
@@ -526,25 +526,25 @@ func TestTypeSystem_FieldsArgsMustBeObjects_AcceptsAnObjectTypeWithFieldArgs(t *
 }
 
 func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithArrayInterfaces(t *testing.T) {
-	anotherInterfaceType := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	anotherInterfaceType := types.NewInterface(types.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
-	_, err := schemaWithFieldType(types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	_, err := schemaWithFieldType(types.NewObject(types.ObjectConfig{
 		Name: "SomeObject",
-		Interfaces: (types.GraphQLInterfacesThunk)(func() []*types.GraphQLInterfaceType {
-			return []*types.GraphQLInterfaceType{anotherInterfaceType}
+		Interfaces: (types.InterfacesThunk)(func() []*types.Interface {
+			return []*types.Interface{anotherInterfaceType}
 		}),
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	}))
@@ -554,23 +554,23 @@ func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithArrayInte
 }
 
 func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithInterfacesAsFunctionReturningAnArray(t *testing.T) {
-	anotherInterfaceType := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	anotherInterfaceType := types.NewInterface(types.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
-	_, err := schemaWithFieldType(types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	_, err := schemaWithFieldType(types.NewObject(types.ObjectConfig{
 		Name:       "SomeObject",
-		Interfaces: []*types.GraphQLInterfaceType{anotherInterfaceType},
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Interfaces: []*types.Interface{anotherInterfaceType},
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	}))
@@ -580,12 +580,12 @@ func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithInterface
 }
 
 func TestTypeSystem_UnionTypesMustBeArray_AcceptsAUnionTypeWithArrayTypes(t *testing.T) {
-	_, err := schemaWithFieldType(types.NewGraphQLUnionType(types.GraphQLUnionTypeConfig{
+	_, err := schemaWithFieldType(types.NewUnion(types.UnionConfig{
 		Name: "SomeUnion",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Types: []*types.GraphQLObjectType{
+		Types: []*types.Object{
 			someObjectType,
 		},
 	}))
@@ -594,9 +594,9 @@ func TestTypeSystem_UnionTypesMustBeArray_AcceptsAUnionTypeWithArrayTypes(t *tes
 	}
 }
 func TestTypeSystem_UnionTypesMustBeArray_RejectsAUnionTypeWithoutTypes(t *testing.T) {
-	_, err := schemaWithFieldType(types.NewGraphQLUnionType(types.GraphQLUnionTypeConfig{
+	_, err := schemaWithFieldType(types.NewUnion(types.UnionConfig{
 		Name: "SomeUnion",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
 	}))
@@ -606,12 +606,12 @@ func TestTypeSystem_UnionTypesMustBeArray_RejectsAUnionTypeWithoutTypes(t *testi
 	}
 }
 func TestTypeSystem_UnionTypesMustBeArray_RejectsAUnionTypeWithEmptyTypes(t *testing.T) {
-	_, err := schemaWithFieldType(types.NewGraphQLUnionType(types.GraphQLUnionTypeConfig{
+	_, err := schemaWithFieldType(types.NewUnion(types.UnionConfig{
 		Name: "SomeUnion",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Types: []*types.GraphQLObjectType{},
+		Types: []*types.Object{},
 	}))
 	expectedError := "Must provide Array of types for Union SomeUnion."
 	if err == nil || err.Error() != expectedError {
@@ -620,11 +620,11 @@ func TestTypeSystem_UnionTypesMustBeArray_RejectsAUnionTypeWithEmptyTypes(t *tes
 }
 
 func TestTypeSystem_InputObjectsMustHaveFields_AcceptsAnInputObjectTypeWithFields(t *testing.T) {
-	_, err := schemaWithInputObject(types.NewGraphQLInputObjectType(types.InputObjectConfig{
+	_, err := schemaWithInputObject(types.NewInputObject(types.InputObjectConfig{
 		Name: "SomeInputObject",
 		Fields: types.InputObjectConfigFieldMap{
 			"f": &types.InputObjectFieldConfig{
-				Type: types.GraphQLString,
+				Type: types.String,
 			},
 		},
 	}))
@@ -634,12 +634,12 @@ func TestTypeSystem_InputObjectsMustHaveFields_AcceptsAnInputObjectTypeWithField
 }
 
 func TestTypeSystem_InputObjectsMustHaveFields_AcceptsAnInputObjectTypeWithAFieldFunction(t *testing.T) {
-	_, err := schemaWithInputObject(types.NewGraphQLInputObjectType(types.InputObjectConfig{
+	_, err := schemaWithInputObject(types.NewInputObject(types.InputObjectConfig{
 		Name: "SomeInputObject",
 		Fields: (types.InputObjectConfigFieldMapThunk)(func() types.InputObjectConfigFieldMap {
 			return types.InputObjectConfigFieldMap{
 				"f": &types.InputObjectFieldConfig{
-					Type: types.GraphQLString,
+					Type: types.String,
 				},
 			}
 		}),
@@ -650,7 +650,7 @@ func TestTypeSystem_InputObjectsMustHaveFields_AcceptsAnInputObjectTypeWithAFiel
 }
 
 func TestTypeSystem_InputObjectsMustHaveFields_RejectsAnInputObjectTypeWithMissingFields(t *testing.T) {
-	_, err := schemaWithInputObject(types.NewGraphQLInputObjectType(types.InputObjectConfig{
+	_, err := schemaWithInputObject(types.NewInputObject(types.InputObjectConfig{
 		Name: "SomeInputObject",
 	}))
 	expectedError := "SomeInputObject fields must be an object with field names as keys or a function which return such an object."
@@ -659,7 +659,7 @@ func TestTypeSystem_InputObjectsMustHaveFields_RejectsAnInputObjectTypeWithMissi
 	}
 }
 func TestTypeSystem_InputObjectsMustHaveFields_RejectsAnInputObjectTypeWithEmptyFields(t *testing.T) {
-	_, err := schemaWithInputObject(types.NewGraphQLInputObjectType(types.InputObjectConfig{
+	_, err := schemaWithInputObject(types.NewInputObject(types.InputObjectConfig{
 		Name:   "SomeInputObject",
 		Fields: types.InputObjectConfigFieldMap{},
 	}))
@@ -670,14 +670,14 @@ func TestTypeSystem_InputObjectsMustHaveFields_RejectsAnInputObjectTypeWithEmpty
 }
 
 func TestTypeSystem_ObjectTypesMustBeAssertable_AcceptsAnObjectTypeWithAnIsTypeOfFunction(t *testing.T) {
-	_, err := schemaWithFieldType(types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	_, err := schemaWithFieldType(types.NewObject(types.ObjectConfig{
 		Name: "AnotherObject",
-		IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
+		IsTypeOf: func(value interface{}, info types.ResolveInfo) bool {
 			return true
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	}))
@@ -688,23 +688,23 @@ func TestTypeSystem_ObjectTypesMustBeAssertable_AcceptsAnObjectTypeWithAnIsTypeO
 
 func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceTypeDefiningResolveType(t *testing.T) {
 
-	anotherInterfaceType := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	anotherInterfaceType := types.NewInterface(types.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
-	_, err := schemaWithFieldType(types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	_, err := schemaWithFieldType(types.NewObject(types.ObjectConfig{
 		Name:       "SomeObject",
-		Interfaces: []*types.GraphQLInterfaceType{anotherInterfaceType},
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Interfaces: []*types.Interface{anotherInterfaceType},
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	}))
@@ -714,23 +714,23 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceTypeDefinin
 }
 func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceWithImplementingTypeDefiningIsTypeOf(t *testing.T) {
 
-	anotherInterfaceType := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	anotherInterfaceType := types.NewInterface(types.InterfaceConfig{
 		Name: "AnotherInterface",
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
-	_, err := schemaWithFieldType(types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	_, err := schemaWithFieldType(types.NewObject(types.ObjectConfig{
 		Name:       "SomeObject",
-		Interfaces: []*types.GraphQLInterfaceType{anotherInterfaceType},
-		IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
+		Interfaces: []*types.Interface{anotherInterfaceType},
+		IsTypeOf: func(value interface{}, info types.ResolveInfo) bool {
 			return true
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	}))
@@ -741,26 +741,26 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceWithImpleme
 
 func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceTypeDefiningResolveTypeWithImplementingTypeDefiningIsTypeOf(t *testing.T) {
 
-	anotherInterfaceType := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	anotherInterfaceType := types.NewInterface(types.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
-	_, err := schemaWithFieldType(types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	_, err := schemaWithFieldType(types.NewObject(types.ObjectConfig{
 		Name:       "SomeObject",
-		Interfaces: []*types.GraphQLInterfaceType{anotherInterfaceType},
-		IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
+		Interfaces: []*types.Interface{anotherInterfaceType},
+		IsTypeOf: func(value interface{}, info types.ResolveInfo) bool {
 			return true
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	}))
@@ -771,10 +771,10 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceTypeDefinin
 
 func TestTypeSystem_UnionTypesMustBeResolvable_AcceptsAUnionTypeDefiningResolveType(t *testing.T) {
 
-	_, err := schemaWithFieldType(types.NewGraphQLUnionType(types.GraphQLUnionTypeConfig{
+	_, err := schemaWithFieldType(types.NewUnion(types.UnionConfig{
 		Name:  "SomeUnion",
-		Types: []*types.GraphQLObjectType{someObjectType},
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		Types: []*types.Object{someObjectType},
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
 	}))
@@ -784,9 +784,9 @@ func TestTypeSystem_UnionTypesMustBeResolvable_AcceptsAUnionTypeDefiningResolveT
 }
 func TestTypeSystem_UnionTypesMustBeResolvable_AcceptsAUnionOfObjectTypesDefiningIsTypeOf(t *testing.T) {
 
-	_, err := schemaWithFieldType(types.NewGraphQLUnionType(types.GraphQLUnionTypeConfig{
+	_, err := schemaWithFieldType(types.NewUnion(types.UnionConfig{
 		Name:  "SomeUnion",
-		Types: []*types.GraphQLObjectType{objectWithIsTypeOf},
+		Types: []*types.Object{objectWithIsTypeOf},
 	}))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -794,10 +794,10 @@ func TestTypeSystem_UnionTypesMustBeResolvable_AcceptsAUnionOfObjectTypesDefinin
 }
 func TestTypeSystem_UnionTypesMustBeResolvable_AcceptsAUnionTypeDefiningResolveTypeOfObjectTypesDefiningIsTypeOf(t *testing.T) {
 
-	_, err := schemaWithFieldType(types.NewGraphQLUnionType(types.GraphQLUnionTypeConfig{
+	_, err := schemaWithFieldType(types.NewUnion(types.UnionConfig{
 		Name:  "SomeUnion",
-		Types: []*types.GraphQLObjectType{objectWithIsTypeOf},
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		Types: []*types.Object{objectWithIsTypeOf},
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
 	}))
@@ -807,9 +807,9 @@ func TestTypeSystem_UnionTypesMustBeResolvable_AcceptsAUnionTypeDefiningResolveT
 }
 func TestTypeSystem_UnionTypesMustBeResolvable_RejectsAUnionTypeNotDefiningResolveTypeOfObjectTypesNotDefiningIsTypeOf(t *testing.T) {
 
-	_, err := schemaWithFieldType(types.NewGraphQLUnionType(types.GraphQLUnionTypeConfig{
+	_, err := schemaWithFieldType(types.NewUnion(types.UnionConfig{
 		Name:  "SomeUnion",
-		Types: []*types.GraphQLObjectType{someObjectType},
+		Types: []*types.Object{someObjectType},
 	}))
 	expectedError := `Union Type SomeUnion does not provide a "resolveType" function and ` +
 		`possible Type SomeObject does not provide a "isTypeOf" function. ` +
@@ -821,7 +821,7 @@ func TestTypeSystem_UnionTypesMustBeResolvable_RejectsAUnionTypeNotDefiningResol
 
 func TestTypeSystem_ScalarTypesMustBeSerializable_AcceptsAScalarTypeDefiningSerialize(t *testing.T) {
 
-	_, err := schemaWithFieldType(types.NewGraphQLScalarType(types.GraphQLScalarTypeConfig{
+	_, err := schemaWithFieldType(types.NewScalar(types.ScalarConfig{
 		Name: "SomeScalar",
 		Serialize: func(value interface{}) interface{} {
 			return nil
@@ -833,7 +833,7 @@ func TestTypeSystem_ScalarTypesMustBeSerializable_AcceptsAScalarTypeDefiningSeri
 }
 func TestTypeSystem_ScalarTypesMustBeSerializable_RejectsAScalarTypeNotDefiningSerialize(t *testing.T) {
 
-	_, err := schemaWithFieldType(types.NewGraphQLScalarType(types.GraphQLScalarTypeConfig{
+	_, err := schemaWithFieldType(types.NewScalar(types.ScalarConfig{
 		Name: "SomeScalar",
 	}))
 	expectedError := `SomeScalar must provide "serialize" function. If this custom Scalar ` +
@@ -845,7 +845,7 @@ func TestTypeSystem_ScalarTypesMustBeSerializable_RejectsAScalarTypeNotDefiningS
 }
 func TestTypeSystem_ScalarTypesMustBeSerializable_AcceptsAScalarTypeDefiningParseValueAndParseLiteral(t *testing.T) {
 
-	_, err := schemaWithFieldType(types.NewGraphQLScalarType(types.GraphQLScalarTypeConfig{
+	_, err := schemaWithFieldType(types.NewScalar(types.ScalarConfig{
 		Name: "SomeScalar",
 		Serialize: func(value interface{}) interface{} {
 			return nil
@@ -863,7 +863,7 @@ func TestTypeSystem_ScalarTypesMustBeSerializable_AcceptsAScalarTypeDefiningPars
 }
 func TestTypeSystem_ScalarTypesMustBeSerializable_RejectsAScalarTypeDefiningParseValueButNotParseLiteral(t *testing.T) {
 
-	_, err := schemaWithFieldType(types.NewGraphQLScalarType(types.GraphQLScalarTypeConfig{
+	_, err := schemaWithFieldType(types.NewScalar(types.ScalarConfig{
 		Name: "SomeScalar",
 		Serialize: func(value interface{}) interface{} {
 			return nil
@@ -879,7 +879,7 @@ func TestTypeSystem_ScalarTypesMustBeSerializable_RejectsAScalarTypeDefiningPars
 }
 func TestTypeSystem_ScalarTypesMustBeSerializable_RejectsAScalarTypeDefiningParseLiteralButNotParseValue(t *testing.T) {
 
-	_, err := schemaWithFieldType(types.NewGraphQLScalarType(types.GraphQLScalarTypeConfig{
+	_, err := schemaWithFieldType(types.NewScalar(types.ScalarConfig{
 		Name: "SomeScalar",
 		Serialize: func(value interface{}) interface{} {
 			return nil
@@ -896,11 +896,11 @@ func TestTypeSystem_ScalarTypesMustBeSerializable_RejectsAScalarTypeDefiningPars
 
 func TestTypeSystem_EnumTypesMustBeWellDefined_AcceptsAWellDefinedEnumTypeWithEmptyValueDefinition(t *testing.T) {
 
-	_, err := schemaWithFieldType(types.NewGraphQLEnumType(types.GraphQLEnumTypeConfig{
+	_, err := schemaWithFieldType(types.NewEnum(types.EnumConfig{
 		Name: "SomeEnum",
-		Values: types.GraphQLEnumValueConfigMap{
-			"FOO": &types.GraphQLEnumValueConfig{},
-			"BAR": &types.GraphQLEnumValueConfig{},
+		Values: types.EnumValueConfigMap{
+			"FOO": &types.EnumValueConfig{},
+			"BAR": &types.EnumValueConfig{},
 		},
 	}))
 	if err != nil {
@@ -909,13 +909,13 @@ func TestTypeSystem_EnumTypesMustBeWellDefined_AcceptsAWellDefinedEnumTypeWithEm
 }
 func TestTypeSystem_EnumTypesMustBeWellDefined_AcceptsAWellDefinedEnumTypeWithInternalValueDefinition(t *testing.T) {
 
-	_, err := schemaWithFieldType(types.NewGraphQLEnumType(types.GraphQLEnumTypeConfig{
+	_, err := schemaWithFieldType(types.NewEnum(types.EnumConfig{
 		Name: "SomeEnum",
-		Values: types.GraphQLEnumValueConfigMap{
-			"FOO": &types.GraphQLEnumValueConfig{
+		Values: types.EnumValueConfigMap{
+			"FOO": &types.EnumValueConfig{
 				Value: 10,
 			},
-			"BAR": &types.GraphQLEnumValueConfig{
+			"BAR": &types.EnumValueConfig{
 				Value: 20,
 			},
 		},
@@ -926,7 +926,7 @@ func TestTypeSystem_EnumTypesMustBeWellDefined_AcceptsAWellDefinedEnumTypeWithIn
 }
 func TestTypeSystem_EnumTypesMustBeWellDefined_RejectsAnEnumTypeWithoutValues(t *testing.T) {
 
-	_, err := schemaWithFieldType(types.NewGraphQLEnumType(types.GraphQLEnumTypeConfig{
+	_, err := schemaWithFieldType(types.NewEnum(types.EnumConfig{
 		Name: "SomeEnum",
 	}))
 	expectedError := `SomeEnum values must be an object with value names as keys.`
@@ -936,9 +936,9 @@ func TestTypeSystem_EnumTypesMustBeWellDefined_RejectsAnEnumTypeWithoutValues(t 
 }
 func TestTypeSystem_EnumTypesMustBeWellDefined_RejectsAnEnumTypeWithEmptyValues(t *testing.T) {
 
-	_, err := schemaWithFieldType(types.NewGraphQLEnumType(types.GraphQLEnumTypeConfig{
+	_, err := schemaWithFieldType(types.NewEnum(types.EnumConfig{
 		Name:   "SomeEnum",
-		Values: types.GraphQLEnumValueConfigMap{},
+		Values: types.EnumValueConfigMap{},
 	}))
 	expectedError := `SomeEnum values must be an object with value names as keys.`
 	if err == nil || err.Error() != expectedError {
@@ -963,14 +963,14 @@ func TestTypeSystem_ObjectFieldsMustHaveOutputTypes_RejectsAnEmptyObjectFieldTyp
 }
 
 func TestTypeSystem_ObjectsCanOnlyImplementInterfaces_AcceptsAnObjectImplementingAnInterface(t *testing.T) {
-	anotherInterfaceType := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	anotherInterfaceType := types.NewInterface(types.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
@@ -1050,8 +1050,8 @@ func TestTypeSystem_InputObjectFieldsMustHaveInputTypes_RejectsAnEmptyInputField
 }
 
 func TestTypeSystem_ListMustAcceptGraphQLTypes_AcceptsAnTypeAsItemTypeOfList(t *testing.T) {
-	testTypes := withModifiers([]types.GraphQLType{
-		types.GraphQLString,
+	testTypes := withModifiers([]types.Type{
+		types.String,
 		someScalarType,
 		someEnumType,
 		someObjectType,
@@ -1059,73 +1059,73 @@ func TestTypeSystem_ListMustAcceptGraphQLTypes_AcceptsAnTypeAsItemTypeOfList(t *
 		someInterfaceType,
 	})
 	for _, ttype := range testTypes {
-		result := types.NewGraphQLList(ttype)
+		result := types.NewList(ttype)
 		if result.GetError() != nil {
 			t.Fatalf(`unexpected error: %v for type "%v"`, result.GetError(), ttype)
 		}
 	}
 }
 func TestTypeSystem_ListMustAcceptGraphQLTypes_RejectsANilTypeAsItemTypeOfList(t *testing.T) {
-	result := types.NewGraphQLList(nil)
-	expectedError := `Can only create List of a GraphQLType but got: <nil>.`
+	result := types.NewList(nil)
+	expectedError := `Can only create List of a Type but got: <nil>.`
 	if result.GetError() == nil || result.GetError().Error() != expectedError {
 		t.Fatalf("Expected error: %v, got %v", expectedError, result.GetError())
 	}
 }
 
 func TestTypeSystem_NonNullMustAcceptGraphQLTypes_AcceptsAnTypeAsNullableTypeOfNonNull(t *testing.T) {
-	nullableTypes := []types.GraphQLType{
-		types.GraphQLString,
+	nullableTypes := []types.Type{
+		types.String,
 		someScalarType,
 		someObjectType,
 		someUnionType,
 		someInterfaceType,
 		someEnumType,
 		someInputObject,
-		types.NewGraphQLList(types.GraphQLString),
-		types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLString)),
+		types.NewList(types.String),
+		types.NewList(types.NewNonNull(types.String)),
 	}
 	for _, ttype := range nullableTypes {
-		result := types.NewGraphQLNonNull(ttype)
+		result := types.NewNonNull(ttype)
 		if result.GetError() != nil {
 			t.Fatalf(`unexpected error: %v for type "%v"`, result.GetError(), ttype)
 		}
 	}
 }
 func TestTypeSystem_NonNullMustAcceptGraphQLTypes_RejectsNilAsNonNullableType(t *testing.T) {
-	result := types.NewGraphQLNonNull(nil)
-	expectedError := `Can only create NonNull of a Nullable GraphQLType but got: <nil>.`
+	result := types.NewNonNull(nil)
+	expectedError := `Can only create NonNull of a Nullable Type but got: <nil>.`
 	if result.GetError() == nil || result.GetError().Error() != expectedError {
 		t.Fatalf("Expected error: %v, got %v", expectedError, result.GetError())
 	}
 }
 
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhichImplementsAnInterface(t *testing.T) {
-	anotherInterface := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	anotherInterface := types.NewInterface(types.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"input": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
+				Type: types.String,
+				Args: types.FieldConfigArgument{
+					"input": &types.ArgumentConfig{
+						Type: types.String,
 					},
 				},
 			},
 		},
 	})
-	anotherObject := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	anotherObject := types.NewObject(types.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*types.GraphQLInterfaceType{anotherInterface},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"input": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLString,
+		Interfaces: []*types.Interface{anotherInterface},
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
+				Type: types.String,
+				Args: types.FieldConfigArgument{
+					"input": &types.ArgumentConfig{
+						Type: types.String,
 					},
 				},
 			},
@@ -1137,36 +1137,36 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 	}
 }
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhichImplementsAnInterfaceAlongWithMoreFields(t *testing.T) {
-	anotherInterface := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	anotherInterface := types.NewInterface(types.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"input": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
+				Type: types.String,
+				Args: types.FieldConfigArgument{
+					"input": &types.ArgumentConfig{
+						Type: types.String,
 					},
 				},
 			},
 		},
 	})
-	anotherObject := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	anotherObject := types.NewObject(types.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*types.GraphQLInterfaceType{anotherInterface},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"input": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLString,
+		Interfaces: []*types.Interface{anotherInterface},
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
+				Type: types.String,
+				Args: types.FieldConfigArgument{
+					"input": &types.ArgumentConfig{
+						Type: types.String,
 					},
 				},
 			},
-			"anotherfield": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"anotherfield": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
@@ -1176,34 +1176,34 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 	}
 }
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWhichImplementsAnInterfaceFieldAlongWithMoreArguments(t *testing.T) {
-	anotherInterface := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	anotherInterface := types.NewInterface(types.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"input": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
+				Type: types.String,
+				Args: types.FieldConfigArgument{
+					"input": &types.ArgumentConfig{
+						Type: types.String,
 					},
 				},
 			},
 		},
 	})
-	anotherObject := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	anotherObject := types.NewObject(types.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*types.GraphQLInterfaceType{anotherInterface},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"input": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLString,
+		Interfaces: []*types.Interface{anotherInterface},
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
+				Type: types.String,
+				Args: types.FieldConfigArgument{
+					"input": &types.ArgumentConfig{
+						Type: types.String,
 					},
-					"anotherInput": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLString,
+					"anotherInput": &types.ArgumentConfig{
+						Type: types.String,
 					},
 				},
 			},
@@ -1216,28 +1216,28 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWhi
 	}
 }
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMissingAnInterfaceField(t *testing.T) {
-	anotherInterface := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	anotherInterface := types.NewInterface(types.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"input": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
+				Type: types.String,
+				Args: types.FieldConfigArgument{
+					"input": &types.ArgumentConfig{
+						Type: types.String,
 					},
 				},
 			},
 		},
 	})
-	anotherObject := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	anotherObject := types.NewObject(types.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*types.GraphQLInterfaceType{anotherInterface},
-		Fields: types.GraphQLFieldConfigMap{
-			"anotherfield": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Interfaces: []*types.Interface{anotherInterface},
+		Fields: types.FieldConfigMap{
+			"anotherfield": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
@@ -1248,31 +1248,31 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMis
 	}
 }
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWithAnIncorrectlyTypedInterfaceField(t *testing.T) {
-	anotherInterface := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	anotherInterface := types.NewInterface(types.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"input": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
+				Type: types.String,
+				Args: types.FieldConfigArgument{
+					"input": &types.ArgumentConfig{
+						Type: types.String,
 					},
 				},
 			},
 		},
 	})
-	anotherObject := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	anotherObject := types.NewObject(types.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*types.GraphQLInterfaceType{anotherInterface},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
+		Interfaces: []*types.Interface{anotherInterface},
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
 				Type: someScalarType,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"input": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLString,
+				Args: types.FieldConfigArgument{
+					"input": &types.ArgumentConfig{
+						Type: types.String,
 					},
 				},
 			},
@@ -1285,28 +1285,28 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 	}
 }
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMissingAnInterfaceArgument(t *testing.T) {
-	anotherInterface := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	anotherInterface := types.NewInterface(types.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"input": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
+				Type: types.String,
+				Args: types.FieldConfigArgument{
+					"input": &types.ArgumentConfig{
+						Type: types.String,
 					},
 				},
 			},
 		},
 	})
-	anotherObject := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	anotherObject := types.NewObject(types.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*types.GraphQLInterfaceType{anotherInterface},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Interfaces: []*types.Interface{anotherInterface},
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
@@ -1317,30 +1317,30 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMis
 	}
 }
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWithAnIncorrectlyTypedInterfaceArgument(t *testing.T) {
-	anotherInterface := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	anotherInterface := types.NewInterface(types.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"input": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
+				Type: types.String,
+				Args: types.FieldConfigArgument{
+					"input": &types.ArgumentConfig{
+						Type: types.String,
 					},
 				},
 			},
 		},
 	})
-	anotherObject := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	anotherObject := types.NewObject(types.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*types.GraphQLInterfaceType{anotherInterface},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"input": &types.GraphQLArgumentConfig{
+		Interfaces: []*types.Interface{anotherInterface},
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
+				Type: types.String,
+				Args: types.FieldConfigArgument{
+					"input": &types.ArgumentConfig{
 						Type: someScalarType,
 					},
 				},
@@ -1354,23 +1354,23 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 	}
 }
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWithAnEquivalentlyModifiedInterfaceField(t *testing.T) {
-	anotherInterface := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	anotherInterface := types.NewInterface(types.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.NewGraphQLNonNull(types.NewGraphQLList(types.GraphQLString)),
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
+				Type: types.NewNonNull(types.NewList(types.String)),
 			},
 		},
 	})
-	anotherObject := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	anotherObject := types.NewObject(types.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*types.GraphQLInterfaceType{anotherInterface},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.NewGraphQLNonNull(types.NewGraphQLList(types.GraphQLString)),
+		Interfaces: []*types.Interface{anotherInterface},
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
+				Type: types.NewNonNull(types.NewList(types.String)),
 			},
 		},
 	})
@@ -1380,23 +1380,23 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWit
 	}
 }
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWithADifferentlyModifiedInterfaceFieldType(t *testing.T) {
-	anotherInterface := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	anotherInterface := types.NewInterface(types.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info types.GraphQLResolveInfo) *types.GraphQLObjectType {
+		ResolveType: func(value interface{}, info types.ResolveInfo) *types.Object {
 			return nil
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
+				Type: types.String,
 			},
 		},
 	})
-	anotherObject := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	anotherObject := types.NewObject(types.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*types.GraphQLInterfaceType{anotherInterface},
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.NewGraphQLNonNull(types.GraphQLString),
+		Interfaces: []*types.Interface{anotherInterface},
+		Fields: types.FieldConfigMap{
+			"field": &types.FieldConfig{
+				Type: types.NewNonNull(types.String),
 			},
 		},
 	})

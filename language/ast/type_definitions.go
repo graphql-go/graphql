@@ -4,25 +4,17 @@ import (
 	"github.com/chris-ramon/graphql/language/kinds"
 )
 
-// TypeDefinition implements Definition
-type TypeDefinition interface {
-	// TODO: determine the minimal set of interface for `TypeDefinition`
-	GetOperation() string
-	GetVariableDefinitions() []*VariableDefinition
-	GetSelectionSet() *SelectionSet
-}
+// Ensure that all typeDefinition types implements Definition interface
+var _ Definition = (*ObjectDefinition)(nil)
+var _ Definition = (*InterfaceDefinition)(nil)
+var _ Definition = (*UnionDefinition)(nil)
+var _ Definition = (*ScalarDefinition)(nil)
+var _ Definition = (*EnumDefinition)(nil)
+var _ Definition = (*InputObjectDefinition)(nil)
+var _ Definition = (*TypeExtensionDefinition)(nil)
 
-// Ensure that all typeDefinition types implements TypeDefinition interface
-var _ TypeDefinition = (*ObjectTypeDefinition)(nil)
-var _ TypeDefinition = (*InterfaceTypeDefinition)(nil)
-var _ TypeDefinition = (*UnionTypeDefinition)(nil)
-var _ TypeDefinition = (*ScalarTypeDefinition)(nil)
-var _ TypeDefinition = (*EnumTypeDefinition)(nil)
-var _ TypeDefinition = (*InputObjectTypeDefinition)(nil)
-var _ TypeDefinition = (*TypeExtensionDefinition)(nil)
-
-// ObjectTypeDefinition implements Node, TypeDefinition
-type ObjectTypeDefinition struct {
+// ObjectDefinition implements Node, Definition
+type ObjectDefinition struct {
 	Kind       string
 	Loc        *Location
 	Name       *Name
@@ -30,12 +22,12 @@ type ObjectTypeDefinition struct {
 	Fields     []*FieldDefinition
 }
 
-func NewObjectTypeDefinition(def *ObjectTypeDefinition) *ObjectTypeDefinition {
+func NewObjectDefinition(def *ObjectDefinition) *ObjectDefinition {
 	if def == nil {
-		def = &ObjectTypeDefinition{}
+		def = &ObjectDefinition{}
 	}
-	return &ObjectTypeDefinition{
-		Kind:       kinds.ObjectTypeDefinition,
+	return &ObjectDefinition{
+		Kind:       kinds.ObjectDefinition,
 		Loc:        def.Loc,
 		Name:       def.Name,
 		Interfaces: def.Interfaces,
@@ -43,27 +35,27 @@ func NewObjectTypeDefinition(def *ObjectTypeDefinition) *ObjectTypeDefinition {
 	}
 }
 
-func (def *ObjectTypeDefinition) GetKind() string {
+func (def *ObjectDefinition) GetKind() string {
 	return def.Kind
 }
 
-func (def *ObjectTypeDefinition) GetLoc() *Location {
+func (def *ObjectDefinition) GetLoc() *Location {
 	return def.Loc
 }
 
-func (def *ObjectTypeDefinition) GetName() *Name {
+func (def *ObjectDefinition) GetName() *Name {
 	return def.Name
 }
 
-func (def *ObjectTypeDefinition) GetVariableDefinitions() []*VariableDefinition {
+func (def *ObjectDefinition) GetVariableDefinitions() []*VariableDefinition {
 	return []*VariableDefinition{}
 }
 
-func (def *ObjectTypeDefinition) GetSelectionSet() *SelectionSet {
+func (def *ObjectDefinition) GetSelectionSet() *SelectionSet {
 	return &SelectionSet{}
 }
 
-func (def *ObjectTypeDefinition) GetOperation() string {
+func (def *ObjectDefinition) GetOperation() string {
 	return ""
 }
 
@@ -127,181 +119,181 @@ func (def *InputValueDefinition) GetLoc() *Location {
 	return def.Loc
 }
 
-// InterfaceTypeDefinition implements Node, TypeDefinition
-type InterfaceTypeDefinition struct {
+// InterfaceDefinition implements Node, Definition
+type InterfaceDefinition struct {
 	Kind   string
 	Loc    *Location
 	Name   *Name
 	Fields []*FieldDefinition
 }
 
-func NewInterfaceTypeDefinition(def *InterfaceTypeDefinition) *InterfaceTypeDefinition {
+func NewInterfaceTypeDefinition(def *InterfaceDefinition) *InterfaceDefinition {
 	if def == nil {
-		def = &InterfaceTypeDefinition{}
+		def = &InterfaceDefinition{}
 	}
-	return &InterfaceTypeDefinition{
-		Kind:   kinds.InterfaceTypeDefinition,
+	return &InterfaceDefinition{
+		Kind:   kinds.InterfaceDefinition,
 		Loc:    def.Loc,
 		Name:   def.Name,
 		Fields: def.Fields,
 	}
 }
 
-func (def *InterfaceTypeDefinition) GetKind() string {
+func (def *InterfaceDefinition) GetKind() string {
 	return def.Kind
 }
 
-func (def *InterfaceTypeDefinition) GetLoc() *Location {
+func (def *InterfaceDefinition) GetLoc() *Location {
 	return def.Loc
 }
 
-func (def *InterfaceTypeDefinition) GetName() *Name {
+func (def *InterfaceDefinition) GetName() *Name {
 	return def.Name
 }
 
-func (def *InterfaceTypeDefinition) GetVariableDefinitions() []*VariableDefinition {
+func (def *InterfaceDefinition) GetVariableDefinitions() []*VariableDefinition {
 	return []*VariableDefinition{}
 }
 
-func (def *InterfaceTypeDefinition) GetSelectionSet() *SelectionSet {
+func (def *InterfaceDefinition) GetSelectionSet() *SelectionSet {
 	return &SelectionSet{}
 }
 
-func (def *InterfaceTypeDefinition) GetOperation() string {
+func (def *InterfaceDefinition) GetOperation() string {
 	return ""
 }
 
-// UnionTypeDefinition implements Node, TypeDefinition
-type UnionTypeDefinition struct {
+// UnionDefinition implements Node, Definition
+type UnionDefinition struct {
 	Kind  string
 	Loc   *Location
 	Name  *Name
 	Types []*NamedType
 }
 
-func NewUnionTypeDefinition(def *UnionTypeDefinition) *UnionTypeDefinition {
+func NewUnionTypeDefinition(def *UnionDefinition) *UnionDefinition {
 	if def == nil {
-		def = &UnionTypeDefinition{}
+		def = &UnionDefinition{}
 	}
-	return &UnionTypeDefinition{
-		Kind:  kinds.UnionTypeDefinition,
+	return &UnionDefinition{
+		Kind:  kinds.UnionDefinition,
 		Loc:   def.Loc,
 		Name:  def.Name,
 		Types: def.Types,
 	}
 }
 
-func (def *UnionTypeDefinition) GetKind() string {
+func (def *UnionDefinition) GetKind() string {
 	return def.Kind
 }
 
-func (def *UnionTypeDefinition) GetLoc() *Location {
+func (def *UnionDefinition) GetLoc() *Location {
 	return def.Loc
 }
 
-func (def *UnionTypeDefinition) GetName() *Name {
+func (def *UnionDefinition) GetName() *Name {
 	return def.Name
 }
 
-func (def *UnionTypeDefinition) GetVariableDefinitions() []*VariableDefinition {
+func (def *UnionDefinition) GetVariableDefinitions() []*VariableDefinition {
 	return []*VariableDefinition{}
 }
 
-func (def *UnionTypeDefinition) GetSelectionSet() *SelectionSet {
+func (def *UnionDefinition) GetSelectionSet() *SelectionSet {
 	return &SelectionSet{}
 }
 
-func (def *UnionTypeDefinition) GetOperation() string {
+func (def *UnionDefinition) GetOperation() string {
 	return ""
 }
 
-// ScalarTypeDefinition implements Node, TypeDefinition
-type ScalarTypeDefinition struct {
+// ScalarDefinition implements Node, Definition
+type ScalarDefinition struct {
 	Kind string
 	Loc  *Location
 	Name *Name
 }
 
-func NewScalarTypeDefinition(def *ScalarTypeDefinition) *ScalarTypeDefinition {
+func NewScalarTypeDefinition(def *ScalarDefinition) *ScalarDefinition {
 	if def == nil {
-		def = &ScalarTypeDefinition{}
+		def = &ScalarDefinition{}
 	}
-	return &ScalarTypeDefinition{
-		Kind: kinds.ScalarTypeDefinition,
+	return &ScalarDefinition{
+		Kind: kinds.ScalarDefinition,
 		Loc:  def.Loc,
 		Name: def.Name,
 	}
 }
 
-func (def *ScalarTypeDefinition) GetKind() string {
+func (def *ScalarDefinition) GetKind() string {
 	return def.Kind
 }
 
-func (def *ScalarTypeDefinition) GetLoc() *Location {
+func (def *ScalarDefinition) GetLoc() *Location {
 	return def.Loc
 }
 
-func (def *ScalarTypeDefinition) GetName() *Name {
+func (def *ScalarDefinition) GetName() *Name {
 	return def.Name
 }
 
-func (def *ScalarTypeDefinition) GetVariableDefinitions() []*VariableDefinition {
+func (def *ScalarDefinition) GetVariableDefinitions() []*VariableDefinition {
 	return []*VariableDefinition{}
 }
 
-func (def *ScalarTypeDefinition) GetSelectionSet() *SelectionSet {
+func (def *ScalarDefinition) GetSelectionSet() *SelectionSet {
 	return &SelectionSet{}
 }
 
-func (def *ScalarTypeDefinition) GetOperation() string {
+func (def *ScalarDefinition) GetOperation() string {
 	return ""
 }
 
-// EnumTypeDefinition implements Node, TypeDefinition
-type EnumTypeDefinition struct {
+// EnumDefinition implements Node, Definition
+type EnumDefinition struct {
 	Kind   string
 	Loc    *Location
 	Name   *Name
 	Values []*EnumValueDefinition
 }
 
-func NewEnumTypeDefinition(def *EnumTypeDefinition) *EnumTypeDefinition {
+func NewEnumTypeDefinition(def *EnumDefinition) *EnumDefinition {
 	if def == nil {
-		def = &EnumTypeDefinition{}
+		def = &EnumDefinition{}
 	}
-	return &EnumTypeDefinition{
-		Kind:   kinds.EnumTypeDefinition,
+	return &EnumDefinition{
+		Kind:   kinds.EnumDefinition,
 		Loc:    def.Loc,
 		Name:   def.Name,
 		Values: def.Values,
 	}
 }
 
-func (def *EnumTypeDefinition) GetKind() string {
+func (def *EnumDefinition) GetKind() string {
 	return def.Kind
 }
 
-func (def *EnumTypeDefinition) GetLoc() *Location {
+func (def *EnumDefinition) GetLoc() *Location {
 	return def.Loc
 }
 
-func (def *EnumTypeDefinition) GetName() *Name {
+func (def *EnumDefinition) GetName() *Name {
 	return def.Name
 }
 
-func (def *EnumTypeDefinition) GetVariableDefinitions() []*VariableDefinition {
+func (def *EnumDefinition) GetVariableDefinitions() []*VariableDefinition {
 	return []*VariableDefinition{}
 }
 
-func (def *EnumTypeDefinition) GetSelectionSet() *SelectionSet {
+func (def *EnumDefinition) GetSelectionSet() *SelectionSet {
 	return &SelectionSet{}
 }
 
-func (def *EnumTypeDefinition) GetOperation() string {
+func (def *EnumDefinition) GetOperation() string {
 	return ""
 }
 
-// EnumValueDefinition implements Node, TypeDefinition
+// EnumValueDefinition implements Node, Definition
 type EnumValueDefinition struct {
 	Kind string
 	Loc  *Location
@@ -327,55 +319,55 @@ func (def *EnumValueDefinition) GetLoc() *Location {
 	return def.Loc
 }
 
-// InputObjectTypeDefinition implements Node, TypeDefinition
-type InputObjectTypeDefinition struct {
+// InputObjectDefinition implements Node, Definition
+type InputObjectDefinition struct {
 	Kind   string
 	Loc    *Location
 	Name   *Name
 	Fields []*InputValueDefinition
 }
 
-func NewInputObjectTypeDefinition(def *InputObjectTypeDefinition) *InputObjectTypeDefinition {
+func NewInputObjectTypeDefinition(def *InputObjectDefinition) *InputObjectDefinition {
 	if def == nil {
-		def = &InputObjectTypeDefinition{}
+		def = &InputObjectDefinition{}
 	}
-	return &InputObjectTypeDefinition{
-		Kind:   kinds.InputObjectTypeDefinition,
+	return &InputObjectDefinition{
+		Kind:   kinds.InputObjectDefinition,
 		Loc:    def.Loc,
 		Name:   def.Name,
 		Fields: def.Fields,
 	}
 }
 
-func (def *InputObjectTypeDefinition) GetKind() string {
+func (def *InputObjectDefinition) GetKind() string {
 	return def.Kind
 }
 
-func (def *InputObjectTypeDefinition) GetLoc() *Location {
+func (def *InputObjectDefinition) GetLoc() *Location {
 	return def.Loc
 }
 
-func (def *InputObjectTypeDefinition) GetName() *Name {
+func (def *InputObjectDefinition) GetName() *Name {
 	return def.Name
 }
 
-func (def *InputObjectTypeDefinition) GetVariableDefinitions() []*VariableDefinition {
+func (def *InputObjectDefinition) GetVariableDefinitions() []*VariableDefinition {
 	return []*VariableDefinition{}
 }
 
-func (def *InputObjectTypeDefinition) GetSelectionSet() *SelectionSet {
+func (def *InputObjectDefinition) GetSelectionSet() *SelectionSet {
 	return &SelectionSet{}
 }
 
-func (def *InputObjectTypeDefinition) GetOperation() string {
+func (def *InputObjectDefinition) GetOperation() string {
 	return ""
 }
 
-// TypeExtensionDefinition implements Node, TypeDefinition
+// TypeExtensionDefinition implements Node, Definition
 type TypeExtensionDefinition struct {
 	Kind       string
 	Loc        *Location
-	Definition *ObjectTypeDefinition
+	Definition *ObjectDefinition
 }
 
 func NewTypeExtensionDefinition(def *TypeExtensionDefinition) *TypeExtensionDefinition {

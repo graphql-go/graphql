@@ -45,7 +45,7 @@ func intOrNil(value int) interface{} {
 	return nil
 }
 
-var GraphQLInt *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeConfig{
+var Int *Scalar = NewScalar(ScalarConfig{
 	Name:       "Int",
 	Serialize:  coerceInt,
 	ParseValue: coerceInt,
@@ -83,7 +83,7 @@ func coerceFloat32(value interface{}) interface{} {
 	return float32(0)
 }
 
-var GraphQLFloat *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeConfig{
+var Float *Scalar = NewScalar(ScalarConfig{
 	Name:       "Float",
 	Serialize:  coerceFloat32,
 	ParseValue: coerceFloat32,
@@ -106,7 +106,7 @@ func coerceString(value interface{}) interface{} {
 	return fmt.Sprintf("%v", value)
 }
 
-var GraphQLString *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeConfig{
+var String *Scalar = NewScalar(ScalarConfig{
 	Name:       "String",
 	Serialize:  coerceString,
 	ParseValue: coerceString,
@@ -148,7 +148,7 @@ func coerceBool(value interface{}) interface{} {
 	return false
 }
 
-var GraphQLBoolean *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeConfig{
+var Boolean *Scalar = NewScalar(ScalarConfig{
 	Name:       "Boolean",
 	Serialize:  coerceBool,
 	ParseValue: coerceBool,
@@ -161,7 +161,7 @@ var GraphQLBoolean *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeCo
 	},
 })
 
-var GraphQLID *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeConfig{
+var ID *Scalar = NewScalar(ScalarConfig{
 	Name:       "ID",
 	Serialize:  coerceString,
 	ParseValue: coerceString,

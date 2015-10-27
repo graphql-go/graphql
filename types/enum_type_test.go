@@ -9,34 +9,34 @@ import (
 	"testing"
 )
 
-var enumTypeTestColorType = types.NewGraphQLEnumType(types.GraphQLEnumTypeConfig{
+var enumTypeTestColorType = types.NewEnum(types.EnumConfig{
 	Name: "Color",
-	Values: types.GraphQLEnumValueConfigMap{
-		"RED": &types.GraphQLEnumValueConfig{
+	Values: types.EnumValueConfigMap{
+		"RED": &types.EnumValueConfig{
 			Value: 0,
 		},
-		"GREEN": &types.GraphQLEnumValueConfig{
+		"GREEN": &types.EnumValueConfig{
 			Value: 1,
 		},
-		"BLUE": &types.GraphQLEnumValueConfig{
+		"BLUE": &types.EnumValueConfig{
 			Value: 2,
 		},
 	},
 })
-var enumTypeTestQueryType = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var enumTypeTestQueryType = types.NewObject(types.ObjectConfig{
 	Name: "Query",
-	Fields: types.GraphQLFieldConfigMap{
-		"colorEnum": &types.GraphQLFieldConfig{
+	Fields: types.FieldConfigMap{
+		"colorEnum": &types.FieldConfig{
 			Type: enumTypeTestColorType,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"fromEnum": &types.GraphQLArgumentConfig{
+			Args: types.FieldConfigArgument{
+				"fromEnum": &types.ArgumentConfig{
 					Type: enumTypeTestColorType,
 				},
-				"fromInt": &types.GraphQLArgumentConfig{
-					Type: types.GraphQLInt,
+				"fromInt": &types.ArgumentConfig{
+					Type: types.Int,
 				},
-				"fromString": &types.GraphQLArgumentConfig{
-					Type: types.GraphQLString,
+				"fromString": &types.ArgumentConfig{
+					Type: types.String,
 				},
 			},
 			Resolve: func(p types.GQLFRParams) interface{} {
@@ -52,14 +52,14 @@ var enumTypeTestQueryType = types.NewGraphQLObjectType(types.GraphQLObjectTypeCo
 				return nil
 			},
 		},
-		"colorInt": &types.GraphQLFieldConfig{
-			Type: types.GraphQLInt,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"fromEnum": &types.GraphQLArgumentConfig{
+		"colorInt": &types.FieldConfig{
+			Type: types.Int,
+			Args: types.FieldConfigArgument{
+				"fromEnum": &types.ArgumentConfig{
 					Type: enumTypeTestColorType,
 				},
-				"fromInt": &types.GraphQLArgumentConfig{
-					Type: types.GraphQLInt,
+				"fromInt": &types.ArgumentConfig{
+					Type: types.Int,
 				},
 			},
 			Resolve: func(p types.GQLFRParams) interface{} {
@@ -74,13 +74,13 @@ var enumTypeTestQueryType = types.NewGraphQLObjectType(types.GraphQLObjectTypeCo
 		},
 	},
 })
-var enumTypeTestMutationType = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var enumTypeTestMutationType = types.NewObject(types.ObjectConfig{
 	Name: "Mutation",
-	Fields: types.GraphQLFieldConfigMap{
-		"favoriteEnum": &types.GraphQLFieldConfig{
+	Fields: types.FieldConfigMap{
+		"favoriteEnum": &types.FieldConfig{
 			Type: enumTypeTestColorType,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"color": &types.GraphQLArgumentConfig{
+			Args: types.FieldConfigArgument{
+				"color": &types.ArgumentConfig{
 					Type: enumTypeTestColorType,
 				},
 			},
@@ -93,20 +93,20 @@ var enumTypeTestMutationType = types.NewGraphQLObjectType(types.GraphQLObjectTyp
 		},
 	},
 })
-var enumTypeTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+var enumTypeTestSchema, _ = types.NewSchema(types.SchemaConfig{
 	Query:    enumTypeTestQueryType,
 	Mutation: enumTypeTestMutationType,
 })
 
-func executeEnumTypeTest(t *testing.T, query string) *types.GraphQLResult {
-	result := g(t, graphql.GraphqlParams{
+func executeEnumTypeTest(t *testing.T, query string) *types.Result {
+	result := g(t, graphql.Params{
 		Schema:        enumTypeTestSchema,
 		RequestString: query,
 	})
 	return result
 }
-func executeEnumTypeTestWithParams(t *testing.T, query string, params map[string]interface{}) *types.GraphQLResult {
-	result := g(t, graphql.GraphqlParams{
+func executeEnumTypeTestWithParams(t *testing.T, query string, params map[string]interface{}) *types.Result {
+	result := g(t, graphql.Params{
 		Schema:         enumTypeTestSchema,
 		RequestString:  query,
 		VariableValues: params,
@@ -115,7 +115,7 @@ func executeEnumTypeTestWithParams(t *testing.T, query string, params map[string
 }
 func TestTypeSystem_EnumValues_AcceptsEnumLiteralsAsInput(t *testing.T) {
 	query := "{ colorInt(fromEnum: GREEN) }"
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"colorInt": 1,
 		},
@@ -128,7 +128,7 @@ func TestTypeSystem_EnumValues_AcceptsEnumLiteralsAsInput(t *testing.T) {
 
 func TestTypeSystem_EnumValues_EnumMayBeOutputType(t *testing.T) {
 	query := "{ colorEnum(fromInt: 1) }"
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"colorEnum": "GREEN",
 		},
@@ -140,7 +140,7 @@ func TestTypeSystem_EnumValues_EnumMayBeOutputType(t *testing.T) {
 }
 func TestTypeSystem_EnumValues_EnumMayBeBothInputAndOutputType(t *testing.T) {
 	query := "{ colorEnum(fromEnum: GREEN) }"
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"colorEnum": "GREEN",
 		},
@@ -152,10 +152,10 @@ func TestTypeSystem_EnumValues_EnumMayBeBothInputAndOutputType(t *testing.T) {
 }
 func TestTypeSystem_EnumValues_DoesNotAcceptStringLiterals(t *testing.T) {
 	query := `{ colorEnum(fromEnum: "GREEN") }`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Argument "fromEnum" expected type "Color" but got: "GREEN".`,
 			},
 		},
@@ -168,7 +168,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptStringLiterals(t *testing.T) {
 }
 func TestTypeSystem_EnumValues_DoesNotAcceptIncorrectInternalValue(t *testing.T) {
 	query := `{ colorEnum(fromString: "GREEN") }`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"colorEnum": nil,
 		},
@@ -180,10 +180,10 @@ func TestTypeSystem_EnumValues_DoesNotAcceptIncorrectInternalValue(t *testing.T)
 }
 func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueInPlaceOfEnumLiteral(t *testing.T) {
 	query := `{ colorEnum(fromEnum: 1) }`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Argument "fromEnum" expected type "Color" but got: 1.`,
 			},
 		},
@@ -197,10 +197,10 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueInPlaceOfEnumLiteral(t 
 
 func TestTypeSystem_EnumValues_DoesNotAcceptEnumLiteralInPlaceOfInt(t *testing.T) {
 	query := `{ colorEnum(fromInt: GREEN) }`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Argument "fromInt" expected type "Int" but got: GREEN.`,
 			},
 		},
@@ -217,7 +217,7 @@ func TestTypeSystem_EnumValues_AcceptsJSONStringAsEnumVariable(t *testing.T) {
 	params := map[string]interface{}{
 		"color": "BLUE",
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"colorEnum": "BLUE",
 		},
@@ -233,7 +233,7 @@ func TestTypeSystem_EnumValues_AcceptsEnumLiteralsAsInputArgumentsToMutations(t 
 	params := map[string]interface{}{
 		"color": "GREEN",
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"favoriteEnum": "GREEN",
 		},
@@ -248,10 +248,10 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueAsEnumVariable(t *testi
 	params := map[string]interface{}{
 		"color": 2,
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Variable "$color" expected value of type "Color!" but got: 2.`,
 			},
 		},
@@ -267,10 +267,10 @@ func TestTypeSystem_EnumValues_DoesNotAcceptStringVariablesAsEnumInput(t *testin
 	params := map[string]interface{}{
 		"color": "BLUE",
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Variable "$color" of type "String!" used in position expecting type "Color".`,
 			},
 		},
@@ -286,10 +286,10 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueVariableAsEnumInput(t *
 	params := map[string]interface{}{
 		"color": 2,
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Variable "$color" of type "Int!" used in position expecting type "Color".`,
 			},
 		},
@@ -305,7 +305,7 @@ func TestTypeSystem_EnumValues_EnumValueMayHaveAnInternalValueOfZero(t *testing.
         colorEnum(fromEnum: RED)
         colorInt(fromEnum: RED)
       }`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"colorEnum": "RED",
 			"colorInt":  0,
@@ -321,7 +321,7 @@ func TestTypeSystem_EnumValues_EnumValueMayBeNullable(t *testing.T) {
         colorEnum
         colorInt
       }`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"colorEnum": nil,
 			"colorInt":  nil,

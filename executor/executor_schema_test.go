@@ -73,37 +73,37 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 		RecentArticle: article("1"),
 	}
 
-	blogImage := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	blogImage := types.NewObject(types.ObjectConfig{
 		Name: "Image",
-		Fields: types.GraphQLFieldConfigMap{
-			"url": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"url": &types.FieldConfig{
+				Type: types.String,
 			},
-			"width": &types.GraphQLFieldConfig{
-				Type: types.GraphQLInt,
+			"width": &types.FieldConfig{
+				Type: types.Int,
 			},
-			"height": &types.GraphQLFieldConfig{
-				Type: types.GraphQLInt,
+			"height": &types.FieldConfig{
+				Type: types.Int,
 			},
 		},
 	})
-	blogAuthor := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	blogAuthor := types.NewObject(types.ObjectConfig{
 		Name: "Author",
-		Fields: types.GraphQLFieldConfigMap{
-			"id": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: types.FieldConfigMap{
+			"id": &types.FieldConfig{
+				Type: types.String,
 			},
-			"name": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"name": &types.FieldConfig{
+				Type: types.String,
 			},
-			"pic": &types.GraphQLFieldConfig{
+			"pic": &types.FieldConfig{
 				Type: blogImage,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"width": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLInt,
+				Args: types.FieldConfigArgument{
+					"width": &types.ArgumentConfig{
+						Type: types.Int,
 					},
-					"height": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLInt,
+					"height": &types.ArgumentConfig{
+						Type: types.Int,
 					},
 				},
 				Resolve: func(p types.GQLFRParams) interface{} {
@@ -115,45 +115,45 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 					return nil
 				},
 			},
-			"recentArticle": &types.GraphQLFieldConfig{},
+			"recentArticle": &types.FieldConfig{},
 		},
 	})
-	blogArticle := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	blogArticle := types.NewObject(types.ObjectConfig{
 		Name: "Article",
-		Fields: types.GraphQLFieldConfigMap{
-			"id": &types.GraphQLFieldConfig{
-				Type: types.NewGraphQLNonNull(types.GraphQLString),
+		Fields: types.FieldConfigMap{
+			"id": &types.FieldConfig{
+				Type: types.NewNonNull(types.String),
 			},
-			"isPublished": &types.GraphQLFieldConfig{
-				Type: types.GraphQLBoolean,
+			"isPublished": &types.FieldConfig{
+				Type: types.Boolean,
 			},
-			"author": &types.GraphQLFieldConfig{
+			"author": &types.FieldConfig{
 				Type: blogAuthor,
 			},
-			"title": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"title": &types.FieldConfig{
+				Type: types.String,
 			},
-			"body": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"body": &types.FieldConfig{
+				Type: types.String,
 			},
-			"keywords": &types.GraphQLFieldConfig{
-				Type: types.NewGraphQLList(types.GraphQLString),
+			"keywords": &types.FieldConfig{
+				Type: types.NewList(types.String),
 			},
 		},
 	})
 
-	blogAuthor.AddFieldConfig("recentArticle", &types.GraphQLFieldConfig{
+	blogAuthor.AddFieldConfig("recentArticle", &types.FieldConfig{
 		Type: blogArticle,
 	})
 
-	blogQuery := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	blogQuery := types.NewObject(types.ObjectConfig{
 		Name: "Query",
-		Fields: types.GraphQLFieldConfigMap{
-			"article": &types.GraphQLFieldConfig{
+		Fields: types.FieldConfigMap{
+			"article": &types.FieldConfig{
 				Type: blogArticle,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"id": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLID,
+				Args: types.FieldConfigArgument{
+					"id": &types.ArgumentConfig{
+						Type: types.ID,
 					},
 				},
 				Resolve: func(p types.GQLFRParams) interface{} {
@@ -161,8 +161,8 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 					return article(id)
 				},
 			},
-			"feed": &types.GraphQLFieldConfig{
-				Type: types.NewGraphQLList(blogArticle),
+			"feed": &types.FieldConfig{
+				Type: types.NewList(blogArticle),
 				Resolve: func(p types.GQLFRParams) interface{} {
 					return []*testArticle{
 						article(1),
@@ -181,7 +181,7 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 		},
 	})
 
-	blogSchema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	blogSchema, err := types.NewSchema(types.SchemaConfig{
 		Query: blogQuery,
 	})
 	if err != nil {
@@ -222,7 +222,7 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
       }
 	`
 
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"article": map[string]interface{}{
 				"title": "My Article 1",

@@ -22,7 +22,7 @@ type NamedType struct {
 	Name *Name
 }
 
-func NewNamedType(t *NamedType) *NamedType {
+func NewNamed(t *NamedType) *NamedType {
 	if t == nil {
 		t = &NamedType{}
 	}

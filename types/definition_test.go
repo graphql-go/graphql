@@ -9,122 +9,122 @@ import (
 	"github.com/chris-ramon/graphql/types"
 )
 
-var blogImage = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var blogImage = types.NewObject(types.ObjectConfig{
 	Name: "Image",
-	Fields: types.GraphQLFieldConfigMap{
-		"url": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+	Fields: types.FieldConfigMap{
+		"url": &types.FieldConfig{
+			Type: types.String,
 		},
-		"width": &types.GraphQLFieldConfig{
-			Type: types.GraphQLInt,
+		"width": &types.FieldConfig{
+			Type: types.Int,
 		},
-		"height": &types.GraphQLFieldConfig{
-			Type: types.GraphQLInt,
+		"height": &types.FieldConfig{
+			Type: types.Int,
 		},
 	},
 })
-var blogAuthor = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var blogAuthor = types.NewObject(types.ObjectConfig{
 	Name: "Author",
-	Fields: types.GraphQLFieldConfigMap{
-		"id": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+	Fields: types.FieldConfigMap{
+		"id": &types.FieldConfig{
+			Type: types.String,
 		},
-		"name": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+		"name": &types.FieldConfig{
+			Type: types.String,
 		},
-		"pic": &types.GraphQLFieldConfig{
+		"pic": &types.FieldConfig{
 			Type: blogImage,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"width": &types.GraphQLArgumentConfig{
-					Type: types.GraphQLInt,
+			Args: types.FieldConfigArgument{
+				"width": &types.ArgumentConfig{
+					Type: types.Int,
 				},
-				"height": &types.GraphQLArgumentConfig{
-					Type: types.GraphQLInt,
+				"height": &types.ArgumentConfig{
+					Type: types.Int,
 				},
 			},
 		},
-		"recentArticle": &types.GraphQLFieldConfig{},
+		"recentArticle": &types.FieldConfig{},
 	},
 })
-var blogArticle = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var blogArticle = types.NewObject(types.ObjectConfig{
 	Name: "Article",
-	Fields: types.GraphQLFieldConfigMap{
-		"id": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+	Fields: types.FieldConfigMap{
+		"id": &types.FieldConfig{
+			Type: types.String,
 		},
-		"isPublished": &types.GraphQLFieldConfig{
-			Type: types.GraphQLBoolean,
+		"isPublished": &types.FieldConfig{
+			Type: types.Boolean,
 		},
-		"author": &types.GraphQLFieldConfig{
+		"author": &types.FieldConfig{
 			Type: blogAuthor,
 		},
-		"title": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+		"title": &types.FieldConfig{
+			Type: types.String,
 		},
-		"body": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+		"body": &types.FieldConfig{
+			Type: types.String,
 		},
 	},
 })
-var blogQuery = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var blogQuery = types.NewObject(types.ObjectConfig{
 	Name: "Query",
-	Fields: types.GraphQLFieldConfigMap{
-		"article": &types.GraphQLFieldConfig{
+	Fields: types.FieldConfigMap{
+		"article": &types.FieldConfig{
 			Type: blogArticle,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"id": &types.GraphQLArgumentConfig{
-					Type: types.GraphQLString,
+			Args: types.FieldConfigArgument{
+				"id": &types.ArgumentConfig{
+					Type: types.String,
 				},
 			},
 		},
-		"feed": &types.GraphQLFieldConfig{
-			Type: types.NewGraphQLList(blogArticle),
+		"feed": &types.FieldConfig{
+			Type: types.NewList(blogArticle),
 		},
 	},
 })
 
-var blogMutation = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var blogMutation = types.NewObject(types.ObjectConfig{
 	Name: "Mutation",
-	Fields: types.GraphQLFieldConfigMap{
-		"writeArticle": &types.GraphQLFieldConfig{
+	Fields: types.FieldConfigMap{
+		"writeArticle": &types.FieldConfig{
 			Type: blogArticle,
 		},
 	},
 })
 
-var objectType = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var objectType = types.NewObject(types.ObjectConfig{
 	Name: "Object",
-	IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
+	IsTypeOf: func(value interface{}, info types.ResolveInfo) bool {
 		return true
 	},
 })
-var interfaceType = types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+var interfaceType = types.NewInterface(types.InterfaceConfig{
 	Name: "Interface",
 })
-var unionType = types.NewGraphQLUnionType(types.GraphQLUnionTypeConfig{
+var unionType = types.NewUnion(types.UnionConfig{
 	Name: "Union",
-	Types: []*types.GraphQLObjectType{
+	Types: []*types.Object{
 		objectType,
 	},
 })
-var enumType = types.NewGraphQLEnumType(types.GraphQLEnumTypeConfig{
+var enumType = types.NewEnum(types.EnumConfig{
 	Name: "Enum",
-	Values: types.GraphQLEnumValueConfigMap{
-		"foo": &types.GraphQLEnumValueConfig{},
+	Values: types.EnumValueConfigMap{
+		"foo": &types.EnumValueConfig{},
 	},
 })
-var inputObjectType = types.NewGraphQLInputObjectType(types.InputObjectConfig{
+var inputObjectType = types.NewInputObject(types.InputObjectConfig{
 	Name: "InputObject",
 })
 
 func init() {
-	blogAuthor.AddFieldConfig("recentArticle", &types.GraphQLFieldConfig{
+	blogAuthor.AddFieldConfig("recentArticle", &types.FieldConfig{
 		Type: blogArticle,
 	})
 }
 
 func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
-	blogSchema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	blogSchema, err := types.NewSchema(types.SchemaConfig{
 		Query: blogQuery,
 	})
 	if err != nil {
@@ -149,12 +149,12 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 	if articleField.Name != "article" {
 		t.Fatalf("articleField.Name expected to equal `article`, got: %v", articleField.Name)
 	}
-	articleFieldTypeObject, ok := articleFieldType.(*types.GraphQLObjectType)
+	articleFieldTypeObject, ok := articleFieldType.(*types.Object)
 	if !ok {
-		t.Fatalf("expected articleFieldType to be *types.GraphQLObjectType`, got: %v", articleField)
+		t.Fatalf("expected articleFieldType to be *types.Object`, got: %v", articleField)
 	}
 
-	// TODO: expose a GraphQLObjectType.GetField(key string), instead of this ghetto way of accessing a field map?
+	// TODO: expose a Object.GetField(key string), instead of this ghetto way of accessing a field map?
 	titleField := articleFieldTypeObject.GetFields()["title"]
 	if titleField == nil {
 		t.Fatalf("titleField is nil")
@@ -162,8 +162,8 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 	if titleField.Name != "title" {
 		t.Fatalf("titleField.Name expected to equal title, got: %v", titleField.Name)
 	}
-	if titleField.Type != types.GraphQLString {
-		t.Fatalf("titleField.Type expected to equal types.GraphQLString, got: %v", titleField.Type)
+	if titleField.Type != types.String {
+		t.Fatalf("titleField.Type expected to equal types.String, got: %v", titleField.Type)
 	}
 	if titleField.Type.GetName() != "String" {
 		t.Fatalf("titleField.Type.GetName() expected to equal `String`, got: %v", titleField.Type.GetName())
@@ -173,9 +173,9 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 	if authorField == nil {
 		t.Fatalf("authorField is nil")
 	}
-	authorFieldObject, ok := authorField.Type.(*types.GraphQLObjectType)
+	authorFieldObject, ok := authorField.Type.(*types.Object)
 	if !ok {
-		t.Fatalf("expected authorField.Type to be *types.GraphQLObjectType`, got: %v", authorField)
+		t.Fatalf("expected authorField.Type to be *types.Object`, got: %v", authorField)
 	}
 
 	recentArticleField := authorFieldObject.GetFields()["recentArticle"]
@@ -187,9 +187,9 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 	}
 
 	feedField := blogQuery.GetFields()["feed"]
-	feedFieldList, ok := feedField.Type.(*types.GraphQLList)
+	feedFieldList, ok := feedField.Type.(*types.List)
 	if !ok {
-		t.Fatalf("expected feedFieldList to be *types.GraphQLList`, got: %v", authorField)
+		t.Fatalf("expected feedFieldList to be *types.List`, got: %v", authorField)
 	}
 	if feedFieldList.OfType != blogArticle {
 		t.Fatalf("feedFieldList.OfType expected to equal blogArticle, got: %v", feedFieldList.OfType)
@@ -199,7 +199,7 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 	}
 }
 func TestTypeSystem_DefinitionExample_DefinesAMutationScheme(t *testing.T) {
-	blogSchema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	blogSchema, err := types.NewSchema(types.SchemaConfig{
 		Query:    blogQuery,
 		Mutation: blogMutation,
 	})
@@ -228,15 +228,15 @@ func TestTypeSystem_DefinitionExample_DefinesAMutationScheme(t *testing.T) {
 }
 
 func TestTypeSystem_DefinitionExample_IncludesNestedInputObjectsInTheMap(t *testing.T) {
-	nestedInputObject := types.NewGraphQLInputObjectType(types.InputObjectConfig{
+	nestedInputObject := types.NewInputObject(types.InputObjectConfig{
 		Name: "NestedInputObject",
 		Fields: types.InputObjectConfigFieldMap{
 			"value": &types.InputObjectFieldConfig{
-				Type: types.GraphQLString,
+				Type: types.String,
 			},
 		},
 	})
-	someInputObject := types.NewGraphQLInputObjectType(types.InputObjectConfig{
+	someInputObject := types.NewInputObject(types.InputObjectConfig{
 		Name: "SomeInputObject",
 		Fields: types.InputObjectConfigFieldMap{
 			"nested": &types.InputObjectFieldConfig{
@@ -244,20 +244,20 @@ func TestTypeSystem_DefinitionExample_IncludesNestedInputObjectsInTheMap(t *test
 			},
 		},
 	})
-	someMutation := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	someMutation := types.NewObject(types.ObjectConfig{
 		Name: "SomeMutation",
-		Fields: types.GraphQLFieldConfigMap{
-			"mutateSomething": &types.GraphQLFieldConfig{
+		Fields: types.FieldConfigMap{
+			"mutateSomething": &types.FieldConfig{
 				Type: blogArticle,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"input": &types.GraphQLArgumentConfig{
+				Args: types.FieldConfigArgument{
+					"input": &types.ArgumentConfig{
 						Type: someInputObject,
 					},
 				},
 			},
 		},
 	})
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	schema, err := types.NewSchema(types.SchemaConfig{
 		Query:    blogQuery,
 		Mutation: someMutation,
 	})
@@ -271,32 +271,32 @@ func TestTypeSystem_DefinitionExample_IncludesNestedInputObjectsInTheMap(t *test
 
 func TestTypeSystem_DefinitionExample_IncludesInterfacesSubTypesInTheTypeMap(t *testing.T) {
 
-	someInterface := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	someInterface := types.NewInterface(types.InterfaceConfig{
 		Name: "SomeInterface",
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLInt,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.Int,
 			},
 		},
 	})
 
-	someSubType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	someSubType := types.NewObject(types.ObjectConfig{
 		Name: "SomeSubtype",
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLInt,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.Int,
 			},
 		},
-		Interfaces: []*types.GraphQLInterfaceType{someInterface},
-		IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
+		Interfaces: []*types.Interface{someInterface},
+		IsTypeOf: func(value interface{}, info types.ResolveInfo) bool {
 			return true
 		},
 	})
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := types.NewSchema(types.SchemaConfig{
+		Query: types.NewObject(types.ObjectConfig{
 			Name: "Query",
-			Fields: types.GraphQLFieldConfigMap{
-				"iface": &types.GraphQLFieldConfig{
+			Fields: types.FieldConfigMap{
+				"iface": &types.FieldConfig{
 					Type: someInterface,
 				},
 			},
@@ -312,34 +312,34 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesSubTypesInTheTypeMap(t *
 
 func TestTypeSystem_DefinitionExample_IncludesInterfacesThunkSubtypesInTheTypeMap(t *testing.T) {
 
-	someInterface := types.NewGraphQLInterfaceType(types.GraphQLInterfaceTypeConfig{
+	someInterface := types.NewInterface(types.InterfaceConfig{
 		Name: "SomeInterface",
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLInt,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.Int,
 			},
 		},
 	})
 
-	someSubType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	someSubType := types.NewObject(types.ObjectConfig{
 		Name: "SomeSubtype",
-		Fields: types.GraphQLFieldConfigMap{
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLInt,
+		Fields: types.FieldConfigMap{
+			"f": &types.FieldConfig{
+				Type: types.Int,
 			},
 		},
-		Interfaces: (types.GraphQLInterfacesThunk)(func() []*types.GraphQLInterfaceType {
-			return []*types.GraphQLInterfaceType{someInterface}
+		Interfaces: (types.InterfacesThunk)(func() []*types.Interface {
+			return []*types.Interface{someInterface}
 		}),
-		IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
+		IsTypeOf: func(value interface{}, info types.ResolveInfo) bool {
 			return true
 		},
 	})
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := types.NewSchema(types.SchemaConfig{
+		Query: types.NewObject(types.ObjectConfig{
 			Name: "Query",
-			Fields: types.GraphQLFieldConfigMap{
-				"iface": &types.GraphQLFieldConfig{
+			Fields: types.FieldConfigMap{
+				"iface": &types.FieldConfig{
 					Type: someInterface,
 				},
 			},
@@ -356,21 +356,21 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesThunkSubtypesInTheTypeMa
 func TestTypeSystem_DefinitionExample_StringifiesSimpleTypes(t *testing.T) {
 
 	type Test struct {
-		ttype    types.GraphQLType
+		ttype    types.Type
 		expected string
 	}
 	tests := []Test{
-		Test{types.GraphQLInt, "Int"},
+		Test{types.Int, "Int"},
 		Test{blogArticle, "Article"},
 		Test{interfaceType, "Interface"},
 		Test{unionType, "Union"},
 		Test{enumType, "Enum"},
 		Test{inputObjectType, "InputObject"},
-		Test{types.NewGraphQLNonNull(types.GraphQLInt), "Int!"},
-		Test{types.NewGraphQLList(types.GraphQLInt), "[Int]"},
-		Test{types.NewGraphQLNonNull(types.NewGraphQLList(types.GraphQLInt)), "[Int]!"},
-		Test{types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLInt)), "[Int!]"},
-		Test{types.NewGraphQLList(types.NewGraphQLList(types.GraphQLInt)), "[[Int]]"},
+		Test{types.NewNonNull(types.Int), "Int!"},
+		Test{types.NewList(types.Int), "[Int]"},
+		Test{types.NewNonNull(types.NewList(types.Int)), "[Int]!"},
+		Test{types.NewList(types.NewNonNull(types.Int)), "[Int!]"},
+		Test{types.NewList(types.NewList(types.Int)), "[[Int]]"},
 	}
 	for _, test := range tests {
 		ttypeStr := fmt.Sprintf("%v", test.ttype)
@@ -382,11 +382,11 @@ func TestTypeSystem_DefinitionExample_StringifiesSimpleTypes(t *testing.T) {
 
 func TestTypeSystem_DefinitionExample_IdentifiesInputTypes(t *testing.T) {
 	type Test struct {
-		ttype    types.GraphQLType
+		ttype    types.Type
 		expected bool
 	}
 	tests := []Test{
-		Test{types.GraphQLInt, true},
+		Test{types.Int, true},
 		Test{objectType, false},
 		Test{interfaceType, false},
 		Test{unionType, false},
@@ -398,10 +398,10 @@ func TestTypeSystem_DefinitionExample_IdentifiesInputTypes(t *testing.T) {
 		if types.IsInputType(test.ttype) != test.expected {
 			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
 		}
-		if types.IsInputType(types.NewGraphQLList(test.ttype)) != test.expected {
+		if types.IsInputType(types.NewList(test.ttype)) != test.expected {
 			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
 		}
-		if types.IsInputType(types.NewGraphQLNonNull(test.ttype)) != test.expected {
+		if types.IsInputType(types.NewNonNull(test.ttype)) != test.expected {
 			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
 		}
 	}
@@ -409,11 +409,11 @@ func TestTypeSystem_DefinitionExample_IdentifiesInputTypes(t *testing.T) {
 
 func TestTypeSystem_DefinitionExample_IdentifiesOutputTypes(t *testing.T) {
 	type Test struct {
-		ttype    types.GraphQLType
+		ttype    types.Type
 		expected bool
 	}
 	tests := []Test{
-		Test{types.GraphQLInt, true},
+		Test{types.Int, true},
 		Test{objectType, true},
 		Test{interfaceType, true},
 		Test{unionType, true},
@@ -425,33 +425,33 @@ func TestTypeSystem_DefinitionExample_IdentifiesOutputTypes(t *testing.T) {
 		if types.IsOutputType(test.ttype) != test.expected {
 			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
 		}
-		if types.IsOutputType(types.NewGraphQLList(test.ttype)) != test.expected {
+		if types.IsOutputType(types.NewList(test.ttype)) != test.expected {
 			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
 		}
-		if types.IsOutputType(types.NewGraphQLNonNull(test.ttype)) != test.expected {
+		if types.IsOutputType(types.NewNonNull(test.ttype)) != test.expected {
 			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
 		}
 	}
 }
 
 func TestTypeSystem_DefinitionExample_ProhibitsNestingNonNullInsideNonNull(t *testing.T) {
-	ttype := types.NewGraphQLNonNull(types.NewGraphQLNonNull(types.GraphQLInt))
-	expected := `Can only create NonNull of a Nullable GraphQLType but got: Int!.`
+	ttype := types.NewNonNull(types.NewNonNull(types.Int))
+	expected := `Can only create NonNull of a Nullable Type but got: Int!.`
 	if ttype.GetError().Error() != expected {
 		t.Fatalf(`expected %v , got: %v`, expected, ttype.GetError())
 	}
 }
 func TestTypeSystem_DefinitionExample_ProhibitsNilInNonNull(t *testing.T) {
-	ttype := types.NewGraphQLNonNull(nil)
-	expected := `Can only create NonNull of a Nullable GraphQLType but got: <nil>.`
+	ttype := types.NewNonNull(nil)
+	expected := `Can only create NonNull of a Nullable Type but got: <nil>.`
 	if ttype.GetError().Error() != expected {
 		t.Fatalf(`expected %v , got: %v`, expected, ttype.GetError())
 	}
 }
 func TestTypeSystem_DefinitionExample_ProhibitsNilTypeInUnions(t *testing.T) {
-	ttype := types.NewGraphQLUnionType(types.GraphQLUnionTypeConfig{
+	ttype := types.NewUnion(types.UnionConfig{
 		Name:  "BadUnion",
-		Types: []*types.GraphQLObjectType{nil},
+		Types: []*types.Object{nil},
 	})
 	expected := `BadUnion may only contain Object types, it cannot contain: <nil>.`
 	if ttype.GetError().Error() != expected {
@@ -459,24 +459,24 @@ func TestTypeSystem_DefinitionExample_ProhibitsNilTypeInUnions(t *testing.T) {
 	}
 }
 func TestTypeSystem_DefinitionExample_DoesNotMutatePassedFieldDefinitions(t *testing.T) {
-	fields := types.GraphQLFieldConfigMap{
-		"field1": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+	fields := types.FieldConfigMap{
+		"field1": &types.FieldConfig{
+			Type: types.String,
 		},
-		"field2": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"id": &types.GraphQLArgumentConfig{
-					Type: types.GraphQLString,
+		"field2": &types.FieldConfig{
+			Type: types.String,
+			Args: types.FieldConfigArgument{
+				"id": &types.ArgumentConfig{
+					Type: types.String,
 				},
 			},
 		},
 	}
-	testObject1 := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	testObject1 := types.NewObject(types.ObjectConfig{
 		Name:   "Test1",
 		Fields: fields,
 	})
-	testObject2 := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	testObject2 := types.NewObject(types.ObjectConfig{
 		Name:   "Test2",
 		Fields: fields,
 	})
@@ -484,15 +484,15 @@ func TestTypeSystem_DefinitionExample_DoesNotMutatePassedFieldDefinitions(t *tes
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(testObject1.GetFields(), testObject2.GetFields()))
 	}
 
-	expectedFields := types.GraphQLFieldConfigMap{
-		"field1": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
+	expectedFields := types.FieldConfigMap{
+		"field1": &types.FieldConfig{
+			Type: types.String,
 		},
-		"field2": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"id": &types.GraphQLArgumentConfig{
-					Type: types.GraphQLString,
+		"field2": &types.FieldConfig{
+			Type: types.String,
+			Args: types.FieldConfigArgument{
+				"id": &types.ArgumentConfig{
+					Type: types.String,
 				},
 			},
 		},
@@ -503,25 +503,25 @@ func TestTypeSystem_DefinitionExample_DoesNotMutatePassedFieldDefinitions(t *tes
 
 	inputFields := types.InputObjectConfigFieldMap{
 		"field1": &types.InputObjectFieldConfig{
-			Type: types.GraphQLString,
+			Type: types.String,
 		},
 		"field2": &types.InputObjectFieldConfig{
-			Type: types.GraphQLString,
+			Type: types.String,
 		},
 	}
 	expectedInputFields := types.InputObjectConfigFieldMap{
 		"field1": &types.InputObjectFieldConfig{
-			Type: types.GraphQLString,
+			Type: types.String,
 		},
 		"field2": &types.InputObjectFieldConfig{
-			Type: types.GraphQLString,
+			Type: types.String,
 		},
 	}
-	testInputObject1 := types.NewGraphQLInputObjectType(types.InputObjectConfig{
+	testInputObject1 := types.NewInputObject(types.InputObjectConfig{
 		Name:   "Test1",
 		Fields: inputFields,
 	})
-	testInputObject2 := types.NewGraphQLInputObjectType(types.InputObjectConfig{
+	testInputObject2 := types.NewInputObject(types.InputObjectConfig{
 		Name:   "Test2",
 		Fields: inputFields,
 	})

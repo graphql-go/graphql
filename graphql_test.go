@@ -11,7 +11,7 @@ import (
 
 type T struct {
 	Query    string
-	Schema   types.GraphQLSchema
+	Schema   types.Schema
 	Expected interface{}
 }
 
@@ -26,7 +26,7 @@ var (
 				}
 			`,
 			Schema: testutil.StarWarsSchema,
-			Expected: &types.GraphQLResult{
+			Expected: &types.Result{
 				Data: map[string]interface{}{
 					"hero": map[string]interface{}{
 						"name": "R2-D2",
@@ -47,7 +47,7 @@ var (
 				}
 				`,
 			Schema: testutil.StarWarsSchema,
-			Expected: &types.GraphQLResult{
+			Expected: &types.Result{
 				Data: map[string]interface{}{
 					"hero": map[string]interface{}{
 						"id":   "2001",
@@ -72,7 +72,7 @@ var (
 
 func TestQuery(t *testing.T) {
 	for _, test := range Tests {
-		graphqlParams := GraphqlParams{
+		graphqlParams := Params{
 			Schema:        test.Schema,
 			RequestString: test.Query,
 		}
@@ -80,8 +80,8 @@ func TestQuery(t *testing.T) {
 	}
 }
 
-func testGraphql(test T, p GraphqlParams, t *testing.T) {
-	resultChannel := make(chan *types.GraphQLResult)
+func testGraphql(test T, p Params, t *testing.T) {
+	resultChannel := make(chan *types.Result)
 	go Graphql(p, resultChannel)
 	result := <-resultChannel
 	if len(result.Errors) > 0 {
@@ -99,13 +99,13 @@ func TestBasicGraphQLExample(t *testing.T) {
 		return "world"
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := types.NewSchema(types.SchemaConfig{
+		Query: types.NewObject(types.ObjectConfig{
 			Name: "RootQueryType",
-			Fields: types.GraphQLFieldConfigMap{
-				"hello": &types.GraphQLFieldConfig{
+			Fields: types.FieldConfigMap{
+				"hello": &types.FieldConfig{
 					Description: "Returns `world`",
-					Type:        types.GraphQLString,
+					Type:        types.String,
 					Resolve:     helloFieldResolved,
 				},
 			},
@@ -120,8 +120,8 @@ func TestBasicGraphQLExample(t *testing.T) {
 		"hello": "world",
 	}
 
-	resultChannel := make(chan *types.GraphQLResult)
-	go Graphql(GraphqlParams{
+	resultChannel := make(chan *types.Result)
+	go Graphql(Params{
 		Schema:        schema,
 		RequestString: query,
 	}, resultChannel)

@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-var testComplexScalar *types.GraphQLScalarType = types.NewGraphQLScalarType(types.GraphQLScalarTypeConfig{
+var testComplexScalar *types.Scalar = types.NewScalar(types.ScalarConfig{
 	Name: "ComplexScalar",
 	Serialize: func(value interface{}) interface{} {
 		if value == "DeserializedValue" {
@@ -35,17 +35,17 @@ var testComplexScalar *types.GraphQLScalarType = types.NewGraphQLScalarType(type
 	},
 })
 
-var testInputObject *types.GraphQLInputObjectType = types.NewGraphQLInputObjectType(types.InputObjectConfig{
+var testInputObject *types.InputObject = types.NewInputObject(types.InputObjectConfig{
 	Name: "TestInputObject",
 	Fields: types.InputObjectConfigFieldMap{
 		"a": &types.InputObjectFieldConfig{
-			Type: types.GraphQLString,
+			Type: types.String,
 		},
 		"b": &types.InputObjectFieldConfig{
-			Type: types.NewGraphQLList(types.GraphQLString),
+			Type: types.NewList(types.String),
 		},
 		"c": &types.InputObjectFieldConfig{
-			Type: types.NewGraphQLNonNull(types.GraphQLString),
+			Type: types.NewNonNull(types.String),
 		},
 		"d": &types.InputObjectFieldConfig{
 			Type: testComplexScalar,
@@ -65,78 +65,78 @@ func inputResolved(p types.GQLFRParams) interface{} {
 	return string(b)
 }
 
-var testType *types.GraphQLObjectType = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var testType *types.Object = types.NewObject(types.ObjectConfig{
 	Name: "TestType",
-	Fields: types.GraphQLFieldConfigMap{
-		"fieldWithObjectInput": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"input": &types.GraphQLArgumentConfig{
+	Fields: types.FieldConfigMap{
+		"fieldWithObjectInput": &types.FieldConfig{
+			Type: types.String,
+			Args: types.FieldConfigArgument{
+				"input": &types.ArgumentConfig{
 					Type: testInputObject,
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"fieldWithNullableStringInput": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"input": &types.GraphQLArgumentConfig{
-					Type: types.GraphQLString,
+		"fieldWithNullableStringInput": &types.FieldConfig{
+			Type: types.String,
+			Args: types.FieldConfigArgument{
+				"input": &types.ArgumentConfig{
+					Type: types.String,
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"fieldWithNonNullableStringInput": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"input": &types.GraphQLArgumentConfig{
-					Type: types.NewGraphQLNonNull(types.GraphQLString),
+		"fieldWithNonNullableStringInput": &types.FieldConfig{
+			Type: types.String,
+			Args: types.FieldConfigArgument{
+				"input": &types.ArgumentConfig{
+					Type: types.NewNonNull(types.String),
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"fieldWithDefaultArgumentValue": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"input": &types.GraphQLArgumentConfig{
-					Type:         types.GraphQLString,
+		"fieldWithDefaultArgumentValue": &types.FieldConfig{
+			Type: types.String,
+			Args: types.FieldConfigArgument{
+				"input": &types.ArgumentConfig{
+					Type:         types.String,
 					DefaultValue: "Hello World",
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"list": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"input": &types.GraphQLArgumentConfig{
-					Type: types.NewGraphQLList(types.GraphQLString),
+		"list": &types.FieldConfig{
+			Type: types.String,
+			Args: types.FieldConfigArgument{
+				"input": &types.ArgumentConfig{
+					Type: types.NewList(types.String),
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"nnList": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"input": &types.GraphQLArgumentConfig{
-					Type: types.NewGraphQLNonNull(types.NewGraphQLList(types.GraphQLString)),
+		"nnList": &types.FieldConfig{
+			Type: types.String,
+			Args: types.FieldConfigArgument{
+				"input": &types.ArgumentConfig{
+					Type: types.NewNonNull(types.NewList(types.String)),
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"listNN": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"input": &types.GraphQLArgumentConfig{
-					Type: types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLString)),
+		"listNN": &types.FieldConfig{
+			Type: types.String,
+			Args: types.FieldConfigArgument{
+				"input": &types.ArgumentConfig{
+					Type: types.NewList(types.NewNonNull(types.String)),
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"nnListNN": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"input": &types.GraphQLArgumentConfig{
-					Type: types.NewGraphQLNonNull(types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLString))),
+		"nnListNN": &types.FieldConfig{
+			Type: types.String,
+			Args: types.FieldConfigArgument{
+				"input": &types.ArgumentConfig{
+					Type: types.NewNonNull(types.NewList(types.NewNonNull(types.String))),
 				},
 			},
 			Resolve: inputResolved,
@@ -144,7 +144,7 @@ var testType *types.GraphQLObjectType = types.NewGraphQLObjectType(types.GraphQL
 	},
 })
 
-var variablesTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+var variablesTestSchema, _ = types.NewSchema(types.SchemaConfig{
 	Query: testType,
 })
 
@@ -154,7 +154,7 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_ExecutesWithComplexI
           fieldWithObjectInput(input: {a: "foo", b: ["bar"], c: "baz"})
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz"}`,
 		},
@@ -181,7 +181,7 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_ProperlyParsesSingle
           fieldWithObjectInput(input: {a: "foo", b: "bar", c: "baz"})
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz"}`,
 		},
@@ -208,7 +208,7 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_DoesNotUseIncorrectV
           fieldWithObjectInput(input: ["foo", "bar", "baz"])
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": nil,
 		},
@@ -247,7 +247,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexInput
 			"c": "baz",
 		},
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz"}`,
 		},
@@ -277,7 +277,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_UsesDefaultValueWhenNotP
 		fieldWithObjectInput(input: $input)
 	  }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz"}`,
 		},
@@ -306,7 +306,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ProperlyParsesSingleValu
 			"c": "baz",
 		},
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz"}`,
 		},
@@ -335,7 +335,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexScala
 			"d": "SerializedValue",
 		},
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"c":"foo","d":"DeserializedValue"}`,
 		},
@@ -365,10 +365,10 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnNullForNestedNon
 			"c": nil,
 		},
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
 					`got: {"a":"foo","b":"bar","c":null}.`,
 				Locations: []location.SourceLocation{
@@ -400,10 +400,10 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnIncorrectType(t 
 	params := map[string]interface{}{
 		"input": "foo bar",
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
 					`got: "foo bar".`,
 				Locations: []location.SourceLocation{
@@ -438,10 +438,10 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNested
 			"b": "bar",
 		},
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
 					`got: {"a":"foo","b":"bar"}.`,
 				Locations: []location.SourceLocation{
@@ -478,10 +478,10 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknow
 			"d": "dog",
 		},
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
 					`got: {"a":"foo","b":"bar","c":"baz","d":"dog"}.`,
 				Locations: []location.SourceLocation{
@@ -516,7 +516,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmitted(t *testing.T)
         fieldWithNullableStringInput
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": nil,
 		},
@@ -543,7 +543,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmittedInAVariable(t 
         fieldWithNullableStringInput(input: $value)
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": nil,
 		},
@@ -570,7 +570,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmittedInAnUnlistedVa
         fieldWithNullableStringInput(input: $value)
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": nil,
 		},
@@ -600,7 +600,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToNullInAVariable(
 	params := map[string]interface{}{
 		"value": nil,
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": nil,
 		},
@@ -631,7 +631,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueInAVariabl
 	params := map[string]interface{}{
 		"value": "a",
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": `"a"`,
 		},
@@ -659,7 +659,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueDirectly(t
         fieldWithNullableStringInput(input: "a")
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": `"a"`,
 		},
@@ -689,10 +689,10 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeOmittedIn
         }
 	`
 
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Variable "$value" of required type "String!" was not provided.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -728,10 +728,10 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeSetToNull
 	params := map[string]interface{}{
 		"value": nil,
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Variable "$value" of required type "String!" was not provided.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -768,7 +768,7 @@ func TestVariables_NonNullableScalars_AllowsNonNullableInputsToBeSetToAValueInAV
 	params := map[string]interface{}{
 		"value": "a",
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithNonNullableStringInput": `"a"`,
 		},
@@ -801,7 +801,7 @@ func TestVariables_NonNullableScalars_AllowsNonNullableInputsToBeSetToAValueDire
 		"value": "a",
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithNonNullableStringInput": `"a"`,
 		},
@@ -834,7 +834,7 @@ func TestVariables_NonNullableScalars_PassesAlongNullForNonNullableInputsIfExpli
 		"value": "a",
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithNonNullableStringInput": nil,
 		},
@@ -867,7 +867,7 @@ func TestVariables_ListsAndNullability_AllowsListsToBeNull(t *testing.T) {
 		"input": nil,
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"list": nil,
 		},
@@ -898,7 +898,7 @@ func TestVariables_ListsAndNullability_AllowsListsToContainValues(t *testing.T) 
 		"input": []interface{}{"A"},
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"list": `["A"]`,
 		},
@@ -929,7 +929,7 @@ func TestVariables_ListsAndNullability_AllowsListsToContainNull(t *testing.T) {
 		"input": []interface{}{"A", nil, "B"},
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"list": `["A",null,"B"]`,
 		},
@@ -956,10 +956,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListsToBeNull(t *testi
           nnList(input: $input)
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Variable "$input" of required type "[String]!" was not provided.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -993,7 +993,7 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsToContainValues(t *test
 	params := map[string]interface{}{
 		"input": []interface{}{"A"},
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"nnList": `["A"]`,
 		},
@@ -1023,7 +1023,7 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsToContainNull(t *testin
 	params := map[string]interface{}{
 		"input": []interface{}{"A", nil, "B"},
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"nnList": `["A",null,"B"]`,
 		},
@@ -1053,7 +1053,7 @@ func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToBeNull(t *testing.
 	params := map[string]interface{}{
 		"input": nil,
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"listNN": nil,
 		},
@@ -1083,7 +1083,7 @@ func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToContainValues(t *t
 	params := map[string]interface{}{
 		"input": []interface{}{"A"},
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"listNN": `["A"]`,
 		},
@@ -1113,10 +1113,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t
 	params := map[string]interface{}{
 		"input": []interface{}{"A", nil, "B"},
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "[String!]" but got: ` +
 					`["A",null,"B"].`,
 				Locations: []location.SourceLocation{
@@ -1152,10 +1152,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToBeNull
 	params := map[string]interface{}{
 		"input": nil,
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Variable "$input" of required type "[String!]!" was not provided.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -1190,7 +1190,7 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsOfNonNulsToContainValue
 	params := map[string]interface{}{
 		"input": []interface{}{"A"},
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"nnListNN": `["A"]`,
 		},
@@ -1220,10 +1220,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContai
 	params := map[string]interface{}{
 		"input": []interface{}{"A", nil, "B"},
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "[String!]!" but got: ` +
 					`["A",null,"B"].`,
 				Locations: []location.SourceLocation{
@@ -1261,10 +1261,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowInvalidTypesToBeUsedAsValues(
 			"list": []interface{}{"A", "B"},
 		},
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "TestType!" which cannot be used as an input type.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -1299,10 +1299,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowUnknownTypesToBeUsedAsValues(
 	params := map[string]interface{}{
 		"input": "whoknows",
 	}
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "UnknownType!" which cannot be used as an input type.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -1335,7 +1335,7 @@ func TestVariables_UsesArgumentDefaultValues_WhenNoArgumentProvided(t *testing.T
       fieldWithDefaultArgumentValue
     }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithDefaultArgumentValue": `"Hello World"`,
 		},
@@ -1361,7 +1361,7 @@ func TestVariables_UsesArgumentDefaultValues_WhenNullableVariableProvided(t *tes
         fieldWithDefaultArgumentValue(input: $optional)
     }
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithDefaultArgumentValue": `"Hello World"`,
 		},
@@ -1387,7 +1387,7 @@ func TestVariables_UsesArgumentDefaultValues_WhenArgumentProvidedCannotBeParsed(
 		fieldWithDefaultArgumentValue(input: WRONG_TYPE)
 	}
 	`
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"fieldWithDefaultArgumentValue": `"Hello World"`,
 		},

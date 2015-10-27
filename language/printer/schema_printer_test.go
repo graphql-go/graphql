@@ -10,7 +10,7 @@ import (
 )
 
 func TestSchemaPrinter_PrintsMinimalAST(t *testing.T) {
-	astDoc := ast.NewScalarTypeDefinition(&ast.ScalarTypeDefinition{
+	astDoc := ast.NewScalarTypeDefinition(&ast.ScalarDefinition{
 		Name: ast.NewName(&ast.Name{
 			Value: "foo",
 		}),

@@ -38,32 +38,32 @@ func (r *testRoot) PromiseAndFailToChangeTheNumber(newNumber int) *testNumberHol
 }
 
 // numberHolderType creates a mapping to testNumberHolder
-var numberHolderType = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var numberHolderType = types.NewObject(types.ObjectConfig{
 	Name: "NumberHolder",
-	Fields: types.GraphQLFieldConfigMap{
-		"theNumber": &types.GraphQLFieldConfig{
-			Type: types.GraphQLInt,
+	Fields: types.FieldConfigMap{
+		"theNumber": &types.FieldConfig{
+			Type: types.Int,
 		},
 	},
 })
 
-var mutationsTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-	Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var mutationsTestSchema, _ = types.NewSchema(types.SchemaConfig{
+	Query: types.NewObject(types.ObjectConfig{
 		Name: "Query",
-		Fields: types.GraphQLFieldConfigMap{
-			"numberHolder": &types.GraphQLFieldConfig{
+		Fields: types.FieldConfigMap{
+			"numberHolder": &types.FieldConfig{
 				Type: numberHolderType,
 			},
 		},
 	}),
-	Mutation: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	Mutation: types.NewObject(types.ObjectConfig{
 		Name: "Mutation",
-		Fields: types.GraphQLFieldConfigMap{
-			"immediatelyChangeTheNumber": &types.GraphQLFieldConfig{
+		Fields: types.FieldConfigMap{
+			"immediatelyChangeTheNumber": &types.FieldConfig{
 				Type: numberHolderType,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"newNumber": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLInt,
+				Args: types.FieldConfigArgument{
+					"newNumber": &types.ArgumentConfig{
+						Type: types.Int,
 					},
 				},
 				Resolve: func(p types.GQLFRParams) interface{} {
@@ -73,11 +73,11 @@ var mutationsTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
 					return obj.ImmediatelyChangeTheNumber(newNumber)
 				},
 			},
-			"promiseToChangeTheNumber": &types.GraphQLFieldConfig{
+			"promiseToChangeTheNumber": &types.FieldConfig{
 				Type: numberHolderType,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"newNumber": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLInt,
+				Args: types.FieldConfigArgument{
+					"newNumber": &types.ArgumentConfig{
+						Type: types.Int,
 					},
 				},
 				Resolve: func(p types.GQLFRParams) interface{} {
@@ -87,11 +87,11 @@ var mutationsTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
 					return obj.PromiseToChangeTheNumber(newNumber)
 				},
 			},
-			"failToChangeTheNumber": &types.GraphQLFieldConfig{
+			"failToChangeTheNumber": &types.FieldConfig{
 				Type: numberHolderType,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"newNumber": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLInt,
+				Args: types.FieldConfigArgument{
+					"newNumber": &types.ArgumentConfig{
+						Type: types.Int,
 					},
 				},
 				Resolve: func(p types.GQLFRParams) interface{} {
@@ -101,11 +101,11 @@ var mutationsTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
 					return obj.FailToChangeTheNumber(newNumber)
 				},
 			},
-			"promiseAndFailToChangeTheNumber": &types.GraphQLFieldConfig{
+			"promiseAndFailToChangeTheNumber": &types.FieldConfig{
 				Type: numberHolderType,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"newNumber": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLInt,
+				Args: types.FieldConfigArgument{
+					"newNumber": &types.ArgumentConfig{
+						Type: types.Int,
 					},
 				},
 				Resolve: func(p types.GQLFRParams) interface{} {
@@ -140,7 +140,7 @@ func TestMutations_ExecutionOrdering_EvaluatesMutationsSerially(t *testing.T) {
       }
     }`
 
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"first": map[string]interface{}{
 				"theNumber": 1,
@@ -200,7 +200,7 @@ func TestMutations_EvaluatesMutationsCorrectlyInThePresenceOfAFailedMutation(t *
       }
     }`
 
-	expected := &types.GraphQLResult{
+	expected := &types.Result{
 		Data: map[string]interface{}{
 			"first": map[string]interface{}{
 				"theNumber": 1,
@@ -217,14 +217,14 @@ func TestMutations_EvaluatesMutationsCorrectlyInThePresenceOfAFailedMutation(t *
 			},
 			"sixth": nil,
 		},
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []graphqlerrors.FormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Cannot change the number`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 8, Column: 7},
 				},
 			},
-			graphqlerrors.GraphQLFormattedError{
+			graphqlerrors.FormattedError{
 				Message: `Cannot change the number`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{Line: 17, Column: 7},

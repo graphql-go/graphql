@@ -720,7 +720,7 @@ func parseNamedType(parser *Parser) (*ast.NamedType, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ast.NewNamedType(&ast.NamedType{
+	return ast.NewNamed(&ast.NamedType{
 		Name: name,
 		Loc:  loc(parser, start),
 	}), nil
@@ -728,7 +728,7 @@ func parseNamedType(parser *Parser) (*ast.NamedType, error) {
 
 /* Implements the parsing rules in the Type Definition section. */
 
-func parseObjectTypeDefinition(parser *Parser) (*ast.ObjectTypeDefinition, error) {
+func parseObjectTypeDefinition(parser *Parser) (*ast.ObjectDefinition, error) {
 	start := parser.Token.Start
 	_, err := expectKeyWord(parser, "type")
 	if err != nil {
@@ -752,7 +752,7 @@ func parseObjectTypeDefinition(parser *Parser) (*ast.ObjectTypeDefinition, error
 			fields = append(fields, iField.(*ast.FieldDefinition))
 		}
 	}
-	return ast.NewObjectTypeDefinition(&ast.ObjectTypeDefinition{
+	return ast.NewObjectDefinition(&ast.ObjectDefinition{
 		Name:       name,
 		Loc:        loc(parser, start),
 		Interfaces: interfaces,
@@ -854,7 +854,7 @@ func parseInputValueDef(parser *Parser) (interface{}, error) {
 	}), nil
 }
 
-func parseInterfaceTypeDefinition(parser *Parser) (*ast.InterfaceTypeDefinition, error) {
+func parseInterfaceTypeDefinition(parser *Parser) (*ast.InterfaceDefinition, error) {
 	start := parser.Token.Start
 	_, err := expectKeyWord(parser, "interface")
 	if err != nil {
@@ -874,14 +874,14 @@ func parseInterfaceTypeDefinition(parser *Parser) (*ast.InterfaceTypeDefinition,
 			fields = append(fields, iField.(*ast.FieldDefinition))
 		}
 	}
-	return ast.NewInterfaceTypeDefinition(&ast.InterfaceTypeDefinition{
+	return ast.NewInterfaceTypeDefinition(&ast.InterfaceDefinition{
 		Name:   name,
 		Loc:    loc(parser, start),
 		Fields: fields,
 	}), nil
 }
 
-func parseUnionTypeDefinition(parser *Parser) (*ast.UnionTypeDefinition, error) {
+func parseUnionTypeDefinition(parser *Parser) (*ast.UnionDefinition, error) {
 	start := parser.Token.Start
 	_, err := expectKeyWord(parser, "union")
 	if err != nil {
@@ -899,7 +899,7 @@ func parseUnionTypeDefinition(parser *Parser) (*ast.UnionTypeDefinition, error) 
 	if err != nil {
 		return nil, err
 	}
-	return ast.NewUnionTypeDefinition(&ast.UnionTypeDefinition{
+	return ast.NewUnionTypeDefinition(&ast.UnionDefinition{
 		Name:  name,
 		Loc:   loc(parser, start),
 		Types: types,
@@ -921,7 +921,7 @@ func parseUnionMembers(parser *Parser) ([]*ast.NamedType, error) {
 	return members, nil
 }
 
-func parseScalarTypeDefinition(parser *Parser) (*ast.ScalarTypeDefinition, error) {
+func parseScalarTypeDefinition(parser *Parser) (*ast.ScalarDefinition, error) {
 	start := parser.Token.Start
 	_, err := expectKeyWord(parser, "scalar")
 	if err != nil {
@@ -931,14 +931,14 @@ func parseScalarTypeDefinition(parser *Parser) (*ast.ScalarTypeDefinition, error
 	if err != nil {
 		return nil, err
 	}
-	def := ast.NewScalarTypeDefinition(&ast.ScalarTypeDefinition{
+	def := ast.NewScalarTypeDefinition(&ast.ScalarDefinition{
 		Name: name,
 		Loc:  loc(parser, start),
 	})
 	return def, nil
 }
 
-func parseEnumTypeDefinition(parser *Parser) (*ast.EnumTypeDefinition, error) {
+func parseEnumTypeDefinition(parser *Parser) (*ast.EnumDefinition, error) {
 	start := parser.Token.Start
 	_, err := expectKeyWord(parser, "enum")
 	if err != nil {
@@ -958,7 +958,7 @@ func parseEnumTypeDefinition(parser *Parser) (*ast.EnumTypeDefinition, error) {
 			values = append(values, iEnumValueDef.(*ast.EnumValueDefinition))
 		}
 	}
-	return ast.NewEnumTypeDefinition(&ast.EnumTypeDefinition{
+	return ast.NewEnumTypeDefinition(&ast.EnumDefinition{
 		Name:   name,
 		Loc:    loc(parser, start),
 		Values: values,
@@ -977,7 +977,7 @@ func parseEnumValueDefinition(parser *Parser) (interface{}, error) {
 	}), nil
 }
 
-func parseInputObjectTypeDefinition(parser *Parser) (*ast.InputObjectTypeDefinition, error) {
+func parseInputObjectTypeDefinition(parser *Parser) (*ast.InputObjectDefinition, error) {
 	start := parser.Token.Start
 	_, err := expectKeyWord(parser, "input")
 	if err != nil {
@@ -997,7 +997,7 @@ func parseInputObjectTypeDefinition(parser *Parser) (*ast.InputObjectTypeDefinit
 			fields = append(fields, iInputValueDefinition.(*ast.InputValueDefinition))
 		}
 	}
-	return ast.NewInputObjectTypeDefinition(&ast.InputObjectTypeDefinition{
+	return ast.NewInputObjectTypeDefinition(&ast.InputObjectDefinition{
 		Name:   name,
 		Loc:    loc(parser, start),
 		Fields: fields,

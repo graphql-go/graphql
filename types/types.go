@@ -4,13 +4,13 @@ import (
 	"github.com/chris-ramon/graphql/errors"
 )
 
-type Schema interface{}
+// type Schema interface{}
 
-type GraphQLResult struct {
+type Result struct {
 	Data   interface{}                           `json:"data"`
-	Errors []graphqlerrors.GraphQLFormattedError `json:"errors,omitempty"`
+	Errors []graphqlerrors.FormattedError `json:"errors,omitempty"`
 }
 
-func (gqR *GraphQLResult) HasErrors() bool {
+func (gqR *Result) HasErrors() bool {
 	return (len(gqR.Errors) > 0)
 }

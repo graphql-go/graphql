@@ -44,10 +44,10 @@ func TestTypeSystem_Scalar_SerializesOutputInt(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		val := GraphQLInt.Serialize(test.Value)
+		val := Int.Serialize(test.Value)
 		if val != test.Expected {
 			reflectedValue := reflect.ValueOf(test.Value)
-			t.Fatalf("Failed GraphQLInt.Serialize(%v(%v)), expected: %v, got %v", reflectedValue.Type(), test.Value, test.Expected, val)
+			t.Fatalf("Failed Int.Serialize(%v(%v)), expected: %v, got %v", reflectedValue.Type(), test.Value, test.Expected, val)
 		}
 	}
 }
@@ -67,10 +67,10 @@ func TestTypeSystem_Scalar_SerializesOutputFloat(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		val := GraphQLFloat.Serialize(test.Value)
+		val := Float.Serialize(test.Value)
 		if val != test.Expected {
 			reflectedValue := reflect.ValueOf(test.Value)
-			t.Fatalf("Failed test #%d - GraphQLFloat.Serialize(%v(%v)), expected: %v, got %v", i, reflectedValue.Type(), test.Value, test.Expected, val)
+			t.Fatalf("Failed test #%d - Float.Serialize(%v(%v)), expected: %v, got %v", i, reflectedValue.Type(), test.Value, test.Expected, val)
 		}
 	}
 }
@@ -85,10 +85,10 @@ func TestTypeSystem_Scalar_SerializesOutputStrings(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		val := GraphQLString.Serialize(test.Value)
+		val := String.Serialize(test.Value)
 		if val != test.Expected {
 			reflectedValue := reflect.ValueOf(test.Value)
-			t.Fatalf("Failed GraphQLString.Serialize(%v(%v)), expected: %v, got %v", reflectedValue.Type(), test.Value, test.Expected, val)
+			t.Fatalf("Failed String.Serialize(%v(%v)), expected: %v, got %v", reflectedValue.Type(), test.Value, test.Expected, val)
 		}
 	}
 }
@@ -106,10 +106,10 @@ func TestTypeSystem_Scalar_SerializesOutputBoolean(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		val := GraphQLBoolean.Serialize(test.Value)
+		val := Boolean.Serialize(test.Value)
 		if val != test.Expected {
 			reflectedValue := reflect.ValueOf(test.Value)
-			t.Fatalf("Failed GraphQLString.GraphQLBoolean(%v(%v)), expected: %v, got %v", reflectedValue.Type(), test.Value, test.Expected, val)
+			t.Fatalf("Failed String.Boolean(%v(%v)), expected: %v, got %v", reflectedValue.Type(), test.Value, test.Expected, val)
 		}
 	}
 }

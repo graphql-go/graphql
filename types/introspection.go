@@ -19,60 +19,60 @@ const (
 	TypeKindNonNull     = "NON_NULL"
 )
 
-var __Directive *GraphQLObjectType
-var __Schema *GraphQLObjectType
-var __Type *GraphQLObjectType
-var __Field *GraphQLObjectType
-var __InputValue *GraphQLObjectType
-var __EnumValue *GraphQLObjectType
+var __Directive *Object
+var __Schema *Object
+var __Type *Object
+var __Field *Object
+var __InputValue *Object
+var __EnumValue *Object
 
-var __TypeKind *GraphQLEnumType
+var __TypeKind *Enum
 
-var SchemaMetaFieldDef *GraphQLFieldDefinition
-var TypeMetaFieldDef *GraphQLFieldDefinition
-var TypeNameMetaFieldDef *GraphQLFieldDefinition
+var SchemaMetaFieldDef *FieldDefinition
+var TypeMetaFieldDef *FieldDefinition
+var TypeNameMetaFieldDef *FieldDefinition
 
 func init() {
 
-	__TypeKind = NewGraphQLEnumType(GraphQLEnumTypeConfig{
+	__TypeKind = NewEnum(EnumConfig{
 		Name:        "__TypeKind",
 		Description: "An enum describing what kind of type a given __Type is",
-		Values: GraphQLEnumValueConfigMap{
-			"SCALAR": &GraphQLEnumValueConfig{
+		Values: EnumValueConfigMap{
+			"SCALAR": &EnumValueConfig{
 				Value:       TypeKindScalar,
 				Description: "Indicates this type is a scalar.",
 			},
-			"OBJECT": &GraphQLEnumValueConfig{
+			"OBJECT": &EnumValueConfig{
 				Value: TypeKindObject,
 				Description: "Indicates this type is an object. " +
 					"`fields` and `interfaces` are valid fields.",
 			},
-			"INTERFACE": &GraphQLEnumValueConfig{
+			"INTERFACE": &EnumValueConfig{
 				Value: TypeKindInterface,
 				Description: "Indicates this type is an interface. " +
 					"`fields` and `possibleTypes` are valid fields.",
 			},
-			"UNION": &GraphQLEnumValueConfig{
+			"UNION": &EnumValueConfig{
 				Value: TypeKindUnion,
 				Description: "Indicates this type is a union. " +
 					"`possibleTypes` is a valid field.",
 			},
-			"ENUM": &GraphQLEnumValueConfig{
+			"ENUM": &EnumValueConfig{
 				Value: TypeKindEnum,
 				Description: "Indicates this type is an enum. " +
 					"`enumValues` is a valid field.",
 			},
-			"INPUT_OBJECT": &GraphQLEnumValueConfig{
+			"INPUT_OBJECT": &EnumValueConfig{
 				Value: TypeKindInputObject,
 				Description: "Indicates this type is an input object. " +
 					"`inputFields` is a valid field.",
 			},
-			"LIST": &GraphQLEnumValueConfig{
+			"LIST": &EnumValueConfig{
 				Value: TypeKindList,
 				Description: "Indicates this type is a list. " +
 					"`ofType` is a valid field.",
 			},
-			"NON_NULL": &GraphQLEnumValueConfig{
+			"NON_NULL": &EnumValueConfig{
 				Value: TypeKindNonNull,
 				Description: "Indicates this type is a non-null. " +
 					"`ofType` is a valid field.",
@@ -81,64 +81,64 @@ func init() {
 	})
 
 	// Note: some fields (for e.g "fields", "interfaces") are defined later due to cyclic reference
-	__Type = NewGraphQLObjectType(GraphQLObjectTypeConfig{
+	__Type = NewObject(ObjectConfig{
 		Name: "__Type",
-		Fields: GraphQLFieldConfigMap{
-			"kind": &GraphQLFieldConfig{
-				Type: NewGraphQLNonNull(__TypeKind),
+		Fields: FieldConfigMap{
+			"kind": &FieldConfig{
+				Type: NewNonNull(__TypeKind),
 				Resolve: func(p GQLFRParams) interface{} {
 					switch p.Source.(type) {
-					case *GraphQLScalarType:
+					case *Scalar:
 						return TypeKindScalar
-					case *GraphQLObjectType:
+					case *Object:
 						return TypeKindObject
-					case *GraphQLInterfaceType:
+					case *Interface:
 						return TypeKindInterface
-					case *GraphQLUnionType:
+					case *Union:
 						return TypeKindUnion
-					case *GraphQLEnumType:
+					case *Enum:
 						return TypeKindEnum
-					case *GraphQLInputObjectType:
+					case *InputObject:
 						return TypeKindInputObject
-					case *GraphQLList:
+					case *List:
 						return TypeKindList
-					case *GraphQLNonNull:
+					case *NonNull:
 						return TypeKindNonNull
 					}
 					panic(fmt.Sprintf("Unknown kind of type: %v", p.Source))
 				},
 			},
-			"name": &GraphQLFieldConfig{
-				Type: GraphQLString,
+			"name": &FieldConfig{
+				Type: String,
 			},
-			"description": &GraphQLFieldConfig{
-				Type: GraphQLString,
+			"description": &FieldConfig{
+				Type: String,
 			},
-			"fields":        &GraphQLFieldConfig{},
-			"interfaces":    &GraphQLFieldConfig{},
-			"possibleTypes": &GraphQLFieldConfig{},
-			"enumValues":    &GraphQLFieldConfig{},
-			"inputFields":   &GraphQLFieldConfig{},
-			"ofType":        &GraphQLFieldConfig{},
+			"fields":        &FieldConfig{},
+			"interfaces":    &FieldConfig{},
+			"possibleTypes": &FieldConfig{},
+			"enumValues":    &FieldConfig{},
+			"inputFields":   &FieldConfig{},
+			"ofType":        &FieldConfig{},
 		},
 	})
 
-	__InputValue = NewGraphQLObjectType(GraphQLObjectTypeConfig{
+	__InputValue = NewObject(ObjectConfig{
 		Name: "__InputValue",
-		Fields: GraphQLFieldConfigMap{
-			"name": &GraphQLFieldConfig{
-				Type: NewGraphQLNonNull(GraphQLString),
+		Fields: FieldConfigMap{
+			"name": &FieldConfig{
+				Type: NewNonNull(String),
 			},
-			"description": &GraphQLFieldConfig{
-				Type: GraphQLString,
+			"description": &FieldConfig{
+				Type: String,
 			},
-			"type": &GraphQLFieldConfig{
-				Type: NewGraphQLNonNull(__Type),
+			"type": &FieldConfig{
+				Type: NewNonNull(__Type),
 			},
-			"defaultValue": &GraphQLFieldConfig{
-				Type: GraphQLString,
+			"defaultValue": &FieldConfig{
+				Type: String,
 				Resolve: func(p GQLFRParams) interface{} {
-					if inputVal, ok := p.Source.(*GraphQLArgument); ok {
+					if inputVal, ok := p.Source.(*Argument); ok {
 						if inputVal.DefaultValue == nil {
 							return nil
 						}
@@ -158,107 +158,107 @@ func init() {
 		},
 	})
 
-	__Field = NewGraphQLObjectType(GraphQLObjectTypeConfig{
+	__Field = NewObject(ObjectConfig{
 		Name: "__Field",
-		Fields: GraphQLFieldConfigMap{
-			"name": &GraphQLFieldConfig{
-				Type: NewGraphQLNonNull(GraphQLString),
+		Fields: FieldConfigMap{
+			"name": &FieldConfig{
+				Type: NewNonNull(String),
 			},
-			"description": &GraphQLFieldConfig{
-				Type: GraphQLString,
+			"description": &FieldConfig{
+				Type: String,
 			},
-			"args": &GraphQLFieldConfig{
-				Type: NewGraphQLNonNull(NewGraphQLList(NewGraphQLNonNull(__InputValue))),
+			"args": &FieldConfig{
+				Type: NewNonNull(NewList(NewNonNull(__InputValue))),
 				Resolve: func(p GQLFRParams) interface{} {
-					if field, ok := p.Source.(*GraphQLFieldDefinition); ok {
+					if field, ok := p.Source.(*FieldDefinition); ok {
 						return field.Args
 					}
 					return []interface{}{}
 				},
 			},
-			"type": &GraphQLFieldConfig{
-				Type: NewGraphQLNonNull(__Type),
+			"type": &FieldConfig{
+				Type: NewNonNull(__Type),
 			},
-			"isDeprecated": &GraphQLFieldConfig{
-				Type: NewGraphQLNonNull(GraphQLBoolean),
+			"isDeprecated": &FieldConfig{
+				Type: NewNonNull(Boolean),
 				Resolve: func(p GQLFRParams) interface{} {
-					if field, ok := p.Source.(*GraphQLFieldDefinition); ok {
+					if field, ok := p.Source.(*FieldDefinition); ok {
 						return (field.DeprecationReason != "")
 					}
 					return false
 				},
 			},
-			"deprecationReason": &GraphQLFieldConfig{
-				Type: GraphQLString,
+			"deprecationReason": &FieldConfig{
+				Type: String,
 			},
 		},
 	})
 
-	__Directive = NewGraphQLObjectType(GraphQLObjectTypeConfig{
+	__Directive = NewObject(ObjectConfig{
 		Name: "__Directive",
-		Fields: GraphQLFieldConfigMap{
-			"name": &GraphQLFieldConfig{
-				Type: NewGraphQLNonNull(GraphQLString),
+		Fields: FieldConfigMap{
+			"name": &FieldConfig{
+				Type: NewNonNull(String),
 			},
-			"description": &GraphQLFieldConfig{
-				Type: GraphQLString,
+			"description": &FieldConfig{
+				Type: String,
 			},
-			"args": &GraphQLFieldConfig{
-				Type: NewGraphQLNonNull(NewGraphQLList(
-					NewGraphQLNonNull(__InputValue),
+			"args": &FieldConfig{
+				Type: NewNonNull(NewList(
+					NewNonNull(__InputValue),
 				)),
 			},
-			"onOperation": &GraphQLFieldConfig{
-				Type: NewGraphQLNonNull(GraphQLBoolean),
+			"onOperation": &FieldConfig{
+				Type: NewNonNull(Boolean),
 			},
-			"onFragment": &GraphQLFieldConfig{
-				Type: NewGraphQLNonNull(GraphQLBoolean),
+			"onFragment": &FieldConfig{
+				Type: NewNonNull(Boolean),
 			},
-			"onField": &GraphQLFieldConfig{
-				Type: NewGraphQLNonNull(GraphQLBoolean),
+			"onField": &FieldConfig{
+				Type: NewNonNull(Boolean),
 			},
 		},
 	})
 
-	__Schema = NewGraphQLObjectType(GraphQLObjectTypeConfig{
+	__Schema = NewObject(ObjectConfig{
 		Name: "__Schema",
 		Description: `A GraphQL Schema defines the capabilities of a GraphQL
 server. It exposes all available types and directives on
 the server, as well as the entry points for query and
 mutation operations.`,
-		Fields: GraphQLFieldConfigMap{
-			"types": &GraphQLFieldConfig{
+		Fields: FieldConfigMap{
+			"types": &FieldConfig{
 				Description: "A list of all types supported by this server.",
-				Type: NewGraphQLNonNull(NewGraphQLList(
-					NewGraphQLNonNull(__Type),
+				Type: NewNonNull(NewList(
+					NewNonNull(__Type),
 				)),
 				Resolve: func(p GQLFRParams) interface{} {
-					if schema, ok := p.Source.(GraphQLSchema); ok {
-						results := []GraphQLType{}
+					if schema, ok := p.Source.(Schema); ok {
+						results := []Type{}
 						for _, ttype := range schema.GetTypeMap() {
 							results = append(results, ttype)
 						}
 						return results
 					}
-					return []GraphQLType{}
+					return []Type{}
 				},
 			},
-			"queryType": &GraphQLFieldConfig{
+			"queryType": &FieldConfig{
 				Description: "The type that query operations will be rooted at.",
-				Type:        NewGraphQLNonNull(__Type),
+				Type:        NewNonNull(__Type),
 				Resolve: func(p GQLFRParams) interface{} {
-					if schema, ok := p.Source.(GraphQLSchema); ok {
+					if schema, ok := p.Source.(Schema); ok {
 						return schema.GetQueryType()
 					}
 					return nil
 				},
 			},
-			"mutationType": &GraphQLFieldConfig{
+			"mutationType": &FieldConfig{
 				Description: `If this server supports mutation, the type that ` +
 					`mutation operations will be rooted at.`,
 				Type: __Type,
 				Resolve: func(p GQLFRParams) interface{} {
-					if schema, ok := p.Source.(GraphQLSchema); ok {
+					if schema, ok := p.Source.(Schema); ok {
 						if schema.GetMutationType() != nil {
 							return schema.GetMutationType()
 						}
@@ -266,13 +266,13 @@ mutation operations.`,
 					return nil
 				},
 			},
-			"directives": &GraphQLFieldConfig{
+			"directives": &FieldConfig{
 				Description: `A list of all directives supported by this server.`,
-				Type: NewGraphQLNonNull(NewGraphQLList(
-					NewGraphQLNonNull(__Directive),
+				Type: NewNonNull(NewList(
+					NewNonNull(__Directive),
 				)),
 				Resolve: func(p GQLFRParams) interface{} {
-					if schema, ok := p.Source.(GraphQLSchema); ok {
+					if schema, ok := p.Source.(Schema); ok {
 						return schema.GetDirectives()
 					}
 					return nil
@@ -281,48 +281,48 @@ mutation operations.`,
 		},
 	})
 
-	__EnumValue = NewGraphQLObjectType(GraphQLObjectTypeConfig{
+	__EnumValue = NewObject(ObjectConfig{
 		Name: "__EnumValue",
-		Fields: GraphQLFieldConfigMap{
-			"name": &GraphQLFieldConfig{
-				Type: NewGraphQLNonNull(GraphQLString),
+		Fields: FieldConfigMap{
+			"name": &FieldConfig{
+				Type: NewNonNull(String),
 			},
-			"description": &GraphQLFieldConfig{
-				Type: GraphQLString,
+			"description": &FieldConfig{
+				Type: String,
 			},
-			"isDeprecated": &GraphQLFieldConfig{
-				Type: NewGraphQLNonNull(GraphQLBoolean),
+			"isDeprecated": &FieldConfig{
+				Type: NewNonNull(Boolean),
 				Resolve: func(p GQLFRParams) interface{} {
-					if field, ok := p.Source.(*GraphQLEnumValueDefinition); ok {
+					if field, ok := p.Source.(*EnumValueDefinition); ok {
 						return (field.DeprecationReason != "")
 					}
 					return false
 				},
 			},
-			"deprecationReason": &GraphQLFieldConfig{
-				Type: GraphQLString,
+			"deprecationReason": &FieldConfig{
+				Type: String,
 			},
 		},
 	})
 
 	// Again, adding field configs to __Type that have cyclic reference here
 	// because golang don't like them too much during init/compile-time
-	__Type.AddFieldConfig("fields", &GraphQLFieldConfig{
-		Type: NewGraphQLList(NewGraphQLNonNull(__Field)),
-		Args: GraphQLFieldConfigArgumentMap{
-			"includeDeprecated": &GraphQLArgumentConfig{
-				Type:         GraphQLBoolean,
+	__Type.AddFieldConfig("fields", &FieldConfig{
+		Type: NewList(NewNonNull(__Field)),
+		Args: FieldConfigArgument{
+			"includeDeprecated": &ArgumentConfig{
+				Type:         Boolean,
 				DefaultValue: false,
 			},
 		},
 		Resolve: func(p GQLFRParams) interface{} {
 			includeDeprecated, _ := p.Args["includeDeprecated"].(bool)
 			switch ttype := p.Source.(type) {
-			case *GraphQLObjectType:
+			case *Object:
 				if ttype == nil {
 					return nil
 				}
-				fields := []*GraphQLFieldDefinition{}
+				fields := []*FieldDefinition{}
 				for _, field := range ttype.GetFields() {
 					if !includeDeprecated && field.DeprecationReason != "" {
 						continue
@@ -330,11 +330,11 @@ mutation operations.`,
 					fields = append(fields, field)
 				}
 				return fields
-			case *GraphQLInterfaceType:
+			case *Interface:
 				if ttype == nil {
 					return nil
 				}
-				fields := []*GraphQLFieldDefinition{}
+				fields := []*FieldDefinition{}
 				for _, field := range ttype.GetFields() {
 					if !includeDeprecated && field.DeprecationReason != "" {
 						continue
@@ -346,44 +346,44 @@ mutation operations.`,
 			return nil
 		},
 	})
-	__Type.AddFieldConfig("interfaces", &GraphQLFieldConfig{
-		Type: NewGraphQLList(NewGraphQLNonNull(__Type)),
+	__Type.AddFieldConfig("interfaces", &FieldConfig{
+		Type: NewList(NewNonNull(__Type)),
 		Resolve: func(p GQLFRParams) interface{} {
 			switch ttype := p.Source.(type) {
-			case *GraphQLObjectType:
+			case *Object:
 				return ttype.GetInterfaces()
 			}
 			return nil
 		},
 	})
-	__Type.AddFieldConfig("possibleTypes", &GraphQLFieldConfig{
-		Type: NewGraphQLList(NewGraphQLNonNull(__Type)),
+	__Type.AddFieldConfig("possibleTypes", &FieldConfig{
+		Type: NewList(NewNonNull(__Type)),
 		Resolve: func(p GQLFRParams) interface{} {
 			switch ttype := p.Source.(type) {
-			case *GraphQLInterfaceType:
+			case *Interface:
 				return ttype.GetPossibleTypes()
-			case *GraphQLUnionType:
+			case *Union:
 				return ttype.GetPossibleTypes()
 			}
 			return nil
 		},
 	})
-	__Type.AddFieldConfig("enumValues", &GraphQLFieldConfig{
-		Type: NewGraphQLList(NewGraphQLNonNull(__EnumValue)),
-		Args: GraphQLFieldConfigArgumentMap{
-			"includeDeprecated": &GraphQLArgumentConfig{
-				Type:         GraphQLBoolean,
+	__Type.AddFieldConfig("enumValues", &FieldConfig{
+		Type: NewList(NewNonNull(__EnumValue)),
+		Args: FieldConfigArgument{
+			"includeDeprecated": &ArgumentConfig{
+				Type:         Boolean,
 				DefaultValue: false,
 			},
 		},
 		Resolve: func(p GQLFRParams) interface{} {
 			includeDeprecated, _ := p.Args["includeDeprecated"].(bool)
 			switch ttype := p.Source.(type) {
-			case *GraphQLEnumType:
+			case *Enum:
 				if includeDeprecated {
 					return ttype.GetValues()
 				}
-				values := []*GraphQLEnumValueDefinition{}
+				values := []*EnumValueDefinition{}
 				for _, value := range ttype.GetValues() {
 					if value.DeprecationReason != "" {
 						continue
@@ -395,11 +395,11 @@ mutation operations.`,
 			return nil
 		},
 	})
-	__Type.AddFieldConfig("inputFields", &GraphQLFieldConfig{
-		Type: NewGraphQLList(NewGraphQLNonNull(__InputValue)),
+	__Type.AddFieldConfig("inputFields", &FieldConfig{
+		Type: NewList(NewNonNull(__InputValue)),
 		Resolve: func(p GQLFRParams) interface{} {
 			switch ttype := p.Source.(type) {
-			case *GraphQLInputObjectType:
+			case *InputObject:
 				fields := []*InputObjectField{}
 				for _, field := range ttype.GetFields() {
 					fields = append(fields, field)
@@ -409,32 +409,32 @@ mutation operations.`,
 			return nil
 		},
 	})
-	__Type.AddFieldConfig("ofType", &GraphQLFieldConfig{
+	__Type.AddFieldConfig("ofType", &FieldConfig{
 		Type: __Type,
 	})
 
 	/**
-	 * Note that these are GraphQLFieldDefinition and not GraphQLFieldConfig,
+	 * Note that these are FieldDefinition and not FieldConfig,
 	 * so the format for args is different.
 	 */
 
-	SchemaMetaFieldDef = &GraphQLFieldDefinition{
+	SchemaMetaFieldDef = &FieldDefinition{
 		Name:        "__schema",
-		Type:        NewGraphQLNonNull(__Schema),
+		Type:        NewNonNull(__Schema),
 		Description: "Access the current type schema of this server.",
-		Args:        []*GraphQLArgument{},
+		Args:        []*Argument{},
 		Resolve: func(p GQLFRParams) interface{} {
 			return p.Info.Schema
 		},
 	}
-	TypeMetaFieldDef = &GraphQLFieldDefinition{
+	TypeMetaFieldDef = &FieldDefinition{
 		Name:        "__type",
 		Type:        __Type,
 		Description: "Request the type information of a single type.",
-		Args: []*GraphQLArgument{
-			&GraphQLArgument{
+		Args: []*Argument{
+			&Argument{
 				Name: "name",
-				Type: NewGraphQLNonNull(GraphQLString),
+				Type: NewNonNull(String),
 			},
 		},
 		Resolve: func(p GQLFRParams) interface{} {
@@ -446,11 +446,11 @@ mutation operations.`,
 		},
 	}
 
-	TypeNameMetaFieldDef = &GraphQLFieldDefinition{
+	TypeNameMetaFieldDef = &FieldDefinition{
 		Name:        "__typename",
-		Type:        NewGraphQLNonNull(GraphQLString),
+		Type:        NewNonNull(String),
 		Description: "The name of the current Object type at runtime.",
-		Args:        []*GraphQLArgument{},
+		Args:        []*Argument{},
 		Resolve: func(p GQLFRParams) interface{} {
 			return p.Info.ParentType.GetName()
 		},
@@ -473,9 +473,9 @@ mutation operations.`,
  * | Number        | Int / Float          |
  *
  */
-func astFromValue(value interface{}, ttype GraphQLType) ast.Value {
+func astFromValue(value interface{}, ttype Type) ast.Value {
 
-	if ttype, ok := ttype.(*GraphQLNonNull); ok {
+	if ttype, ok := ttype.(*NonNull); ok {
 		// Note: we're not checking that the result is non-null.
 		// This function is not responsible for validating the input value.
 		val := astFromValue(value, ttype.OfType)
@@ -495,9 +495,9 @@ func astFromValue(value interface{}, ttype GraphQLType) ast.Value {
 		return nil
 	}
 
-	// Convert Golang slice to GraphQL list. If the GraphQLType is a list, but
+	// Convert Golang slice to GraphQL list. If the Type is a list, but
 	// the value is not an array, convert the value using the list's item type.
-	if ttype, ok := ttype.(*GraphQLList); ok {
+	if ttype, ok := ttype.(*List); ok {
 		if valueVal.Type().Kind() == reflect.Slice {
 			itemType := ttype.OfType
 			values := []ast.Value{}
@@ -530,7 +530,7 @@ func astFromValue(value interface{}, ttype GraphQLType) ast.Value {
 		})
 	}
 	if value, ok := value.(int); ok {
-		if ttype == GraphQLFloat {
+		if ttype == Float {
 			return ast.NewIntValue(&ast.IntValue{
 				Value: fmt.Sprintf("%v.0", value),
 			})
@@ -551,7 +551,7 @@ func astFromValue(value interface{}, ttype GraphQLType) ast.Value {
 	}
 
 	if value, ok := value.(string); ok {
-		if _, ok := ttype.(*GraphQLEnumType); ok {
+		if _, ok := ttype.(*Enum); ok {
 			return ast.NewEnumValue(&ast.EnumValue{
 				Value: fmt.Sprintf("%v", value),
 			})
