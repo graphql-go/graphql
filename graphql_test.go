@@ -3,15 +3,11 @@ package graphql
 import (
 	"reflect"
 	"testing"
-
-	"github.com/chris-ramon/graphql/types"
-
-	"./testutil"
 )
 
 type T struct {
 	Query    string
-	Schema   types.Schema
+	Schema   Schema
 	Expected interface{}
 }
 
@@ -25,8 +21,8 @@ var (
 					}
 				}
 			`,
-			Schema: testutil.StarWarsSchema,
-			Expected: &types.Result{
+			Schema: StarWarsSchema,
+			Expected: &Result{
 				Data: map[string]interface{}{
 					"hero": map[string]interface{}{
 						"name": "R2-D2",
@@ -46,8 +42,8 @@ var (
 					}
 				}
 				`,
-			Schema: testutil.StarWarsSchema,
-			Expected: &types.Result{
+			Schema: StarWarsSchema,
+			Expected: &Result{
 				Data: map[string]interface{}{
 					"hero": map[string]interface{}{
 						"id":   "2001",
@@ -81,31 +77,31 @@ func TestQuery(t *testing.T) {
 }
 
 func testGraphql(test T, p Params, t *testing.T) {
-	resultChannel := make(chan *types.Result)
+	resultChannel := make(chan *Result)
 	go Graphql(p, resultChannel)
 	result := <-resultChannel
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(result, test.Expected) {
-		t.Fatalf("wrong result, query: %v, graphql result diff: %v", test.Query, testutil.Diff(test.Expected, result))
+		t.Fatalf("wrong result, query: %v, graphql result diff: %v", test.Query, Diff(test.Expected, result))
 	}
 }
 
 func TestBasicGraphQLExample(t *testing.T) {
 	// taken from `graphql-js` README
 
-	helloFieldResolved := func(p types.GQLFRParams) interface{} {
+	helloFieldResolved := func(p GQLFRParams) interface{} {
 		return "world"
 	}
 
-	schema, err := types.NewSchema(types.SchemaConfig{
-		Query: types.NewObject(types.ObjectConfig{
+	schema, err := NewSchema(SchemaConfig{
+		Query: NewObject(ObjectConfig{
 			Name: "RootQueryType",
-			Fields: types.FieldConfigMap{
-				"hello": &types.FieldConfig{
+			Fields: FieldConfigMap{
+				"hello": &FieldConfig{
 					Description: "Returns `world`",
-					Type:        types.String,
+					Type:        String,
 					Resolve:     helloFieldResolved,
 				},
 			},
@@ -120,7 +116,7 @@ func TestBasicGraphQLExample(t *testing.T) {
 		"hello": "world",
 	}
 
-	resultChannel := make(chan *types.Result)
+	resultChannel := make(chan *Result)
 	go Graphql(Params{
 		Schema:        schema,
 		RequestString: query,
@@ -130,7 +126,7 @@ func TestBasicGraphQLExample(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(result.Data, expected) {
-		t.Fatalf("wrong result, query: %v, graphql result diff: %v", query, testutil.Diff(expected, result))
+		t.Fatalf("wrong result, query: %v, graphql result diff: %v", query, Diff(expected, result))
 	}
 
 }
