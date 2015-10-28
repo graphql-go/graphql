@@ -693,11 +693,13 @@ func completeValue(eCtx *ExecutionContext, returnType types.GraphQLType, fieldAS
 }
 
 func defaultResolveFn(p types.GQLFRParams) interface{} {
-
 	// try to resolve p.Source as a struct first
 	sourceVal := reflect.ValueOf(p.Source)
-	if sourceVal.Type().Kind() == reflect.Ptr {
+	if sourceVal.IsValid() && sourceVal.Type().Kind() == reflect.Ptr {
 		sourceVal = sourceVal.Elem()
+	}
+	if !sourceVal.IsValid() {
+		return nil
 	}
 	if sourceVal.Type().Kind() == reflect.Struct {
 		// find field based on struct's json tag
@@ -707,6 +709,10 @@ func defaultResolveFn(p types.GQLFRParams) interface{} {
 		for i := 0; i < sourceVal.NumField(); i++ {
 			valueField := sourceVal.Field(i)
 			typeField := sourceVal.Type().Field(i)
+			// try matching the field name first
+			if typeField.Name == p.Info.FieldName {
+				return valueField.Interface()
+			}
 			tag := typeField.Tag
 			jsonTag := tag.Get("json")
 			jsonOptions := strings.Split(jsonTag, ",")
@@ -718,8 +724,7 @@ func defaultResolveFn(p types.GQLFRParams) interface{} {
 			}
 			return valueField.Interface()
 		}
-		// if we fail, just return back p.Source
-		return p.Source
+		return nil
 	}
 
 	// try p.Source as a map[string]interface
@@ -736,8 +741,8 @@ func defaultResolveFn(p types.GQLFRParams) interface{} {
 		return property
 	}
 
-	// last resort, return p.Source at it is
-	return p.Source
+	// last resort, return nil
+	return nil
 }
 
 /**
@@ -756,11 +761,11 @@ func getFieldDef(schema types.GraphQLSchema, parentType *types.GraphQLObjectType
 	}
 
 	if fieldName == types.SchemaMetaFieldDef.Name &&
-		schema.GetQueryType().Name == parentType.Name {
+		schema.GetQueryType() == parentType {
 		return types.SchemaMetaFieldDef
 	}
 	if fieldName == types.TypeMetaFieldDef.Name &&
-		schema.GetQueryType().Name == parentType.Name {
+		schema.GetQueryType() == parentType {
 		return types.TypeMetaFieldDef
 	}
 	if fieldName == types.TypeNameMetaFieldDef.Name {

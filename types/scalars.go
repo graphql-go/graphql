@@ -2,103 +2,15 @@ package types
 
 import (
 	"fmt"
-	"github.com/chris-ramon/graphql-go/language/ast"
 	"strconv"
+
+	"github.com/chris-ramon/graphql-go/language/ast"
 )
 
-type SerializeFn func(value interface{}) interface{}
-type ParseValueFn func(value interface{}) interface{}
-type ParseLiteralFn func(valueAST ast.Value) interface{}
-type GraphQLScalarTypeConfig struct {
-	Name         string
-	Description  string
-	Serialize    SerializeFn
-	ParseValue   ParseValueFn
-	ParseLiteral ParseLiteralFn
-}
-
-// GraphQLScalarType implements GraphQLType, GraphQLInputType, GraphQLNamedType,
-// 								GraphQLOutputType, etc
-// (TODO: find out what other interfaces GraphQLScalarType implements)
-type GraphQLScalarType struct {
-	Name        string
-	Description string
-
-	scalarConfig GraphQLScalarTypeConfig
-
-	err error
-}
-
-func NewGraphQLScalarType(config GraphQLScalarTypeConfig) *GraphQLScalarType {
-	st := &GraphQLScalarType{}
-	err := invariant(config.Name != "", "Type must be named.")
-	if err != nil {
-		st.err = err
-		return st
-	}
-
-	err = assertValidName(config.Name)
-	if err != nil {
-		st.err = err
-		return st
-	}
-
-	st.Name = config.Name
-	st.Description = config.Description
-
-	err = invariant(
-		config.Serialize != nil,
-		fmt.Sprintf(`%v must provide "serialize" function. If this custom Scalar is `+
-			`also used as an input type, ensure "parseValue" and "parseLiteral" `+
-			`functions are also provided.`, st),
-	)
-	if err != nil {
-		st.err = err
-		return st
-	}
-
-	st.scalarConfig = config
-	return st
-}
-
-func (st *GraphQLScalarType) Serialize(value interface{}) interface{} {
-	if st.scalarConfig.Serialize == nil {
-		return value
-	}
-	return st.scalarConfig.Serialize(value)
-}
-func (st *GraphQLScalarType) ParseValue(value interface{}) interface{} {
-	if st.scalarConfig.ParseValue == nil {
-		return value
-	}
-	return st.scalarConfig.ParseValue(value)
-}
-func (st *GraphQLScalarType) ParseLiteral(valueAST ast.Value) interface{} {
-	if st.scalarConfig.ParseLiteral == nil {
-		return nil
-	}
-	return st.scalarConfig.ParseLiteral(valueAST)
-}
-
-func (st *GraphQLScalarType) GetName() string {
-	return st.Name
-}
-func (st *GraphQLScalarType) GetDescription() string {
-	return st.Description
-
-}
-func (st *GraphQLScalarType) String() string {
-	return st.Name
-}
-
-// TODO: GraphQLScalarType.Coerce() Check if we need this
-func (st *GraphQLScalarType) Coerce(value interface{}) (r interface{}) {
-	return value
-
-}
-func (st *GraphQLScalarType) CoerceLiteral(value interface{}) (r interface{}) {
-	return value
-}
+var (
+	MaxInt = 9007199254740991
+	MinInt = -9007199254740991
+)
 
 func coerceInt(value interface{}) interface{} {
 	switch value := value.(type) {
@@ -110,17 +22,27 @@ func coerceInt(value interface{}) interface{} {
 	case int:
 		return value
 	case float32:
-		return int(value)
+		return intOrNil(int(value))
 	case float64:
-		return int(value)
+		return intOrNil(int(value))
 	case string:
 		val, err := strconv.ParseFloat(value, 0)
 		if err != nil {
-			return int(0)
+			return nil
 		}
 		return coerceInt(val)
 	}
 	return int(0)
+}
+
+// Integers are only safe when between -(2^53 - 1) and 2^53 - 1 due to being
+// encoded in JavaScript and represented in JSON as double-precision floating
+// point numbers, as specified by IEEE 754.
+func intOrNil(value int) interface{} {
+	if value <= MaxInt && value >= MinInt {
+		return value
+	}
+	return nil
 }
 
 var GraphQLInt *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeConfig{
@@ -128,7 +50,6 @@ var GraphQLInt *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeConfig
 	Serialize:  coerceInt,
 	ParseValue: coerceInt,
 	ParseLiteral: func(valueAST ast.Value) interface{} {
-		// TODO: can move this into each ast.Value.GetValue() implementation
 		switch valueAST := valueAST.(type) {
 		case *ast.IntValue:
 			if intValue, err := strconv.Atoi(valueAST.Value); err == nil {
@@ -155,7 +76,7 @@ func coerceFloat32(value interface{}) interface{} {
 	case string:
 		val, err := strconv.ParseFloat(value, 0)
 		if err != nil {
-			return float32(0)
+			return nil
 		}
 		return coerceFloat32(val)
 	}
@@ -167,7 +88,6 @@ var GraphQLFloat *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeConf
 	Serialize:  coerceFloat32,
 	ParseValue: coerceFloat32,
 	ParseLiteral: func(valueAST ast.Value) interface{} {
-		// TODO: can move this into each ast.Value.GetValue() implementation
 		switch valueAST := valueAST.(type) {
 		case *ast.FloatValue:
 			if floatValue, err := strconv.ParseFloat(valueAST.Value, 32); err == nil {
@@ -191,7 +111,6 @@ var GraphQLString *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeCon
 	Serialize:  coerceString,
 	ParseValue: coerceString,
 	ParseLiteral: func(valueAST ast.Value) interface{} {
-		// TODO: can move this into each ast.Value.GetValue() implementation
 		switch valueAST := valueAST.(type) {
 		case *ast.StringValue:
 			return valueAST.Value
@@ -205,10 +124,11 @@ func coerceBool(value interface{}) interface{} {
 	case bool:
 		return value
 	case string:
-		if value == "true" {
-			return true
+		switch value {
+		case "", "false":
+			return false
 		}
-		return false
+		return true
 	case float64:
 		if value != 0 {
 			return true
@@ -233,7 +153,6 @@ var GraphQLBoolean *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeCo
 	Serialize:  coerceBool,
 	ParseValue: coerceBool,
 	ParseLiteral: func(valueAST ast.Value) interface{} {
-		// TODO: can move this into each ast.Value.GetValue() implementation
 		switch valueAST := valueAST.(type) {
 		case *ast.BooleanValue:
 			return valueAST.Value
@@ -247,7 +166,6 @@ var GraphQLID *GraphQLScalarType = NewGraphQLScalarType(GraphQLScalarTypeConfig{
 	Serialize:  coerceString,
 	ParseValue: coerceString,
 	ParseLiteral: func(valueAST ast.Value) interface{} {
-		// TODO: can move this into each ast.Value.GetValue() implementation
 		switch valueAST := valueAST.(type) {
 		case *ast.IntValue:
 			return valueAST.Value
