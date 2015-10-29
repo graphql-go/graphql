@@ -15,7 +15,10 @@ This project was originally a port of [v0.4.3](https://github.com/graphql/graphq
 
 ### Example
 ```go
+package main
+
 import (
+  "encoding/json"
   "github.com/chris-ramon/graphql-go"
   "github.com/chris-ramon/graphql-go/types"
 )
