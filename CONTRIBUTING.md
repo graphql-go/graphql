@@ -55,11 +55,12 @@ The basics are as follows:
 
 2. `go get` the upstream repo and set it up as the `upstream` remote and your own repo as the `origin` remote:
 
-`go get github.com/chris-ramon/graphql-go`
-`cd $GOPATH/src/github.com/chris-ramon/graphql-go`
-`git remote rename origin upstream`
-`git remote add origin git@github.com/YOUR_GITHUB_NAME/graphql-go`
-
+```bash
+$ go get github.com/chris-ramon/graphql-go
+$ cd $GOPATH/src/github.com/chris-ramon/graphql-go
+$ git remote rename origin upstream
+$ git remote add origin git@github.com/YOUR_GITHUB_NAME/graphql-go
+```
 All import paths should now work fine assuming that you've got the
 proper branch checked out.
 
