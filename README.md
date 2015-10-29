@@ -100,12 +100,12 @@ func main() {
 
 ### Other Libraries Related
 * [graphql-go-handler](https://github.com/sogko/graphql-go-handler) == [express-graphql](https://github.com/graphql/express-graphql)  
-Middleware to handle GraphQL queries through HTTP requests. It parses GET/POST params and passes them into Graphql(), which returns JSON response. You can choose not to use it, but you will end up writing similar code. As to whether it should be merged with graphql-go, I think it could possibly be. Or it could remain separate, just like express-graphql. Either way, I'm open to merging it based on the community's decision.
+Middleware to handle GraphQL queries through HTTP requests. It parses GET/POST params and passes them into Graphql(), which returns JSON response. You can choose not to use it, but you will end up writing similar code. As to whether it should be merged with graphql-go, I think it could possibly be. Or it could remain separate, just like express-graphql.
 
 * [graphql-relay-go](https://github.com/sogko/graphql-relay-go) == [graphql-relay-js](https://github.com/graphql/graphql-relay-js)  
 This is a library to construct Relay-compliant servers, which has additional specs for pagination, global IDs and those sort of things. Not needed if you chose to build a pure GraphQL server.
 
-Some of the other projects that I contributed do use graphql-go + graphql-go-handler + graphql-relay-go, but they are specifically Relay applications:
+Some of the other projects that [@sogko](https://github.com/sogko) contributed do use graphql-go + graphql-go-handler + graphql-relay-go, but they are specifically Relay applications:
 
 * [golang-relay-starter-kit](https://github.com/sogko/golang-relay-starter-kit)
 * [todomvc-relay-go](https://github.com/sogko/todomvc-relay-go)
