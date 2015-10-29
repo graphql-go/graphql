@@ -3,6 +3,8 @@ package graphql
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/chris-ramon/graphql/language/ast"
 )
 
 var (
@@ -47,9 +49,9 @@ var Int *Scalar = NewScalar(ScalarConfig{
 	Name:       "Int",
 	Serialize:  coerceInt,
 	ParseValue: coerceInt,
-	ParseLiteral: func(valueAST Value) interface{} {
+	ParseLiteral: func(valueAST ast.Value) interface{} {
 		switch valueAST := valueAST.(type) {
-		case *AstIntValue:
+		case *ast.IntValue:
 			if intValue, err := strconv.Atoi(valueAST.Value); err == nil {
 				return intValue
 			}
@@ -85,13 +87,13 @@ var Float *Scalar = NewScalar(ScalarConfig{
 	Name:       "Float",
 	Serialize:  coerceFloat32,
 	ParseValue: coerceFloat32,
-	ParseLiteral: func(valueAST Value) interface{} {
+	ParseLiteral: func(valueAST ast.Value) interface{} {
 		switch valueAST := valueAST.(type) {
-		case *AstFloatValue:
+		case *ast.FloatValue:
 			if floatValue, err := strconv.ParseFloat(valueAST.Value, 32); err == nil {
 				return floatValue
 			}
-		case *AstIntValue:
+		case *ast.IntValue:
 			if floatValue, err := strconv.ParseFloat(valueAST.Value, 32); err == nil {
 				return floatValue
 			}
@@ -108,9 +110,9 @@ var String *Scalar = NewScalar(ScalarConfig{
 	Name:       "String",
 	Serialize:  coerceString,
 	ParseValue: coerceString,
-	ParseLiteral: func(valueAST Value) interface{} {
+	ParseLiteral: func(valueAST ast.Value) interface{} {
 		switch valueAST := valueAST.(type) {
-		case *AstStringValue:
+		case *ast.StringValue:
 			return valueAST.Value
 		}
 		return ""
@@ -150,9 +152,9 @@ var Boolean *Scalar = NewScalar(ScalarConfig{
 	Name:       "Boolean",
 	Serialize:  coerceBool,
 	ParseValue: coerceBool,
-	ParseLiteral: func(valueAST Value) interface{} {
+	ParseLiteral: func(valueAST ast.Value) interface{} {
 		switch valueAST := valueAST.(type) {
-		case *AstBooleanValue:
+		case *ast.BooleanValue:
 			return valueAST.Value
 		}
 		return false
@@ -163,11 +165,11 @@ var ID *Scalar = NewScalar(ScalarConfig{
 	Name:       "ID",
 	Serialize:  coerceString,
 	ParseValue: coerceString,
-	ParseLiteral: func(valueAST Value) interface{} {
+	ParseLiteral: func(valueAST ast.Value) interface{} {
 		switch valueAST := valueAST.(type) {
-		case *AstIntValue:
+		case *ast.IntValue:
 			return valueAST.Value
-		case *AstStringValue:
+		case *ast.StringValue:
 			return valueAST.Value
 		}
 		return ""

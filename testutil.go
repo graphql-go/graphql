@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/chris-ramon/graphql/language/ast"
 	"github.com/kr/pretty"
 )
 
@@ -340,7 +341,7 @@ func GetHero(episode interface{}) interface{} {
 
 // Test helper functions
 
-func TestParse(t *testing.T, query string) *AstDocument {
+func TestParse(t *testing.T, query string) *ast.Document {
 	astDoc, err := Parse(ParseParams{
 		Source: query,
 		Options: ParseOptions{
@@ -364,7 +365,7 @@ func Diff(a, b interface{}) []string {
 	return pretty.Diff(a, b)
 }
 
-func ASTToJSON(t *testing.T, a Node) interface{} {
+func ASTToJSON(t *testing.T, a ast.Node) interface{} {
 	b, err := json.Marshal(a)
 	if err != nil {
 		t.Fatalf("Failed to marshal Node %v", err)

@@ -1,10 +1,14 @@
 package graphql
 
+import (
+	"github.com/chris-ramon/graphql/gqlerrors"
+)
+
 // type Schema interface{}
 
 type Result struct {
-	Data   interface{}      `json:"data"`
-	Errors []FormattedError `json:"errors,omitempty"`
+	Data   interface{}                `json:"data"`
+	Errors []gqlerrors.FormattedError `json:"errors,omitempty"`
 }
 
 func (r *Result) HasErrors() bool {

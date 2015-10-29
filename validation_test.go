@@ -2,6 +2,8 @@ package graphql
 
 import (
 	"testing"
+
+	"github.com/chris-ramon/graphql/language/ast"
 )
 
 var someScalarType = NewScalar(ScalarConfig{
@@ -12,7 +14,7 @@ var someScalarType = NewScalar(ScalarConfig{
 	ParseValue: func(value interface{}) interface{} {
 		return nil
 	},
-	ParseLiteral: func(valueAST Value) interface{} {
+	ParseLiteral: func(valueAST ast.Value) interface{} {
 		return nil
 	},
 })
@@ -850,7 +852,7 @@ func TestTypeSystem_ScalarTypesMustBeSerializable_AcceptsAScalarTypeDefiningPars
 		ParseValue: func(value interface{}) interface{} {
 			return nil
 		},
-		ParseLiteral: func(valueAST Value) interface{} {
+		ParseLiteral: func(valueAST ast.Value) interface{} {
 			return nil
 		},
 	}))
@@ -881,7 +883,7 @@ func TestTypeSystem_ScalarTypesMustBeSerializable_RejectsAScalarTypeDefiningPars
 		Serialize: func(value interface{}) interface{} {
 			return nil
 		},
-		ParseLiteral: func(valueAST Value) interface{} {
+		ParseLiteral: func(valueAST ast.Value) interface{} {
 			return nil
 		},
 	}))

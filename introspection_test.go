@@ -3,6 +3,9 @@ package graphql
 import (
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql/gqlerrors"
+	"github.com/chris-ramon/graphql/language/location"
 )
 
 func g(t *testing.T, p Params) *Result {
@@ -1208,12 +1211,12 @@ func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testin
       }
     `
 	expected := &Result{
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Field "__type" argument "name" of type "String!" ` +
 					`is required but not provided.`,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 3, Column: 9},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 3, Column: 9},
 				},
 			},
 		},

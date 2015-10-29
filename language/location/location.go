@@ -1,7 +1,9 @@
-package graphql
+package location
 
 import (
 	"regexp"
+
+	"github.com/chris-ramon/graphql/language/source"
 )
 
 type SourceLocation struct {
@@ -9,7 +11,7 @@ type SourceLocation struct {
 	Column int
 }
 
-func GetLocation(s *Source, position int) SourceLocation {
+func GetLocation(s *source.Source, position int) SourceLocation {
 	body := ""
 	if s != nil {
 		body = s.Body

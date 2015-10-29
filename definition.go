@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+
+	"github.com/chris-ramon/graphql/language/ast"
 )
 
 // These are all of the possible kinds of
@@ -162,7 +164,7 @@ type Scalar struct {
 }
 type SerializeFn func(value interface{}) interface{}
 type ParseValueFn func(value interface{}) interface{}
-type ParseLiteralFn func(valueAST Value) interface{}
+type ParseLiteralFn func(valueAST ast.Value) interface{}
 type ScalarConfig struct {
 	Name         string `json:"name"`
 	Description  string `json:"description"`
@@ -224,7 +226,7 @@ func (st *Scalar) ParseValue(value interface{}) interface{} {
 	}
 	return st.scalarConfig.ParseValue(value)
 }
-func (st *Scalar) ParseLiteral(valueAST Value) interface{} {
+func (st *Scalar) ParseLiteral(valueAST ast.Value) interface{} {
 	if st.scalarConfig.ParseLiteral == nil {
 		return nil
 	}
@@ -500,13 +502,13 @@ type FieldResolveFn func(p GQLFRParams) interface{}
 
 type ResolveInfo struct {
 	FieldName      string
-	FieldASTs      []*AstField
+	FieldASTs      []*ast.Field
 	ReturnType     Output
 	ParentType     Composite
 	Schema         Schema
-	Fragments      map[string]Definition
+	Fragments      map[string]ast.Definition
 	RootValue      interface{}
-	Operation      Definition
+	Operation      ast.Definition
 	VariableValues map[string]interface{}
 }
 
@@ -954,8 +956,8 @@ func (gt *Enum) ParseValue(value interface{}) interface{} {
 	}
 	return nil
 }
-func (gt *Enum) ParseLiteral(valueAST Value) interface{} {
-	if valueAST, ok := valueAST.(*AstEnumValue); ok {
+func (gt *Enum) ParseLiteral(valueAST ast.Value) interface{} {
+	if valueAST, ok := valueAST.(*ast.EnumValue); ok {
 		if enumValue, ok := gt.getNameLookup()[valueAST.Value]; ok {
 			return enumValue.Value
 		}

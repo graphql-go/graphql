@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql/gqlerrors"
+	"github.com/chris-ramon/graphql/language/location"
 )
 
 func TestExecutesArbitraryCode(t *testing.T) {
@@ -410,11 +413,11 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 		"sync":      "sync",
 		"syncError": nil,
 	}
-	expectedErrors := []FormattedError{
-		FormattedError{
+	expectedErrors := []gqlerrors.FormattedError{
+		gqlerrors.FormattedError{
 			Message: "Error getting syncError",
-			Locations: []SourceLocation{
-				SourceLocation{
+			Locations: []location.SourceLocation{
+				location.SourceLocation{
 					Line: 3, Column: 7,
 				},
 			},
@@ -564,10 +567,10 @@ func TestThrowsIfNoOperationIsProvidedWithMultipleOperations(t *testing.T) {
 		"a": "b",
 	}
 
-	expectedErrors := []FormattedError{
-		FormattedError{
+	expectedErrors := []gqlerrors.FormattedError{
+		gqlerrors.FormattedError{
 			Message:   "Must provide operation name if query contains multiple operations.",
-			Locations: []SourceLocation{},
+			Locations: []location.SourceLocation{},
 		},
 	}
 
@@ -995,10 +998,10 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 				nil,
 			},
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message:   `Expected value of type "SpecialType" but got: graphql.testNotSpecialType.`,
-				Locations: []SourceLocation{},
+				Locations: []location.SourceLocation{},
 			},
 		},
 	}
@@ -1064,10 +1067,10 @@ func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
 	`
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message:   "GraphQL cannot execute a request containing a ObjectDefinition",
-				Locations: []SourceLocation{},
+				Locations: []location.SourceLocation{},
 			},
 		},
 	}

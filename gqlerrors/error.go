@@ -1,16 +1,20 @@
-package graphql
+package gqlerrors
 
 import (
 	"fmt"
+
+	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/chris-ramon/graphql/language/location"
+	"github.com/chris-ramon/graphql/language/source"
 )
 
 type Error struct {
 	Message   string
 	Stack     string
-	Nodes     []Node
-	Source    *Source
+	Nodes     []ast.Node
+	Source    *source.Source
 	Positions []int
-	Locations []SourceLocation
+	Locations []location.SourceLocation
 }
 
 // implements Golang's built-in `error` interface
@@ -18,7 +22,7 @@ func (g Error) Error() string {
 	return fmt.Sprintf("%v", g.Message)
 }
 
-func NewError(message string, nodes []Node, stack string, source *Source, positions []int) *Error {
+func NewError(message string, nodes []ast.Node, stack string, source *source.Source, positions []int) *Error {
 	if stack == "" && message != "" {
 		stack = message
 	}
@@ -39,9 +43,9 @@ func NewError(message string, nodes []Node, stack string, source *Source, positi
 			positions = append(positions, node.GetLoc().Start)
 		}
 	}
-	locations := []SourceLocation{}
+	locations := []location.SourceLocation{}
 	for _, pos := range positions {
-		loc := GetLocation(source, pos)
+		loc := location.GetLocation(source, pos)
 		locations = append(locations, loc)
 	}
 	return &Error{

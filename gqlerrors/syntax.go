@@ -1,22 +1,26 @@
-package graphql
+package gqlerrors
 
 import (
 	"fmt"
 	"regexp"
+
+	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/chris-ramon/graphql/language/location"
+	"github.com/chris-ramon/graphql/language/source"
 )
 
-func NewSyntaxError(s *Source, position int, description string) *Error {
-	l := GetLocation(s, position)
+func NewSyntaxError(s *source.Source, position int, description string) *Error {
+	l := location.GetLocation(s, position)
 	return NewError(
 		fmt.Sprintf("Syntax Error %s (%d:%d) %s\n\n%s", s.Name, l.Line, l.Column, description, highlightSourceAtLocation(s, l)),
-		[]Node{},
+		[]ast.Node{},
 		"",
 		s,
 		[]int{position},
 	)
 }
 
-func highlightSourceAtLocation(s *Source, l SourceLocation) string {
+func highlightSourceAtLocation(s *source.Source, l location.SourceLocation) string {
 	line := l.Line
 	prevLineNum := fmt.Sprintf("%d", (line - 1))
 	lineNum := fmt.Sprintf("%d", line)

@@ -4,6 +4,9 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+
+	"github.com/chris-ramon/graphql/gqlerrors"
+	"github.com/chris-ramon/graphql/language/location"
 )
 
 var syncError = "sync"
@@ -115,11 +118,11 @@ func TestNonNull_NullsANullableFieldThatThrowsSynchronously(t *testing.T) {
 		Data: map[string]interface{}{
 			"sync": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: syncError,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 3, Column: 9,
 					},
 				},
@@ -153,11 +156,11 @@ func TestNonNull_NullsANullableFieldThatThrowsInAPromise(t *testing.T) {
 		Data: map[string]interface{}{
 			"promise": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: promiseError,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 3, Column: 9,
 					},
 				},
@@ -193,11 +196,11 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANullableFieldThat
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: nonNullSyncError,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 4, Column: 11,
 					},
 				},
@@ -233,11 +236,11 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: nonNullPromiseError,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 4, Column: 11,
 					},
 				},
@@ -273,11 +276,11 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 		Data: map[string]interface{}{
 			"promiseNest": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: nonNullSyncError,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 4, Column: 11,
 					},
 				},
@@ -313,11 +316,11 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 		Data: map[string]interface{}{
 			"promiseNest": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: nonNullPromiseError,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 4, Column: 11,
 					},
 				},
@@ -398,77 +401,77 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				},
 			},
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: syncError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 4, Column: 11},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 4, Column: 11},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: syncError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 7, Column: 13},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 7, Column: 13},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: syncError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 11, Column: 13},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 11, Column: 13},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: syncError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 16, Column: 11},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 16, Column: 11},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: syncError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 19, Column: 13},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 19, Column: 13},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: syncError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 23, Column: 13},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 23, Column: 13},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: promiseError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 5, Column: 11},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 5, Column: 11},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: promiseError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 8, Column: 13},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 8, Column: 13},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: promiseError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 12, Column: 13},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 12, Column: 13},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: promiseError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 17, Column: 11},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 17, Column: 11},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: promiseError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 20, Column: 13},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 20, Column: 13},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: promiseError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 24, Column: 13},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 24, Column: 13},
 				},
 			},
 		},
@@ -489,8 +492,8 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Data, result.Data))
 	}
-	sort.Sort(GQLFormattedErrorSlice(expected.Errors))
-	sort.Sort(GQLFormattedErrorSlice(result.Errors))
+	sort.Sort(gqlerrors.GQLFormattedErrorSlice(expected.Errors))
+	sort.Sort(gqlerrors.GQLFormattedErrorSlice(result.Errors))
 	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Errors, result.Errors))
 	}
@@ -551,29 +554,29 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
 			"anotherNest":        nil,
 			"anotherPromiseNest": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: nonNullSyncError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 8, Column: 19},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 8, Column: 19},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: nonNullSyncError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 19, Column: 19},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 19, Column: 19},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: nonNullPromiseError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 30, Column: 19},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 30, Column: 19},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: nonNullPromiseError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 41, Column: 19},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 41, Column: 19},
 				},
 			},
 		},
@@ -594,8 +597,8 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Data, result.Data))
 	}
-	sort.Sort(GQLFormattedErrorSlice(expected.Errors))
-	sort.Sort(GQLFormattedErrorSlice(result.Errors))
+	sort.Sort(gqlerrors.GQLFormattedErrorSlice(expected.Errors))
+	sort.Sort(gqlerrors.GQLFormattedErrorSlice(result.Errors))
 	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Errors, result.Errors))
 	}
@@ -675,11 +678,11 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullSync.`,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 4, Column: 11},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 4, Column: 11},
 				},
 			},
 		},
@@ -713,11 +716,11 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullPromise.`,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 4, Column: 11},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 4, Column: 11},
 				},
 			},
 		},
@@ -752,11 +755,11 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 		Data: map[string]interface{}{
 			"promiseNest": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullSync.`,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 4, Column: 11},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 4, Column: 11},
 				},
 			},
 		},
@@ -790,11 +793,11 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 		Data: map[string]interface{}{
 			"promiseNest": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullPromise.`,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 4, Column: 11},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 4, Column: 11},
 				},
 			},
 		},
@@ -949,29 +952,29 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldReturnsNullInALongChainOf
 			"anotherNest":        nil,
 			"anotherPromiseNest": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullSync.`,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 8, Column: 19},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 8, Column: 19},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullSync.`,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 19, Column: 19},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 19, Column: 19},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullPromise.`,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 30, Column: 19},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 30, Column: 19},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullPromise.`,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 41, Column: 19},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 41, Column: 19},
 				},
 			},
 		},
@@ -992,8 +995,8 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldReturnsNullInALongChainOf
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Data, result.Data))
 	}
-	sort.Sort(GQLFormattedErrorSlice(expected.Errors))
-	sort.Sort(GQLFormattedErrorSlice(result.Errors))
+	sort.Sort(gqlerrors.GQLFormattedErrorSlice(expected.Errors))
+	sort.Sort(gqlerrors.GQLFormattedErrorSlice(result.Errors))
 	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Errors, result.Errors))
 	}
@@ -1005,11 +1008,11 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldThrows(t *testing.T) {
 	`
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: nonNullSyncError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 2, Column: 17},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 2, Column: 17},
 				},
 			},
 		},
@@ -1037,11 +1040,11 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldErrors(t *testing.T) {
 	`
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: nonNullPromiseError,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 2, Column: 17},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 2, Column: 17},
 				},
 			},
 		},
@@ -1069,11 +1072,11 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldReturnsNull(t *testing.T)
 	`
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullSync.`,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 2, Column: 17},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 2, Column: 17},
 				},
 			},
 		},
@@ -1101,11 +1104,11 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldResolvesNull(t *testing.T
 	`
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Cannot return null for non-nullable field DataType.nonNullPromise.`,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 2, Column: 17},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 2, Column: 17},
 				},
 			},
 		},

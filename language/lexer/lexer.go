@@ -1,7 +1,10 @@
-package graphql
+package lexer
 
 import (
 	"fmt"
+
+	"github.com/chris-ramon/graphql/gqlerrors"
+	"github.com/chris-ramon/graphql/language/source"
 )
 
 const (
@@ -85,7 +88,7 @@ func (t *Token) String() string {
 
 type Lexer func(resetPosition int) (Token, error)
 
-func Lex(s *Source) Lexer {
+func Lex(s *source.Source) Lexer {
 	var prevPosition int
 	return func(resetPosition int) (Token, error) {
 		if resetPosition == 0 {
@@ -102,7 +105,7 @@ func Lex(s *Source) Lexer {
 
 // Reads an alphanumeric + underscore name from the source.
 // [_A-Za-z][_0-9A-Za-z]*
-func readName(source *Source, position int) Token {
+func readName(source *source.Source, position int) Token {
 	body := source.Body
 	bodyLength := len(body)
 	end := position + 1
@@ -125,7 +128,7 @@ func readName(source *Source, position int) Token {
 // or an int depending on whether a decimal point appears.
 // Int:   -?(0|[1-9][0-9]*)
 // Float: -?(0|[1-9][0-9]*)(\.[0-9]+)?((E|e)(+|-)?[0-9]+)?
-func readNumber(s *Source, start int, firstCode rune) (Token, error) {
+func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 	code := firstCode
 	body := s.Body
 	position := start
@@ -139,7 +142,7 @@ func readNumber(s *Source, start int, firstCode rune) (Token, error) {
 		code = charCodeAt(body, position)
 		if code >= 48 && code <= 57 {
 			description := fmt.Sprintf("Invalid number, unexpected digit after 0: \"%c\".", code)
-			return Token{}, NewSyntaxError(s, position, description)
+			return Token{}, gqlerrors.NewSyntaxError(s, position, description)
 		}
 	} else {
 		p, err := readDigits(s, position, code)
@@ -182,7 +185,7 @@ func readNumber(s *Source, start int, firstCode rune) (Token, error) {
 }
 
 // Returns the new position in the source after reading digits.
-func readDigits(s *Source, start int, firstCode rune) (int, error) {
+func readDigits(s *source.Source, start int, firstCode rune) (int, error) {
 	body := s.Body
 	position := start
 	code := firstCode
@@ -204,10 +207,10 @@ func readDigits(s *Source, start int, firstCode rune) (int, error) {
 	} else {
 		description = fmt.Sprintf("Invalid number, expected digit but got: EOF.")
 	}
-	return position, NewSyntaxError(s, position, description)
+	return position, gqlerrors.NewSyntaxError(s, position, description)
 }
 
-func readString(s *Source, start int) (Token, error) {
+func readString(s *source.Source, start int) (Token, error) {
 	body := s.Body
 	position := start + 1
 	chunkStart := position
@@ -253,13 +256,13 @@ func readString(s *Source, start int) (Token, error) {
 						charCodeAt(body, position+4),
 					)
 					if charCode < 0 {
-						return Token{}, NewSyntaxError(s, position, "Bad character escape sequence.")
+						return Token{}, gqlerrors.NewSyntaxError(s, position, "Bad character escape sequence.")
 					}
 					value += fmt.Sprintf("%c", charCode)
 					position += 4
 					break
 				default:
-					return Token{}, NewSyntaxError(s, position, "Bad character escape sequence.")
+					return Token{}, gqlerrors.NewSyntaxError(s, position, "Bad character escape sequence.")
 				}
 				position += 1
 				chunkStart = position
@@ -270,7 +273,7 @@ func readString(s *Source, start int) (Token, error) {
 		}
 	}
 	if code != 34 {
-		return Token{}, NewSyntaxError(s, position, "Unterminated string.")
+		return Token{}, gqlerrors.NewSyntaxError(s, position, "Unterminated string.")
 	}
 	value += body[chunkStart:position]
 	return makeToken(TokenKind[STRING], start, position+1, value), nil
@@ -307,7 +310,7 @@ func makeToken(kind int, start int, end int, value string) Token {
 	return Token{Kind: kind, Start: start, End: end, Value: value}
 }
 
-func readToken(s *Source, fromPosition int) (Token, error) {
+func readToken(s *source.Source, fromPosition int) (Token, error) {
 	body := s.Body
 	bodyLength := len(body)
 	position := positionAfterWhitespace(body, fromPosition)
@@ -385,7 +388,7 @@ func readToken(s *Source, fromPosition int) (Token, error) {
 		return token, nil
 	}
 	description := fmt.Sprintf("Unexpected character \"%c\".", code)
-	return Token{}, NewSyntaxError(s, position, description)
+	return Token{}, gqlerrors.NewSyntaxError(s, position, description)
 }
 
 func charCodeAt(body string, position int) rune {

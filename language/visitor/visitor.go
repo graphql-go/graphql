@@ -1,4 +1,4 @@
-package graphql
+package visitor
 
 import (
 	"encoding/json"

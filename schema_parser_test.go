@@ -3,9 +3,14 @@ package graphql
 import (
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql/gqlerrors"
+	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/chris-ramon/graphql/language/location"
+	"github.com/chris-ramon/graphql/language/source"
 )
 
-func parsee(t *testing.T, query string) *AstDocument {
+func parse(t *testing.T, query string) *ast.Document {
 	astDoc, err := Parse(ParseParams{
 		Source: query,
 		Options: ParseOptions{
@@ -19,8 +24,8 @@ func parsee(t *testing.T, query string) *AstDocument {
 	return astDoc
 }
 
-func testLoc(start int, end int) *AstLocation {
-	return &AstLocation{
+func testLoc(start int, end int) *ast.Location {
+	return &ast.Location{
 		Start: start, End: end,
 	}
 }
@@ -30,28 +35,28 @@ func TestSchemaParser_SimpleType(t *testing.T) {
 type Hello {
   world: String
 }`
-	astDoc := parsee(t, body)
-	expected := NewAstDocument(&AstDocument{
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
 		Loc: testLoc(1, 31),
-		Definitions: []Node{
-			NewAstObjectDefinition(&AstObjectDefinition{
+		Definitions: []ast.Node{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
 				Loc: testLoc(1, 31),
-				Name: NewAstName(&AstName{
+				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   testLoc(6, 11),
 				}),
-				Interfaces: []*AstNamed{},
-				Fields: []*AstFieldDefinition{
-					NewAstFieldDefinition(&AstFieldDefinition{
+				Interfaces: []*ast.Named{},
+				Fields: []*ast.FieldDefinition{
+					ast.NewFieldDefinition(&ast.FieldDefinition{
 						Loc: testLoc(16, 29),
-						Name: NewAstName(&AstName{
+						Name: ast.NewName(&ast.Name{
 							Value: "world",
 							Loc:   testLoc(16, 21),
 						}),
-						Arguments: []*AstInputValueDefinition{},
-						Type: NewAstNamed(&AstNamed{
+						Arguments: []*ast.InputValueDefinition{},
+						Type: ast.NewNamed(&ast.Named{
 							Loc: testLoc(23, 29),
-							Name: NewAstName(&AstName{
+							Name: ast.NewName(&ast.Name{
 								Value: "String",
 								Loc:   testLoc(23, 29),
 							}),
@@ -72,30 +77,30 @@ func TestSchemaParser_SimpleExtension(t *testing.T) {
 extend type Hello {
   world: String
 }`
-	astDoc := parsee(t, body)
-	expected := NewAstDocument(&AstDocument{
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
 		Loc: testLoc(1, 38),
-		Definitions: []Node{
-			NewAstTypeExtensionDefinition(&AstTypeExtensionDefinition{
+		Definitions: []ast.Node{
+			ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
 				Loc: testLoc(1, 38),
-				Definition: NewAstObjectDefinition(&AstObjectDefinition{
+				Definition: ast.NewObjectDefinition(&ast.ObjectDefinition{
 					Loc: testLoc(8, 38),
-					Name: NewAstName(&AstName{
+					Name: ast.NewName(&ast.Name{
 						Value: "Hello",
 						Loc:   testLoc(13, 18),
 					}),
-					Interfaces: []*AstNamed{},
-					Fields: []*AstFieldDefinition{
-						NewAstFieldDefinition(&AstFieldDefinition{
+					Interfaces: []*ast.Named{},
+					Fields: []*ast.FieldDefinition{
+						ast.NewFieldDefinition(&ast.FieldDefinition{
 							Loc: testLoc(23, 36),
-							Name: NewAstName(&AstName{
+							Name: ast.NewName(&ast.Name{
 								Value: "world",
 								Loc:   testLoc(23, 28),
 							}),
-							Arguments: []*AstInputValueDefinition{},
-							Type: NewAstNamed(&AstNamed{
+							Arguments: []*ast.InputValueDefinition{},
+							Type: ast.NewNamed(&ast.Named{
 								Loc: testLoc(30, 36),
-								Name: NewAstName(&AstName{
+								Name: ast.NewName(&ast.Name{
 									Value: "String",
 									Loc:   testLoc(30, 36),
 								}),
@@ -117,31 +122,31 @@ func TestSchemaParser_SimpleNonNullType(t *testing.T) {
 type Hello {
   world: String!
 }`
-	astDoc := parsee(t, body)
-	expected := NewAstDocument(&AstDocument{
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
 		Loc: testLoc(1, 32),
-		Definitions: []Node{
-			NewAstObjectDefinition(&AstObjectDefinition{
+		Definitions: []ast.Node{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
 				Loc: testLoc(1, 32),
-				Name: NewAstName(&AstName{
+				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   testLoc(6, 11),
 				}),
-				Interfaces: []*AstNamed{},
-				Fields: []*AstFieldDefinition{
-					NewAstFieldDefinition(&AstFieldDefinition{
+				Interfaces: []*ast.Named{},
+				Fields: []*ast.FieldDefinition{
+					ast.NewFieldDefinition(&ast.FieldDefinition{
 						Loc: testLoc(16, 30),
-						Name: NewAstName(&AstName{
+						Name: ast.NewName(&ast.Name{
 							Value: "world",
 							Loc:   testLoc(16, 21),
 						}),
-						Arguments: []*AstInputValueDefinition{},
-						Type: NewAstNonNull(&AstNonNull{
+						Arguments: []*ast.InputValueDefinition{},
+						Type: ast.NewNonNull(&ast.NonNull{
 							Kind: "NonNullType",
 							Loc:  testLoc(23, 30),
-							Type: NewAstNamed(&AstNamed{
+							Type: ast.NewNamed(&ast.Named{
 								Loc: testLoc(23, 29),
-								Name: NewAstName(&AstName{
+								Name: ast.NewName(&ast.Name{
 									Value: "String",
 									Loc:   testLoc(23, 29),
 								}),
@@ -159,26 +164,26 @@ type Hello {
 
 func TestSchemaParser_SimpleTypeInheritingInterface(t *testing.T) {
 	body := `type Hello implements World { }`
-	astDoc := parsee(t, body)
-	expected := NewAstDocument(&AstDocument{
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
 		Loc: testLoc(0, 31),
-		Definitions: []Node{
-			NewAstObjectDefinition(&AstObjectDefinition{
+		Definitions: []ast.Node{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
 				Loc: testLoc(0, 31),
-				Name: NewAstName(&AstName{
+				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   testLoc(5, 10),
 				}),
-				Interfaces: []*AstNamed{
-					NewAstNamed(&AstNamed{
-						Name: NewAstName(&AstName{
+				Interfaces: []*ast.Named{
+					ast.NewNamed(&ast.Named{
+						Name: ast.NewName(&ast.Name{
 							Value: "World",
 							Loc:   testLoc(22, 27),
 						}),
 						Loc: testLoc(22, 27),
 					}),
 				},
-				Fields: []*AstFieldDefinition{},
+				Fields: []*ast.FieldDefinition{},
 			}),
 		},
 	})
@@ -189,33 +194,33 @@ func TestSchemaParser_SimpleTypeInheritingInterface(t *testing.T) {
 
 func TestSchemaParser_SimpleTypeInheritingMultipleInterfaces(t *testing.T) {
 	body := `type Hello implements Wo, rld { }`
-	astDoc := parsee(t, body)
-	expected := NewAstDocument(&AstDocument{
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
 		Loc: testLoc(0, 33),
-		Definitions: []Node{
-			NewAstObjectDefinition(&AstObjectDefinition{
+		Definitions: []ast.Node{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
 				Loc: testLoc(0, 33),
-				Name: NewAstName(&AstName{
+				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   testLoc(5, 10),
 				}),
-				Interfaces: []*AstNamed{
-					NewAstNamed(&AstNamed{
-						Name: NewAstName(&AstName{
+				Interfaces: []*ast.Named{
+					ast.NewNamed(&ast.Named{
+						Name: ast.NewName(&ast.Name{
 							Value: "Wo",
 							Loc:   testLoc(22, 24),
 						}),
 						Loc: testLoc(22, 24),
 					}),
-					NewAstNamed(&AstNamed{
-						Name: NewAstName(&AstName{
+					ast.NewNamed(&ast.Named{
+						Name: ast.NewName(&ast.Name{
 							Value: "rld",
 							Loc:   testLoc(26, 29),
 						}),
 						Loc: testLoc(26, 29),
 					}),
 				},
-				Fields: []*AstFieldDefinition{},
+				Fields: []*ast.FieldDefinition{},
 			}),
 		},
 	})
@@ -226,19 +231,19 @@ func TestSchemaParser_SimpleTypeInheritingMultipleInterfaces(t *testing.T) {
 
 func TestSchemaParser_SingleValueEnum(t *testing.T) {
 	body := `enum Hello { WORLD }`
-	astDoc := parsee(t, body)
-	expected := NewAstDocument(&AstDocument{
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
 		Loc: testLoc(0, 20),
-		Definitions: []Node{
-			NewAstEnumDefinition(&AstEnumDefinition{
+		Definitions: []ast.Node{
+			ast.NewEnumDefinition(&ast.EnumDefinition{
 				Loc: testLoc(0, 20),
-				Name: NewAstName(&AstName{
+				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   testLoc(5, 10),
 				}),
-				Values: []*AstEnumValueDefinition{
-					NewAstEnumValueDefinition(&AstEnumValueDefinition{
-						Name: NewAstName(&AstName{
+				Values: []*ast.EnumValueDefinition{
+					ast.NewEnumValueDefinition(&ast.EnumValueDefinition{
+						Name: ast.NewName(&ast.Name{
 							Value: "WORLD",
 							Loc:   testLoc(13, 18),
 						}),
@@ -255,26 +260,26 @@ func TestSchemaParser_SingleValueEnum(t *testing.T) {
 
 func TestSchemaParser_DoubleValueEnum(t *testing.T) {
 	body := `enum Hello { WO, RLD }`
-	astDoc := parsee(t, body)
-	expected := NewAstDocument(&AstDocument{
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
 		Loc: testLoc(0, 22),
-		Definitions: []Node{
-			NewAstEnumDefinition(&AstEnumDefinition{
+		Definitions: []ast.Node{
+			ast.NewEnumDefinition(&ast.EnumDefinition{
 				Loc: testLoc(0, 22),
-				Name: NewAstName(&AstName{
+				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   testLoc(5, 10),
 				}),
-				Values: []*AstEnumValueDefinition{
-					NewAstEnumValueDefinition(&AstEnumValueDefinition{
-						Name: NewAstName(&AstName{
+				Values: []*ast.EnumValueDefinition{
+					ast.NewEnumValueDefinition(&ast.EnumValueDefinition{
+						Name: ast.NewName(&ast.Name{
 							Value: "WO",
 							Loc:   testLoc(13, 15),
 						}),
 						Loc: testLoc(13, 15),
 					}),
-					NewAstEnumValueDefinition(&AstEnumValueDefinition{
-						Name: NewAstName(&AstName{
+					ast.NewEnumValueDefinition(&ast.EnumValueDefinition{
+						Name: ast.NewName(&ast.Name{
 							Value: "RLD",
 							Loc:   testLoc(17, 20),
 						}),
@@ -294,27 +299,27 @@ func TestSchemaParser_SimpleInterface(t *testing.T) {
 interface Hello {
   world: String
 }`
-	astDoc := parsee(t, body)
-	expected := NewAstDocument(&AstDocument{
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
 		Loc: testLoc(1, 36),
-		Definitions: []Node{
-			NewAstInterfaceDefinition(&AstInterfaceDefinition{
+		Definitions: []ast.Node{
+			ast.NewInterfaceDefinition(&ast.InterfaceDefinition{
 				Loc: testLoc(1, 36),
-				Name: NewAstName(&AstName{
+				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   testLoc(11, 16),
 				}),
-				Fields: []*AstFieldDefinition{
-					NewAstFieldDefinition(&AstFieldDefinition{
+				Fields: []*ast.FieldDefinition{
+					ast.NewFieldDefinition(&ast.FieldDefinition{
 						Loc: testLoc(21, 34),
-						Name: NewAstName(&AstName{
+						Name: ast.NewName(&ast.Name{
 							Value: "world",
 							Loc:   testLoc(21, 26),
 						}),
-						Arguments: []*AstInputValueDefinition{},
-						Type: NewAstNamed(&AstNamed{
+						Arguments: []*ast.InputValueDefinition{},
+						Type: ast.NewNamed(&ast.Named{
 							Loc: testLoc(28, 34),
-							Name: NewAstName(&AstName{
+							Name: ast.NewName(&ast.Name{
 								Value: "String",
 								Loc:   testLoc(28, 34),
 							}),
@@ -334,34 +339,34 @@ func TestSchemaParser_SimpleFieldWithArg(t *testing.T) {
 type Hello {
   world(flag: Boolean): String
 }`
-	astDoc := parsee(t, body)
-	expected := NewAstDocument(&AstDocument{
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
 		Loc: testLoc(1, 46),
-		Definitions: []Node{
-			NewAstObjectDefinition(&AstObjectDefinition{
+		Definitions: []ast.Node{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
 				Loc: testLoc(1, 46),
-				Name: NewAstName(&AstName{
+				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   testLoc(6, 11),
 				}),
-				Interfaces: []*AstNamed{},
-				Fields: []*AstFieldDefinition{
-					NewAstFieldDefinition(&AstFieldDefinition{
+				Interfaces: []*ast.Named{},
+				Fields: []*ast.FieldDefinition{
+					ast.NewFieldDefinition(&ast.FieldDefinition{
 						Loc: testLoc(16, 44),
-						Name: NewAstName(&AstName{
+						Name: ast.NewName(&ast.Name{
 							Value: "world",
 							Loc:   testLoc(16, 21),
 						}),
-						Arguments: []*AstInputValueDefinition{
-							NewAstInputValueDefinition(&AstInputValueDefinition{
+						Arguments: []*ast.InputValueDefinition{
+							ast.NewInputValueDefinition(&ast.InputValueDefinition{
 								Loc: testLoc(22, 35),
-								Name: NewAstName(&AstName{
+								Name: ast.NewName(&ast.Name{
 									Value: "flag",
 									Loc:   testLoc(22, 26),
 								}),
-								Type: NewAstNamed(&AstNamed{
+								Type: ast.NewNamed(&ast.Named{
 									Loc: testLoc(28, 35),
-									Name: NewAstName(&AstName{
+									Name: ast.NewName(&ast.Name{
 										Value: "Boolean",
 										Loc:   testLoc(28, 35),
 									}),
@@ -369,9 +374,9 @@ type Hello {
 								DefaultValue: nil,
 							}),
 						},
-						Type: NewAstNamed(&AstNamed{
+						Type: ast.NewNamed(&ast.Named{
 							Loc: testLoc(38, 44),
-							Name: NewAstName(&AstName{
+							Name: ast.NewName(&ast.Name{
 								Value: "String",
 								Loc:   testLoc(38, 44),
 							}),
@@ -391,47 +396,47 @@ func TestSchemaParser_SimpleFieldWithArgWithDefaultValue(t *testing.T) {
 type Hello {
   world(flag: Boolean = true): String
 }`
-	astDoc := parsee(t, body)
-	expected := NewAstDocument(&AstDocument{
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
 		Loc: testLoc(1, 53),
-		Definitions: []Node{
-			NewAstObjectDefinition(&AstObjectDefinition{
+		Definitions: []ast.Node{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
 				Loc: testLoc(1, 53),
-				Name: NewAstName(&AstName{
+				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   testLoc(6, 11),
 				}),
-				Interfaces: []*AstNamed{},
-				Fields: []*AstFieldDefinition{
-					NewAstFieldDefinition(&AstFieldDefinition{
+				Interfaces: []*ast.Named{},
+				Fields: []*ast.FieldDefinition{
+					ast.NewFieldDefinition(&ast.FieldDefinition{
 						Loc: testLoc(16, 51),
-						Name: NewAstName(&AstName{
+						Name: ast.NewName(&ast.Name{
 							Value: "world",
 							Loc:   testLoc(16, 21),
 						}),
-						Arguments: []*AstInputValueDefinition{
-							NewAstInputValueDefinition(&AstInputValueDefinition{
+						Arguments: []*ast.InputValueDefinition{
+							ast.NewInputValueDefinition(&ast.InputValueDefinition{
 								Loc: testLoc(22, 42),
-								Name: NewAstName(&AstName{
+								Name: ast.NewName(&ast.Name{
 									Value: "flag",
 									Loc:   testLoc(22, 26),
 								}),
-								Type: NewAstNamed(&AstNamed{
+								Type: ast.NewNamed(&ast.Named{
 									Loc: testLoc(28, 35),
-									Name: NewAstName(&AstName{
+									Name: ast.NewName(&ast.Name{
 										Value: "Boolean",
 										Loc:   testLoc(28, 35),
 									}),
 								}),
-								DefaultValue: NewAstBooleanValue(&AstBooleanValue{
+								DefaultValue: ast.NewBooleanValue(&ast.BooleanValue{
 									Value: true,
 									Loc:   testLoc(38, 42),
 								}),
 							}),
 						},
-						Type: NewAstNamed(&AstNamed{
+						Type: ast.NewNamed(&ast.Named{
 							Loc: testLoc(45, 51),
-							Name: NewAstName(&AstName{
+							Name: ast.NewName(&ast.Name{
 								Value: "String",
 								Loc:   testLoc(45, 51),
 							}),
@@ -451,36 +456,36 @@ func TestSchemaParser_SimpleFieldWithListArg(t *testing.T) {
 type Hello {
   world(things: [String]): String
 }`
-	astDoc := parsee(t, body)
-	expected := NewAstDocument(&AstDocument{
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
 		Loc: testLoc(1, 49),
-		Definitions: []Node{
-			NewAstObjectDefinition(&AstObjectDefinition{
+		Definitions: []ast.Node{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
 				Loc: testLoc(1, 49),
-				Name: NewAstName(&AstName{
+				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   testLoc(6, 11),
 				}),
-				Interfaces: []*AstNamed{},
-				Fields: []*AstFieldDefinition{
-					NewAstFieldDefinition(&AstFieldDefinition{
+				Interfaces: []*ast.Named{},
+				Fields: []*ast.FieldDefinition{
+					ast.NewFieldDefinition(&ast.FieldDefinition{
 						Loc: testLoc(16, 47),
-						Name: NewAstName(&AstName{
+						Name: ast.NewName(&ast.Name{
 							Value: "world",
 							Loc:   testLoc(16, 21),
 						}),
-						Arguments: []*AstInputValueDefinition{
-							NewAstInputValueDefinition(&AstInputValueDefinition{
+						Arguments: []*ast.InputValueDefinition{
+							ast.NewInputValueDefinition(&ast.InputValueDefinition{
 								Loc: testLoc(22, 38),
-								Name: NewAstName(&AstName{
+								Name: ast.NewName(&ast.Name{
 									Value: "things",
 									Loc:   testLoc(22, 28),
 								}),
-								Type: NewAstList(&AstList{
+								Type: ast.NewList(&ast.List{
 									Loc: testLoc(30, 38),
-									Type: NewAstNamed(&AstNamed{
+									Type: ast.NewNamed(&ast.Named{
 										Loc: testLoc(31, 37),
-										Name: NewAstName(&AstName{
+										Name: ast.NewName(&ast.Name{
 											Value: "String",
 											Loc:   testLoc(31, 37),
 										}),
@@ -489,9 +494,9 @@ type Hello {
 								DefaultValue: nil,
 							}),
 						},
-						Type: NewAstNamed(&AstNamed{
+						Type: ast.NewNamed(&ast.Named{
 							Loc: testLoc(41, 47),
-							Name: NewAstName(&AstName{
+							Name: ast.NewName(&ast.Name{
 								Value: "String",
 								Loc:   testLoc(41, 47),
 							}),
@@ -511,49 +516,49 @@ func TestSchemaParser_SimpleFieldWithTwoArg(t *testing.T) {
 type Hello {
   world(argOne: Boolean, argTwo: Int): String
 }`
-	astDoc := parsee(t, body)
-	expected := NewAstDocument(&AstDocument{
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
 		Loc: testLoc(1, 61),
-		Definitions: []Node{
-			NewAstObjectDefinition(&AstObjectDefinition{
+		Definitions: []ast.Node{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
 				Loc: testLoc(1, 61),
-				Name: NewAstName(&AstName{
+				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   testLoc(6, 11),
 				}),
-				Interfaces: []*AstNamed{},
-				Fields: []*AstFieldDefinition{
-					NewAstFieldDefinition(&AstFieldDefinition{
+				Interfaces: []*ast.Named{},
+				Fields: []*ast.FieldDefinition{
+					ast.NewFieldDefinition(&ast.FieldDefinition{
 						Loc: testLoc(16, 59),
-						Name: NewAstName(&AstName{
+						Name: ast.NewName(&ast.Name{
 							Value: "world",
 							Loc:   testLoc(16, 21),
 						}),
-						Arguments: []*AstInputValueDefinition{
-							NewAstInputValueDefinition(&AstInputValueDefinition{
+						Arguments: []*ast.InputValueDefinition{
+							ast.NewInputValueDefinition(&ast.InputValueDefinition{
 								Loc: testLoc(22, 37),
-								Name: NewAstName(&AstName{
+								Name: ast.NewName(&ast.Name{
 									Value: "argOne",
 									Loc:   testLoc(22, 28),
 								}),
-								Type: NewAstNamed(&AstNamed{
+								Type: ast.NewNamed(&ast.Named{
 									Loc: testLoc(30, 37),
-									Name: NewAstName(&AstName{
+									Name: ast.NewName(&ast.Name{
 										Value: "Boolean",
 										Loc:   testLoc(30, 37),
 									}),
 								}),
 								DefaultValue: nil,
 							}),
-							NewAstInputValueDefinition(&AstInputValueDefinition{
+							ast.NewInputValueDefinition(&ast.InputValueDefinition{
 								Loc: testLoc(39, 50),
-								Name: NewAstName(&AstName{
+								Name: ast.NewName(&ast.Name{
 									Value: "argTwo",
 									Loc:   testLoc(39, 45),
 								}),
-								Type: NewAstNamed(&AstNamed{
+								Type: ast.NewNamed(&ast.Named{
 									Loc: testLoc(47, 50),
-									Name: NewAstName(&AstName{
+									Name: ast.NewName(&ast.Name{
 										Value: "Int",
 										Loc:   testLoc(47, 50),
 									}),
@@ -561,9 +566,9 @@ type Hello {
 								DefaultValue: nil,
 							}),
 						},
-						Type: NewAstNamed(&AstNamed{
+						Type: ast.NewNamed(&ast.Named{
 							Loc: testLoc(53, 59),
-							Name: NewAstName(&AstName{
+							Name: ast.NewName(&ast.Name{
 								Value: "String",
 								Loc:   testLoc(53, 59),
 							}),
@@ -580,20 +585,20 @@ type Hello {
 
 func TestSchemaParser_SimpleUnion(t *testing.T) {
 	body := `union Hello = World`
-	astDoc := parsee(t, body)
-	expected := NewAstDocument(&AstDocument{
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
 		Loc: testLoc(0, 19),
-		Definitions: []Node{
-			NewAstUnionDefinition(&AstUnionDefinition{
+		Definitions: []ast.Node{
+			ast.NewUnionDefinition(&ast.UnionDefinition{
 				Loc: testLoc(0, 19),
-				Name: NewAstName(&AstName{
+				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   testLoc(6, 11),
 				}),
-				Types: []*AstNamed{
-					NewAstNamed(&AstNamed{
+				Types: []*ast.Named{
+					ast.NewNamed(&ast.Named{
 						Loc: testLoc(14, 19),
-						Name: NewAstName(&AstName{
+						Name: ast.NewName(&ast.Name{
 							Value: "World",
 							Loc:   testLoc(14, 19),
 						}),
@@ -609,27 +614,27 @@ func TestSchemaParser_SimpleUnion(t *testing.T) {
 
 func TestSchemaParser_UnionWithTwoTypes(t *testing.T) {
 	body := `union Hello = Wo | Rld`
-	astDoc := parsee(t, body)
-	expected := NewAstDocument(&AstDocument{
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
 		Loc: testLoc(0, 22),
-		Definitions: []Node{
-			NewAstUnionDefinition(&AstUnionDefinition{
+		Definitions: []ast.Node{
+			ast.NewUnionDefinition(&ast.UnionDefinition{
 				Loc: testLoc(0, 22),
-				Name: NewAstName(&AstName{
+				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   testLoc(6, 11),
 				}),
-				Types: []*AstNamed{
-					NewAstNamed(&AstNamed{
+				Types: []*ast.Named{
+					ast.NewNamed(&ast.Named{
 						Loc: testLoc(14, 16),
-						Name: NewAstName(&AstName{
+						Name: ast.NewName(&ast.Name{
 							Value: "Wo",
 							Loc:   testLoc(14, 16),
 						}),
 					}),
-					NewAstNamed(&AstNamed{
+					ast.NewNamed(&ast.Named{
 						Loc: testLoc(19, 22),
-						Name: NewAstName(&AstName{
+						Name: ast.NewName(&ast.Name{
 							Value: "Rld",
 							Loc:   testLoc(19, 22),
 						}),
@@ -645,13 +650,13 @@ func TestSchemaParser_UnionWithTwoTypes(t *testing.T) {
 
 func TestSchemaParser_Scalar(t *testing.T) {
 	body := `scalar Hello`
-	astDoc := parsee(t, body)
-	expected := NewAstDocument(&AstDocument{
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
 		Loc: testLoc(0, 12),
-		Definitions: []Node{
-			NewAstScalarDefinition(&AstScalarDefinition{
+		Definitions: []ast.Node{
+			ast.NewScalarDefinition(&ast.ScalarDefinition{
 				Loc: testLoc(0, 12),
-				Name: NewAstName(&AstName{
+				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   testLoc(7, 12),
 				}),
@@ -668,26 +673,26 @@ func TestSchemaParser_SimpleInputObject(t *testing.T) {
 input Hello {
   world: String
 }`
-	astDoc := parsee(t, body)
-	expected := NewAstDocument(&AstDocument{
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
 		Loc: testLoc(1, 32),
-		Definitions: []Node{
-			NewAstInputObjectDefinition(&AstInputObjectDefinition{
+		Definitions: []ast.Node{
+			ast.NewInputObjectDefinition(&ast.InputObjectDefinition{
 				Loc: testLoc(1, 32),
-				Name: NewAstName(&AstName{
+				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   testLoc(7, 12),
 				}),
-				Fields: []*AstInputValueDefinition{
-					NewAstInputValueDefinition(&AstInputValueDefinition{
+				Fields: []*ast.InputValueDefinition{
+					ast.NewInputValueDefinition(&ast.InputValueDefinition{
 						Loc: testLoc(17, 30),
-						Name: NewAstName(&AstName{
+						Name: ast.NewName(&ast.Name{
 							Value: "world",
 							Loc:   testLoc(17, 22),
 						}),
-						Type: NewAstNamed(&AstNamed{
+						Type: ast.NewNamed(&ast.Named{
 							Loc: testLoc(24, 30),
-							Name: NewAstName(&AstName{
+							Name: ast.NewName(&ast.Name{
 								Value: "String",
 								Loc:   testLoc(24, 30),
 							}),
@@ -717,7 +722,7 @@ input Hello {
 		},
 	})
 
-	expectedError := &Error{
+	expectedError := &gqlerrors.Error{
 		Message: `Syntax Error GraphQL (3:8) Expected :, found (
 
 2: input Hello {
@@ -732,8 +737,8 @@ input Hello {
           ^
 4: }
 `,
-		Nodes: []Node{},
-		Source: &Source{
+		Nodes: []ast.Node{},
+		Source: &source.Source{
 			Body: `
 input Hello {
   world(foo: Int): String
@@ -741,7 +746,7 @@ input Hello {
 			Name: "GraphQL",
 		},
 		Positions: []int{22},
-		Locations: []SourceLocation{
+		Locations: []location.SourceLocation{
 			{Line: 3, Column: 8},
 		},
 	}

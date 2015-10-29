@@ -1,8 +1,10 @@
-package graphql
+package lexer
 
 import (
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql/language/source"
 )
 
 type Test struct {
@@ -10,8 +12,8 @@ type Test struct {
 	Expected interface{}
 }
 
-func createSource(body string) *Source {
-	return NewSource(&Source{Body: body})
+func createSource(body string) *source.Source {
+	return source.NewSource(&source.Source{Body: body})
 }
 
 func TestSkipsWhiteSpace(t *testing.T) {
@@ -52,7 +54,7 @@ func TestSkipsWhiteSpace(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		token, err := Lex(&Source{Body: test.Body})(0)
+		token, err := Lex(&source.Source{Body: test.Body})(0)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -136,7 +138,7 @@ func TestLexesStrings(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		token, err := Lex(&Source{Body: test.Body})(0)
+		token, err := Lex(&source.Source{Body: test.Body})(0)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

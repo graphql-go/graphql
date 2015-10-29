@@ -3,6 +3,8 @@ package graphql
 import (
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql/gqlerrors"
 )
 
 var enumTypeTestColorType = NewEnum(EnumConfig{
@@ -150,8 +152,8 @@ func TestTypeSystem_EnumValues_DoesNotAcceptStringLiterals(t *testing.T) {
 	query := `{ colorEnum(fromEnum: "GREEN") }`
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Argument "fromEnum" expected type "Color" but got: "GREEN".`,
 			},
 		},
@@ -178,8 +180,8 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueInPlaceOfEnumLiteral(t 
 	query := `{ colorEnum(fromEnum: 1) }`
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Argument "fromEnum" expected type "Color" but got: 1.`,
 			},
 		},
@@ -195,8 +197,8 @@ func TestTypeSystem_EnumValues_DoesNotAcceptEnumLiteralInPlaceOfInt(t *testing.T
 	query := `{ colorEnum(fromInt: GREEN) }`
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Argument "fromInt" expected type "Int" but got: GREEN.`,
 			},
 		},
@@ -246,8 +248,8 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueAsEnumVariable(t *testi
 	}
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$color" expected value of type "Color!" but got: 2.`,
 			},
 		},
@@ -265,8 +267,8 @@ func TestTypeSystem_EnumValues_DoesNotAcceptStringVariablesAsEnumInput(t *testin
 	}
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$color" of type "String!" used in position expecting type "Color".`,
 			},
 		},
@@ -284,8 +286,8 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueVariableAsEnumInput(t *
 	}
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$color" of type "Int!" used in position expecting type "Color".`,
 			},
 		},

@@ -1,4 +1,4 @@
-package graphql
+package printer
 
 import (
 	"io/ioutil"

@@ -1,11 +1,10 @@
-package graphql
+package gqlerrors
 
 import (
-	"github.com/chris-ramon/graphql/gqlerrors"
 	"github.com/chris-ramon/graphql/language/ast"
 )
 
-func NewLocatedError(err interface{}, nodes []ast.Node) *gqlerrors.Error {
+func NewLocatedError(err interface{}, nodes []ast.Node) *Error {
 	message := "An unknown error occurred."
 	if err, ok := err.(error); ok {
 		message = err.Error()
@@ -14,7 +13,7 @@ func NewLocatedError(err interface{}, nodes []ast.Node) *gqlerrors.Error {
 		message = err
 	}
 	stack := message
-	return gqlerrors.NewError(
+	return NewError(
 		message,
 		nodes,
 		stack,

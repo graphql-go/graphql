@@ -2,21 +2,23 @@ package graphql
 
 import (
 	"fmt"
-
 	"reflect"
 	"strings"
+
+	"github.com/chris-ramon/graphql/gqlerrors"
+	"github.com/chris-ramon/graphql/language/ast"
 )
 
 type ExecuteParams struct {
 	Schema        Schema
 	Root          interface{}
-	AST           *AstDocument
+	AST           *ast.Document
 	OperationName string
 	Args          map[string]interface{}
 }
 
 func Execute(p ExecuteParams, resultChan chan *Result) {
-	var errors []FormattedError
+	var errors []gqlerrors.FormattedError
 	var result Result
 	params := BuildExecutionCtxParams{
 		Schema:        p.Schema,
@@ -36,9 +38,9 @@ func Execute(p ExecuteParams, resultChan chan *Result) {
 		if r := recover(); r != nil {
 			var err error
 			if r, ok := r.(error); ok {
-				err = FormatError(r)
+				err = gqlerrors.FormatError(r)
 			}
-			exeContext.Errors = append(exeContext.Errors, FormatError(err))
+			exeContext.Errors = append(exeContext.Errors, gqlerrors.FormatError(err))
 			result.Errors = exeContext.Errors
 			resultChan <- &result
 		}
@@ -54,42 +56,42 @@ func Execute(p ExecuteParams, resultChan chan *Result) {
 type BuildExecutionCtxParams struct {
 	Schema        Schema
 	Root          interface{}
-	AST           *AstDocument
+	AST           *ast.Document
 	OperationName string
 	Args          map[string]interface{}
-	Errors        []FormattedError
+	Errors        []gqlerrors.FormattedError
 	Result        *Result
 	ResultChan    chan *Result
 }
 type ExecutionContext struct {
 	Schema         Schema
-	Fragments      map[string]Definition
+	Fragments      map[string]ast.Definition
 	Root           interface{}
-	Operation      Definition
+	Operation      ast.Definition
 	VariableValues map[string]interface{}
-	Errors         []FormattedError
+	Errors         []gqlerrors.FormattedError
 }
 
 func buildExecutionContext(p BuildExecutionCtxParams) *ExecutionContext {
 	eCtx := &ExecutionContext{}
-	operations := map[string]Definition{}
-	fragments := map[string]Definition{}
+	operations := map[string]ast.Definition{}
+	fragments := map[string]ast.Definition{}
 	for _, statement := range p.AST.Definitions {
 		switch stm := statement.(type) {
-		case *AstOperationDefinition:
+		case *ast.OperationDefinition:
 			key := ""
 			if stm.GetName() != nil && stm.GetName().Value != "" {
 				key = stm.GetName().Value
 			}
 			operations[key] = stm
-		case *AstFragmentDefinition:
+		case *ast.FragmentDefinition:
 			key := ""
 			if stm.GetName() != nil && stm.GetName().Value != "" {
 				key = stm.GetName().Value
 			}
 			fragments[key] = stm
 		default:
-			err := NewFormattedError(
+			err := gqlerrors.NewFormattedError(
 				fmt.Sprintf("GraphQL cannot execute a request containing a %v", statement.GetKind()),
 			)
 			p.Result.Errors = append(p.Result.Errors, err)
@@ -98,7 +100,7 @@ func buildExecutionContext(p BuildExecutionCtxParams) *ExecutionContext {
 		}
 	}
 	if (p.OperationName == "") && (len(operations) != 1) {
-		err := NewFormattedError("Must provide operation name if query contains multiple operations.")
+		err := gqlerrors.NewFormattedError("Must provide operation name if query contains multiple operations.")
 		p.Result.Errors = append(p.Result.Errors, err)
 		p.ResultChan <- p.Result
 		return eCtx
@@ -113,14 +115,14 @@ func buildExecutionContext(p BuildExecutionCtxParams) *ExecutionContext {
 	}
 	operation, found := operations[opName]
 	if !found {
-		err := NewFormattedError(fmt.Sprintf(`Unknown operation named "%v".`, opName))
+		err := gqlerrors.NewFormattedError(fmt.Sprintf(`Unknown operation named "%v".`, opName))
 		p.Result.Errors = append(p.Result.Errors, err)
 		p.ResultChan <- p.Result
 		return eCtx
 	}
 	variableValues, err := getVariableValues(p.Schema, operation.GetVariableDefinitions(), p.Args)
 	if err != nil {
-		p.Result.Errors = append(p.Result.Errors, FormatError(err))
+		p.Result.Errors = append(p.Result.Errors, gqlerrors.FormatError(err))
 		p.ResultChan <- p.Result
 		return eCtx
 	}
@@ -137,7 +139,7 @@ func buildExecutionContext(p BuildExecutionCtxParams) *ExecutionContext {
 type ExecuteOperationParams struct {
 	ExecutionContext *ExecutionContext
 	Root             interface{}
-	Operation        Definition
+	Operation        ast.Definition
 }
 
 func executeOperation(p ExecuteOperationParams, resultChan chan *Result) {
@@ -166,10 +168,10 @@ func executeOperation(p ExecuteOperationParams, resultChan chan *Result) {
 }
 
 // Extracts the root type of the operation from the schema.
-func getOperationRootType(schema Schema, operation Definition, r chan *Result) (objType *Object) {
+func getOperationRootType(schema Schema, operation ast.Definition, r chan *Result) (objType *Object) {
 	if operation == nil {
 		var result Result
-		err := NewFormattedError("Can only execute queries and mutations")
+		err := gqlerrors.NewFormattedError("Can only execute queries and mutations")
 		result.Errors = append(result.Errors, err)
 		r <- &result
 		return objType
@@ -181,7 +183,7 @@ func getOperationRootType(schema Schema, operation Definition, r chan *Result) (
 		mutationType := schema.GetMutationType()
 		if mutationType.Name == "" {
 			var result Result
-			err := NewFormattedError("Schema is not configured for mutations")
+			err := gqlerrors.NewFormattedError("Schema is not configured for mutations")
 			result.Errors = append(result.Errors, err)
 			r <- &result
 			return objType
@@ -189,7 +191,7 @@ func getOperationRootType(schema Schema, operation Definition, r chan *Result) (
 		return mutationType
 	default:
 		var result Result
-		err := NewFormattedError("Can only execute queries and mutations")
+		err := gqlerrors.NewFormattedError("Can only execute queries and mutations")
 		result.Errors = append(result.Errors, err)
 		r <- &result
 		return objType
@@ -200,7 +202,7 @@ type ExecuteFieldsParams struct {
 	ExecutionContext *ExecutionContext
 	ParentType       *Object
 	Source           interface{}
-	Fields           map[string][]*AstField
+	Fields           map[string][]*ast.Field
 }
 
 // Implements the "Evaluating selection sets" section of the spec for "write" mode.
@@ -209,7 +211,7 @@ func executeFieldsSerially(p ExecuteFieldsParams, resultChan chan *Result) {
 		p.Source = map[string]interface{}{}
 	}
 	if p.Fields == nil {
-		p.Fields = map[string][]*AstField{}
+		p.Fields = map[string][]*ast.Field{}
 	}
 	var result Result
 
@@ -232,7 +234,7 @@ func executeFields(p ExecuteFieldsParams) (result Result) {
 		p.Source = map[string]interface{}{}
 	}
 	if p.Fields == nil {
-		p.Fields = map[string][]*AstField{}
+		p.Fields = map[string][]*ast.Field{}
 	}
 	finalResults := map[string]interface{}{}
 	for responseName, fieldASTs := range p.Fields {
@@ -252,18 +254,18 @@ func executeFields(p ExecuteFieldsParams) (result Result) {
 type CollectFieldsParams struct {
 	ExeContext           *ExecutionContext
 	OperationType        *Object
-	SelectionSet         *AstSelectionSet
-	Fields               map[string][]*AstField
+	SelectionSet         *ast.SelectionSet
+	Fields               map[string][]*ast.Field
 	VisitedFragmentNames map[string]bool
 }
 
 // Given a selectionSet, adds all of the fields in that selection to
 // the passed in map of fields, and returns it at the end.
-func collectFields(p CollectFieldsParams) map[string][]*AstField {
+func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 
 	fields := p.Fields
 	if fields == nil {
-		fields = map[string][]*AstField{}
+		fields = map[string][]*ast.Field{}
 	}
 	if p.VisitedFragmentNames == nil {
 		p.VisitedFragmentNames = map[string]bool{}
@@ -273,16 +275,16 @@ func collectFields(p CollectFieldsParams) map[string][]*AstField {
 	}
 	for _, iSelection := range p.SelectionSet.Selections {
 		switch selection := iSelection.(type) {
-		case *AstField:
+		case *ast.Field:
 			if !shouldIncludeNode(p.ExeContext, selection.Directives) {
 				continue
 			}
 			name := getFieldEntryKey(selection)
 			if _, ok := fields[name]; !ok {
-				fields[name] = []*AstField{}
+				fields[name] = []*ast.Field{}
 			}
 			fields[name] = append(fields[name], selection)
-		case *AstInlineFragment:
+		case *ast.InlineFragment:
 
 			if !shouldIncludeNode(p.ExeContext, selection.Directives) ||
 				!doesFragmentConditionMatch(p.ExeContext, selection, p.OperationType) {
@@ -296,7 +298,7 @@ func collectFields(p CollectFieldsParams) map[string][]*AstField {
 				VisitedFragmentNames: p.VisitedFragmentNames,
 			}
 			collectFields(innerParams)
-		case *AstFragmentSpread:
+		case *ast.FragmentSpread:
 			fragName := ""
 			if selection.Name != nil {
 				fragName = selection.Name.Value
@@ -311,7 +313,7 @@ func collectFields(p CollectFieldsParams) map[string][]*AstField {
 				continue
 			}
 
-			if fragment, ok := fragment.(*AstFragmentDefinition); ok {
+			if fragment, ok := fragment.(*ast.FragmentDefinition); ok {
 				if !shouldIncludeNode(p.ExeContext, fragment.Directives) ||
 					!doesFragmentConditionMatch(p.ExeContext, fragment, p.OperationType) {
 					continue
@@ -332,12 +334,12 @@ func collectFields(p CollectFieldsParams) map[string][]*AstField {
 
 // Determines if a field should be included based on the @include and @skip
 // directives, where @skip has higher precedence than @include.
-func shouldIncludeNode(eCtx *ExecutionContext, directives []*AstDirective) bool {
+func shouldIncludeNode(eCtx *ExecutionContext, directives []*ast.Directive) bool {
 
 	defaultReturnValue := true
 
-	var skipAST *AstDirective
-	var includeAST *AstDirective
+	var skipAST *ast.Directive
+	var includeAST *ast.Directive
 	for _, directive := range directives {
 		if directive == nil || directive.Name == nil {
 			continue
@@ -392,10 +394,10 @@ func shouldIncludeNode(eCtx *ExecutionContext, directives []*AstDirective) bool 
 }
 
 // Determines if a fragment is applicable to the given type.
-func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment Node, ttype *Object) bool {
+func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment ast.Node, ttype *Object) bool {
 
 	switch fragment := fragment.(type) {
-	case *AstFragmentDefinition:
+	case *ast.FragmentDefinition:
 		conditionalType, err := typeFromAST(eCtx.Schema, fragment.TypeCondition)
 		if err != nil {
 			return false
@@ -407,7 +409,7 @@ func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment Node, ttype *Ob
 		if conditionalType, ok := conditionalType.(Abstract); ok {
 			return conditionalType.IsPossibleType(ttype)
 		}
-	case *AstInlineFragment:
+	case *ast.InlineFragment:
 		conditionalType, err := typeFromAST(eCtx.Schema, fragment.TypeCondition)
 		if err != nil {
 			return false
@@ -425,7 +427,7 @@ func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment Node, ttype *Ob
 }
 
 // Implements the logic to compute the key of a given field’s entry
-func getFieldEntryKey(node *AstField) string {
+func getFieldEntryKey(node *ast.Field) string {
 
 	if node.Alias != nil && node.Alias.Value != "" {
 		return node.Alias.Value
@@ -447,7 +449,7 @@ type resolveFieldResultState struct {
  * then calls completeValue to complete promises, serialize scalars, or execute
  * the sub-selection-set for objects.
  */
-func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}, fieldASTs []*AstField) (result interface{}, resultState resolveFieldResultState) {
+func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}, fieldASTs []*ast.Field) (result interface{}, resultState resolveFieldResultState) {
 	// catch panic from resolveFn
 	var returnType Output
 	defer func() (interface{}, resolveFieldResultState) {
@@ -461,13 +463,13 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 				)
 			}
 			if r, ok := r.(error); ok {
-				err = FormatError(r)
+				err = gqlerrors.FormatError(r)
 			}
 			// send panic upstream
 			if _, ok := returnType.(*NonNull); ok {
-				panic(FormatError(err))
+				panic(gqlerrors.FormatError(err))
 			}
-			eCtx.Errors = append(eCtx.Errors, FormatError(err))
+			eCtx.Errors = append(eCtx.Errors, gqlerrors.FormatError(err))
 			return result, resultState
 		}
 		return result, resultState
@@ -523,7 +525,7 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	return completed, resultState
 }
 
-func completeValueCatchingError(eCtx *ExecutionContext, returnType Type, fieldASTs []*AstField, info ResolveInfo, result interface{}) (completed interface{}) {
+func completeValueCatchingError(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) (completed interface{}) {
 	// catch panic
 	defer func() interface{} {
 		if r := recover(); r != nil {
@@ -531,7 +533,7 @@ func completeValueCatchingError(eCtx *ExecutionContext, returnType Type, fieldAS
 			if _, ok := returnType.(*NonNull); ok {
 				panic(r)
 			}
-			if err, ok := r.(FormattedError); ok {
+			if err, ok := r.(gqlerrors.FormattedError); ok {
 				eCtx.Errors = append(eCtx.Errors, err)
 			}
 			return completed
@@ -549,13 +551,13 @@ func completeValueCatchingError(eCtx *ExecutionContext, returnType Type, fieldAS
 		if propertyFn, ok := completed.(func() interface{}); ok {
 			return propertyFn()
 		}
-		err := NewFormattedError("Error resolving func. Expected `func() interface{}` signature")
-		panic(FormatError(err))
+		err := gqlerrors.NewFormattedError("Error resolving func. Expected `func() interface{}` signature")
+		panic(gqlerrors.FormatError(err))
 	}
 	return completed
 }
 
-func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*AstField, info ResolveInfo, result interface{}) interface{} {
+func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
 
 	// TODO: explore resolving go-routines in completeValue
 
@@ -564,8 +566,8 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*AstFiel
 		if propertyFn, ok := result.(func() interface{}); ok {
 			return propertyFn()
 		}
-		err := NewFormattedError("Error resolving func. Expected `func() interface{}` signature")
-		panic(FormatError(err))
+		err := gqlerrors.NewFormattedError("Error resolving func. Expected `func() interface{}` signature")
+		panic(gqlerrors.FormatError(err))
 	}
 
 	if returnType, ok := returnType.(*NonNull); ok {
@@ -575,7 +577,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*AstFiel
 				fmt.Sprintf("Cannot return null for non-nullable field %v.%v.", info.ParentType, info.FieldName),
 				FieldASTsToNodeASTs(fieldASTs),
 			)
-			panic(FormatError(err))
+			panic(gqlerrors.FormatError(err))
 		}
 		return completed
 	}
@@ -593,7 +595,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*AstFiel
 			"User Error: expected iterable, but did not find one.",
 		)
 		if err != nil {
-			panic(FormatError(err))
+			panic(gqlerrors.FormatError(err))
 		}
 
 		itemType := returnType.OfType
@@ -611,7 +613,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*AstFiel
 	if returnType, ok := returnType.(*Scalar); ok {
 		err := invariant(returnType.Serialize != nil, "Missing serialize method on type")
 		if err != nil {
-			panic(FormatError(err))
+			panic(gqlerrors.FormatError(err))
 		}
 		serializedResult := returnType.Serialize(result)
 		if isNullish(serializedResult) {
@@ -622,7 +624,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*AstFiel
 	if returnType, ok := returnType.(*Enum); ok {
 		err := invariant(returnType.Serialize != nil, "Missing serialize method on type")
 		if err != nil {
-			panic(FormatError(err))
+			panic(gqlerrors.FormatError(err))
 		}
 		serializedResult := returnType.Serialize(result)
 		if isNullish(serializedResult) {
@@ -631,7 +633,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*AstFiel
 		return serializedResult
 	}
 
-	// AstField type must be Object, Interface or Union and expect sub-selections.
+	// ast.Field type must be Object, Interface or Union and expect sub-selections.
 	var objectType *Object
 	switch returnType := returnType.(type) {
 	case *Object:
@@ -639,7 +641,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*AstFiel
 	case Abstract:
 		objectType = returnType.GetObjectType(result, info)
 		if objectType != nil && !returnType.IsPossibleType(objectType) {
-			panic(NewFormattedError(
+			panic(gqlerrors.NewFormattedError(
 				fmt.Sprintf(`Runtime Object type "%v" is not a possible type `+
 					`for "%v".`, objectType, returnType),
 			))
@@ -653,13 +655,13 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*AstFiel
 	// current result. If isTypeOf returns false, then raise an error rather
 	// than continuing execution.
 	if objectType.IsTypeOf != nil && !objectType.IsTypeOf(result, info) {
-		panic(NewFormattedError(
+		panic(gqlerrors.NewFormattedError(
 			fmt.Sprintf(`Expected value of type "%v" but got: %T.`, objectType, result),
 		))
 	}
 
 	// Collect sub-fields to execute to complete this value.
-	subFieldASTs := map[string][]*AstField{}
+	subFieldASTs := map[string][]*ast.Field{}
 	visitedFragmentNames := map[string]bool{}
 	for _, fieldAST := range fieldASTs {
 		if fieldAST == nil {

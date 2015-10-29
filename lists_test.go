@@ -3,6 +3,9 @@ package graphql
 import (
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql/gqlerrors"
+	"github.com/chris-ramon/graphql/language/location"
 )
 
 func checkList(t *testing.T, testType Type, testData interface{}, expected *Result) {
@@ -249,11 +252,11 @@ func TestLists_NonNullListOfNullableObjectsReturnsNull(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: "Cannot return null for non-nullable field DataType.test.",
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line:   1,
 						Column: 10,
 					},
@@ -319,11 +322,11 @@ func TestLists_NonNullListOfNullableFunc_ReturnsNull(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: "Cannot return null for non-nullable field DataType.test.",
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line:   1,
 						Column: 10,
 					},
@@ -415,11 +418,11 @@ func TestLists_NullableListOfNonNullObjects_ContainsNull(t *testing.T) {
 				"test": nil,
 			},
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: "Cannot return null for non-nullable field DataType.test.",
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line:   1,
 						Column: 10,
 					},
@@ -480,11 +483,11 @@ func TestLists_NullableListOfNonNullFunc_ContainsNull(t *testing.T) {
 				"test": nil,
 			},
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: "Cannot return null for non-nullable field DataType.test.",
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line:   1,
 						Column: 10,
 					},
@@ -591,11 +594,11 @@ func TestLists_NonNullListOfNonNullObjects_ContainsNull(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: "Cannot return null for non-nullable field DataType.test.",
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line:   1,
 						Column: 10,
 					},
@@ -612,11 +615,11 @@ func TestLists_NonNullListOfNonNullObjects_ReturnsNull(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: "Cannot return null for non-nullable field DataType.test.",
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line:   1,
 						Column: 10,
 					},
@@ -663,11 +666,11 @@ func TestLists_NonNullListOfNonNullFunc_ContainsNull(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: "Cannot return null for non-nullable field DataType.test.",
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line:   1,
 						Column: 10,
 					},
@@ -689,11 +692,11 @@ func TestLists_NonNullListOfNonNullFunc_ReturnsNull(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: "Cannot return null for non-nullable field DataType.test.",
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line:   1,
 						Column: 10,
 					},

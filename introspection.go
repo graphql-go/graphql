@@ -3,6 +3,9 @@ package graphql
 import (
 	"fmt"
 	"reflect"
+
+	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/chris-ramon/graphql/language/printer"
 )
 
 const (
@@ -140,14 +143,14 @@ func init() {
 							return nil
 						}
 						astVal := astFromValue(inputVal.DefaultValue, inputVal)
-						return Print(astVal)
+						return printer.Print(astVal)
 					}
 					if inputVal, ok := p.Source.(*InputObjectField); ok {
 						if inputVal.DefaultValue == nil {
 							return nil
 						}
 						astVal := astFromValue(inputVal.DefaultValue, inputVal)
-						return Print(astVal)
+						return printer.Print(astVal)
 					}
 					return nil
 				},
@@ -470,7 +473,7 @@ mutation operations.`,
  * | Number        | Int / Float          |
  *
  */
-func astFromValue(value interface{}, ttype Type) Value {
+func astFromValue(value interface{}, ttype Type) ast.Value {
 
 	if ttype, ok := ttype.(*NonNull); ok {
 		// Note: we're not checking that the result is non-null.
@@ -497,7 +500,7 @@ func astFromValue(value interface{}, ttype Type) Value {
 	if ttype, ok := ttype.(*List); ok {
 		if valueVal.Type().Kind() == reflect.Slice {
 			itemType := ttype.OfType
-			values := []Value{}
+			values := []ast.Value{}
 			for i := 0; i < valueVal.Len(); i++ {
 				item := valueVal.Index(i).Interface()
 				itemAST := astFromValue(item, itemType)
@@ -505,7 +508,7 @@ func astFromValue(value interface{}, ttype Type) Value {
 					values = append(values, itemAST)
 				}
 			}
-			return NewAstListValue(&AstListValue{
+			return ast.NewListValue(&ast.ListValue{
 				Values: values,
 			})
 		} else {
@@ -522,44 +525,44 @@ func astFromValue(value interface{}, ttype Type) Value {
 	}
 
 	if value, ok := value.(bool); ok {
-		return NewAstBooleanValue(&AstBooleanValue{
+		return ast.NewBooleanValue(&ast.BooleanValue{
 			Value: value,
 		})
 	}
 	if value, ok := value.(int); ok {
 		if ttype == Float {
-			return NewAstIntValue(&AstIntValue{
+			return ast.NewIntValue(&ast.IntValue{
 				Value: fmt.Sprintf("%v.0", value),
 			})
 		}
-		return NewAstIntValue(&AstIntValue{
+		return ast.NewIntValue(&ast.IntValue{
 			Value: fmt.Sprintf("%v", value),
 		})
 	}
 	if value, ok := value.(float32); ok {
-		return NewAstFloatValue(&AstFloatValue{
+		return ast.NewFloatValue(&ast.FloatValue{
 			Value: fmt.Sprintf("%v", value),
 		})
 	}
 	if value, ok := value.(float64); ok {
-		return NewAstFloatValue(&AstFloatValue{
+		return ast.NewFloatValue(&ast.FloatValue{
 			Value: fmt.Sprintf("%v", value),
 		})
 	}
 
 	if value, ok := value.(string); ok {
 		if _, ok := ttype.(*Enum); ok {
-			return NewAstEnumValue(&AstEnumValue{
+			return ast.NewEnumValue(&ast.EnumValue{
 				Value: fmt.Sprintf("%v", value),
 			})
 		}
-		return NewAstStringValue(&AstStringValue{
+		return ast.NewStringValue(&ast.StringValue{
 			Value: fmt.Sprintf("%v", value),
 		})
 	}
 
 	// fallback, treat as string
-	return NewAstStringValue(&AstStringValue{
+	return ast.NewStringValue(&ast.StringValue{
 		Value: fmt.Sprintf("%v", value),
 	})
 }

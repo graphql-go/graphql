@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql/gqlerrors"
+	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/chris-ramon/graphql/language/location"
 )
 
 var testComplexScalar *Scalar = NewScalar(ScalarConfig{
@@ -20,7 +24,7 @@ var testComplexScalar *Scalar = NewScalar(ScalarConfig{
 		}
 		return nil
 	},
-	ParseLiteral: func(valueAST Value) interface{} {
+	ParseLiteral: func(valueAST ast.Value) interface{} {
 		astValue := valueAST.GetValue()
 		if astValue, ok := astValue.(string); ok && astValue == "SerializedValue" {
 			return "DeserializedValue"
@@ -224,7 +228,7 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_DoesNotUseIncorrectV
 	}
 }
 
-func testVariables_ObjectsAndNullability_UsingVariables_GetAST(t *testing.T) *AstDocument {
+func testVariables_ObjectsAndNullability_UsingVariables_GetAST(t *testing.T) *ast.Document {
 	doc := `
         query q($input: TestInputObject) {
           fieldWithObjectInput(input: $input)
@@ -361,12 +365,12 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnNullForNestedNon
 	}
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
 					`got: {"a":"foo","b":"bar","c":null}.`,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 2, Column: 17,
 					},
 				},
@@ -396,12 +400,12 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnIncorrectType(t 
 	}
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
 					`got: "foo bar".`,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 2, Column: 17,
 					},
 				},
@@ -434,12 +438,12 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNested
 	}
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
 					`got: {"a":"foo","b":"bar"}.`,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 2, Column: 17,
 					},
 				},
@@ -474,12 +478,12 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknow
 	}
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
 					`got: {"a":"foo","b":"bar","c":"baz","d":"dog"}.`,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 2, Column: 17,
 					},
 				},
@@ -685,11 +689,11 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeOmittedIn
 
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$value" of required type "String!" was not provided.`,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 2, Column: 31,
 					},
 				},
@@ -724,11 +728,11 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeSetToNull
 	}
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$value" of required type "String!" was not provided.`,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 2, Column: 31,
 					},
 				},
@@ -952,11 +956,11 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListsToBeNull(t *testi
 	`
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" of required type "[String]!" was not provided.`,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 2, Column: 17,
 					},
 				},
@@ -1109,12 +1113,12 @@ func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t
 	}
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "[String!]" but got: ` +
 					`["A",null,"B"].`,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 2, Column: 17,
 					},
 				},
@@ -1148,11 +1152,11 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToBeNull
 	}
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" of required type "[String!]!" was not provided.`,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 2, Column: 17,
 					},
 				},
@@ -1216,12 +1220,12 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContai
 	}
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "[String!]!" but got: ` +
 					`["A",null,"B"].`,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 2, Column: 17,
 					},
 				},
@@ -1257,11 +1261,11 @@ func TestVariables_ListsAndNullability_DoesNotAllowInvalidTypesToBeUsedAsValues(
 	}
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "TestType!" which cannot be used as an input type.`,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 2, Column: 17,
 					},
 				},
@@ -1295,11 +1299,11 @@ func TestVariables_ListsAndNullability_DoesNotAllowUnknownTypesToBeUsedAsValues(
 	}
 	expected := &Result{
 		Data: nil,
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "UnknownType!" which cannot be used as an input type.`,
-				Locations: []SourceLocation{
-					SourceLocation{
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
 						Line: 2, Column: 17,
 					},
 				},

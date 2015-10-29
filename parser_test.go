@@ -6,6 +6,11 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/chris-ramon/graphql/gqlerrors"
+	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/chris-ramon/graphql/language/location"
+	"github.com/chris-ramon/graphql/language/source"
 )
 
 func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
@@ -20,42 +25,42 @@ func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	oDef := AstOperationDefinition{
+	oDef := ast.OperationDefinition{
 		Kind: "OperationDefinition",
-		Loc: &AstLocation{
+		Loc: &ast.Location{
 			Start: 0, End: 9,
 		},
 		Operation:  "query",
-		Directives: []*AstDirective{},
-		SelectionSet: &AstSelectionSet{
+		Directives: []*ast.Directive{},
+		SelectionSet: &ast.SelectionSet{
 			Kind: "SelectionSet",
-			Loc: &AstLocation{
+			Loc: &ast.Location{
 				Start: 0, End: 9,
 			},
-			Selections: []Selection{
-				&AstField{
+			Selections: []ast.Selection{
+				&ast.Field{
 					Kind: "Field",
-					Loc: &AstLocation{
+					Loc: &ast.Location{
 						Start: 2, End: 7,
 					},
-					Name: &AstName{
+					Name: &ast.Name{
 						Kind: "Name",
-						Loc: &AstLocation{
+						Loc: &ast.Location{
 							Start: 2, End: 7,
 						},
 						Value: "field",
 					},
-					Arguments:  []*AstArgument{},
-					Directives: []*AstDirective{},
+					Arguments:  []*ast.Argument{},
+					Directives: []*ast.Directive{},
 				},
 			},
 		},
 	}
-	expectedDocument := NewAstDocument(&AstDocument{
-		Loc: &AstLocation{
+	expectedDocument := ast.NewDocument(&ast.Document{
+		Loc: &ast.Location{
 			Start: 0, End: 9,
 		},
-		Definitions: []Node{&oDef},
+		Definitions: []ast.Node{&oDef},
 	})
 	if !reflect.DeepEqual(document, expectedDocument) {
 		t.Fatalf("unexpected document, expected: %v, got: %v", expectedDocument, document)
@@ -72,14 +77,14 @@ func TestParseProvidesUsefulErrors(t *testing.T) {
 	}
 	_, err := Parse(params)
 
-	expectedError := &Error{
+	expectedError := &gqlerrors.Error{
 		Message: `Syntax Error GraphQL (1:2) Expected Name, found EOF
 
 1: {
     ^
 `,
 		Positions: []int{1},
-		Locations: []SourceLocation{{1, 2}},
+		Locations: []location.SourceLocation{{1, 2}},
 	}
 	checkError(t, err, expectedError)
 
@@ -119,7 +124,7 @@ fragment MissingOn Type
 
 func TestParseProvidesUsefulErrorsWhenUsingSource(t *testing.T) {
 	test := errorMessageTest{
-		NewSource(&Source{Body: "query", Name: "MyQuery.graphql"}),
+		source.NewSource(&source.Source{Body: "query", Name: "MyQuery.graphql"}),
 		`Syntax Error MyQuery.graphql (1:6) Expected Name, found EOF`,
 		false,
 	}
@@ -242,7 +247,7 @@ func TestParseCreatesAst(t *testing.T) {
   }
 }
 `
-	source := NewSource(&Source{Body: body})
+	source := source.NewSource(&source.Source{Body: body})
 	document, err := Parse(
 		ParseParams{
 			Source: source,
@@ -255,90 +260,90 @@ func TestParseCreatesAst(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	oDef := AstOperationDefinition{
+	oDef := ast.OperationDefinition{
 		Kind: "OperationDefinition",
-		Loc: &AstLocation{
+		Loc: &ast.Location{
 			Start: 0, End: 40,
 		},
 		Operation:  "query",
-		Directives: []*AstDirective{},
-		SelectionSet: &AstSelectionSet{
+		Directives: []*ast.Directive{},
+		SelectionSet: &ast.SelectionSet{
 			Kind: "SelectionSet",
-			Loc: &AstLocation{
+			Loc: &ast.Location{
 				Start: 0, End: 40,
 			},
-			Selections: []Selection{
-				&AstField{
+			Selections: []ast.Selection{
+				&ast.Field{
 					Kind: "Field",
-					Loc: &AstLocation{
+					Loc: &ast.Location{
 						Start: 4, End: 38,
 					},
-					Name: &AstName{
+					Name: &ast.Name{
 						Kind: "Name",
-						Loc: &AstLocation{
+						Loc: &ast.Location{
 							Start: 4, End: 8,
 						},
 						Value: "node",
 					},
-					Arguments: []*AstArgument{
+					Arguments: []*ast.Argument{
 						{
 							Kind: "Argument",
-							Name: &AstName{
+							Name: &ast.Name{
 								Kind: "Name",
-								Loc: &AstLocation{
+								Loc: &ast.Location{
 									Start: 9, End: 11,
 								},
 								Value: "id",
 							},
-							Value: &AstIntValue{
+							Value: &ast.IntValue{
 								Kind: "IntValue",
-								Loc: &AstLocation{
+								Loc: &ast.Location{
 									Start: 13, End: 14,
 								},
 								Value: "4",
 							},
-							Loc: &AstLocation{
+							Loc: &ast.Location{
 								Start: 9, End: 14,
 							},
 						},
 					},
-					Directives: []*AstDirective{},
-					SelectionSet: &AstSelectionSet{
+					Directives: []*ast.Directive{},
+					SelectionSet: &ast.SelectionSet{
 						Kind: "SelectionSet",
-						Loc: &AstLocation{
+						Loc: &ast.Location{
 							Start: 16, End: 38,
 						},
-						Selections: []Selection{
-							&AstField{
+						Selections: []ast.Selection{
+							&ast.Field{
 								Kind: "Field",
-								Loc: &AstLocation{
+								Loc: &ast.Location{
 									Start: 22, End: 24,
 								},
-								Name: &AstName{
+								Name: &ast.Name{
 									Kind: "Name",
-									Loc: &AstLocation{
+									Loc: &ast.Location{
 										Start: 22, End: 24,
 									},
 									Value: "id",
 								},
-								Arguments:    []*AstArgument{},
-								Directives:   []*AstDirective{},
+								Arguments:    []*ast.Argument{},
+								Directives:   []*ast.Directive{},
 								SelectionSet: nil,
 							},
-							&AstField{
+							&ast.Field{
 								Kind: "Field",
-								Loc: &AstLocation{
+								Loc: &ast.Location{
 									Start: 30, End: 34,
 								},
-								Name: &AstName{
+								Name: &ast.Name{
 									Kind: "Name",
-									Loc: &AstLocation{
+									Loc: &ast.Location{
 										Start: 30, End: 34,
 									},
 									Value: "name",
 								},
-								Arguments:    []*AstArgument{},
-								Directives:   []*AstDirective{},
+								Arguments:    []*ast.Argument{},
+								Directives:   []*ast.Directive{},
 								SelectionSet: nil,
 							},
 						},
@@ -347,11 +352,11 @@ func TestParseCreatesAst(t *testing.T) {
 			},
 		},
 	}
-	expectedDocument := NewAstDocument(&AstDocument{
-		Loc: &AstLocation{
+	expectedDocument := ast.NewDocument(&ast.Document{
+		Loc: &ast.Location{
 			Start: 0, End: 41,
 		},
-		Definitions: []Node{&oDef},
+		Definitions: []ast.Node{&oDef},
 	})
 	if !reflect.DeepEqual(document, expectedDocument) {
 		t.Fatalf("unexpected document, expected: %v, got: %v", expectedDocument, document.Definitions)
@@ -373,7 +378,7 @@ func testErrorMessage(t *testing.T, test errorMessageTest) {
 	checkErrorMessage(t, err, test.expectedMessage)
 }
 
-func checkError(t *testing.T, err error, expectedError *Error) {
+func checkError(t *testing.T, err error, expectedError *gqlerrors.Error) {
 	if expectedError == nil {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -412,12 +417,12 @@ func checkErrorMessage(t *testing.T, err error, expectedMessage string) {
 	}
 }
 
-func toError(err error) *Error {
+func toError(err error) *gqlerrors.Error {
 	if err == nil {
 		return nil
 	}
 	switch err := err.(type) {
-	case *Error:
+	case *gqlerrors.Error:
 		return err
 	default:
 		return nil

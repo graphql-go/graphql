@@ -3,6 +3,9 @@ package graphql
 import (
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql/gqlerrors"
+	"github.com/chris-ramon/graphql/language/location"
 )
 
 type testDog struct {
@@ -438,10 +441,10 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 				nil,
 			},
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message:   `Runtime Object type "Human" is not a possible type for "Pet".`,
-				Locations: []SourceLocation{},
+				Locations: []location.SourceLocation{},
 			},
 		},
 	}
@@ -596,10 +599,10 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 				nil,
 			},
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message:   `Runtime Object type "Human" is not a possible type for "Pet".`,
-				Locations: []SourceLocation{},
+				Locations: []location.SourceLocation{},
 			},
 		},
 	}

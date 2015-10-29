@@ -1,4 +1,4 @@
-package graphql
+package gqlerrors
 
 import "bytes"
 

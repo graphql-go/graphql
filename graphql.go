@@ -1,5 +1,10 @@
 package graphql
 
+import (
+	"github.com/chris-ramon/graphql/gqlerrors"
+	"github.com/chris-ramon/graphql/language/source"
+)
+
 type Params struct {
 	Schema         Schema
 	RequestString  string
@@ -9,14 +14,14 @@ type Params struct {
 }
 
 func Graphql(p Params, resultChannel chan *Result) {
-	source := NewSource(&Source{
+	source := source.NewSource(&source.Source{
 		Body: p.RequestString,
 		Name: "GraphQL request",
 	})
 	AST, err := Parse(ParseParams{Source: source})
 	if err != nil {
 		result := Result{
-			Errors: FormatErrors(err),
+			Errors: gqlerrors.FormatErrors(err),
 		}
 		resultChannel <- &result
 		return

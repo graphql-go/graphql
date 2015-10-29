@@ -3,6 +3,9 @@ package graphql
 import (
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql/gqlerrors"
+	"github.com/chris-ramon/graphql/language/location"
 )
 
 // testNumberHolder maps to numberHolderType
@@ -212,17 +215,17 @@ func TestMutations_EvaluatesMutationsCorrectlyInThePresenceOfAFailedMutation(t *
 			},
 			"sixth": nil,
 		},
-		Errors: []FormattedError{
-			FormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Cannot change the number`,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 8, Column: 7},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 8, Column: 7},
 				},
 			},
-			FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Cannot change the number`,
-				Locations: []SourceLocation{
-					SourceLocation{Line: 17, Column: 7},
+				Locations: []location.SourceLocation{
+					location.SourceLocation{Line: 17, Column: 7},
 				},
 			},
 		},

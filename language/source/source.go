@@ -1,4 +1,4 @@
-package graphql
+package source
 
 const (
 	name = "GraphQL"

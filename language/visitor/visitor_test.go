@@ -1,16 +1,22 @@
-package graphql
+package visitor
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/chris-ramon/graphql"
+	"github.com/chris-ramon/graphql/gqlerrors"
+	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/kr/pretty"
 )
 
-func parseeee(t *testing.T, query string) *AstDocument {
-	astDoc, err := Parse(ParseParams{
+func parse(t *testing.T, query string) *ast.Document {
+	astDoc, err := graphql.Parse(ParseParams{
 		Source: query,
-		Options: ParseOptions{
+		Options: graphql.ParseOptions{
 			NoLocation: true,
 		},
 	})
@@ -63,10 +69,10 @@ func testGetMapValueString(m map[string]interface{}, key string) string {
 func TestVisitor_AllowsForEditingOnEnter(t *testing.T) {
 
 	query := `{ a, b, c { a, b, c } }`
-	astDoc := parseeee(t, query)
+	astDoc := parse(t, query)
 
 	expectedQuery := `{ a,    c { a,    c } }`
-	expectedAST := parseeee(t, expectedQuery)
+	expectedAST := parse(t, expectedQuery)
 	v := &VisitorOptions{
 		Enter: func(p VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
@@ -88,10 +94,10 @@ func TestVisitor_AllowsForEditingOnEnter(t *testing.T) {
 func TestVisitor_AllowsForEditingOnLeave(t *testing.T) {
 
 	query := `{ a, b, c { a, b, c } }`
-	astDoc := parseeee(t, query)
+	astDoc := parse(t, query)
 
 	expectedQuery := `{ a,    c { a,    c } }`
-	expectedAST := parseeee(t, expectedQuery)
+	expectedAST := parse(t, expectedQuery)
 	v := &VisitorOptions{
 		Leave: func(p VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
@@ -113,7 +119,7 @@ func TestVisitor_AllowsForEditingOnLeave(t *testing.T) {
 func TestVisitor_VisitsEditedNode(t *testing.T) {
 
 	query := `{ a { x } }`
-	astDoc := parseeee(t, query)
+	astDoc := parse(t, query)
 
 	addedField := map[string]interface{}{
 		"Kind": "Field",
@@ -152,7 +158,7 @@ func TestVisitor_VisitsEditedNode(t *testing.T) {
 func TestVisitor_AllowsSkippingASubTree(t *testing.T) {
 
 	query := `{ a, b { x }, c }`
-	astDoc := parseeee(t, query)
+	astDoc := parse(t, query)
 
 	visited := []interface{}{}
 	expectedVisited := []interface{}{
@@ -203,7 +209,7 @@ func TestVisitor_AllowsSkippingASubTree(t *testing.T) {
 func TestVisitor_AllowsANamedFunctionsVisitorAPI(t *testing.T) {
 
 	query := `{ a, b { x }, c }`
-	astDoc := parseeee(t, query)
+	astDoc := parse(t, query)
 
 	visited := []interface{}{}
 	expectedVisited := []interface{}{
@@ -260,7 +266,7 @@ func TestVisitor_VisitsKitchenSink(t *testing.T) {
 	}
 
 	query := string(b)
-	astDoc := parseeee(t, query)
+	astDoc := parse(t, query)
 
 	visited := []interface{}{}
 	expectedVisited := []interface{}{
@@ -532,4 +538,21 @@ func TestVisitor_ProducesHelpfulErrorMessages(t *testing.T) {
 		"random": "Data",
 	}
 	_ = Visit(astDoc, nil, nil)
+}
+
+func ASTToJSON(t *testing.T, a ast.Node) interface{} {
+	b, err := json.Marshal(a)
+	if err != nil {
+		t.Fatalf("Failed to marshal Node %v", err)
+	}
+	var f interface{}
+	err = json.Unmarshal(b, &f)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal Node %v", err)
+	}
+	return f
+}
+
+func Diff(a, b interface{}) []string {
+	return pretty.Diff(a, b)
 }

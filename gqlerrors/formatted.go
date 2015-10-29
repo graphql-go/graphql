@@ -1,12 +1,14 @@
-package graphql
+package gqlerrors
 
 import (
 	"errors"
+
+	"github.com/chris-ramon/graphql/language/location"
 )
 
 type FormattedError struct {
 	Message   string
-	Locations []SourceLocation
+	Locations []location.SourceLocation
 }
 
 func (g FormattedError) Error() string {
@@ -35,7 +37,7 @@ func FormatError(err error) FormattedError {
 	default:
 		return FormattedError{
 			Message:   err.Error(),
-			Locations: []SourceLocation{},
+			Locations: []location.SourceLocation{},
 		}
 	}
 }

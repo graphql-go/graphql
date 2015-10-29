@@ -1,8 +1,11 @@
-package graphql
+package printer
 
 import (
 	"fmt"
 	"strings"
+
+	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/chris-ramon/graphql/language/visitor"
 )
 
 func getMapValue(m map[string]interface{}, key string) interface{} {
@@ -100,30 +103,30 @@ func indent(maybeString interface{}) string {
 	return ""
 }
 
-var printDocASTReducer = map[string]VisitFunc{
-	"Name": func(p VisitFuncParams) (string, interface{}) {
+var printDocASTReducer = map[string]visitor.VisitFunc{
+	"Name": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
-			return ActionUpdate, getMapValue(node, "Value")
+			return visitor.ActionUpdate, getMapValue(node, "Value")
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"Variable": func(p VisitFuncParams) (string, interface{}) {
+	"Variable": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
-			return ActionUpdate, "$" + getMapValueString(node, "Name")
+			return visitor.ActionUpdate, "$" + getMapValueString(node, "Name")
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"Document": func(p VisitFuncParams) (string, interface{}) {
+	"Document": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			definitions := toSliceString(getMapValue(node, "Definitions"))
-			return ActionUpdate, join(definitions, "\n\n") + "\n"
+			return visitor.ActionUpdate, join(definitions, "\n\n") + "\n"
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"OperationDefinition": func(p VisitFuncParams) (string, interface{}) {
+	"OperationDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			op := getMapValueString(node, "Operation")
@@ -143,11 +146,11 @@ var printDocASTReducer = map[string]VisitFunc{
 					selectionSet,
 				}, " ")
 			}
-			return ActionUpdate, str
+			return visitor.ActionUpdate, str
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"VariableDefinition": func(p VisitFuncParams) (string, interface{}) {
+	"VariableDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 
@@ -155,22 +158,22 @@ var printDocASTReducer = map[string]VisitFunc{
 			ttype := getMapValueString(node, "Type")
 			defaultValue := getMapValueString(node, "DefaultValue")
 
-			return ActionUpdate, variable + ": " + ttype + wrap(" = ", defaultValue, "")
+			return visitor.ActionUpdate, variable + ": " + ttype + wrap(" = ", defaultValue, "")
 
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"SelectionSet": func(p VisitFuncParams) (string, interface{}) {
+	"SelectionSet": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			selections := getMapValue(node, "Selections")
 			str := block(selections)
-			return ActionUpdate, str
+			return visitor.ActionUpdate, str
 
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"Field": func(p VisitFuncParams) (string, interface{}) {
+	"Field": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 
@@ -188,249 +191,249 @@ var printDocASTReducer = map[string]VisitFunc{
 				},
 				" ",
 			)
-			return ActionUpdate, str
+			return visitor.ActionUpdate, str
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"Argument": func(p VisitFuncParams) (string, interface{}) {
+	"Argument": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
 			value := getMapValueString(node, "Value")
-			return ActionUpdate, name + ": " + value
+			return visitor.ActionUpdate, name + ": " + value
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"FragmentSpread": func(p VisitFuncParams) (string, interface{}) {
+	"FragmentSpread": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
 			directives := toSliceString(getMapValue(node, "Directives"))
-			return ActionUpdate, "..." + name + wrap(" ", join(directives, " "), "")
+			return visitor.ActionUpdate, "..." + name + wrap(" ", join(directives, " "), "")
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"InlineFragment": func(p VisitFuncParams) (string, interface{}) {
+	"InlineFragment": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			typeCondition := getMapValueString(node, "TypeCondition")
 			directives := toSliceString(getMapValue(node, "Directives"))
 			selectionSet := getMapValueString(node, "SelectionSet")
-			return ActionUpdate, "... on " + typeCondition + " " + wrap("", join(directives, " "), " ") + selectionSet
+			return visitor.ActionUpdate, "... on " + typeCondition + " " + wrap("", join(directives, " "), " ") + selectionSet
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"FragmentDefinition": func(p VisitFuncParams) (string, interface{}) {
+	"FragmentDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
 			typeCondition := getMapValueString(node, "TypeCondition")
 			directives := toSliceString(getMapValue(node, "Directives"))
 			selectionSet := getMapValueString(node, "SelectionSet")
-			return ActionUpdate, "fragment " + name + " on " + typeCondition + " " + wrap("", join(directives, " "), " ") + selectionSet
+			return visitor.ActionUpdate, "fragment " + name + " on " + typeCondition + " " + wrap("", join(directives, " "), " ") + selectionSet
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
 
-	"IntValue": func(p VisitFuncParams) (string, interface{}) {
+	"IntValue": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
-			return ActionUpdate, getMapValueString(node, "Value")
+			return visitor.ActionUpdate, getMapValueString(node, "Value")
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"FloatValue": func(p VisitFuncParams) (string, interface{}) {
+	"FloatValue": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
-			return ActionUpdate, getMapValueString(node, "Value")
+			return visitor.ActionUpdate, getMapValueString(node, "Value")
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"StringValue": func(p VisitFuncParams) (string, interface{}) {
+	"StringValue": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
-			return ActionUpdate, `"` + getMapValueString(node, "Value") + `"`
+			return visitor.ActionUpdate, `"` + getMapValueString(node, "Value") + `"`
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"BooleanValue": func(p VisitFuncParams) (string, interface{}) {
+	"BooleanValue": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
-			return ActionUpdate, getMapValueString(node, "Value")
+			return visitor.ActionUpdate, getMapValueString(node, "Value")
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"EnumValue": func(p VisitFuncParams) (string, interface{}) {
+	"EnumValue": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
-			return ActionUpdate, getMapValueString(node, "Value")
+			return visitor.ActionUpdate, getMapValueString(node, "Value")
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"ListValue": func(p VisitFuncParams) (string, interface{}) {
+	"ListValue": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
-			return ActionUpdate, "[" + join(toSliceString(getMapValue(node, "Values")), ", ") + "]"
+			return visitor.ActionUpdate, "[" + join(toSliceString(getMapValue(node, "Values")), ", ") + "]"
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"ObjectValue": func(p VisitFuncParams) (string, interface{}) {
+	"ObjectValue": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
-			return ActionUpdate, "{" + join(toSliceString(getMapValue(node, "Fields")), ", ") + "}"
+			return visitor.ActionUpdate, "{" + join(toSliceString(getMapValue(node, "Fields")), ", ") + "}"
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"ObjectField": func(p VisitFuncParams) (string, interface{}) {
+	"ObjectField": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
 			value := getMapValueString(node, "Value")
-			return ActionUpdate, name + ": " + value
+			return visitor.ActionUpdate, name + ": " + value
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
 
-	"Directive": func(p VisitFuncParams) (string, interface{}) {
+	"Directive": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
 			args := toSliceString(getMapValue(node, "Arguments"))
-			return ActionUpdate, "@" + name + wrap("(", join(args, ", "), ")")
+			return visitor.ActionUpdate, "@" + name + wrap("(", join(args, ", "), ")")
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
 
-	"Named": func(p VisitFuncParams) (string, interface{}) {
+	"Named": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
-			return ActionUpdate, getMapValueString(node, "Name")
+			return visitor.ActionUpdate, getMapValueString(node, "Name")
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"List": func(p VisitFuncParams) (string, interface{}) {
+	"List": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
-			return ActionUpdate, "[" + getMapValueString(node, "Type") + "]"
+			return visitor.ActionUpdate, "[" + getMapValueString(node, "Type") + "]"
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"NonNull": func(p VisitFuncParams) (string, interface{}) {
+	"NonNull": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
-			return ActionUpdate, getMapValueString(node, "Type") + "!"
+			return visitor.ActionUpdate, getMapValueString(node, "Type") + "!"
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
 
-	"ObjectDefinition": func(p VisitFuncParams) (string, interface{}) {
+	"ObjectDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
 			interfaces := toSliceString(getMapValue(node, "Interfaces"))
 			fields := getMapValue(node, "Fields")
 			str := "type " + name + " " + wrap("implements ", join(interfaces, ", "), " ") + block(fields)
-			return ActionUpdate, str
+			return visitor.ActionUpdate, str
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"FieldDefinition": func(p VisitFuncParams) (string, interface{}) {
+	"FieldDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
 			ttype := getMapValueString(node, "Type")
 			args := toSliceString(getMapValue(node, "Arguments"))
 			str := name + wrap("(", join(args, ", "), ")") + ": " + ttype
-			return ActionUpdate, str
+			return visitor.ActionUpdate, str
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"InputValueDefinition": func(p VisitFuncParams) (string, interface{}) {
+	"InputValueDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
 			ttype := getMapValueString(node, "Type")
 			defaultValue := getMapValueString(node, "DefaultValue")
 			str := name + ": " + ttype + wrap(" = ", defaultValue, "")
-			return ActionUpdate, str
+			return visitor.ActionUpdate, str
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"InterfaceDefinition": func(p VisitFuncParams) (string, interface{}) {
+	"InterfaceDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
 			fields := getMapValue(node, "Fields")
 			str := "interface " + name + " " + block(fields)
-			return ActionUpdate, str
+			return visitor.ActionUpdate, str
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"UnionDefinition": func(p VisitFuncParams) (string, interface{}) {
+	"UnionDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
 			types := toSliceString(getMapValue(node, "Types"))
 			str := "union " + name + " = " + join(types, " | ")
-			return ActionUpdate, str
+			return visitor.ActionUpdate, str
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"ScalarDefinition": func(p VisitFuncParams) (string, interface{}) {
+	"ScalarDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
 			str := "scalar " + name
-			return ActionUpdate, str
+			return visitor.ActionUpdate, str
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"EnumDefinition": func(p VisitFuncParams) (string, interface{}) {
+	"EnumDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
 			values := getMapValue(node, "Values")
 			str := "enum " + name + " " + block(values)
-			return ActionUpdate, str
+			return visitor.ActionUpdate, str
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"EnumValueDefinition": func(p VisitFuncParams) (string, interface{}) {
+	"EnumValueDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
-			return ActionUpdate, name
+			return visitor.ActionUpdate, name
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"InputObjectDefinition": func(p VisitFuncParams) (string, interface{}) {
+	"InputObjectDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
 			fields := getMapValue(node, "Fields")
-			return ActionUpdate, "input " + name + " " + block(fields)
+			return visitor.ActionUpdate, "input " + name + " " + block(fields)
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
-	"TypeExtensionDefinition": func(p VisitFuncParams) (string, interface{}) {
+	"TypeExtensionDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			definition := getMapValueString(node, "Definition")
 			str := "extend " + definition
-			return ActionUpdate, str
+			return visitor.ActionUpdate, str
 		}
-		return ActionNoChange, nil
+		return visitor.ActionNoChange, nil
 	},
 }
 
-func Print(astNode Node) (printed interface{}) {
+func Print(astNode ast.Node) (printed interface{}) {
 	defer func() interface{} {
 		if r := recover(); r != nil {
 			return fmt.Sprintf("%v", astNode)
 		}
 		return printed
 	}()
-	printed = Visit(astNode, &VisitorOptions{
+	printed = visitor.Visit(astNode, &visitor.VisitorOptions{
 		LeaveKindMap: printDocASTReducer,
 	}, nil)
 	return printed

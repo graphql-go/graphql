@@ -6,13 +6,16 @@ import (
 	"math"
 	"reflect"
 
-	"github.com/chris-ramon/graphql/kinds"
+	"github.com/chris-ramon/graphql/gqlerrors"
+	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/chris-ramon/graphql/language/kinds"
+	"github.com/chris-ramon/graphql/language/printer"
 )
 
 // Prepares an object map of variableValues of the correct type based on the
 // provided variable definitions and arbitrary input. If the input cannot be
 // parsed to match the variable definitions, a GraphQLError will be returned.
-func getVariableValues(schema Schema, definitionASTs []*AstVariableDefinition, inputs map[string]interface{}) (map[string]interface{}, error) {
+func getVariableValues(schema Schema, definitionASTs []*ast.VariableDefinition, inputs map[string]interface{}) (map[string]interface{}, error) {
 	values := map[string]interface{}{}
 	for _, defAST := range definitionASTs {
 		if defAST == nil || defAST.Variable == nil || defAST.Variable.Name == nil {
@@ -30,9 +33,9 @@ func getVariableValues(schema Schema, definitionASTs []*AstVariableDefinition, i
 
 // Prepares an object map of argument values given a list of argument
 // definitions and list of argument AST nodes.
-func getArgumentValues(argDefs []*Argument, argASTs []*AstArgument, variableVariables map[string]interface{}) (map[string]interface{}, error) {
+func getArgumentValues(argDefs []*Argument, argASTs []*ast.Argument, variableVariables map[string]interface{}) (map[string]interface{}, error) {
 
-	argASTMap := map[string]*AstArgument{}
+	argASTMap := map[string]*ast.Argument{}
 	for _, argAST := range argASTs {
 		if argAST.Name != nil {
 			argASTMap[argAST.Name.Value] = argAST
@@ -42,7 +45,7 @@ func getArgumentValues(argDefs []*Argument, argASTs []*AstArgument, variableVari
 	for _, argDef := range argDefs {
 
 		name := argDef.Name
-		var valueAST Value
+		var valueAST ast.Value
 		if argAST, ok := argASTMap[name]; ok {
 			valueAST = argAST.Value
 		}
@@ -59,7 +62,7 @@ func getArgumentValues(argDefs []*Argument, argASTs []*AstArgument, variableVari
 
 // Given a variable definition, and any value of input, return a value which
 // adheres to the variable definition, or throw an error.
-func getVariableValue(schema Schema, definitionAST *AstVariableDefinition, input interface{}) (interface{}, error) {
+func getVariableValue(schema Schema, definitionAST *ast.VariableDefinition, input interface{}) (interface{}, error) {
 	ttype, err := typeFromAST(schema, definitionAST.Type)
 	if err != nil {
 		return nil, err
@@ -67,10 +70,10 @@ func getVariableValue(schema Schema, definitionAST *AstVariableDefinition, input
 	variable := definitionAST.Variable
 
 	if ttype == nil || !IsInputType(ttype) {
-		return "", NewError(
+		return "", gqlerrors.NewError(
 			fmt.Sprintf(`Variable "$%v" expected value of type `+
-				`"%v" which cannot be used as an input type.`, variable.Name.Value, Print(definitionAST.Type)),
-			[]Node{definitionAST},
+				`"%v" which cannot be used as an input type.`, variable.Name.Value, printer.Print(definitionAST.Type)),
+			[]ast.Node{definitionAST},
 			"",
 			nil,
 			[]int{},
@@ -89,10 +92,10 @@ func getVariableValue(schema Schema, definitionAST *AstVariableDefinition, input
 		return coerceValue(ttype, input), nil
 	}
 	if isNullish(input) {
-		return "", NewError(
+		return "", gqlerrors.NewError(
 			fmt.Sprintf(`Variable "$%v" of required type `+
-				`"%v" was not provided.`, variable.Name.Value, Print(definitionAST.Type)),
-			[]Node{definitionAST},
+				`"%v" was not provided.`, variable.Name.Value, printer.Print(definitionAST.Type)),
+			[]ast.Node{definitionAST},
 			"",
 			nil,
 			[]int{},
@@ -103,10 +106,10 @@ func getVariableValue(schema Schema, definitionAST *AstVariableDefinition, input
 	if err == nil {
 		inputStr = string(b)
 	}
-	return "", NewError(
+	return "", gqlerrors.NewError(
 		fmt.Sprintf(`Variable "$%v" expected value of type `+
-			`"%v" but got: %v.`, variable.Name.Value, Print(definitionAST.Type), inputStr),
-		[]Node{definitionAST},
+			`"%v" but got: %v.`, variable.Name.Value, printer.Print(definitionAST.Type), inputStr),
+		[]ast.Node{definitionAST},
 		"",
 		nil,
 		[]int{},
@@ -175,21 +178,21 @@ func coerceValue(ttype Input, value interface{}) interface{} {
 // graphql-js/src/utilities.js`
 // TODO: figure out where to organize utils
 
-func typeFromAST(schema Schema, inputTypeAST AstType) (Type, error) {
+func typeFromAST(schema Schema, inputTypeAST ast.Type) (Type, error) {
 	switch inputTypeAST := inputTypeAST.(type) {
-	case *AstList:
+	case *ast.List:
 		innerType, err := typeFromAST(schema, inputTypeAST.Type)
 		if err != nil {
 			return nil, err
 		}
 		return NewList(innerType), nil
-	case *AstNonNull:
+	case *ast.NonNull:
 		innerType, err := typeFromAST(schema, inputTypeAST.Type)
 		if err != nil {
 			return nil, err
 		}
 		return NewNonNull(innerType), nil
-	case *AstNamed:
+	case *ast.Named:
 		nameValue := ""
 		if inputTypeAST.Name != nil {
 			nameValue = inputTypeAST.Name.Value
@@ -301,7 +304,7 @@ func isNullish(value interface{}) bool {
  * | Int / Float          | Number        |
  *
  */
-func valueFromAST(valueAST Value, ttype Input, variables map[string]interface{}) interface{} {
+func valueFromAST(valueAST ast.Value, ttype Input, variables map[string]interface{}) interface{} {
 
 	if ttype, ok := ttype.(*NonNull); ok {
 		val := valueFromAST(valueAST, ttype.OfType, variables)
@@ -312,7 +315,7 @@ func valueFromAST(valueAST Value, ttype Input, variables map[string]interface{})
 		return nil
 	}
 
-	if valueAST, ok := valueAST.(*AstVariable); ok && valueAST.Kind == kinds.Variable {
+	if valueAST, ok := valueAST.(*ast.Variable); ok && valueAST.Kind == kinds.Variable {
 		if valueAST.Name == nil {
 			return nil
 		}
@@ -332,7 +335,7 @@ func valueFromAST(valueAST Value, ttype Input, variables map[string]interface{})
 
 	if ttype, ok := ttype.(*List); ok {
 		itemType := ttype.OfType
-		if valueAST, ok := valueAST.(*AstListValue); ok && valueAST.Kind == kinds.ListValue {
+		if valueAST, ok := valueAST.(*ast.ListValue); ok && valueAST.Kind == kinds.ListValue {
 			values := []interface{}{}
 			for _, itemAST := range valueAST.Values {
 				v := valueFromAST(itemAST, itemType, variables)
@@ -345,11 +348,11 @@ func valueFromAST(valueAST Value, ttype Input, variables map[string]interface{})
 	}
 
 	if ttype, ok := ttype.(*InputObject); ok {
-		valueAST, ok := valueAST.(*AstObjectValue)
+		valueAST, ok := valueAST.(*ast.ObjectValue)
 		if !ok {
 			return nil
 		}
-		fieldASTs := map[string]*AstObjectField{}
+		fieldASTs := map[string]*ast.ObjectField{}
 		for _, fieldAST := range valueAST.Fields {
 			if fieldAST.Name == nil {
 				continue
@@ -392,7 +395,7 @@ func valueFromAST(valueAST Value, ttype Input, variables map[string]interface{})
 
 func invariant(condition bool, message string) error {
 	if !condition {
-		return NewFormattedError(message)
+		return gqlerrors.NewFormattedError(message)
 	}
 	return nil
 }
