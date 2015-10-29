@@ -96,24 +96,23 @@ func main() {
 ```
 
 ### Other Libraries Related
-1.[graphql-go-handler](https://github.com/sogko/graphql-go-handler) == [express-graphql](https://github.com/graphql/express-graphql)  
+* [graphql-go-handler](https://github.com/sogko/graphql-go-handler) == [express-graphql](https://github.com/graphql/express-graphql)  
 Middleware to handle GraphQL queries through HTTP requests. It parses GET/POST params and passes them into Graphql(), which returns JSON response. You can choose not to use it, but you will end up writing similar code. As to whether it should be merged with graphql-go, I think it could possibly be. Or it could remain separate, just like express-graphql. Either way, I'm open to merging it based on the community's decision.
 
-2.[graphql-relay-go](https://github.com/sogko/graphql-relay-go) == [graphql-relay-js](https://github.com/graphql/graphql-relay-js)  
+* [graphql-relay-go](https://github.com/sogko/graphql-relay-go) == [graphql-relay-js](https://github.com/graphql/graphql-relay-js)  
 This is a library to construct Relay-compliant servers, which has additional specs for pagination, global IDs and those sort of things. Not needed if you chose to build a pure GraphQL server.
 
 Some of the other projects that I contributed do use graphql-go + graphql-go-handler + graphql-relay-go, but they are specifically Relay applications:
 
-1.[golang-relay-starter-kit](https://github.com/sogko/golang-relay-starter-kit)
+* [golang-relay-starter-kit](https://github.com/sogko/golang-relay-starter-kit)
+* [todomvc-relay-go](https://github.com/sogko/todomvc-relay-go)
 
-2.[todomvc-relay-go](https://github.com/sogko/todomvc-relay-go)
+Another project that [@sogko](https://github.com/sogko) wrote used only graphql-go + graphql-go-handler, with graphiql for the front-end:
 
-Another project that I wrote used only graphql-go + graphql-go-handler, with graphiql for the front-end:
-
-[golang-graphql-playground](https://github.com/sogko/golang-graphql-playground) (Query only example, no mutations)
+* [golang-graphql-playground](https://github.com/sogko/golang-graphql-playground) (Query only example, no mutations)
 
 ### Blog Posts that might be useful
-A couple of posts written by @sogko on [Golang + GraphQL + Relay](http://wehavefaces.net/) but again, those are heading into the direction of Relay-specific details.
+A couple of posts written by [@sogko](https://github.com/sogko) on [Golang + GraphQL + Relay](http://wehavefaces.net/) but again, those are heading into the direction of Relay-specific details.
 
 ### Contributing
 
