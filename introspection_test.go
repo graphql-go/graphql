@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/chris-ramon/graphql/gqlerrors"
-	"github.com/chris-ramon/graphql/language/location"
+	"github.com/chris-ramon/graphql-go/gqlerrors"
+	"github.com/chris-ramon/graphql-go/language/location"
 )
 
 func g(t *testing.T, p Params) *Result {

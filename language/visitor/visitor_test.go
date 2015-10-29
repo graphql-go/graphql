@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/chris-ramon/graphql"
-	"github.com/chris-ramon/graphql/gqlerrors"
-	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/chris-ramon/graphql-go"
+	"github.com/chris-ramon/graphql-go/gqlerrors"
+	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/kr/pretty"
 )
 

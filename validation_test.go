@@ -3,7 +3,7 @@ package graphql
 import (
 	"testing"
 
-	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/chris-ramon/graphql-go/language/ast"
 )
 
 var someScalarType = NewScalar(ScalarConfig{

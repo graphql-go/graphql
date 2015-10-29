@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/chris-ramon/graphql/language/kinds"
+	"github.com/chris-ramon/graphql-go/language/kinds"
 )
 
 // Document implements Node

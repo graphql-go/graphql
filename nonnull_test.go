@@ -5,8 +5,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/chris-ramon/graphql/gqlerrors"
-	"github.com/chris-ramon/graphql/language/location"
+	"github.com/chris-ramon/graphql-go/gqlerrors"
+	"github.com/chris-ramon/graphql-go/language/location"
 )
 
 var syncError = "sync"

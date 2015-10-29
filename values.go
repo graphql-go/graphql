@@ -6,10 +6,10 @@ import (
 	"math"
 	"reflect"
 
-	"github.com/chris-ramon/graphql/gqlerrors"
-	"github.com/chris-ramon/graphql/language/ast"
-	"github.com/chris-ramon/graphql/language/kinds"
-	"github.com/chris-ramon/graphql/language/printer"
+	"github.com/chris-ramon/graphql-go/gqlerrors"
+	"github.com/chris-ramon/graphql-go/language/ast"
+	"github.com/chris-ramon/graphql-go/language/kinds"
+	"github.com/chris-ramon/graphql-go/language/printer"
 )
 
 // Prepares an object map of variableValues of the correct type based on the
