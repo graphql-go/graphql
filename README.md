@@ -1,15 +1,19 @@
 Graphql Golang [![Build Status](https://travis-ci.org/chris-ramon/graphql-go.svg)](https://travis-ci.org/chris-ramon/graphql-go) [![GoDoc](https://godoc.org/graphql.co/graphql?status.svg)](https://godoc.org/github.com/chris-ramon/graphql-go) [![Coverage Status](https://coveralls.io/repos/chris-ramon/graphql-go/badge.svg?branch=master&service=github)](https://coveralls.io/github/chris-ramon/graphql-go?branch=master) [![Join the chat at https://gitter.im/chris-ramon/graphql-go](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/chris-ramon/graphql-go?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 =====
 
-A *work in progress* implementation of GraphQL for Go. Right now a package renaming is in the plans.
+A *work-in-progress* implementation of GraphQL for Go. Right now a package renaming is in works.
 
 Its very similar to the js implementation and aims to be somewhat API compatabile Server-side implementation of graphql   
 [graphql-go](https://github.com/chris-ramon/graphql-go) == [graphql-js](https://github.com/graphql/graphql-js) 
 
-## Install
+### Origin and Current Direction
+
+This project was originally a port of [v0.4.3](https://github.com/graphql/graphql-js/releases/tag/v0.4.3) of [graphql-js](https://github.com/graphql/graphql-js) (excluding the Validator), which was based on the July 2015 GraphQL specification. `graphql-go` is currently several versions behind `graphql-js`, however future efforts will be guided directly by the [latest formal GraphQL specification](https://github.com/facebook/graphql/releases) (currently: [October 2015](https://github.com/facebook/graphql/releases/tag/October2015)).
+
+### Install
 `go get https://github.com/chris-ramon/graphql-go`
 
-## Example
+### Example
 ```go
 import (
   "github.com/chris-ramon/graphql-go"
@@ -91,7 +95,7 @@ func main() {
 }
 ```
 
-# Other Libraries Related
+### Other Libraries Related
 1.[graphql-go-handler](https://github.com/sogko/graphql-go-handler) == [express-graphql](https://github.com/graphql/express-graphql)  
 Middleware to handle GraphQL queries through HTTP requests. It parses GET/POST params and passes them into Graphql(), which returns JSON response. You can choose not to use it, but you will end up writing similar code. As to whether it should be merged with graphql-go, I think it could possibly be. Or it could remain separate, just like express-graphql. Either way, I'm open to merging it based on the community's decision.
 
@@ -108,29 +112,33 @@ Another project that I wrote used only graphql-go + graphql-go-handler, with gra
 
 [golang-graphql-playground](https://github.com/sogko/golang-graphql-playground) (Query only example, no mutations)
 
-## Blog Posts that might be useful
+### Blog Posts that might be useful
 A couple of posts written by @sogko on [Golang + GraphQL + Relay](http://wehavefaces.net/) but again, those are heading into the direction of Relay-specific details.
 
-## Contributing
+### Contributing
 
 We actively welcome pull requests, learn how to contribute.
 
-## Changelog
+### Changelog
 
 Changes are tracked as Github releases.(Todo)
 
-## License
+### License
 Todo
 
 
-#### Roadmap
+### Roadmap
 - [x] Lexer
 - [x] Parser
 - [x] Schema Parser
-- [ ] Printer
-- [ ] Schema Printer
-- [ ] Visitor
-- [ ] Executor
-- [ ] Basic usage
-- [ ] Relay/React example
-- [ ] Release v0.1
+- [x] Printer
+- [x] Schema Printer
+- [x] Visitor
+- [x] Executor
+- [ ] Validator
+- [ ] Examples
+  - [ ] Basic Usage (see: [PR-#21](https://github.com/chris-ramon/graphql-go/pull/21)) 
+  - [ ] React/Relay
+- [ ] Alpha Release (v0.1)
+
+The `Validator` is optional, per official GraphQL specification, but it would be a useful addition.
