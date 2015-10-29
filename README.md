@@ -67,7 +67,7 @@ var RootQuery = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
 
 func main() {
         // We create the schema first
-        Schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+    Schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
 		Query: RootQuery,
 	})
 	if err != nil {
@@ -75,7 +75,7 @@ func main() {
 	}
 	
 	// Then to execute a graphql request
-        rootValue := map[string]interface{}{"property_1": "tester"}
+    rootValue := map[string]interface{}{"property_1": "tester"}
 	resultChannel := make(chan *types.GraphQLResult)
 	params := gql.GraphqlParams{
 		Schema:         Schema,
