@@ -2,9 +2,12 @@
 
 This document is based on the [io.js contribution guidelines](https://github.com/nodejs/io.js/blob/master/CONTRIBUTING.md)
 
-## Chat room 
-[![Join the chat at https://gitter.im/chris-ramon/graphql-go](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/chris-ramon/graphql-go?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-Feel free to participate in the chat room for informal discussions and queries. Just drop by and say hi!
+## Chat room [![Join the chat at https://gitter.im/chris-ramon/graphql-go](https://badges.gitter.im/Join%20Chat.svg)]
+(https://gitter.im/chris-ramon/graphql-go?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
+Feel free to participate in the chat room for informal discussions and queries. 
+
+Just drop by and say hi!
 
 ## Issue Contributions
 
@@ -28,10 +31,10 @@ What do you want to contribute?
 Descriptions for each of these will eventually be provided below.
 
 ## General Guidelines
-* Readin up on https://github.com/golang/go/wiki/CodeReviewComments would be a great start.
+* Reading up on https://github.com/golang/go/wiki/CodeReviewComments would be a great start.
 * Submit a Github Pull Request to the appropriate branch and ideally discuss the changes with us in the [chat room](#chat-room).
 * We will look at the patch, test it out, and give you feedback.
-* Avoid doing minor whitespace changes, renamings, etc. along with merged content. These will be done by the maintainers from time to time but they can complicate merges and should be done separately.
+* Avoid doing minor whitespace changes, renaming, etc. along with merged content. These will be done by the maintainers from time to time but they can complicate merges and should be done separately.
 * Take care to maintain the existing coding style.
 * Always `golint` and `go fmt` your code.
 * Add unit tests for any new or changed functionality, especially for public APIs.
