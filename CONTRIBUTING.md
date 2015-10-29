@@ -2,7 +2,9 @@
 
 This document is based on the [io.js contribution guidelines](https://github.com/nodejs/io.js/blob/master/CONTRIBUTING.md)
 
-## Chat room [![Join the chat at https://gitter.im/chris-ramon/graphql-go](https://badges.gitter.im/Join%20Chat.svg)]
+## Chat room 
+
+[![Join the chat at https://gitter.im/chris-ramon/graphql-go](https://badges.gitter.im/Join%20Chat.svg)]
 (https://gitter.im/chris-ramon/graphql-go?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Feel free to participate in the chat room for informal discussions and queries. 
