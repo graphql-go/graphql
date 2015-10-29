@@ -5,7 +5,7 @@ A *work-in-progress* implementation of GraphQL for Go.
 
 ### Origin and Current Direction
 
-This project was originally a port of [v0.4.3](https://github.com/graphql/graphql-js/releases/tag/v0.4.3) of [graphql-js](https://github.com/graphql/graphql-js) (excluding the Validator), which was based on the July 2015 GraphQL specification. `graphql-go` is currently several versions behind `graphql-js`, however future efforts will be guided directly by the latest formal GraphQL specification (currently: October 2015).
+This project was originally a port of [v0.4.3](https://github.com/graphql/graphql-js/releases/tag/v0.4.3) of [graphql-js](https://github.com/graphql/graphql-js) (excluding the Validator), which was based on the July 2015 GraphQL specification. `graphql-go` is currently several versions behind `graphql-js`, however future efforts will be guided directly by the [latest formal GraphQL specification](https://github.com/facebook/graphql/releases) (currently: [October 2015](https://github.com/facebook/graphql/releases/tag/October2015)).
 
 ### Roadmap
 - [x] Lexer
