@@ -33,7 +33,7 @@ What do you want to contribute?
 Descriptions for each of these will eventually be provided below.
 
 ## General Guidelines
-* Reading up on https://github.com/golang/go/wiki/CodeReviewComments would be a great start.
+* Reading up on [CodeReviewComments](https://github.com/golang/go/wiki/CodeReviewComments) would be a great start.
 * Submit a Github Pull Request to the appropriate branch and ideally discuss the changes with us in the [chat room](#chat-room).
 * We will look at the patch, test it out, and give you feedback.
 * Avoid doing minor whitespace changes, renaming, etc. along with merged content. These will be done by the maintainers from time to time but they can complicate merges and should be done separately.
