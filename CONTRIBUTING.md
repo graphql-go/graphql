@@ -70,15 +70,15 @@ proper branch checked out.
 
 1. Set the contributor's fork as an upstream on your checkout
 
-`git remote add contrib1 https://github.com/contrib1/graphql-go`
+   ```git remote add contrib1 https://github.com/contrib1/graphql-go```
 
 2. Fetch the contributor's repo
 
-`git fetch contrib1`
+   ```git fetch contrib1```
 
 3. Checkout a copy of the PR branch
 
-`git checkout pr-1234 --track contrib1/branch-for-pr-1234`
+   ```git checkout pr-1234 --track contrib1/branch-for-pr-1234```
 
 4. Review the PR as normal
 
