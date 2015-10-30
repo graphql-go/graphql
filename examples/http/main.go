@@ -10,12 +10,12 @@ import (
 	"github.com/chris-ramon/graphql-go/types"
 )
 
-type User struct {
-	Id   string `json:"id"`
+type user struct {
+	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
-var data map[string]User
+var data map[string]user
 
 /*
    Create User object type with fields "id" and "name" by using GraphQLObjectTypeConfig:
@@ -61,9 +61,8 @@ var queryType = types.NewGraphQLObjectType(
 					idQuery, isOK := p.Args["id"].(string)
 					if isOK {
 						return data[idQuery]
-					} else {
-						return nil
 					}
+					return nil
 				},
 			},
 		},
@@ -90,7 +89,7 @@ func executeQuery(query string, schema types.GraphQLSchema) *types.GraphQLResult
 }
 
 func main() {
-	_ = importJsonDataFromFile("data.json", &data)
+	_ = importJSONDataFromFile("data.json", &data)
 
 	http.HandleFunc("/graphql", func(w http.ResponseWriter, r *http.Request) {
 		result := executeQuery(r.URL.Query()["query"][0], schema)
@@ -103,7 +102,7 @@ func main() {
 }
 
 //Helper function to import json from file to map
-func importJsonDataFromFile(fileName string, result interface{}) (isOK bool) {
+func importJSONDataFromFile(fileName string, result interface{}) (isOK bool) {
 	isOK = true
 	content, err := ioutil.ReadFile(fileName)
 	if err != nil {
