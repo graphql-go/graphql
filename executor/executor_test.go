@@ -666,7 +666,7 @@ func TestUsesTheQuerySchemaForQueries(t *testing.T) {
 	}
 }
 
-func TestUsesTheMutationSchemaForQueries(t *testing.T) {
+func TestUsesTheMutationSchemaForMutations(t *testing.T) {
 
 	doc := `query Q { a } mutation M { c }`
 	data := map[string]interface{}{
