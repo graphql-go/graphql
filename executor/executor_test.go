@@ -3,14 +3,13 @@ package executor_test
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
-	"testing"
-
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/executor"
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
+	"reflect"
+	"testing"
 )
 
 func TestExecutesArbitraryCode(t *testing.T) {
@@ -667,7 +666,7 @@ func TestUsesTheQuerySchemaForQueries(t *testing.T) {
 	}
 }
 
-func TestUsesTheMutationSchemaForMutations(t *testing.T) {
+func TestUsesTheMutationSchemaForQueries(t *testing.T) {
 
 	doc := `query Q { a } mutation M { c }`
 	data := map[string]interface{}{
