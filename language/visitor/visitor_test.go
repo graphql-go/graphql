@@ -204,6 +204,56 @@ func TestVisitor_AllowsSkippingASubTree(t *testing.T) {
 	}
 }
 
+func TestVisitor_AllowsEarlyExitWhileVisiting(t *testing.T) {
+
+	visited := []interface{}{}
+
+	query := `{ a, b { x }, c }`
+	astDoc := parse(t, query)
+
+	expectedVisited := []interface{}{
+		[]interface{}{"enter", "Document", nil},
+		[]interface{}{"enter", "OperationDefinition", nil},
+		[]interface{}{"enter", "SelectionSet", nil},
+		[]interface{}{"enter", "Field", nil},
+		[]interface{}{"enter", "Name", "a"},
+		[]interface{}{"leave", "Name", "a"},
+		[]interface{}{"leave", "Field", nil},
+		[]interface{}{"enter", "Field", nil},
+		[]interface{}{"enter", "Name", "b"},
+		[]interface{}{"leave", "Name", "b"},
+		[]interface{}{"enter", "SelectionSet", nil},
+		[]interface{}{"enter", "Field", nil},
+		[]interface{}{"enter", "Name", "x"},
+	}
+
+	v := &visitor.VisitorOptions{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case map[string]interface{}:
+				visited = append(visited, []interface{}{"enter", getMapValue(node, "Kind"), getMapValue(node, "Value")})
+				if getMapValue(node, "Kind") == "Name" && getMapValue(node, "Value") == "x" {
+					return visitor.ActionBreak, nil
+				}
+			}
+			return visitor.ActionNoChange, nil
+		},
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case map[string]interface{}:
+				visited = append(visited, []interface{}{"leave", getMapValue(node, "Kind"), getMapValue(node, "Value")})
+			}
+			return visitor.ActionNoChange, nil
+		},
+	}
+
+	_ = visitor.Visit(astDoc, v, nil)
+
+	if !reflect.DeepEqual(visited, expectedVisited) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
+	}
+}
+
 func TestVisitor_AllowsANamedFunctionsVisitorAPI(t *testing.T) {
 
 	query := `{ a, b { x }, c }`
