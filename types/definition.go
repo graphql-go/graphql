@@ -8,6 +8,7 @@ import (
 
 	"github.com/chris-ramon/graphql-go/errors"
 	"github.com/chris-ramon/graphql-go/language/ast"
+	"golang.org/x/net/context"
 )
 
 // These are all of the possible kinds of types.
@@ -499,7 +500,7 @@ type GQLFRParams struct {
 }
 
 // TODO: relook at GraphQLFieldResolveFn params
-type GraphQLFieldResolveFn func(p GQLFRParams) interface{}
+type GraphQLFieldResolveFn func(ctx context.Context, p GQLFRParams) interface{}
 
 type GraphQLResolveInfo struct {
 	FieldName      string

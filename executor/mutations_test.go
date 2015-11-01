@@ -6,6 +6,7 @@ import (
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
+	"golang.org/x/net/context"
 	"reflect"
 	"testing"
 )
@@ -66,7 +67,7 @@ var mutationsTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
 						Type: types.GraphQLInt,
 					},
 				},
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
@@ -80,7 +81,7 @@ var mutationsTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
 						Type: types.GraphQLInt,
 					},
 				},
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
@@ -94,7 +95,7 @@ var mutationsTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
 						Type: types.GraphQLInt,
 					},
 				},
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
@@ -108,7 +109,7 @@ var mutationsTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
 						Type: types.GraphQLInt,
 					},
 				},
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/printer"
+	"golang.org/x/net/context"
 	"math"
 	"reflect"
 )
@@ -86,7 +87,7 @@ func init() {
 		Fields: GraphQLFieldConfigMap{
 			"kind": &GraphQLFieldConfig{
 				Type: NewGraphQLNonNull(__TypeKind),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 					switch p.Source.(type) {
 					case *GraphQLScalarType:
 						return TypeKindScalar
@@ -137,7 +138,7 @@ func init() {
 			},
 			"defaultValue": &GraphQLFieldConfig{
 				Type: GraphQLString,
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 					if inputVal, ok := p.Source.(*GraphQLArgument); ok {
 						if inputVal.DefaultValue == nil {
 							return nil
@@ -169,7 +170,7 @@ func init() {
 			},
 			"args": &GraphQLFieldConfig{
 				Type: NewGraphQLNonNull(NewGraphQLList(NewGraphQLNonNull(__InputValue))),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 					if field, ok := p.Source.(*GraphQLFieldDefinition); ok {
 						return field.Args
 					}
@@ -181,7 +182,7 @@ func init() {
 			},
 			"isDeprecated": &GraphQLFieldConfig{
 				Type: NewGraphQLNonNull(GraphQLBoolean),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 					if field, ok := p.Source.(*GraphQLFieldDefinition); ok {
 						return (field.DeprecationReason != "")
 					}
@@ -232,7 +233,7 @@ mutation operations.`,
 				Type: NewGraphQLNonNull(NewGraphQLList(
 					NewGraphQLNonNull(__Type),
 				)),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 					if schema, ok := p.Source.(GraphQLSchema); ok {
 						results := []GraphQLType{}
 						for _, ttype := range schema.GetTypeMap() {
@@ -246,7 +247,7 @@ mutation operations.`,
 			"queryType": &GraphQLFieldConfig{
 				Description: "The type that query operations will be rooted at.",
 				Type:        NewGraphQLNonNull(__Type),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 					if schema, ok := p.Source.(GraphQLSchema); ok {
 						return schema.GetQueryType()
 					}
@@ -257,7 +258,7 @@ mutation operations.`,
 				Description: `If this server supports mutation, the type that ` +
 					`mutation operations will be rooted at.`,
 				Type: __Type,
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 					if schema, ok := p.Source.(GraphQLSchema); ok {
 						if schema.GetMutationType() != nil {
 							return schema.GetMutationType()
@@ -271,7 +272,7 @@ mutation operations.`,
 				Type: NewGraphQLNonNull(NewGraphQLList(
 					NewGraphQLNonNull(__Directive),
 				)),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 					if schema, ok := p.Source.(GraphQLSchema); ok {
 						return schema.GetDirectives()
 					}
@@ -292,7 +293,7 @@ mutation operations.`,
 			},
 			"isDeprecated": &GraphQLFieldConfig{
 				Type: NewGraphQLNonNull(GraphQLBoolean),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 					if field, ok := p.Source.(*GraphQLEnumValueDefinition); ok {
 						return (field.DeprecationReason != "")
 					}
@@ -315,7 +316,7 @@ mutation operations.`,
 				DefaultValue: false,
 			},
 		},
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 			includeDeprecated, _ := p.Args["includeDeprecated"].(bool)
 			switch ttype := p.Source.(type) {
 			case *GraphQLObjectType:
@@ -348,7 +349,7 @@ mutation operations.`,
 	})
 	__Type.AddFieldConfig("interfaces", &GraphQLFieldConfig{
 		Type: NewGraphQLList(NewGraphQLNonNull(__Type)),
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 			switch ttype := p.Source.(type) {
 			case *GraphQLObjectType:
 				return ttype.GetInterfaces()
@@ -358,7 +359,7 @@ mutation operations.`,
 	})
 	__Type.AddFieldConfig("possibleTypes", &GraphQLFieldConfig{
 		Type: NewGraphQLList(NewGraphQLNonNull(__Type)),
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 			switch ttype := p.Source.(type) {
 			case *GraphQLInterfaceType:
 				return ttype.GetPossibleTypes()
@@ -376,7 +377,7 @@ mutation operations.`,
 				DefaultValue: false,
 			},
 		},
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 			includeDeprecated, _ := p.Args["includeDeprecated"].(bool)
 			switch ttype := p.Source.(type) {
 			case *GraphQLEnumType:
@@ -397,7 +398,7 @@ mutation operations.`,
 	})
 	__Type.AddFieldConfig("inputFields", &GraphQLFieldConfig{
 		Type: NewGraphQLList(NewGraphQLNonNull(__InputValue)),
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 			switch ttype := p.Source.(type) {
 			case *GraphQLInputObjectType:
 				fields := []*InputObjectField{}
@@ -423,7 +424,7 @@ mutation operations.`,
 		Type:        NewGraphQLNonNull(__Schema),
 		Description: "Access the current type schema of this server.",
 		Args:        []*GraphQLArgument{},
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 			return p.Info.Schema
 		},
 	}
@@ -437,7 +438,7 @@ mutation operations.`,
 				Type: NewGraphQLNonNull(GraphQLString),
 			},
 		},
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 			name, ok := p.Args["name"].(string)
 			if !ok {
 				return nil
@@ -451,7 +452,7 @@ mutation operations.`,
 		Type:        NewGraphQLNonNull(GraphQLString),
 		Description: "The name of the current Object type at runtime.",
 		Args:        []*GraphQLArgument{},
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(ctx context.Context, p GQLFRParams) interface{} {
 			return p.Info.ParentType.GetName()
 		},
 	}

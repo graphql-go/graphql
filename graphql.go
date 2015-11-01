@@ -7,11 +7,13 @@ import (
 	"github.com/chris-ramon/graphql-go/language/source"
 	"github.com/chris-ramon/graphql-go/types"
 	"github.com/chris-ramon/graphql-go/validator"
+	"golang.org/x/net/context"
 )
 
 type GraphqlParams struct {
 	Schema         types.GraphQLSchema
 	RequestString  string
+	Ctx            context.Context
 	RootObject     map[string]interface{}
 	VariableValues map[string]interface{}
 	OperationName  string
@@ -43,6 +45,7 @@ func Graphql(p GraphqlParams, resultChannel chan *types.GraphQLResult) {
 			Schema:        p.Schema,
 			Root:          p.RootObject,
 			AST:           AST,
+			Ctx:           p.Ctx,
 			OperationName: p.OperationName,
 			Args:          p.VariableValues,
 		}

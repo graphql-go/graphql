@@ -5,6 +5,7 @@ import (
 	"github.com/chris-ramon/graphql-go/executor"
 	"github.com/chris-ramon/graphql-go/testutil"
 	"github.com/chris-ramon/graphql-go/types"
+	"golang.org/x/net/context"
 	"reflect"
 	"testing"
 )
@@ -106,7 +107,7 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 						Type: types.GraphQLInt,
 					},
 				},
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					if author, ok := p.Source.(*testAuthor); ok {
 						width := fmt.Sprintf("%v", p.Args["width"])
 						height := fmt.Sprintf("%v", p.Args["height"])
@@ -156,14 +157,14 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 						Type: types.GraphQLID,
 					},
 				},
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					id := p.Args["id"]
 					return article(id)
 				},
 			},
 			"feed": &types.GraphQLFieldConfig{
 				Type: types.NewGraphQLList(blogArticle),
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(ctx context.Context, p types.GQLFRParams) interface{} {
 					return []*testArticle{
 						article(1),
 						article(2),
