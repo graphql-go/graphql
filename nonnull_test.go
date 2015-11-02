@@ -1,12 +1,14 @@
-package graphql
+package graphql_test
 
 import (
 	"reflect"
 	"sort"
 	"testing"
 
+	"github.com/chris-ramon/graphql-go"
 	"github.com/chris-ramon/graphql-go/gqlerrors"
 	"github.com/chris-ramon/graphql-go/language/location"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
 var syncError = "sync"
@@ -44,25 +46,25 @@ var nullingData = map[string]interface{}{
 	},
 }
 
-var dataType = NewObject(ObjectConfig{
+var dataType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "DataType",
-	Fields: FieldConfigMap{
-		"sync": &FieldConfig{
-			Type: String,
+	Fields: graphql.FieldConfigMap{
+		"sync": &graphql.FieldConfig{
+			Type: graphql.String,
 		},
-		"nonNullSync": &FieldConfig{
-			Type: NewNonNull(String),
+		"nonNullSync": &graphql.FieldConfig{
+			Type: graphql.NewNonNull(graphql.String),
 		},
-		"promise": &FieldConfig{
-			Type: String,
+		"promise": &graphql.FieldConfig{
+			Type: graphql.String,
 		},
-		"nonNullPromise": &FieldConfig{
-			Type: NewNonNull(String),
+		"nonNullPromise": &graphql.FieldConfig{
+			Type: graphql.NewNonNull(graphql.String),
 		},
 	},
 })
 
-var nonNullTestSchema, _ = NewSchema(SchemaConfig{
+var nonNullTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 	Query: dataType,
 })
 
@@ -93,17 +95,17 @@ func init() {
 		return nullingData
 	}
 
-	dataType.AddFieldConfig("nest", &FieldConfig{
+	dataType.AddFieldConfig("nest", &graphql.FieldConfig{
 		Type: dataType,
 	})
-	dataType.AddFieldConfig("nonNullNest", &FieldConfig{
-		Type: NewNonNull(dataType),
+	dataType.AddFieldConfig("nonNullNest", &graphql.FieldConfig{
+		Type: graphql.NewNonNull(dataType),
 	})
-	dataType.AddFieldConfig("promiseNest", &FieldConfig{
+	dataType.AddFieldConfig("promiseNest", &graphql.FieldConfig{
 		Type: dataType,
 	})
-	dataType.AddFieldConfig("nonNullPromiseNest", &FieldConfig{
-		Type: NewNonNull(dataType),
+	dataType.AddFieldConfig("nonNullPromiseNest", &graphql.FieldConfig{
+		Type: graphql.NewNonNull(dataType),
 	})
 }
 
@@ -114,7 +116,7 @@ func TestNonNull_NullsANullableFieldThatThrowsSynchronously(t *testing.T) {
         sync
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"sync": nil,
 		},
@@ -130,20 +132,20 @@ func TestNonNull_NullsANullableFieldThatThrowsSynchronously(t *testing.T) {
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestNonNull_NullsANullableFieldThatThrowsInAPromise(t *testing.T) {
@@ -152,7 +154,7 @@ func TestNonNull_NullsANullableFieldThatThrowsInAPromise(t *testing.T) {
         promise
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"promise": nil,
 		},
@@ -168,20 +170,20 @@ func TestNonNull_NullsANullableFieldThatThrowsInAPromise(t *testing.T) {
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANullableFieldThatThrowsSynchronously(t *testing.T) {
@@ -192,7 +194,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANullableFieldThat
         }
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
@@ -208,20 +210,20 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANullableFieldThat
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldThatThrowsInAPromise(t *testing.T) {
@@ -232,7 +234,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
         }
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
@@ -248,20 +250,20 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldThatThrowsSynchronously(t *testing.T) {
@@ -272,7 +274,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
         }
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"promiseNest": nil,
 		},
@@ -288,20 +290,20 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldThatThrowsInAPromise(t *testing.T) {
@@ -312,7 +314,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
         }
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"promiseNest": nil,
 		},
@@ -328,20 +330,20 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -374,7 +376,7 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
         }
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"sync":    nil,
@@ -477,25 +479,25 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected.Data, result.Data) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Data, result.Data))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
 	sort.Sort(gqlerrors.GQLFormattedErrorSlice(expected.Errors))
 	sort.Sort(gqlerrors.GQLFormattedErrorSlice(result.Errors))
 	if !reflect.DeepEqual(expected.Errors, result.Errors) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 }
 func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfFieldsThatAreNonNull(t *testing.T) {
@@ -547,7 +549,7 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
         }
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nest":               nil,
 			"promiseNest":        nil,
@@ -582,25 +584,25 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected.Data, result.Data) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Data, result.Data))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
 	sort.Sort(gqlerrors.GQLFormattedErrorSlice(expected.Errors))
 	sort.Sort(gqlerrors.GQLFormattedErrorSlice(result.Errors))
 	if !reflect.DeepEqual(expected.Errors, result.Errors) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 
 }
@@ -610,29 +612,29 @@ func TestNonNull_NullsANullableFieldThatSynchronouslyReturnsNull(t *testing.T) {
         sync
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"sync": nil,
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected.Data, result.Data) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Data, result.Data))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
 	if !reflect.DeepEqual(expected.Errors, result.Errors) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 }
 func TestNonNull_NullsANullableFieldThatSynchronouslyReturnsNullInAPromise(t *testing.T) {
@@ -641,29 +643,29 @@ func TestNonNull_NullsANullableFieldThatSynchronouslyReturnsNullInAPromise(t *te
         promise
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"promise": nil,
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected.Data, result.Data) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Data, result.Data))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
 	if !reflect.DeepEqual(expected.Errors, result.Errors) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 }
 func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldThatReturnsNullSynchronously(t *testing.T) {
@@ -674,7 +676,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
         }
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
@@ -688,20 +690,20 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldThatReturnsNullInAPromise(t *testing.T) {
@@ -712,7 +714,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
         }
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nest": nil,
 		},
@@ -726,20 +728,20 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -751,7 +753,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
         }
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"promiseNest": nil,
 		},
@@ -765,20 +767,20 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldThatReturnsNullInAPromise(t *testing.T) {
@@ -789,7 +791,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
         }
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"promiseNest": nil,
 		},
@@ -803,20 +805,20 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestNonNull_NullsAComplexTreeOfNullableFieldsThatReturnNull(t *testing.T) {
@@ -848,7 +850,7 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatReturnNull(t *testing.T) {
         }
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"sync":    nil,
@@ -877,23 +879,23 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatReturnNull(t *testing.T) {
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected.Data, result.Data) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Data, result.Data))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
 	if !reflect.DeepEqual(expected.Errors, result.Errors) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 }
 func TestNonNull_NullsTheFirstNullableObjectAfterAFieldReturnsNullInALongChainOfFieldsThatAreNonNull(t *testing.T) {
@@ -945,7 +947,7 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldReturnsNullInALongChainOf
         }
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nest":               nil,
 			"promiseNest":        nil,
@@ -980,25 +982,25 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldReturnsNullInALongChainOf
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected.Data, result.Data) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Data, result.Data))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
 	sort.Sort(gqlerrors.GQLFormattedErrorSlice(expected.Errors))
 	sort.Sort(gqlerrors.GQLFormattedErrorSlice(result.Errors))
 	if !reflect.DeepEqual(expected.Errors, result.Errors) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 }
 
@@ -1006,7 +1008,7 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldThrows(t *testing.T) {
 	doc := `
       query Q { nonNullSync }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -1018,27 +1020,27 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldThrows(t *testing.T) {
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldErrors(t *testing.T) {
 	doc := `
       query Q { nonNullPromise }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -1050,27 +1052,27 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldErrors(t *testing.T) {
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldReturnsNull(t *testing.T) {
 	doc := `
       query Q { nonNullSync }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -1082,27 +1084,27 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldReturnsNull(t *testing.T)
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldResolvesNull(t *testing.T) {
 	doc := `
       query Q { nonNullPromise }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -1114,19 +1116,19 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldResolvesNull(t *testing.T
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }

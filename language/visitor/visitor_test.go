@@ -1,4 +1,4 @@
-package visitor
+package visitor_test
 
 import (
 	"encoding/json"
@@ -7,16 +7,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/chris-ramon/graphql-go"
-	"github.com/chris-ramon/graphql-go/gqlerrors"
 	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/kr/pretty"
+	"github.com/chris-ramon/graphql-go/language/parser"
+	"github.com/chris-ramon/graphql-go/language/visitor"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
 func parse(t *testing.T, query string) *ast.Document {
-	astDoc, err := graphql.Parse(ParseParams{
+	astDoc, err := parser.Parse(parser.ParseParams{
 		Source: query,
-		Options: graphql.ParseOptions{
+		Options: parser.ParseOptions{
 			NoLocation: true,
 		},
 	})
@@ -28,7 +28,7 @@ func parse(t *testing.T, query string) *ast.Document {
 
 // Helper functions to get map value by key
 // Allow keys to specify dot paths (e.g `Name.Value`)
-func testGetMapValue(m map[string]interface{}, key string) interface{} {
+func getMapValue(m map[string]interface{}, key string) interface{} {
 	tokens := strings.Split(key, ".")
 	valMap := m
 	for _, token := range tokens {
@@ -48,7 +48,7 @@ func testGetMapValue(m map[string]interface{}, key string) interface{} {
 	}
 	return valMap
 }
-func testGetMapValueString(m map[string]interface{}, key string) string {
+func getMapValueString(m map[string]interface{}, key string) string {
 	tokens := strings.Split(key, ".")
 	valMap := m
 	for _, token := range tokens {
@@ -66,6 +66,7 @@ func testGetMapValueString(m map[string]interface{}, key string) string {
 	}
 	return ""
 }
+
 func TestVisitor_AllowsForEditingOnEnter(t *testing.T) {
 
 	query := `{ a, b, c { a, b, c } }`
@@ -73,21 +74,21 @@ func TestVisitor_AllowsForEditingOnEnter(t *testing.T) {
 
 	expectedQuery := `{ a,    c { a,    c } }`
 	expectedAST := parse(t, expectedQuery)
-	v := &VisitorOptions{
-		Enter: func(p VisitFuncParams) (string, interface{}) {
+	v := &visitor.VisitorOptions{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
 			case map[string]interface{}:
-				if testGetMapValueString(node, "Kind") == "Field" && testGetMapValueString(node, "Name.Value") == "b" {
-					return ActionUpdate, nil
+				if getMapValueString(node, "Kind") == "Field" && getMapValueString(node, "Name.Value") == "b" {
+					return visitor.ActionUpdate, nil
 				}
 			}
-			return ActionNoChange, nil
+			return visitor.ActionNoChange, nil
 		},
 	}
 
-	editedAst := Visit(astDoc, v, nil)
+	editedAst := visitor.Visit(astDoc, v, nil)
 	if !reflect.DeepEqual(ASTToJSON(t, expectedAST), editedAst) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expectedAST, editedAst))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedAST, editedAst))
 	}
 
 }
@@ -98,21 +99,21 @@ func TestVisitor_AllowsForEditingOnLeave(t *testing.T) {
 
 	expectedQuery := `{ a,    c { a,    c } }`
 	expectedAST := parse(t, expectedQuery)
-	v := &VisitorOptions{
-		Leave: func(p VisitFuncParams) (string, interface{}) {
+	v := &visitor.VisitorOptions{
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
 			case map[string]interface{}:
-				if testGetMapValueString(node, "Kind") == "Field" && testGetMapValueString(node, "Name.Value") == "b" {
-					return ActionUpdate, nil
+				if getMapValueString(node, "Kind") == "Field" && getMapValueString(node, "Name.Value") == "b" {
+					return visitor.ActionUpdate, nil
 				}
 			}
-			return ActionNoChange, nil
+			return visitor.ActionNoChange, nil
 		},
 	}
 
-	editedAst := Visit(astDoc, v, nil)
+	editedAst := visitor.Visit(astDoc, v, nil)
 	if !reflect.DeepEqual(ASTToJSON(t, expectedAST), editedAst) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expectedAST, editedAst))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedAST, editedAst))
 	}
 }
 
@@ -130,14 +131,14 @@ func TestVisitor_VisitsEditedNode(t *testing.T) {
 	}
 
 	didVisitAddedField := false
-	v := &VisitorOptions{
-		Enter: func(p VisitFuncParams) (string, interface{}) {
+	v := &visitor.VisitorOptions{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
 			case map[string]interface{}:
-				if testGetMapValueString(node, "Kind") == "Field" && testGetMapValueString(node, "Name.Value") == "a" {
-					s := testGetMapValue(node, "SelectionSet.Selections").([]interface{})
+				if getMapValueString(node, "Kind") == "Field" && getMapValueString(node, "Name.Value") == "a" {
+					s := getMapValue(node, "SelectionSet.Selections").([]interface{})
 					s = append(s, addedField)
-					return ActionUpdate, map[string]interface{}{
+					return visitor.ActionUpdate, map[string]interface{}{
 						"Kind":         "Field",
 						"SelectionSet": s,
 					}
@@ -146,11 +147,11 @@ func TestVisitor_VisitsEditedNode(t *testing.T) {
 					didVisitAddedField = true
 				}
 			}
-			return ActionNoChange, nil
+			return visitor.ActionNoChange, nil
 		},
 	}
 
-	_ = Visit(astDoc, v, nil)
+	_ = visitor.Visit(astDoc, v, nil)
 	if didVisitAddedField == false {
 		t.Fatalf("Unexpected result, expected didVisitAddedField == true")
 	}
@@ -179,30 +180,80 @@ func TestVisitor_AllowsSkippingASubTree(t *testing.T) {
 		[]interface{}{"leave", "Document", nil},
 	}
 
-	v := &VisitorOptions{
-		Enter: func(p VisitFuncParams) (string, interface{}) {
+	v := &visitor.VisitorOptions{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
 			case map[string]interface{}:
-				visited = append(visited, []interface{}{"enter", testGetMapValue(node, "Kind"), testGetMapValue(node, "Value")})
-				if testGetMapValueString(node, "Kind") == "Field" && testGetMapValueString(node, "Name.Value") == "b" {
-					return ActionSkip, nil
+				visited = append(visited, []interface{}{"enter", getMapValue(node, "Kind"), getMapValue(node, "Value")})
+				if getMapValueString(node, "Kind") == "Field" && getMapValueString(node, "Name.Value") == "b" {
+					return visitor.ActionSkip, nil
 				}
 			}
-			return ActionNoChange, nil
+			return visitor.ActionNoChange, nil
 		},
-		Leave: func(p VisitFuncParams) (string, interface{}) {
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
 			case map[string]interface{}:
-				visited = append(visited, []interface{}{"leave", testGetMapValue(node, "Kind"), testGetMapValue(node, "Value")})
+				visited = append(visited, []interface{}{"leave", getMapValue(node, "Kind"), getMapValue(node, "Value")})
 			}
-			return ActionNoChange, nil
+			return visitor.ActionNoChange, nil
 		},
 	}
 
-	_ = Visit(astDoc, v, nil)
+	_ = visitor.Visit(astDoc, v, nil)
 
 	if !reflect.DeepEqual(visited, expectedVisited) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expectedVisited, visited))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
+	}
+}
+
+func TestVisitor_AllowsEarlyExitWhileVisiting(t *testing.T) {
+
+	visited := []interface{}{}
+
+	query := `{ a, b { x }, c }`
+	astDoc := parse(t, query)
+
+	expectedVisited := []interface{}{
+		[]interface{}{"enter", "Document", nil},
+		[]interface{}{"enter", "OperationDefinition", nil},
+		[]interface{}{"enter", "SelectionSet", nil},
+		[]interface{}{"enter", "Field", nil},
+		[]interface{}{"enter", "Name", "a"},
+		[]interface{}{"leave", "Name", "a"},
+		[]interface{}{"leave", "Field", nil},
+		[]interface{}{"enter", "Field", nil},
+		[]interface{}{"enter", "Name", "b"},
+		[]interface{}{"leave", "Name", "b"},
+		[]interface{}{"enter", "SelectionSet", nil},
+		[]interface{}{"enter", "Field", nil},
+		[]interface{}{"enter", "Name", "x"},
+	}
+
+	v := &visitor.VisitorOptions{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case map[string]interface{}:
+				visited = append(visited, []interface{}{"enter", getMapValue(node, "Kind"), getMapValue(node, "Value")})
+				if getMapValue(node, "Kind") == "Name" && getMapValue(node, "Value") == "x" {
+					return visitor.ActionBreak, nil
+				}
+			}
+			return visitor.ActionNoChange, nil
+		},
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case map[string]interface{}:
+				visited = append(visited, []interface{}{"leave", getMapValue(node, "Kind"), getMapValue(node, "Value")})
+			}
+			return visitor.ActionNoChange, nil
+		},
+	}
+
+	_ = visitor.Visit(astDoc, v, nil)
+
+	if !reflect.DeepEqual(visited, expectedVisited) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
 	}
 }
 
@@ -223,44 +274,44 @@ func TestVisitor_AllowsANamedFunctionsVisitorAPI(t *testing.T) {
 		[]interface{}{"leave", "SelectionSet", nil},
 	}
 
-	v := &VisitorOptions{
-		KindFuncMap: map[string]NamedVisitFuncs{
-			"Name": NamedVisitFuncs{
-				Kind: func(p VisitFuncParams) (string, interface{}) {
+	v := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			"Name": visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					switch node := p.Node.(type) {
 					case map[string]interface{}:
-						visited = append(visited, []interface{}{"enter", testGetMapValue(node, "Kind"), testGetMapValue(node, "Value")})
+						visited = append(visited, []interface{}{"enter", getMapValue(node, "Kind"), getMapValue(node, "Value")})
 					}
-					return ActionNoChange, nil
+					return visitor.ActionNoChange, nil
 				},
 			},
-			"SelectionSet": NamedVisitFuncs{
-				Enter: func(p VisitFuncParams) (string, interface{}) {
+			"SelectionSet": visitor.NamedVisitFuncs{
+				Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 					switch node := p.Node.(type) {
 					case map[string]interface{}:
-						visited = append(visited, []interface{}{"enter", testGetMapValue(node, "Kind"), testGetMapValue(node, "Value")})
+						visited = append(visited, []interface{}{"enter", getMapValue(node, "Kind"), getMapValue(node, "Value")})
 					}
-					return ActionNoChange, nil
+					return visitor.ActionNoChange, nil
 				},
-				Leave: func(p VisitFuncParams) (string, interface{}) {
+				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 					switch node := p.Node.(type) {
 					case map[string]interface{}:
-						visited = append(visited, []interface{}{"leave", testGetMapValue(node, "Kind"), testGetMapValue(node, "Value")})
+						visited = append(visited, []interface{}{"leave", getMapValue(node, "Kind"), getMapValue(node, "Value")})
 					}
-					return ActionNoChange, nil
+					return visitor.ActionNoChange, nil
 				},
 			},
 		},
 	}
 
-	_ = Visit(astDoc, v, nil)
+	_ = visitor.Visit(astDoc, v, nil)
 
 	if !reflect.DeepEqual(visited, expectedVisited) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expectedVisited, visited))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
 	}
 }
 func TestVisitor_VisitsKitchenSink(t *testing.T) {
-	b, err := ioutil.ReadFile("./kitchen-sink.graphql")
+	b, err := ioutil.ReadFile("../../kitchen-sink.graphql")
 	if err != nil {
 		t.Fatalf("unable to load kitchen-sink.graphql")
 	}
@@ -486,8 +537,8 @@ func TestVisitor_VisitsKitchenSink(t *testing.T) {
 		[]interface{}{"leave", "Document", nil, nil},
 	}
 
-	v := &VisitorOptions{
-		Enter: func(p VisitFuncParams) (string, interface{}) {
+	v := &visitor.VisitorOptions{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
 			case map[string]interface{}:
 
@@ -496,11 +547,11 @@ func TestVisitor_VisitsKitchenSink(t *testing.T) {
 					parent = map[string]interface{}{}
 				}
 
-				visited = append(visited, []interface{}{"enter", testGetMapValue(node, "Kind"), p.Key, testGetMapValue(parent, "Kind")})
+				visited = append(visited, []interface{}{"enter", getMapValue(node, "Kind"), p.Key, getMapValue(parent, "Kind")})
 			}
-			return ActionNoChange, nil
+			return visitor.ActionNoChange, nil
 		},
-		Leave: func(p VisitFuncParams) (string, interface{}) {
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
 			case map[string]interface{}:
 
@@ -509,16 +560,16 @@ func TestVisitor_VisitsKitchenSink(t *testing.T) {
 					parent = map[string]interface{}{}
 				}
 
-				visited = append(visited, []interface{}{"leave", testGetMapValue(node, "Kind"), p.Key, testGetMapValue(parent, "Kind")})
+				visited = append(visited, []interface{}{"leave", getMapValue(node, "Kind"), p.Key, getMapValue(parent, "Kind")})
 			}
-			return ActionNoChange, nil
+			return visitor.ActionNoChange, nil
 		},
 	}
 
-	_ = Visit(astDoc, v, nil)
+	_ = visitor.Visit(astDoc, v, nil)
 
 	if !reflect.DeepEqual(visited, expectedVisited) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expectedVisited, visited))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
 	}
 }
 
@@ -528,7 +579,7 @@ func TestVisitor_ProducesHelpfulErrorMessages(t *testing.T) {
 			err := r.(string)
 			expectedErr := `Invalid AST Node (4): map[random:Data]`
 			if err != expectedErr {
-				t.Fatalf("Unexpected result, Diff: %v", Diff(err, expectedErr))
+				t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(err, expectedErr))
 			}
 			return
 		}
@@ -537,7 +588,7 @@ func TestVisitor_ProducesHelpfulErrorMessages(t *testing.T) {
 	astDoc := map[string]interface{}{
 		"random": "Data",
 	}
-	_ = Visit(astDoc, nil, nil)
+	_ = visitor.Visit(astDoc, nil, nil)
 }
 
 func ASTToJSON(t *testing.T, a ast.Node) interface{} {
@@ -551,8 +602,4 @@ func ASTToJSON(t *testing.T, a ast.Node) interface{} {
 		t.Fatalf("Failed to unmarshal Node %v", err)
 	}
 	return f
-}
-
-func Diff(a, b interface{}) []string {
-	return pretty.Diff(a, b)
 }

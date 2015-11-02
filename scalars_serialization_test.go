@@ -1,8 +1,10 @@
-package graphql
+package graphql_test
 
 import (
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql-go"
 )
 
 type intSerializationTest struct {
@@ -44,7 +46,7 @@ func TestTypeSystem_Scalar_SerializesOutputInt(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		val := Int.Serialize(test.Value)
+		val := graphql.Int.Serialize(test.Value)
 		if val != test.Expected {
 			reflectedValue := reflect.ValueOf(test.Value)
 			t.Fatalf("Failed Int.Serialize(%v(%v)), expected: %v, got %v", reflectedValue.Type(), test.Value, test.Expected, val)
@@ -67,7 +69,7 @@ func TestTypeSystem_Scalar_SerializesOutputFloat(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		val := Float.Serialize(test.Value)
+		val := graphql.Float.Serialize(test.Value)
 		if val != test.Expected {
 			reflectedValue := reflect.ValueOf(test.Value)
 			t.Fatalf("Failed test #%d - Float.Serialize(%v(%v)), expected: %v, got %v", i, reflectedValue.Type(), test.Value, test.Expected, val)
@@ -85,7 +87,7 @@ func TestTypeSystem_Scalar_SerializesOutputStrings(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		val := String.Serialize(test.Value)
+		val := graphql.String.Serialize(test.Value)
 		if val != test.Expected {
 			reflectedValue := reflect.ValueOf(test.Value)
 			t.Fatalf("Failed String.Serialize(%v(%v)), expected: %v, got %v", reflectedValue.Type(), test.Value, test.Expected, val)
@@ -106,7 +108,7 @@ func TestTypeSystem_Scalar_SerializesOutputBoolean(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		val := Boolean.Serialize(test.Value)
+		val := graphql.Boolean.Serialize(test.Value)
 		if val != test.Expected {
 			reflectedValue := reflect.ValueOf(test.Value)
 			t.Fatalf("Failed String.Boolean(%v(%v)), expected: %v, got %v", reflectedValue.Type(), test.Value, test.Expected, val)

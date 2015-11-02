@@ -1,43 +1,45 @@
-package graphql
+package graphql_test
 
 import (
 	"reflect"
 	"testing"
 
+	"github.com/chris-ramon/graphql-go"
 	"github.com/chris-ramon/graphql-go/gqlerrors"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
-var enumTypeTestColorType = NewEnum(EnumConfig{
+var enumTypeTestColorType = graphql.NewEnum(graphql.EnumConfig{
 	Name: "Color",
-	Values: EnumValueConfigMap{
-		"RED": &EnumValueConfig{
+	Values: graphql.EnumValueConfigMap{
+		"RED": &graphql.EnumValueConfig{
 			Value: 0,
 		},
-		"GREEN": &EnumValueConfig{
+		"GREEN": &graphql.EnumValueConfig{
 			Value: 1,
 		},
-		"BLUE": &EnumValueConfig{
+		"BLUE": &graphql.EnumValueConfig{
 			Value: 2,
 		},
 	},
 })
-var enumTypeTestQueryType = NewObject(ObjectConfig{
+var enumTypeTestQueryType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Query",
-	Fields: FieldConfigMap{
-		"colorEnum": &FieldConfig{
+	Fields: graphql.FieldConfigMap{
+		"colorEnum": &graphql.FieldConfig{
 			Type: enumTypeTestColorType,
-			Args: FieldConfigArgument{
-				"fromEnum": &ArgumentConfig{
+			Args: graphql.FieldConfigArgument{
+				"fromEnum": &graphql.ArgumentConfig{
 					Type: enumTypeTestColorType,
 				},
-				"fromInt": &ArgumentConfig{
-					Type: Int,
+				"fromInt": &graphql.ArgumentConfig{
+					Type: graphql.Int,
 				},
-				"fromString": &ArgumentConfig{
-					Type: String,
+				"fromString": &graphql.ArgumentConfig{
+					Type: graphql.String,
 				},
 			},
-			Resolve: func(p GQLFRParams) interface{} {
+			Resolve: func(p graphql.GQLFRParams) interface{} {
 				if fromInt, ok := p.Args["fromInt"]; ok {
 					return fromInt
 				}
@@ -50,17 +52,17 @@ var enumTypeTestQueryType = NewObject(ObjectConfig{
 				return nil
 			},
 		},
-		"colorInt": &FieldConfig{
-			Type: Int,
-			Args: FieldConfigArgument{
-				"fromEnum": &ArgumentConfig{
+		"colorInt": &graphql.FieldConfig{
+			Type: graphql.Int,
+			Args: graphql.FieldConfigArgument{
+				"fromEnum": &graphql.ArgumentConfig{
 					Type: enumTypeTestColorType,
 				},
-				"fromInt": &ArgumentConfig{
-					Type: Int,
+				"fromInt": &graphql.ArgumentConfig{
+					Type: graphql.Int,
 				},
 			},
-			Resolve: func(p GQLFRParams) interface{} {
+			Resolve: func(p graphql.GQLFRParams) interface{} {
 				if fromInt, ok := p.Args["fromInt"]; ok {
 					return fromInt
 				}
@@ -72,17 +74,17 @@ var enumTypeTestQueryType = NewObject(ObjectConfig{
 		},
 	},
 })
-var enumTypeTestMutationType = NewObject(ObjectConfig{
+var enumTypeTestMutationType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
-	Fields: FieldConfigMap{
-		"favoriteEnum": &FieldConfig{
+	Fields: graphql.FieldConfigMap{
+		"favoriteEnum": &graphql.FieldConfig{
 			Type: enumTypeTestColorType,
-			Args: FieldConfigArgument{
-				"color": &ArgumentConfig{
+			Args: graphql.FieldConfigArgument{
+				"color": &graphql.ArgumentConfig{
 					Type: enumTypeTestColorType,
 				},
 			},
-			Resolve: func(p GQLFRParams) interface{} {
+			Resolve: func(p graphql.GQLFRParams) interface{} {
 				if color, ok := p.Args["color"]; ok {
 					return color
 				}
@@ -91,20 +93,20 @@ var enumTypeTestMutationType = NewObject(ObjectConfig{
 		},
 	},
 })
-var enumTypeTestSchema, _ = NewSchema(SchemaConfig{
+var enumTypeTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 	Query:    enumTypeTestQueryType,
 	Mutation: enumTypeTestMutationType,
 })
 
-func executeEnumTypeTest(t *testing.T, query string) *Result {
-	result := g(t, Params{
+func executeEnumTypeTest(t *testing.T, query string) *graphql.Result {
+	result := g(t, graphql.Params{
 		Schema:        enumTypeTestSchema,
 		RequestString: query,
 	})
 	return result
 }
-func executeEnumTypeTestWithParams(t *testing.T, query string, params map[string]interface{}) *Result {
-	result := g(t, Params{
+func executeEnumTypeTestWithParams(t *testing.T, query string, params map[string]interface{}) *graphql.Result {
+	result := g(t, graphql.Params{
 		Schema:         enumTypeTestSchema,
 		RequestString:  query,
 		VariableValues: params,
@@ -113,44 +115,44 @@ func executeEnumTypeTestWithParams(t *testing.T, query string, params map[string
 }
 func TestTypeSystem_EnumValues_AcceptsEnumLiteralsAsInput(t *testing.T) {
 	query := "{ colorInt(fromEnum: GREEN) }"
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"colorInt": 1,
 		},
 	}
 	result := executeEnumTypeTest(t, query)
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
 func TestTypeSystem_EnumValues_EnumMayBeOutputType(t *testing.T) {
 	query := "{ colorEnum(fromInt: 1) }"
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"colorEnum": "GREEN",
 		},
 	}
 	result := executeEnumTypeTest(t, query)
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestTypeSystem_EnumValues_EnumMayBeBothInputAndOutputType(t *testing.T) {
 	query := "{ colorEnum(fromEnum: GREEN) }"
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"colorEnum": "GREEN",
 		},
 	}
 	result := executeEnumTypeTest(t, query)
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestTypeSystem_EnumValues_DoesNotAcceptStringLiterals(t *testing.T) {
 	query := `{ colorEnum(fromEnum: "GREEN") }`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -161,24 +163,24 @@ func TestTypeSystem_EnumValues_DoesNotAcceptStringLiterals(t *testing.T) {
 	result := executeEnumTypeTest(t, query)
 	t.Skipf("Pending `validator` implementation")
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestTypeSystem_EnumValues_DoesNotAcceptIncorrectInternalValue(t *testing.T) {
 	query := `{ colorEnum(fromString: "GREEN") }`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"colorEnum": nil,
 		},
 	}
 	result := executeEnumTypeTest(t, query)
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueInPlaceOfEnumLiteral(t *testing.T) {
 	query := `{ colorEnum(fromEnum: 1) }`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -189,13 +191,13 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueInPlaceOfEnumLiteral(t 
 	result := executeEnumTypeTest(t, query)
 	t.Skipf("Pending `validator` implementation")
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
 func TestTypeSystem_EnumValues_DoesNotAcceptEnumLiteralInPlaceOfInt(t *testing.T) {
 	query := `{ colorEnum(fromInt: GREEN) }`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -206,7 +208,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptEnumLiteralInPlaceOfInt(t *testing.T
 	result := executeEnumTypeTest(t, query)
 	t.Skipf("Pending `validator` implementation")
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -215,14 +217,14 @@ func TestTypeSystem_EnumValues_AcceptsJSONStringAsEnumVariable(t *testing.T) {
 	params := map[string]interface{}{
 		"color": "BLUE",
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"colorEnum": "BLUE",
 		},
 	}
 	result := executeEnumTypeTestWithParams(t, query, params)
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -231,14 +233,14 @@ func TestTypeSystem_EnumValues_AcceptsEnumLiteralsAsInputArgumentsToMutations(t 
 	params := map[string]interface{}{
 		"color": "GREEN",
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"favoriteEnum": "GREEN",
 		},
 	}
 	result := executeEnumTypeTestWithParams(t, query, params)
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueAsEnumVariable(t *testing.T) {
@@ -246,7 +248,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueAsEnumVariable(t *testi
 	params := map[string]interface{}{
 		"color": 2,
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -257,7 +259,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueAsEnumVariable(t *testi
 	result := executeEnumTypeTestWithParams(t, query, params)
 	t.Skipf("Pending `validator` implementation")
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestTypeSystem_EnumValues_DoesNotAcceptStringVariablesAsEnumInput(t *testing.T) {
@@ -265,7 +267,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptStringVariablesAsEnumInput(t *testin
 	params := map[string]interface{}{
 		"color": "BLUE",
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -276,7 +278,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptStringVariablesAsEnumInput(t *testin
 	result := executeEnumTypeTestWithParams(t, query, params)
 	t.Skipf("Pending `validator` implementation")
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueVariableAsEnumInput(t *testing.T) {
@@ -284,7 +286,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueVariableAsEnumInput(t *
 	params := map[string]interface{}{
 		"color": 2,
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -295,7 +297,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueVariableAsEnumInput(t *
 	result := executeEnumTypeTestWithParams(t, query, params)
 	t.Skipf("Pending `validator` implementation")
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestTypeSystem_EnumValues_EnumValueMayHaveAnInternalValueOfZero(t *testing.T) {
@@ -303,7 +305,7 @@ func TestTypeSystem_EnumValues_EnumValueMayHaveAnInternalValueOfZero(t *testing.
         colorEnum(fromEnum: RED)
         colorInt(fromEnum: RED)
       }`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"colorEnum": "RED",
 			"colorInt":  0,
@@ -311,7 +313,7 @@ func TestTypeSystem_EnumValues_EnumValueMayHaveAnInternalValueOfZero(t *testing.
 	}
 	result := executeEnumTypeTest(t, query)
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestTypeSystem_EnumValues_EnumValueMayBeNullable(t *testing.T) {
@@ -319,7 +321,7 @@ func TestTypeSystem_EnumValues_EnumValueMayBeNullable(t *testing.T) {
         colorEnum
         colorInt
       }`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"colorEnum": nil,
 			"colorInt":  nil,
@@ -327,6 +329,6 @@ func TestTypeSystem_EnumValues_EnumValueMayBeNullable(t *testing.T) {
 	}
 	result := executeEnumTypeTest(t, query)
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }

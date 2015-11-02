@@ -2,6 +2,7 @@ package graphql
 
 import (
 	"github.com/chris-ramon/graphql-go/gqlerrors"
+	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/language/source"
 )
 
@@ -18,7 +19,7 @@ func Graphql(p Params, resultChannel chan *Result) {
 		Body: p.RequestString,
 		Name: "GraphQL request",
 	})
-	AST, err := Parse(ParseParams{Source: source})
+	AST, err := parser.Parse(parser.ParseParams{Source: source})
 	if err != nil {
 		result := Result{
 			Errors: gqlerrors.FormatErrors(err),

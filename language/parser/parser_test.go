@@ -1,4 +1,4 @@
-package graphql
+package parser
 
 import (
 	"fmt"
@@ -186,7 +186,7 @@ func TestDoesNotAllowNullAsValue(t *testing.T) {
 }
 
 func TestParsesKitchenSink(t *testing.T) {
-	b, err := ioutil.ReadFile("./kitchen-sink.graphql")
+	b, err := ioutil.ReadFile("../../kitchen-sink.graphql")
 	if err != nil {
 		t.Fatalf("unable to load kitchen-sink.graphql")
 	}

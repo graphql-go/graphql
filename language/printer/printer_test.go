@@ -1,15 +1,20 @@
-package printer
+package printer_test
 
 import (
 	"io/ioutil"
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql-go/language/ast"
+	"github.com/chris-ramon/graphql-go/language/parser"
+	"github.com/chris-ramon/graphql-go/language/printer"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
-func parse(t *testing.T, query string) *AstDocument {
-	astDoc, err := Parse(ParseParams{
+func parse(t *testing.T, query string) *ast.Document {
+	astDoc, err := parser.Parse(parser.ParseParams{
 		Source: query,
-		Options: ParseOptions{
+		Options: parser.ParseOptions{
 			NoLocation: true,
 		},
 	})
@@ -20,7 +25,7 @@ func parse(t *testing.T, query string) *AstDocument {
 }
 
 func TestPrinter_DoesNotAlterAST(t *testing.T) {
-	b, err := ioutil.ReadFile("./kitchen-sink.graphql")
+	b, err := ioutil.ReadFile("../../kitchen-sink.graphql")
 	if err != nil {
 		t.Fatalf("unable to load kitchen-sink.graphql")
 	}
@@ -28,34 +33,34 @@ func TestPrinter_DoesNotAlterAST(t *testing.T) {
 	query := string(b)
 	astDoc := parse(t, query)
 
-	astDocBefore := ASTToJSON(t, astDoc)
+	astDocBefore := testutil.ASTToJSON(t, astDoc)
 
-	_ = Print(astDoc)
+	_ = printer.Print(astDoc)
 
-	astDocAfter := ASTToJSON(t, astDoc)
+	astDocAfter := testutil.ASTToJSON(t, astDoc)
 
-	_ = ASTToJSON(t, astDoc)
+	_ = testutil.ASTToJSON(t, astDoc)
 
 	if !reflect.DeepEqual(astDocAfter, astDocBefore) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(astDocAfter, astDocBefore))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(astDocAfter, astDocBefore))
 	}
 }
 
 func TestPrinter_PrintsMinimalAST(t *testing.T) {
-	astDoc := NewField(&AstField{
-		Name: NewAstName(&AstName{
+	astDoc := ast.NewField(&ast.Field{
+		Name: ast.NewName(&ast.Name{
 			Value: "foo",
 		}),
 	})
-	results := Print(astDoc)
+	results := printer.Print(astDoc)
 	expected := "foo"
 	if !reflect.DeepEqual(results, expected) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, results))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, results))
 	}
 }
 
 func TestPrinter_PrintsKitchenSink(t *testing.T) {
-	b, err := ioutil.ReadFile("./kitchen-sink.graphql")
+	b, err := ioutil.ReadFile("../../kitchen-sink.graphql")
 	if err != nil {
 		t.Fatalf("unable to load kitchen-sink.graphql")
 	}
@@ -94,9 +99,9 @@ fragment frag on Follower {
   query
 }
 `
-	results := Print(astDoc)
+	results := printer.Print(astDoc)
 
 	if !reflect.DeepEqual(expected, results) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(results, expected))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(results, expected))
 	}
 }

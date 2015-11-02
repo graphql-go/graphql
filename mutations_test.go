@@ -1,11 +1,13 @@
-package graphql
+package graphql_test
 
 import (
 	"reflect"
 	"testing"
 
+	"github.com/chris-ramon/graphql-go"
 	"github.com/chris-ramon/graphql-go/gqlerrors"
 	"github.com/chris-ramon/graphql-go/language/location"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
 // testNumberHolder maps to numberHolderType
@@ -36,77 +38,77 @@ func (r *testRoot) PromiseAndFailToChangeTheNumber(newNumber int) *testNumberHol
 }
 
 // numberHolderType creates a mapping to testNumberHolder
-var numberHolderType = NewObject(ObjectConfig{
+var numberHolderType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "NumberHolder",
-	Fields: FieldConfigMap{
-		"theNumber": &FieldConfig{
-			Type: Int,
+	Fields: graphql.FieldConfigMap{
+		"theNumber": &graphql.FieldConfig{
+			Type: graphql.Int,
 		},
 	},
 })
 
-var mutationsTestSchema, _ = NewSchema(SchemaConfig{
-	Query: NewObject(ObjectConfig{
+var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
+	Query: graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
-		Fields: FieldConfigMap{
-			"numberHolder": &FieldConfig{
+		Fields: graphql.FieldConfigMap{
+			"numberHolder": &graphql.FieldConfig{
 				Type: numberHolderType,
 			},
 		},
 	}),
-	Mutation: NewObject(ObjectConfig{
+	Mutation: graphql.NewObject(graphql.ObjectConfig{
 		Name: "Mutation",
-		Fields: FieldConfigMap{
-			"immediatelyChangeTheNumber": &FieldConfig{
+		Fields: graphql.FieldConfigMap{
+			"immediatelyChangeTheNumber": &graphql.FieldConfig{
 				Type: numberHolderType,
-				Args: FieldConfigArgument{
-					"newNumber": &ArgumentConfig{
-						Type: Int,
+				Args: graphql.FieldConfigArgument{
+					"newNumber": &graphql.ArgumentConfig{
+						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
 					return obj.ImmediatelyChangeTheNumber(newNumber)
 				},
 			},
-			"promiseToChangeTheNumber": &FieldConfig{
+			"promiseToChangeTheNumber": &graphql.FieldConfig{
 				Type: numberHolderType,
-				Args: FieldConfigArgument{
-					"newNumber": &ArgumentConfig{
-						Type: Int,
+				Args: graphql.FieldConfigArgument{
+					"newNumber": &graphql.ArgumentConfig{
+						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
 					return obj.PromiseToChangeTheNumber(newNumber)
 				},
 			},
-			"failToChangeTheNumber": &FieldConfig{
+			"failToChangeTheNumber": &graphql.FieldConfig{
 				Type: numberHolderType,
-				Args: FieldConfigArgument{
-					"newNumber": &ArgumentConfig{
-						Type: Int,
+				Args: graphql.FieldConfigArgument{
+					"newNumber": &graphql.ArgumentConfig{
+						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
 					return obj.FailToChangeTheNumber(newNumber)
 				},
 			},
-			"promiseAndFailToChangeTheNumber": &FieldConfig{
+			"promiseAndFailToChangeTheNumber": &graphql.FieldConfig{
 				Type: numberHolderType,
-				Args: FieldConfigArgument{
-					"newNumber": &ArgumentConfig{
-						Type: Int,
+				Args: graphql.FieldConfigArgument{
+					"newNumber": &graphql.ArgumentConfig{
+						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
@@ -138,7 +140,7 @@ func TestMutations_ExecutionOrdering_EvaluatesMutationsSerially(t *testing.T) {
       }
     }`
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"first": map[string]interface{}{
 				"theNumber": 1,
@@ -158,20 +160,20 @@ func TestMutations_ExecutionOrdering_EvaluatesMutationsSerially(t *testing.T) {
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: mutationsTestSchema,
 		AST:    ast,
 		Root:   root,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestMutations_EvaluatesMutationsCorrectlyInThePresenceOfAFailedMutation(t *testing.T) {
@@ -198,7 +200,7 @@ func TestMutations_EvaluatesMutationsCorrectlyInThePresenceOfAFailedMutation(t *
       }
     }`
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"first": map[string]interface{}{
 				"theNumber": 1,
@@ -231,20 +233,20 @@ func TestMutations_EvaluatesMutationsCorrectlyInThePresenceOfAFailedMutation(t *
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: mutationsTestSchema,
 		AST:    ast,
 		Root:   root,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	t.Skipf("Testing equality for slice of errors in results")
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }

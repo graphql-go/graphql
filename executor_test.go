@@ -1,4 +1,4 @@
-package graphql
+package graphql_test
 
 import (
 	"encoding/json"
@@ -6,8 +6,10 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/chris-ramon/graphql-go"
 	"github.com/chris-ramon/graphql-go/gqlerrors"
 	"github.com/chris-ramon/graphql-go/language/location"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
 func TestExecutesArbitraryCode(t *testing.T) {
@@ -65,7 +67,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
       }
     `
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"b": "Banana",
 			"x": "Cookie",
@@ -101,7 +103,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 	}
 
 	// Schema Definitions
-	picResolverFn := func(p GQLFRParams) interface{} {
+	picResolverFn := func(p graphql.GQLFRParams) interface{} {
 		// get and type assert ResolveFn for this field
 		picResolver, ok := p.Source.(map[string]interface{})["pic"].(func(size int) string)
 		if !ok {
@@ -114,67 +116,67 @@ func TestExecutesArbitraryCode(t *testing.T) {
 		}
 		return picResolver(sizeArg)
 	}
-	dataType := NewObject(ObjectConfig{
+	dataType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "DataType",
-		Fields: FieldConfigMap{
-			"a": &FieldConfig{
-				Type: String,
+		Fields: graphql.FieldConfigMap{
+			"a": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"b": &FieldConfig{
-				Type: String,
+			"b": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"c": &FieldConfig{
-				Type: String,
+			"c": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"d": &FieldConfig{
-				Type: String,
+			"d": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"e": &FieldConfig{
-				Type: String,
+			"e": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"f": &FieldConfig{
-				Type: String,
+			"f": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"pic": &FieldConfig{
-				Args: FieldConfigArgument{
-					"size": &ArgumentConfig{
-						Type: Int,
+			"pic": &graphql.FieldConfig{
+				Args: graphql.FieldConfigArgument{
+					"size": &graphql.ArgumentConfig{
+						Type: graphql.Int,
 					},
 				},
-				Type:    String,
+				Type:    graphql.String,
 				Resolve: picResolverFn,
 			},
 		},
 	})
-	deepDataType := NewObject(ObjectConfig{
+	deepDataType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "DeepDataType",
-		Fields: FieldConfigMap{
-			"a": &FieldConfig{
-				Type: String,
+		Fields: graphql.FieldConfigMap{
+			"a": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"b": &FieldConfig{
-				Type: String,
+			"b": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"c": &FieldConfig{
-				Type: NewList(String),
+			"c": &graphql.FieldConfig{
+				Type: graphql.NewList(graphql.String),
 			},
-			"deeper": &FieldConfig{
-				Type: NewList(dataType),
+			"deeper": &graphql.FieldConfig{
+				Type: graphql.NewList(dataType),
 			},
 		},
 	})
 
 	// Exploring a way to have a Object within itself
 	// in this case DataType has DeepDataType has DataType
-	dataType.AddFieldConfig("deep", &FieldConfig{
+	dataType.AddFieldConfig("deep", &graphql.FieldConfig{
 		Type: deepDataType,
 	})
 	// in this case DataType has DataType
-	dataType.AddFieldConfig("promise", &FieldConfig{
+	dataType.AddFieldConfig("promise", &graphql.FieldConfig{
 		Type: dataType,
 	})
 
-	schema, err := NewSchema(SchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: dataType,
 	})
 	if err != nil {
@@ -182,26 +184,26 @@ func TestExecutesArbitraryCode(t *testing.T) {
 	}
 
 	// parse query
-	astDoc := TestParse(t, query)
+	astDoc := testutil.TestParse(t, query)
 
 	// execute
 	args := map[string]interface{}{
 		"size": 100,
 	}
 	operationName := "Example"
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema:        schema,
 		Root:          data,
 		AST:           astDoc,
 		OperationName: operationName,
 		Args:          args,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -221,7 +223,7 @@ func TestMergesParallelFragments(t *testing.T) {
       }
     `
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "Apple",
 			"b": "Banana",
@@ -237,38 +239,38 @@ func TestMergesParallelFragments(t *testing.T) {
 		},
 	}
 
-	typeObjectType := NewObject(ObjectConfig{
+	typeObjectType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Type",
-		Fields: FieldConfigMap{
-			"a": &FieldConfig{
-				Type: String,
-				Resolve: func(p GQLFRParams) interface{} {
+		Fields: graphql.FieldConfigMap{
+			"a": &graphql.FieldConfig{
+				Type: graphql.String,
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					return "Apple"
 				},
 			},
-			"b": &FieldConfig{
-				Type: String,
-				Resolve: func(p GQLFRParams) interface{} {
+			"b": &graphql.FieldConfig{
+				Type: graphql.String,
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					return "Banana"
 				},
 			},
-			"c": &FieldConfig{
-				Type: String,
-				Resolve: func(p GQLFRParams) interface{} {
+			"c": &graphql.FieldConfig{
+				Type: graphql.String,
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					return "Cherry"
 				},
 			},
 		},
 	})
-	deepTypeFieldConfig := &FieldConfig{
+	deepTypeFieldConfig := &graphql.FieldConfig{
 		Type: typeObjectType,
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(p graphql.GQLFRParams) interface{} {
 			return p.Source
 		},
 	}
 	typeObjectType.AddFieldConfig("deep", deepTypeFieldConfig)
 
-	schema, err := NewSchema(SchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: typeObjectType,
 	})
 	if err != nil {
@@ -276,19 +278,19 @@ func TestMergesParallelFragments(t *testing.T) {
 	}
 
 	// parse query
-	ast := TestParse(t, query)
+	ast := testutil.TestParse(t, query)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -304,13 +306,13 @@ func TestThreadsContextCorrectly(t *testing.T) {
 
 	var resolvedContext map[string]interface{}
 
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: FieldConfigMap{
-				"a": &FieldConfig{
-					Type: String,
-					Resolve: func(p GQLFRParams) interface{} {
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
+					Resolve: func(p graphql.GQLFRParams) interface{} {
 						resolvedContext = p.Source.(map[string]interface{})
 						return resolvedContext
 					},
@@ -323,15 +325,15 @@ func TestThreadsContextCorrectly(t *testing.T) {
 	}
 
 	// parse query
-	ast := TestParse(t, query)
+	ast := testutil.TestParse(t, query)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		Root:   data,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -352,21 +354,21 @@ func TestCorrectlyThreadsArguments(t *testing.T) {
 
 	var resolvedArgs map[string]interface{}
 
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: FieldConfigMap{
-				"b": &FieldConfig{
-					Args: FieldConfigArgument{
-						"numArg": &ArgumentConfig{
-							Type: Int,
+			Fields: graphql.FieldConfigMap{
+				"b": &graphql.FieldConfig{
+					Args: graphql.FieldConfigArgument{
+						"numArg": &graphql.ArgumentConfig{
+							Type: graphql.Int,
 						},
-						"stringArg": &ArgumentConfig{
-							Type: String,
+						"stringArg": &graphql.ArgumentConfig{
+							Type: graphql.String,
 						},
 					},
-					Type: String,
-					Resolve: func(p GQLFRParams) interface{} {
+					Type: graphql.String,
+					Resolve: func(p graphql.GQLFRParams) interface{} {
 						resolvedArgs = p.Args
 						return resolvedArgs
 					},
@@ -379,14 +381,14 @@ func TestCorrectlyThreadsArguments(t *testing.T) {
 	}
 
 	// parse query
-	ast := TestParse(t, query)
+	ast := testutil.TestParse(t, query)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -432,15 +434,15 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 			panic("Error getting syncError")
 		},
 	}
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: FieldConfigMap{
-				"sync": &FieldConfig{
-					Type: String,
+			Fields: graphql.FieldConfigMap{
+				"sync": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
-				"syncError": &FieldConfig{
-					Type: String,
+				"syncError": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -450,23 +452,23 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 	}
 
 	// parse query
-	ast := TestParse(t, query)
+	ast := testutil.TestParse(t, query)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 		Root:   data,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) == 0 {
 		t.Fatalf("wrong result, expected errors, got %v", len(result.Errors))
 	}
 	if !reflect.DeepEqual(expectedData, result.Data) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expectedData, result.Data))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedData, result.Data))
 	}
 	if !reflect.DeepEqual(expectedErrors, result.Errors) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expectedErrors, result.Errors))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
 	}
 }
 
@@ -477,18 +479,18 @@ func TestUsesTheInlineOperationIfNoOperationIsProvided(t *testing.T) {
 		"a": "b",
 	}
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "b",
 		},
 	}
 
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: FieldConfigMap{
-				"a": &FieldConfig{
-					Type: String,
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -498,20 +500,20 @@ func TestUsesTheInlineOperationIfNoOperationIsProvided(t *testing.T) {
 	}
 
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 		Root:   data,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -522,18 +524,18 @@ func TestUsesTheOnlyOperationIfNoOperationIsProvided(t *testing.T) {
 		"a": "b",
 	}
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "b",
 		},
 	}
 
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: FieldConfigMap{
-				"a": &FieldConfig{
-					Type: String,
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -543,20 +545,20 @@ func TestUsesTheOnlyOperationIfNoOperationIsProvided(t *testing.T) {
 	}
 
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 		Root:   data,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -574,12 +576,12 @@ func TestThrowsIfNoOperationIsProvidedWithMultipleOperations(t *testing.T) {
 		},
 	}
 
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: FieldConfigMap{
-				"a": &FieldConfig{
-					Type: String,
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -589,15 +591,15 @@ func TestThrowsIfNoOperationIsProvidedWithMultipleOperations(t *testing.T) {
 	}
 
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 		Root:   data,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != 1 {
 		t.Fatalf("wrong result, expected len(1) unexpected len: %v", len(result.Errors))
 	}
@@ -605,7 +607,7 @@ func TestThrowsIfNoOperationIsProvidedWithMultipleOperations(t *testing.T) {
 		t.Fatalf("wrong result, expected nil result.Data, got %v", result.Data)
 	}
 	if !reflect.DeepEqual(expectedErrors, result.Errors) {
-		t.Fatalf("unexpected result, Diff: %v", Diff(expectedErrors, result.Errors))
+		t.Fatalf("unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
 	}
 }
 
@@ -617,26 +619,26 @@ func TestUsesTheQuerySchemaForQueries(t *testing.T) {
 		"c": "d",
 	}
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "b",
 		},
 	}
 
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Q",
-			Fields: FieldConfigMap{
-				"a": &FieldConfig{
-					Type: String,
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
-		Mutation: NewObject(ObjectConfig{
+		Mutation: graphql.NewObject(graphql.ObjectConfig{
 			Name: "M",
-			Fields: FieldConfigMap{
-				"c": &FieldConfig{
-					Type: String,
+			Fields: graphql.FieldConfigMap{
+				"c": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -646,25 +648,25 @@ func TestUsesTheQuerySchemaForQueries(t *testing.T) {
 	}
 
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema:        schema,
 		AST:           ast,
 		Root:          data,
 		OperationName: "Q",
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
-func TestUsesTheMutationSchemaForQueries(t *testing.T) {
+func TestUsesTheMutationSchemaForMutations(t *testing.T) {
 
 	doc := `query Q { a } mutation M { c }`
 	data := map[string]interface{}{
@@ -672,26 +674,26 @@ func TestUsesTheMutationSchemaForQueries(t *testing.T) {
 		"c": "d",
 	}
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"c": "d",
 		},
 	}
 
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Q",
-			Fields: FieldConfigMap{
-				"a": &FieldConfig{
-					Type: String,
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
-		Mutation: NewObject(ObjectConfig{
+		Mutation: graphql.NewObject(graphql.ObjectConfig{
 			Name: "M",
-			Fields: FieldConfigMap{
-				"c": &FieldConfig{
-					Type: String,
+			Fields: graphql.FieldConfigMap{
+				"c": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -701,21 +703,21 @@ func TestUsesTheMutationSchemaForQueries(t *testing.T) {
 	}
 
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema:        schema,
 		AST:           ast,
 		Root:          data,
 		OperationName: "M",
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -738,7 +740,7 @@ func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
 		"e": func() interface{} { return "e" },
 	}
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -748,24 +750,24 @@ func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
 		},
 	}
 
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: FieldConfigMap{
-				"a": &FieldConfig{
-					Type: String,
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
-				"b": &FieldConfig{
-					Type: String,
+				"b": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
-				"c": &FieldConfig{
-					Type: String,
+				"c": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
-				"d": &FieldConfig{
-					Type: String,
+				"d": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
-				"e": &FieldConfig{
-					Type: String,
+				"e": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -775,20 +777,20 @@ func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
 	}
 
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 		Root:   data,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 
 	// TODO: test to ensure key ordering
@@ -820,18 +822,18 @@ func TestAvoidsRecursion(t *testing.T) {
 		"a": "b",
 	}
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "b",
 		},
 	}
 
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: FieldConfigMap{
-				"a": &FieldConfig{
-					Type: String,
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -841,21 +843,21 @@ func TestAvoidsRecursion(t *testing.T) {
 	}
 
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema:        schema,
 		AST:           ast,
 		Root:          data,
 		OperationName: "Q",
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 
 }
@@ -866,24 +868,24 @@ func TestDoesNotIncludeIllegalFieldsInOutput(t *testing.T) {
       thisIsIllegalDontIncludeMe
     }`
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{},
 	}
 
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Q",
-			Fields: FieldConfigMap{
-				"a": &FieldConfig{
-					Type: String,
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
-		Mutation: NewObject(ObjectConfig{
+		Mutation: graphql.NewObject(graphql.ObjectConfig{
 			Name: "M",
-			Fields: FieldConfigMap{
-				"c": &FieldConfig{
-					Type: String,
+			Fields: graphql.FieldConfigMap{
+				"c": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -893,19 +895,19 @@ func TestDoesNotIncludeIllegalFieldsInOutput(t *testing.T) {
 	}
 
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, expected len(%v) errors, got len(%v)", len(expected.Errors), len(result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -913,36 +915,36 @@ func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
 
 	doc := `{ field(a: true, c: false, e: 0) }`
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"field": `{"a":true,"c":false,"e":0}`,
 		},
 	}
 
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: FieldConfigMap{
-				"field": &FieldConfig{
-					Type: String,
-					Args: FieldConfigArgument{
-						"a": &ArgumentConfig{
-							Type: Boolean,
+			Fields: graphql.FieldConfigMap{
+				"field": &graphql.FieldConfig{
+					Type: graphql.String,
+					Args: graphql.FieldConfigArgument{
+						"a": &graphql.ArgumentConfig{
+							Type: graphql.Boolean,
 						},
-						"b": &ArgumentConfig{
-							Type: Boolean,
+						"b": &graphql.ArgumentConfig{
+							Type: graphql.Boolean,
 						},
-						"c": &ArgumentConfig{
-							Type: Boolean,
+						"c": &graphql.ArgumentConfig{
+							Type: graphql.Boolean,
 						},
-						"d": &ArgumentConfig{
-							Type: Int,
+						"d": &graphql.ArgumentConfig{
+							Type: graphql.Int,
 						},
-						"e": &ArgumentConfig{
-							Type: Int,
+						"e": &graphql.ArgumentConfig{
+							Type: graphql.Int,
 						},
 					},
-					Resolve: func(p GQLFRParams) interface{} {
+					Resolve: func(p graphql.GQLFRParams) interface{} {
 						args, _ := json.Marshal(p.Args)
 						return string(args)
 					},
@@ -955,19 +957,19 @@ func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
 	}
 
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -989,7 +991,7 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 		},
 	}
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"specials": []interface{}{
 				map[string]interface{}{
@@ -1000,36 +1002,36 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 		},
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
-				Message:   `Expected value of type "SpecialType" but got: graphql.testNotSpecialType.`,
+				Message:   `Expected value of type "SpecialType" but got: graphql_test.testNotSpecialType.`,
 				Locations: []location.SourceLocation{},
 			},
 		},
 	}
 
-	specialType := NewObject(ObjectConfig{
+	specialType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "SpecialType",
-		IsTypeOf: func(value interface{}, info ResolveInfo) bool {
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			if _, ok := value.(testSpecialType); ok {
 				return true
 			}
 			return false
 		},
-		Fields: FieldConfigMap{
-			"value": &FieldConfig{
-				Type: String,
-				Resolve: func(p GQLFRParams) interface{} {
+		Fields: graphql.FieldConfigMap{
+			"value": &graphql.FieldConfig{
+				Type: graphql.String,
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					return p.Source.(testSpecialType).Value
 				},
 			},
 		},
 	})
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
-			Fields: FieldConfigMap{
-				"specials": &FieldConfig{
-					Type: NewList(specialType),
-					Resolve: func(p GQLFRParams) interface{} {
+			Fields: graphql.FieldConfigMap{
+				"specials": &graphql.FieldConfig{
+					Type: graphql.NewList(specialType),
+					Resolve: func(p graphql.GQLFRParams) interface{} {
 						return p.Source.(map[string]interface{})["specials"]
 					},
 				},
@@ -1041,20 +1043,20 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 	}
 
 	// parse query
-	ast := TestParse(t, query)
+	ast := testutil.TestParse(t, query)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 		Root:   data,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) == 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -1065,7 +1067,7 @@ func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
 
       type Query { foo: String }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -1075,12 +1077,12 @@ func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
 		},
 	}
 
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
-			Fields: FieldConfigMap{
-				"foo": &FieldConfig{
-					Type: String,
+			Fields: graphql.FieldConfigMap{
+				"foo": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -1090,18 +1092,18 @@ func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
 	}
 
 	// parse query
-	ast := TestParse(t, query)
+	ast := testutil.TestParse(t, query)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != 1 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
