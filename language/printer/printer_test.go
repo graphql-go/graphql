@@ -7,13 +7,14 @@ import (
 
 	"github.com/chris-ramon/graphql-go"
 	"github.com/chris-ramon/graphql-go/language/ast"
+	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/language/printer"
 )
 
 func parse(t *testing.T, query string) *ast.Document {
-	astDoc, err := graphql.Parse(graphql.ParseParams{
+	astDoc, err := parser.Parse(parser.ParseParams{
 		Source: query,
-		Options: graphql.ParseOptions{
+		Options: parser.ParseOptions{
 			NoLocation: true,
 		},
 	})

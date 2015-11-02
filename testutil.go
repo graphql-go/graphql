@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/chris-ramon/graphql-go/language/ast"
+	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/kr/pretty"
 )
 
@@ -342,9 +343,9 @@ func GetHero(episode interface{}) interface{} {
 // Test helper functions
 
 func TestParse(t *testing.T, query string) *ast.Document {
-	astDoc, err := Parse(ParseParams{
+	astDoc, err := parser.Parse(parser.ParseParams{
 		Source: query,
-		Options: ParseOptions{
+		Options: parser.ParseOptions{
 			// include source, for error reporting
 			NoSource: false,
 		},
