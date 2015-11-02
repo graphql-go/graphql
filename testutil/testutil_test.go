@@ -1,6 +1,7 @@
-package graphql
+package testutil_test
 
 import (
+	"github.com/chris-ramon/graphql-go/testutil"
 	"testing"
 )
 
@@ -12,7 +13,7 @@ func TestSubsetSlice_Simple(t *testing.T) {
 	sub := []interface{}{
 		"3",
 	}
-	if !ContainSubsetSlice(super, sub) {
+	if !testutil.ContainSubsetSlice(super, sub) {
 		t.Fatalf("expected slice to be subset of super, got false")
 	}
 }
@@ -24,7 +25,7 @@ func TestSubsetSlice_Simple_Fail(t *testing.T) {
 	sub := []interface{}{
 		"4",
 	}
-	if ContainSubsetSlice(super, sub) {
+	if testutil.ContainSubsetSlice(super, sub) {
 		t.Fatalf("expected slice to not be subset of super, got true")
 	}
 }
@@ -52,7 +53,7 @@ func TestSubsetSlice_NestedSlice(t *testing.T) {
 			"5",
 		},
 	}
-	if !ContainSubsetSlice(super, sub) {
+	if !testutil.ContainSubsetSlice(super, sub) {
 		t.Fatalf("expected slice to be subset of super, got false")
 	}
 }
@@ -77,7 +78,7 @@ func TestSubsetSlice_NestedSlice_DifferentLength(t *testing.T) {
 			"6",
 		},
 	}
-	if !ContainSubsetSlice(super, sub) {
+	if !testutil.ContainSubsetSlice(super, sub) {
 		t.Fatalf("expected slice to be subset of super, got false")
 	}
 }
@@ -105,7 +106,7 @@ func TestSubsetSlice_NestedSlice_Fail(t *testing.T) {
 			"9",
 		},
 	}
-	if !ContainSubsetSlice(super, sub) {
+	if !testutil.ContainSubsetSlice(super, sub) {
 		t.Fatalf("expected slice to be subset of super, got false")
 	}
 }
@@ -120,7 +121,7 @@ func TestSubset_Simple(t *testing.T) {
 	sub := map[string]interface{}{
 		"c": "3",
 	}
-	if !ContainSubset(super, sub) {
+	if !testutil.ContainSubset(super, sub) {
 		t.Fatalf("expected map to be subset of super, got false")
 	}
 
@@ -135,7 +136,7 @@ func TestSubset_Simple_Fail(t *testing.T) {
 	sub := map[string]interface{}{
 		"d": "3",
 	}
-	if ContainSubset(super, sub) {
+	if testutil.ContainSubset(super, sub) {
 		t.Fatalf("expected map to not be subset of super, got true")
 	}
 
@@ -158,7 +159,7 @@ func TestSubset_NestedMap(t *testing.T) {
 			"cc": "33",
 		},
 	}
-	if !ContainSubset(super, sub) {
+	if !testutil.ContainSubset(super, sub) {
 		t.Fatalf("expected map to be subset of super, got false")
 	}
 }
@@ -180,7 +181,7 @@ func TestSubset_NestedMap_Fail(t *testing.T) {
 			"dd": "44",
 		},
 	}
-	if ContainSubset(super, sub) {
+	if testutil.ContainSubset(super, sub) {
 		t.Fatalf("expected map to not be subset of super, got true")
 	}
 }
@@ -200,7 +201,7 @@ func TestSubset_NestedSlice(t *testing.T) {
 			"11",
 		},
 	}
-	if !ContainSubset(super, sub) {
+	if !testutil.ContainSubset(super, sub) {
 		t.Fatalf("expected map to be subset of super, got false")
 	}
 }
@@ -249,7 +250,7 @@ func TestSubset_ComplexMixed(t *testing.T) {
 			},
 		},
 	}
-	if !ContainSubset(super, sub) {
+	if !testutil.ContainSubset(super, sub) {
 		t.Fatalf("expected map to be subset of super, got false")
 	}
 }
@@ -295,7 +296,7 @@ func TestSubset_ComplexMixed_Fail(t *testing.T) {
 			},
 		},
 	}
-	if ContainSubset(super, sub) {
+	if testutil.ContainSubset(super, sub) {
 		t.Fatalf("expected map to not be subset of super, got true")
 	}
 }

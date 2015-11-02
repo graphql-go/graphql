@@ -1,9 +1,12 @@
-package graphql
+package graphql_test
 
 import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql-go"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
 // TODO: have a separate package for other tests for eg `parser`
@@ -70,40 +73,40 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 		RecentArticle: article("1"),
 	}
 
-	blogImage := NewObject(ObjectConfig{
+	blogImage := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Image",
-		Fields: FieldConfigMap{
-			"url": &FieldConfig{
-				Type: String,
+		Fields: graphql.FieldConfigMap{
+			"url": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"width": &FieldConfig{
-				Type: Int,
+			"width": &graphql.FieldConfig{
+				Type: graphql.Int,
 			},
-			"height": &FieldConfig{
-				Type: Int,
+			"height": &graphql.FieldConfig{
+				Type: graphql.Int,
 			},
 		},
 	})
-	blogAuthor := NewObject(ObjectConfig{
+	blogAuthor := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Author",
-		Fields: FieldConfigMap{
-			"id": &FieldConfig{
-				Type: String,
+		Fields: graphql.FieldConfigMap{
+			"id": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"name": &FieldConfig{
-				Type: String,
+			"name": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"pic": &FieldConfig{
+			"pic": &graphql.FieldConfig{
 				Type: blogImage,
-				Args: FieldConfigArgument{
-					"width": &ArgumentConfig{
-						Type: Int,
+				Args: graphql.FieldConfigArgument{
+					"width": &graphql.ArgumentConfig{
+						Type: graphql.Int,
 					},
-					"height": &ArgumentConfig{
-						Type: Int,
+					"height": &graphql.ArgumentConfig{
+						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if author, ok := p.Source.(*testAuthor); ok {
 						width := fmt.Sprintf("%v", p.Args["width"])
 						height := fmt.Sprintf("%v", p.Args["height"])
@@ -112,55 +115,55 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 					return nil
 				},
 			},
-			"recentArticle": &FieldConfig{},
+			"recentArticle": &graphql.FieldConfig{},
 		},
 	})
-	blogArticle := NewObject(ObjectConfig{
+	blogArticle := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Article",
-		Fields: FieldConfigMap{
-			"id": &FieldConfig{
-				Type: NewNonNull(String),
+		Fields: graphql.FieldConfigMap{
+			"id": &graphql.FieldConfig{
+				Type: graphql.NewNonNull(graphql.String),
 			},
-			"isPublished": &FieldConfig{
-				Type: Boolean,
+			"isPublished": &graphql.FieldConfig{
+				Type: graphql.Boolean,
 			},
-			"author": &FieldConfig{
+			"author": &graphql.FieldConfig{
 				Type: blogAuthor,
 			},
-			"title": &FieldConfig{
-				Type: String,
+			"title": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"body": &FieldConfig{
-				Type: String,
+			"body": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"keywords": &FieldConfig{
-				Type: NewList(String),
+			"keywords": &graphql.FieldConfig{
+				Type: graphql.NewList(graphql.String),
 			},
 		},
 	})
 
-	blogAuthor.AddFieldConfig("recentArticle", &FieldConfig{
+	blogAuthor.AddFieldConfig("recentArticle", &graphql.FieldConfig{
 		Type: blogArticle,
 	})
 
-	blogQuery := NewObject(ObjectConfig{
+	blogQuery := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
-		Fields: FieldConfigMap{
-			"article": &FieldConfig{
+		Fields: graphql.FieldConfigMap{
+			"article": &graphql.FieldConfig{
 				Type: blogArticle,
-				Args: FieldConfigArgument{
-					"id": &ArgumentConfig{
-						Type: ID,
+				Args: graphql.FieldConfigArgument{
+					"id": &graphql.ArgumentConfig{
+						Type: graphql.ID,
 					},
 				},
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					id := p.Args["id"]
 					return article(id)
 				},
 			},
-			"feed": &FieldConfig{
-				Type: NewList(blogArticle),
-				Resolve: func(p GQLFRParams) interface{} {
+			"feed": &graphql.FieldConfig{
+				Type: graphql.NewList(blogArticle),
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					return []*testArticle{
 						article(1),
 						article(2),
@@ -178,7 +181,7 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 		},
 	})
 
-	blogSchema, err := NewSchema(SchemaConfig{
+	blogSchema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: blogQuery,
 	})
 	if err != nil {
@@ -219,7 +222,7 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
       }
 	`
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"article": map[string]interface{}{
 				"title": "My Article 1",
@@ -295,18 +298,18 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 	}
 
 	// parse query
-	ast := TestParse(t, request)
+	ast := testutil.TestParse(t, request)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: blogSchema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }

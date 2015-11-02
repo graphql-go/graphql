@@ -1,127 +1,130 @@
-package graphql
+package graphql_test
 
 import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql-go"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
-var blogImage = NewObject(ObjectConfig{
+var blogImage = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Image",
-	Fields: FieldConfigMap{
-		"url": &FieldConfig{
-			Type: String,
+	Fields: graphql.FieldConfigMap{
+		"url": &graphql.FieldConfig{
+			Type: graphql.String,
 		},
-		"width": &FieldConfig{
-			Type: Int,
+		"width": &graphql.FieldConfig{
+			Type: graphql.Int,
 		},
-		"height": &FieldConfig{
-			Type: Int,
+		"height": &graphql.FieldConfig{
+			Type: graphql.Int,
 		},
 	},
 })
-var blogAuthor = NewObject(ObjectConfig{
+var blogAuthor = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Author",
-	Fields: FieldConfigMap{
-		"id": &FieldConfig{
-			Type: String,
+	Fields: graphql.FieldConfigMap{
+		"id": &graphql.FieldConfig{
+			Type: graphql.String,
 		},
-		"name": &FieldConfig{
-			Type: String,
+		"name": &graphql.FieldConfig{
+			Type: graphql.String,
 		},
-		"pic": &FieldConfig{
+		"pic": &graphql.FieldConfig{
 			Type: blogImage,
-			Args: FieldConfigArgument{
-				"width": &ArgumentConfig{
-					Type: Int,
+			Args: graphql.FieldConfigArgument{
+				"width": &graphql.ArgumentConfig{
+					Type: graphql.Int,
 				},
-				"height": &ArgumentConfig{
-					Type: Int,
+				"height": &graphql.ArgumentConfig{
+					Type: graphql.Int,
 				},
 			},
 		},
-		"recentArticle": &FieldConfig{},
+		"recentArticle": &graphql.FieldConfig{},
 	},
 })
-var blogArticle = NewObject(ObjectConfig{
+var blogArticle = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Article",
-	Fields: FieldConfigMap{
-		"id": &FieldConfig{
-			Type: String,
+	Fields: graphql.FieldConfigMap{
+		"id": &graphql.FieldConfig{
+			Type: graphql.String,
 		},
-		"isPublished": &FieldConfig{
-			Type: Boolean,
+		"isPublished": &graphql.FieldConfig{
+			Type: graphql.Boolean,
 		},
-		"author": &FieldConfig{
+		"author": &graphql.FieldConfig{
 			Type: blogAuthor,
 		},
-		"title": &FieldConfig{
-			Type: String,
+		"title": &graphql.FieldConfig{
+			Type: graphql.String,
 		},
-		"body": &FieldConfig{
-			Type: String,
+		"body": &graphql.FieldConfig{
+			Type: graphql.String,
 		},
 	},
 })
-var blogQuery = NewObject(ObjectConfig{
+var blogQuery = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Query",
-	Fields: FieldConfigMap{
-		"article": &FieldConfig{
+	Fields: graphql.FieldConfigMap{
+		"article": &graphql.FieldConfig{
 			Type: blogArticle,
-			Args: FieldConfigArgument{
-				"id": &ArgumentConfig{
-					Type: String,
+			Args: graphql.FieldConfigArgument{
+				"id": &graphql.ArgumentConfig{
+					Type: graphql.String,
 				},
 			},
 		},
-		"feed": &FieldConfig{
-			Type: NewList(blogArticle),
+		"feed": &graphql.FieldConfig{
+			Type: graphql.NewList(blogArticle),
 		},
 	},
 })
 
-var blogMutation = NewObject(ObjectConfig{
+var blogMutation = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
-	Fields: FieldConfigMap{
-		"writeArticle": &FieldConfig{
+	Fields: graphql.FieldConfigMap{
+		"writeArticle": &graphql.FieldConfig{
 			Type: blogArticle,
 		},
 	},
 })
 
-var objectType = NewObject(ObjectConfig{
+var objectType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Object",
-	IsTypeOf: func(value interface{}, info ResolveInfo) bool {
+	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 		return true
 	},
 })
-var interfaceType = NewInterface(InterfaceConfig{
+var interfaceType = graphql.NewInterface(graphql.InterfaceConfig{
 	Name: "Interface",
 })
-var unionType = NewUnion(UnionConfig{
+var unionType = graphql.NewUnion(graphql.UnionConfig{
 	Name: "Union",
-	Types: []*Object{
+	Types: []*graphql.Object{
 		objectType,
 	},
 })
-var enumType = NewEnum(EnumConfig{
+var enumType = graphql.NewEnum(graphql.EnumConfig{
 	Name: "Enum",
-	Values: EnumValueConfigMap{
-		"foo": &EnumValueConfig{},
+	Values: graphql.EnumValueConfigMap{
+		"foo": &graphql.EnumValueConfig{},
 	},
 })
-var inputObjectType = NewInputObject(InputObjectConfig{
+var inputObjectType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name: "InputObject",
 })
 
 func init() {
-	blogAuthor.AddFieldConfig("recentArticle", &FieldConfig{
+	blogAuthor.AddFieldConfig("recentArticle", &graphql.FieldConfig{
 		Type: blogArticle,
 	})
 }
 
 func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
-	blogSchema, err := NewSchema(SchemaConfig{
+	blogSchema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: blogQuery,
 	})
 	if err != nil {
@@ -146,9 +149,9 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 	if articleField.Name != "article" {
 		t.Fatalf("articleField.Name expected to equal `article`, got: %v", articleField.Name)
 	}
-	articleFieldTypeObject, ok := articleFieldType.(*Object)
+	articleFieldTypeObject, ok := articleFieldType.(*graphql.Object)
 	if !ok {
-		t.Fatalf("expected articleFieldType to be *Object`, got: %v", articleField)
+		t.Fatalf("expected articleFieldType to be graphql.Object`, got: %v", articleField)
 	}
 
 	// TODO: expose a Object.GetField(key string), instead of this ghetto way of accessing a field map?
@@ -159,8 +162,8 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 	if titleField.Name != "title" {
 		t.Fatalf("titleField.Name expected to equal title, got: %v", titleField.Name)
 	}
-	if titleField.Type != String {
-		t.Fatalf("titleField.Type expected to equal String, got: %v", titleField.Type)
+	if titleField.Type != graphql.String {
+		t.Fatalf("titleField.Type expected to equal graphql.String, got: %v", titleField.Type)
 	}
 	if titleField.Type.GetName() != "String" {
 		t.Fatalf("titleField.Type.GetName() expected to equal `String`, got: %v", titleField.Type.GetName())
@@ -170,7 +173,7 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 	if authorField == nil {
 		t.Fatalf("authorField is nil")
 	}
-	authorFieldObject, ok := authorField.Type.(*Object)
+	authorFieldObject, ok := authorField.Type.(*graphql.Object)
 	if !ok {
 		t.Fatalf("expected authorField.Type to be Object`, got: %v", authorField)
 	}
@@ -184,7 +187,7 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 	}
 
 	feedField := blogQuery.GetFields()["feed"]
-	feedFieldList, ok := feedField.Type.(*List)
+	feedFieldList, ok := feedField.Type.(*graphql.List)
 	if !ok {
 		t.Fatalf("expected feedFieldList to be List`, got: %v", authorField)
 	}
@@ -196,7 +199,7 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 	}
 }
 func TestTypeSystem_DefinitionExample_DefinesAMutationScheme(t *testing.T) {
-	blogSchema, err := NewSchema(SchemaConfig{
+	blogSchema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query:    blogQuery,
 		Mutation: blogMutation,
 	})
@@ -225,36 +228,36 @@ func TestTypeSystem_DefinitionExample_DefinesAMutationScheme(t *testing.T) {
 }
 
 func TestTypeSystem_DefinitionExample_IncludesNestedInputObjectsInTheMap(t *testing.T) {
-	nestedInputObject := NewInputObject(InputObjectConfig{
+	nestedInputObject := graphql.NewInputObject(graphql.InputObjectConfig{
 		Name: "NestedInputObject",
-		Fields: InputObjectConfigFieldMap{
-			"value": &InputObjectFieldConfig{
-				Type: String,
+		Fields: graphql.InputObjectConfigFieldMap{
+			"value": &graphql.InputObjectFieldConfig{
+				Type: graphql.String,
 			},
 		},
 	})
-	someInputObject := NewInputObject(InputObjectConfig{
+	someInputObject := graphql.NewInputObject(graphql.InputObjectConfig{
 		Name: "SomeInputObject",
-		Fields: InputObjectConfigFieldMap{
-			"nested": &InputObjectFieldConfig{
+		Fields: graphql.InputObjectConfigFieldMap{
+			"nested": &graphql.InputObjectFieldConfig{
 				Type: nestedInputObject,
 			},
 		},
 	})
-	someMutation := NewObject(ObjectConfig{
+	someMutation := graphql.NewObject(graphql.ObjectConfig{
 		Name: "SomeMutation",
-		Fields: FieldConfigMap{
-			"mutateSomething": &FieldConfig{
+		Fields: graphql.FieldConfigMap{
+			"mutateSomething": &graphql.FieldConfig{
 				Type: blogArticle,
-				Args: FieldConfigArgument{
-					"input": &ArgumentConfig{
+				Args: graphql.FieldConfigArgument{
+					"input": &graphql.ArgumentConfig{
 						Type: someInputObject,
 					},
 				},
 			},
 		},
 	})
-	schema, err := NewSchema(SchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query:    blogQuery,
 		Mutation: someMutation,
 	})
@@ -268,32 +271,32 @@ func TestTypeSystem_DefinitionExample_IncludesNestedInputObjectsInTheMap(t *test
 
 func TestTypeSystem_DefinitionExample_IncludesInterfacesSubTypesInTheTypeMap(t *testing.T) {
 
-	someInterface := NewInterface(InterfaceConfig{
+	someInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "SomeInterface",
-		Fields: FieldConfigMap{
-			"f": &FieldConfig{
-				Type: Int,
+		Fields: graphql.FieldConfigMap{
+			"f": &graphql.FieldConfig{
+				Type: graphql.Int,
 			},
 		},
 	})
 
-	someSubType := NewObject(ObjectConfig{
+	someSubType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "SomeSubtype",
-		Fields: FieldConfigMap{
-			"f": &FieldConfig{
-				Type: Int,
+		Fields: graphql.FieldConfigMap{
+			"f": &graphql.FieldConfig{
+				Type: graphql.Int,
 			},
 		},
-		Interfaces: []*Interface{someInterface},
-		IsTypeOf: func(value interface{}, info ResolveInfo) bool {
+		Interfaces: []*graphql.Interface{someInterface},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			return true
 		},
 	})
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
-			Fields: FieldConfigMap{
-				"iface": &FieldConfig{
+			Fields: graphql.FieldConfigMap{
+				"iface": &graphql.FieldConfig{
 					Type: someInterface,
 				},
 			},
@@ -309,34 +312,34 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesSubTypesInTheTypeMap(t *
 
 func TestTypeSystem_DefinitionExample_IncludesInterfacesThunkSubtypesInTheTypeMap(t *testing.T) {
 
-	someInterface := NewInterface(InterfaceConfig{
+	someInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "SomeInterface",
-		Fields: FieldConfigMap{
-			"f": &FieldConfig{
-				Type: Int,
+		Fields: graphql.FieldConfigMap{
+			"f": &graphql.FieldConfig{
+				Type: graphql.Int,
 			},
 		},
 	})
 
-	someSubType := NewObject(ObjectConfig{
+	someSubType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "SomeSubtype",
-		Fields: FieldConfigMap{
-			"f": &FieldConfig{
-				Type: Int,
+		Fields: graphql.FieldConfigMap{
+			"f": &graphql.FieldConfig{
+				Type: graphql.Int,
 			},
 		},
-		Interfaces: (InterfacesThunk)(func() []*Interface {
-			return []*Interface{someInterface}
+		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
+			return []*graphql.Interface{someInterface}
 		}),
-		IsTypeOf: func(value interface{}, info ResolveInfo) bool {
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			return true
 		},
 	})
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
-			Fields: FieldConfigMap{
-				"iface": &FieldConfig{
+			Fields: graphql.FieldConfigMap{
+				"iface": &graphql.FieldConfig{
 					Type: someInterface,
 				},
 			},
@@ -353,21 +356,21 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesThunkSubtypesInTheTypeMa
 func TestTypeSystem_DefinitionExample_StringifiesSimpleTypes(t *testing.T) {
 
 	type Test struct {
-		ttype    Type
+		ttype    graphql.Type
 		expected string
 	}
 	tests := []Test{
-		Test{Int, "Int"},
+		Test{graphql.Int, "Int"},
 		Test{blogArticle, "Article"},
 		Test{interfaceType, "Interface"},
 		Test{unionType, "Union"},
 		Test{enumType, "Enum"},
 		Test{inputObjectType, "InputObject"},
-		Test{NewNonNull(Int), "Int!"},
-		Test{NewList(Int), "[Int]"},
-		Test{NewNonNull(NewList(Int)), "[Int]!"},
-		Test{NewList(NewNonNull(Int)), "[Int!]"},
-		Test{NewList(NewList(Int)), "[[Int]]"},
+		Test{graphql.NewNonNull(graphql.Int), "Int!"},
+		Test{graphql.NewList(graphql.Int), "[Int]"},
+		Test{graphql.NewNonNull(graphql.NewList(graphql.Int)), "[Int]!"},
+		Test{graphql.NewList(graphql.NewNonNull(graphql.Int)), "[Int!]"},
+		Test{graphql.NewList(graphql.NewList(graphql.Int)), "[[Int]]"},
 	}
 	for _, test := range tests {
 		ttypeStr := fmt.Sprintf("%v", test.ttype)
@@ -379,11 +382,11 @@ func TestTypeSystem_DefinitionExample_StringifiesSimpleTypes(t *testing.T) {
 
 func TestTypeSystem_DefinitionExample_IdentifiesInputTypes(t *testing.T) {
 	type Test struct {
-		ttype    Type
+		ttype    graphql.Type
 		expected bool
 	}
 	tests := []Test{
-		Test{Int, true},
+		Test{graphql.Int, true},
 		Test{objectType, false},
 		Test{interfaceType, false},
 		Test{unionType, false},
@@ -392,13 +395,13 @@ func TestTypeSystem_DefinitionExample_IdentifiesInputTypes(t *testing.T) {
 	}
 	for _, test := range tests {
 		ttypeStr := fmt.Sprintf("%v", test.ttype)
-		if IsInputType(test.ttype) != test.expected {
+		if graphql.IsInputType(test.ttype) != test.expected {
 			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
 		}
-		if IsInputType(NewList(test.ttype)) != test.expected {
+		if graphql.IsInputType(graphql.NewList(test.ttype)) != test.expected {
 			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
 		}
-		if IsInputType(NewNonNull(test.ttype)) != test.expected {
+		if graphql.IsInputType(graphql.NewNonNull(test.ttype)) != test.expected {
 			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
 		}
 	}
@@ -406,11 +409,11 @@ func TestTypeSystem_DefinitionExample_IdentifiesInputTypes(t *testing.T) {
 
 func TestTypeSystem_DefinitionExample_IdentifiesOutputTypes(t *testing.T) {
 	type Test struct {
-		ttype    Type
+		ttype    graphql.Type
 		expected bool
 	}
 	tests := []Test{
-		Test{Int, true},
+		Test{graphql.Int, true},
 		Test{objectType, true},
 		Test{interfaceType, true},
 		Test{unionType, true},
@@ -419,36 +422,36 @@ func TestTypeSystem_DefinitionExample_IdentifiesOutputTypes(t *testing.T) {
 	}
 	for _, test := range tests {
 		ttypeStr := fmt.Sprintf("%v", test.ttype)
-		if IsOutputType(test.ttype) != test.expected {
+		if graphql.IsOutputType(test.ttype) != test.expected {
 			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
 		}
-		if IsOutputType(NewList(test.ttype)) != test.expected {
+		if graphql.IsOutputType(graphql.NewList(test.ttype)) != test.expected {
 			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
 		}
-		if IsOutputType(NewNonNull(test.ttype)) != test.expected {
+		if graphql.IsOutputType(graphql.NewNonNull(test.ttype)) != test.expected {
 			t.Fatalf(`expected %v , got: %v`, test.expected, ttypeStr)
 		}
 	}
 }
 
 func TestTypeSystem_DefinitionExample_ProhibitsNestingNonNullInsideNonNull(t *testing.T) {
-	ttype := NewNonNull(NewNonNull(Int))
+	ttype := graphql.NewNonNull(graphql.NewNonNull(graphql.Int))
 	expected := `Can only create NonNull of a Nullable Type but got: Int!.`
 	if ttype.GetError().Error() != expected {
 		t.Fatalf(`expected %v , got: %v`, expected, ttype.GetError())
 	}
 }
 func TestTypeSystem_DefinitionExample_ProhibitsNilInNonNull(t *testing.T) {
-	ttype := NewNonNull(nil)
+	ttype := graphql.NewNonNull(nil)
 	expected := `Can only create NonNull of a Nullable Type but got: <nil>.`
 	if ttype.GetError().Error() != expected {
 		t.Fatalf(`expected %v , got: %v`, expected, ttype.GetError())
 	}
 }
 func TestTypeSystem_DefinitionExample_ProhibitsNilTypeInUnions(t *testing.T) {
-	ttype := NewUnion(UnionConfig{
+	ttype := graphql.NewUnion(graphql.UnionConfig{
 		Name:  "BadUnion",
-		Types: []*Object{nil},
+		Types: []*graphql.Object{nil},
 	})
 	expected := `BadUnion may only contain Object types, it cannot contain: <nil>.`
 	if ttype.GetError().Error() != expected {
@@ -456,77 +459,77 @@ func TestTypeSystem_DefinitionExample_ProhibitsNilTypeInUnions(t *testing.T) {
 	}
 }
 func TestTypeSystem_DefinitionExample_DoesNotMutatePassedFieldDefinitions(t *testing.T) {
-	fields := FieldConfigMap{
-		"field1": &FieldConfig{
-			Type: String,
+	fields := graphql.FieldConfigMap{
+		"field1": &graphql.FieldConfig{
+			Type: graphql.String,
 		},
-		"field2": &FieldConfig{
-			Type: String,
-			Args: FieldConfigArgument{
-				"id": &ArgumentConfig{
-					Type: String,
+		"field2": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"id": &graphql.ArgumentConfig{
+					Type: graphql.String,
 				},
 			},
 		},
 	}
-	testObject1 := NewObject(ObjectConfig{
+	testObject1 := graphql.NewObject(graphql.ObjectConfig{
 		Name:   "Test1",
 		Fields: fields,
 	})
-	testObject2 := NewObject(ObjectConfig{
+	testObject2 := graphql.NewObject(graphql.ObjectConfig{
 		Name:   "Test2",
 		Fields: fields,
 	})
 	if !reflect.DeepEqual(testObject1.GetFields(), testObject2.GetFields()) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(testObject1.GetFields(), testObject2.GetFields()))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(testObject1.GetFields(), testObject2.GetFields()))
 	}
 
-	expectedFields := FieldConfigMap{
-		"field1": &FieldConfig{
-			Type: String,
+	expectedFields := graphql.FieldConfigMap{
+		"field1": &graphql.FieldConfig{
+			Type: graphql.String,
 		},
-		"field2": &FieldConfig{
-			Type: String,
-			Args: FieldConfigArgument{
-				"id": &ArgumentConfig{
-					Type: String,
+		"field2": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"id": &graphql.ArgumentConfig{
+					Type: graphql.String,
 				},
 			},
 		},
 	}
 	if !reflect.DeepEqual(fields, expectedFields) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expectedFields, fields))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedFields, fields))
 	}
 
-	inputFields := InputObjectConfigFieldMap{
-		"field1": &InputObjectFieldConfig{
-			Type: String,
+	inputFields := graphql.InputObjectConfigFieldMap{
+		"field1": &graphql.InputObjectFieldConfig{
+			Type: graphql.String,
 		},
-		"field2": &InputObjectFieldConfig{
-			Type: String,
-		},
-	}
-	expectedInputFields := InputObjectConfigFieldMap{
-		"field1": &InputObjectFieldConfig{
-			Type: String,
-		},
-		"field2": &InputObjectFieldConfig{
-			Type: String,
+		"field2": &graphql.InputObjectFieldConfig{
+			Type: graphql.String,
 		},
 	}
-	testInputObject1 := NewInputObject(InputObjectConfig{
+	expectedInputFields := graphql.InputObjectConfigFieldMap{
+		"field1": &graphql.InputObjectFieldConfig{
+			Type: graphql.String,
+		},
+		"field2": &graphql.InputObjectFieldConfig{
+			Type: graphql.String,
+		},
+	}
+	testInputObject1 := graphql.NewInputObject(graphql.InputObjectConfig{
 		Name:   "Test1",
 		Fields: inputFields,
 	})
-	testInputObject2 := NewInputObject(InputObjectConfig{
+	testInputObject2 := graphql.NewInputObject(graphql.InputObjectConfig{
 		Name:   "Test2",
 		Fields: inputFields,
 	})
 	if !reflect.DeepEqual(testInputObject1.GetFields(), testInputObject2.GetFields()) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(testInputObject1.GetFields(), testInputObject2.GetFields()))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(testInputObject1.GetFields(), testInputObject2.GetFields()))
 	}
 	if !reflect.DeepEqual(inputFields, expectedInputFields) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expectedInputFields, fields))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedInputFields, fields))
 	}
 
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/chris-ramon/graphql-go"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
 type T struct {
@@ -25,7 +26,7 @@ func init() {
 					}
 				}
 			`,
-			Schema: graphql.StarWarsSchema,
+			Schema: testutil.StarWarsSchema,
 			Expected: &graphql.Result{
 				Data: map[string]interface{}{
 					"hero": map[string]interface{}{
@@ -46,7 +47,7 @@ func init() {
 					}
 				}
 			`,
-			Schema: graphql.StarWarsSchema,
+			Schema: testutil.StarWarsSchema,
 			Expected: &graphql.Result{
 				Data: map[string]interface{}{
 					"hero": map[string]interface{}{
@@ -88,7 +89,7 @@ func testGraphql(test T, p graphql.Params, t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(result, test.Expected) {
-		t.Fatalf("wrong result, query: %v, graphql result diff: %v", test.Query, graphql.Diff(test.Expected, result))
+		t.Fatalf("wrong result, query: %v, graphql result diff: %v", test.Query, testutil.Diff(test.Expected, result))
 	}
 }
 
@@ -130,7 +131,7 @@ func TestBasicGraphQLExample(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(result.Data, expected) {
-		t.Fatalf("wrong result, query: %v, graphql result diff: %v", query, graphql.Diff(expected, result))
+		t.Fatalf("wrong result, query: %v, graphql result diff: %v", query, testutil.Diff(expected, result))
 	}
 
 }

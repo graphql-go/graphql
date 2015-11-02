@@ -1,19 +1,22 @@
-package graphql
+package graphql_test
 
 import (
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql-go"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
-var directivesTestSchema, _ = NewSchema(SchemaConfig{
-	Query: NewObject(ObjectConfig{
+var directivesTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
+	Query: graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: FieldConfigMap{
-			"a": &FieldConfig{
-				Type: String,
+		Fields: graphql.FieldConfigMap{
+			"a": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"b": &FieldConfig{
-				Type: String,
+			"b": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
 		},
 	}),
@@ -24,19 +27,19 @@ var directivesTestData map[string]interface{} = map[string]interface{}{
 	"b": func() interface{} { return "b" },
 }
 
-func executeDirectivesTestQuery(t *testing.T, doc string) *Result {
-	ast := TestParse(t, doc)
-	ep := ExecuteParams{
+func executeDirectivesTestQuery(t *testing.T, doc string) *graphql.Result {
+	ast := testutil.TestParse(t, doc)
+	ep := graphql.ExecuteParams{
 		Schema: directivesTestSchema,
 		AST:    ast,
 		Root:   directivesTestData,
 	}
-	return TestExecute(t, ep)
+	return testutil.TestExecute(t, ep)
 }
 
 func TestDirectivesWorksWithoutDirectives(t *testing.T) {
 	query := `{ a, b }`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -47,13 +50,13 @@ func TestDirectivesWorksWithoutDirectives(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
 func TestDirectivesWorksOnScalarsIfTrueIncludesScalar(t *testing.T) {
 	query := `{ a, b @include(if: true) }`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -64,13 +67,13 @@ func TestDirectivesWorksOnScalarsIfTrueIncludesScalar(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
 func TestDirectivesWorksOnScalarsIfFalseOmitsOnScalar(t *testing.T) {
 	query := `{ a, b @include(if: false) }`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -80,13 +83,13 @@ func TestDirectivesWorksOnScalarsIfFalseOmitsOnScalar(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
 func TestDirectivesWorksOnScalarsUnlessFalseIncludesScalar(t *testing.T) {
 	query := `{ a, b @skip(if: false) }`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -97,13 +100,13 @@ func TestDirectivesWorksOnScalarsUnlessFalseIncludesScalar(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
 func TestDirectivesWorksOnScalarsUnlessTrueOmitsScalar(t *testing.T) {
 	query := `{ a, b @skip(if: true) }`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -113,7 +116,7 @@ func TestDirectivesWorksOnScalarsUnlessTrueOmitsScalar(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -127,7 +130,7 @@ func TestDirectivesWorksOnFragmentSpreadsIfFalseOmitsFragmentSpread(t *testing.T
           b
         }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -137,7 +140,7 @@ func TestDirectivesWorksOnFragmentSpreadsIfFalseOmitsFragmentSpread(t *testing.T
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -151,7 +154,7 @@ func TestDirectivesWorksOnFragmentSpreadsIfTrueIncludesFragmentSpread(t *testing
           b
         }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -162,7 +165,7 @@ func TestDirectivesWorksOnFragmentSpreadsIfTrueIncludesFragmentSpread(t *testing
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -176,7 +179,7 @@ func TestDirectivesWorksOnFragmentSpreadsUnlessFalseIncludesFragmentSpread(t *te
           b
         }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -187,7 +190,7 @@ func TestDirectivesWorksOnFragmentSpreadsUnlessFalseIncludesFragmentSpread(t *te
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -201,7 +204,7 @@ func TestDirectivesWorksOnFragmentSpreadsUnlessTrueOmitsFragmentSpread(t *testin
           b
         }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -211,7 +214,7 @@ func TestDirectivesWorksOnFragmentSpreadsUnlessTrueOmitsFragmentSpread(t *testin
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -227,7 +230,7 @@ func TestDirectivesWorksOnInlineFragmentIfFalseOmitsInlineFragment(t *testing.T)
           b
         }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -237,7 +240,7 @@ func TestDirectivesWorksOnInlineFragmentIfFalseOmitsInlineFragment(t *testing.T)
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -253,7 +256,7 @@ func TestDirectivesWorksOnInlineFragmentIfTrueIncludesInlineFragment(t *testing.
           b
         }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -264,7 +267,7 @@ func TestDirectivesWorksOnInlineFragmentIfTrueIncludesInlineFragment(t *testing.
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -280,7 +283,7 @@ func TestDirectivesWorksOnInlineFragmentUnlessFalseIncludesInlineFragment(t *tes
           b
         }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -291,7 +294,7 @@ func TestDirectivesWorksOnInlineFragmentUnlessFalseIncludesInlineFragment(t *tes
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -307,7 +310,7 @@ func TestDirectivesWorksOnInlineFragmentUnlessTrueIncludesInlineFragment(t *test
           b
         }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -317,7 +320,7 @@ func TestDirectivesWorksOnInlineFragmentUnlessTrueIncludesInlineFragment(t *test
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -331,7 +334,7 @@ func TestDirectivesWorksOnFragmentIfFalseOmitsFragment(t *testing.T) {
           b
         }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -341,7 +344,7 @@ func TestDirectivesWorksOnFragmentIfFalseOmitsFragment(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -355,7 +358,7 @@ func TestDirectivesWorksOnFragmentIfTrueIncludesFragment(t *testing.T) {
           b
         }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -366,7 +369,7 @@ func TestDirectivesWorksOnFragmentIfTrueIncludesFragment(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -380,7 +383,7 @@ func TestDirectivesWorksOnFragmentUnlessFalseIncludesFragment(t *testing.T) {
           b
         }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -391,7 +394,7 @@ func TestDirectivesWorksOnFragmentUnlessFalseIncludesFragment(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -405,7 +408,7 @@ func TestDirectivesWorksOnFragmentUnlessTrueOmitsFragment(t *testing.T) {
           b
         }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -415,6 +418,6 @@ func TestDirectivesWorksOnFragmentUnlessTrueOmitsFragment(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }

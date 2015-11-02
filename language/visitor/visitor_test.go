@@ -7,11 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/chris-ramon/graphql-go"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/language/visitor"
-	"github.com/kr/pretty"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
 func parse(t *testing.T, query string) *ast.Document {
@@ -89,7 +88,7 @@ func TestVisitor_AllowsForEditingOnEnter(t *testing.T) {
 
 	editedAst := visitor.Visit(astDoc, v, nil)
 	if !reflect.DeepEqual(ASTToJSON(t, expectedAST), editedAst) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expectedAST, editedAst))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedAST, editedAst))
 	}
 
 }
@@ -114,7 +113,7 @@ func TestVisitor_AllowsForEditingOnLeave(t *testing.T) {
 
 	editedAst := visitor.Visit(astDoc, v, nil)
 	if !reflect.DeepEqual(ASTToJSON(t, expectedAST), editedAst) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expectedAST, editedAst))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedAST, editedAst))
 	}
 }
 
@@ -204,7 +203,7 @@ func TestVisitor_AllowsSkippingASubTree(t *testing.T) {
 	_ = visitor.Visit(astDoc, v, nil)
 
 	if !reflect.DeepEqual(visited, expectedVisited) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expectedVisited, visited))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
 	}
 }
 
@@ -254,7 +253,7 @@ func TestVisitor_AllowsEarlyExitWhileVisiting(t *testing.T) {
 	_ = visitor.Visit(astDoc, v, nil)
 
 	if !reflect.DeepEqual(visited, expectedVisited) {
-		t.Fatalf("Unexpected result, Diff: %v", graphql.Diff(expectedVisited, visited))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
 	}
 }
 
@@ -308,7 +307,7 @@ func TestVisitor_AllowsANamedFunctionsVisitorAPI(t *testing.T) {
 	_ = visitor.Visit(astDoc, v, nil)
 
 	if !reflect.DeepEqual(visited, expectedVisited) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expectedVisited, visited))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
 	}
 }
 func TestVisitor_VisitsKitchenSink(t *testing.T) {
@@ -570,7 +569,7 @@ func TestVisitor_VisitsKitchenSink(t *testing.T) {
 	_ = visitor.Visit(astDoc, v, nil)
 
 	if !reflect.DeepEqual(visited, expectedVisited) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expectedVisited, visited))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
 	}
 }
 
@@ -580,7 +579,7 @@ func TestVisitor_ProducesHelpfulErrorMessages(t *testing.T) {
 			err := r.(string)
 			expectedErr := `Invalid AST Node (4): map[random:Data]`
 			if err != expectedErr {
-				t.Fatalf("Unexpected result, Diff: %v", Diff(err, expectedErr))
+				t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(err, expectedErr))
 			}
 			return
 		}
@@ -603,8 +602,4 @@ func ASTToJSON(t *testing.T, a ast.Node) interface{} {
 		t.Fatalf("Failed to unmarshal Node %v", err)
 	}
 	return f
-}
-
-func Diff(a, b interface{}) []string {
-	return pretty.Diff(a, b)
 }

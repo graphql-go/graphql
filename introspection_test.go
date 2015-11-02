@@ -1,27 +1,29 @@
-package graphql
+package graphql_test
 
 import (
 	"reflect"
 	"testing"
 
+	"github.com/chris-ramon/graphql-go"
 	"github.com/chris-ramon/graphql-go/gqlerrors"
 	"github.com/chris-ramon/graphql-go/language/location"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
-func g(t *testing.T, p Params) *Result {
-	resultChannel := make(chan *Result)
-	go Graphql(p, resultChannel)
+func g(t *testing.T, p graphql.Params) *graphql.Result {
+	resultChannel := make(chan *graphql.Result)
+	go graphql.Graphql(p, resultChannel)
 	result := <-resultChannel
 	return result
 }
 
 func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
-	emptySchema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
+	emptySchema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "QueryRoot",
-			Fields: FieldConfigMap{
-				"onlyField": &FieldConfig{
-					Type: String,
+			Fields: graphql.FieldConfigMap{
+				"onlyField": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -736,46 +738,46 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 			},
 		},
 	}
-	result := g(t, Params{
+	result := g(t, graphql.Params{
 		Schema:        emptySchema,
-		RequestString: IntrospectionQuery,
+		RequestString: testutil.IntrospectionQuery,
 	})
-	if !ContainSubset(result.Data.(map[string]interface{}), expectedDataSubSet) {
+	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expectedDataSubSet) {
 		t.Fatalf("unexpected, result does not contain subset of expected data")
 	}
 }
 
 func TestIntrospection_ExecutesAnInputObject(t *testing.T) {
 
-	testInputObject := NewInputObject(InputObjectConfig{
+	testInputObject := graphql.NewInputObject(graphql.InputObjectConfig{
 		Name: "TestInputObject",
-		Fields: InputObjectConfigFieldMap{
-			"a": &InputObjectFieldConfig{
-				Type:         String,
+		Fields: graphql.InputObjectConfigFieldMap{
+			"a": &graphql.InputObjectFieldConfig{
+				Type:         graphql.String,
 				DefaultValue: "foo",
 			},
-			"b": &InputObjectFieldConfig{
-				Type: NewList(String),
+			"b": &graphql.InputObjectFieldConfig{
+				Type: graphql.NewList(graphql.String),
 			},
 		},
 	})
-	testType := NewObject(ObjectConfig{
+	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: FieldConfigMap{
-			"field": &FieldConfig{
-				Type: String,
-				Args: FieldConfigArgument{
-					"complex": &ArgumentConfig{
+		Fields: graphql.FieldConfigMap{
+			"field": &graphql.FieldConfig{
+				Type: graphql.String,
+				Args: graphql.FieldConfigArgument{
+					"complex": &graphql.ArgumentConfig{
 						Type: testInputObject,
 					},
 				},
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					return p.Args["complex"]
 				},
 			},
 		},
 	})
-	schema, err := NewSchema(SchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: testType,
 	})
 	if err != nil {
@@ -848,26 +850,26 @@ func TestIntrospection_ExecutesAnInputObject(t *testing.T) {
 		},
 	}
 
-	result := g(t, Params{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
-	if !ContainSubset(result.Data.(map[string]interface{}), expectedDataSubSet) {
+	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expectedDataSubSet) {
 		t.Fatalf("unexpected, result does not contain subset of expected data")
 	}
 }
 
 func TestIntrospection_SupportsThe__TypeRootField(t *testing.T) {
 
-	testType := NewObject(ObjectConfig{
+	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: FieldConfigMap{
-			"testField": &FieldConfig{
-				Type: String,
+		Fields: graphql.FieldConfigMap{
+			"testField": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
 		},
 	})
-	schema, err := NewSchema(SchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: testType,
 	})
 	if err != nil {
@@ -880,36 +882,36 @@ func TestIntrospection_SupportsThe__TypeRootField(t *testing.T) {
         }
       }
     `
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"__type": map[string]interface{}{
 				"name": "TestType",
 			},
 		},
 	}
-	result := g(t, Params{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestIntrospection_IdentifiesDeprecatedFields(t *testing.T) {
 
-	testType := NewObject(ObjectConfig{
+	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: FieldConfigMap{
-			"nonDeprecated": &FieldConfig{
-				Type: String,
+		Fields: graphql.FieldConfigMap{
+			"nonDeprecated": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"deprecated": &FieldConfig{
-				Type:              String,
+			"deprecated": &graphql.FieldConfig{
+				Type:              graphql.String,
 				DeprecationReason: "Removed in 1.0",
 			},
 		},
 	})
-	schema, err := NewSchema(SchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: testType,
 	})
 	if err != nil {
@@ -927,7 +929,7 @@ func TestIntrospection_IdentifiesDeprecatedFields(t *testing.T) {
         }
       }
     `
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"__type": map[string]interface{}{
 				"name": "TestType",
@@ -946,29 +948,29 @@ func TestIntrospection_IdentifiesDeprecatedFields(t *testing.T) {
 			},
 		},
 	}
-	result := g(t, Params{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
-	if !ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestIntrospection_RespectsTheIncludeDeprecatedParameterForFields(t *testing.T) {
 
-	testType := NewObject(ObjectConfig{
+	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: FieldConfigMap{
-			"nonDeprecated": &FieldConfig{
-				Type: String,
+		Fields: graphql.FieldConfigMap{
+			"nonDeprecated": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"deprecated": &FieldConfig{
-				Type:              String,
+			"deprecated": &graphql.FieldConfig{
+				Type:              graphql.String,
 				DeprecationReason: "Removed in 1.0",
 			},
 		},
 	})
-	schema, err := NewSchema(SchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: testType,
 	})
 	if err != nil {
@@ -990,7 +992,7 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForFields(t *testing
         }
       }
     `
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"__type": map[string]interface{}{
 				"name": "TestType",
@@ -1015,40 +1017,40 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForFields(t *testing
 			},
 		},
 	}
-	result := g(t, Params{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
-	if !ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestIntrospection_IdentifiesDeprecatedEnumValues(t *testing.T) {
 
-	testEnum := NewEnum(EnumConfig{
+	testEnum := graphql.NewEnum(graphql.EnumConfig{
 		Name: "TestEnum",
-		Values: EnumValueConfigMap{
-			"NONDEPRECATED": &EnumValueConfig{
+		Values: graphql.EnumValueConfigMap{
+			"NONDEPRECATED": &graphql.EnumValueConfig{
 				Value: 0,
 			},
-			"DEPRECATED": &EnumValueConfig{
+			"DEPRECATED": &graphql.EnumValueConfig{
 				Value:             1,
 				DeprecationReason: "Removed in 1.0",
 			},
-			"ALSONONDEPRECATED": &EnumValueConfig{
+			"ALSONONDEPRECATED": &graphql.EnumValueConfig{
 				Value: 2,
 			},
 		},
 	})
-	testType := NewObject(ObjectConfig{
+	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: FieldConfigMap{
-			"testEnum": &FieldConfig{
+		Fields: graphql.FieldConfigMap{
+			"testEnum": &graphql.FieldConfig{
 				Type: testEnum,
 			},
 		},
 	})
-	schema, err := NewSchema(SchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: testType,
 	})
 	if err != nil {
@@ -1066,7 +1068,7 @@ func TestIntrospection_IdentifiesDeprecatedEnumValues(t *testing.T) {
         }
       }
     `
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"__type": map[string]interface{}{
 				"name": "TestEnum",
@@ -1090,40 +1092,40 @@ func TestIntrospection_IdentifiesDeprecatedEnumValues(t *testing.T) {
 			},
 		},
 	}
-	result := g(t, Params{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
-	if !ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestIntrospection_RespectsTheIncludeDeprecatedParameterForEnumValues(t *testing.T) {
 
-	testEnum := NewEnum(EnumConfig{
+	testEnum := graphql.NewEnum(graphql.EnumConfig{
 		Name: "TestEnum",
-		Values: EnumValueConfigMap{
-			"NONDEPRECATED": &EnumValueConfig{
+		Values: graphql.EnumValueConfigMap{
+			"NONDEPRECATED": &graphql.EnumValueConfig{
 				Value: 0,
 			},
-			"DEPRECATED": &EnumValueConfig{
+			"DEPRECATED": &graphql.EnumValueConfig{
 				Value:             1,
 				DeprecationReason: "Removed in 1.0",
 			},
-			"ALSONONDEPRECATED": &EnumValueConfig{
+			"ALSONONDEPRECATED": &graphql.EnumValueConfig{
 				Value: 2,
 			},
 		},
 	})
-	testType := NewObject(ObjectConfig{
+	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: FieldConfigMap{
-			"testEnum": &FieldConfig{
+		Fields: graphql.FieldConfigMap{
+			"testEnum": &graphql.FieldConfig{
 				Type: testEnum,
 			},
 		},
 	})
-	schema, err := NewSchema(SchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: testType,
 	})
 	if err != nil {
@@ -1145,7 +1147,7 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForEnumValues(t *tes
         }
       }
     `
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"__type": map[string]interface{}{
 				"name": "TestEnum",
@@ -1179,25 +1181,25 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForEnumValues(t *tes
 			},
 		},
 	}
-	result := g(t, Params{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
-	if !ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testing.T) {
 
-	testType := NewObject(ObjectConfig{
+	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: FieldConfigMap{
-			"testField": &FieldConfig{
-				Type: String,
+		Fields: graphql.FieldConfigMap{
+			"testField": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
 		},
 	})
-	schema, err := NewSchema(SchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: testType,
 	})
 	if err != nil {
@@ -1210,7 +1212,7 @@ func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testin
         }
       }
     `
-	expected := &Result{
+	expected := &graphql.Result{
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
 				Message: `Field "__type" argument "name" of type "String!" ` +
@@ -1221,27 +1223,27 @@ func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testin
 			},
 		},
 	}
-	result := g(t, Params{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
 	t.Skipf("Pending `validator` implementation")
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
 func TestIntrospection_ExposesDescriptionsOnTypesAndFields(t *testing.T) {
 
-	queryRoot := NewObject(ObjectConfig{
+	queryRoot := graphql.NewObject(graphql.ObjectConfig{
 		Name: "QueryRoot",
-		Fields: FieldConfigMap{
-			"onlyField": &FieldConfig{
-				Type: String,
+		Fields: graphql.FieldConfigMap{
+			"onlyField": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
 		},
 	})
-	schema, err := NewSchema(SchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: queryRoot,
 	})
 	if err != nil {
@@ -1259,7 +1261,7 @@ func TestIntrospection_ExposesDescriptionsOnTypesAndFields(t *testing.T) {
         }
       }
     `
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"schemaType": map[string]interface{}{
 				"name": "__Schema",
@@ -1289,25 +1291,25 @@ mutation operations.`,
 			},
 		},
 	}
-	result := g(t, Params{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
-	if !ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestIntrospection_ExposesDescriptionsOnEnums(t *testing.T) {
 
-	queryRoot := NewObject(ObjectConfig{
+	queryRoot := graphql.NewObject(graphql.ObjectConfig{
 		Name: "QueryRoot",
-		Fields: FieldConfigMap{
-			"onlyField": &FieldConfig{
-				Type: String,
+		Fields: graphql.FieldConfigMap{
+			"onlyField": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
 		},
 	})
-	schema, err := NewSchema(SchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: queryRoot,
 	})
 	if err != nil {
@@ -1325,7 +1327,7 @@ func TestIntrospection_ExposesDescriptionsOnEnums(t *testing.T) {
         }
       }
     `
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"typeKindType": map[string]interface{}{
 				"name":        "__TypeKind",
@@ -1367,11 +1369,11 @@ func TestIntrospection_ExposesDescriptionsOnEnums(t *testing.T) {
 			},
 		},
 	}
-	result := g(t, Params{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
-	if !ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }

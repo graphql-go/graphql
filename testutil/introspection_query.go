@@ -1,4 +1,4 @@
-package graphql
+package testutil
 
 var IntrospectionQuery = `
   query IntrospectionQuery {

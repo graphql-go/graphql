@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/chris-ramon/graphql-go"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/language/printer"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
 func parse(t *testing.T, query string) *ast.Document {
@@ -33,16 +33,16 @@ func TestPrinter_DoesNotAlterAST(t *testing.T) {
 	query := string(b)
 	astDoc := parse(t, query)
 
-	astDocBefore := graphql.ASTToJSON(t, astDoc)
+	astDocBefore := testutil.ASTToJSON(t, astDoc)
 
 	_ = printer.Print(astDoc)
 
-	astDocAfter := graphql.ASTToJSON(t, astDoc)
+	astDocAfter := testutil.ASTToJSON(t, astDoc)
 
-	_ = graphql.ASTToJSON(t, astDoc)
+	_ = testutil.ASTToJSON(t, astDoc)
 
 	if !reflect.DeepEqual(astDocAfter, astDocBefore) {
-		t.Fatalf("Unexpected result, Diff: %v", graphql.Diff(astDocAfter, astDocBefore))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(astDocAfter, astDocBefore))
 	}
 }
 
@@ -55,7 +55,7 @@ func TestPrinter_PrintsMinimalAST(t *testing.T) {
 	results := printer.Print(astDoc)
 	expected := "foo"
 	if !reflect.DeepEqual(results, expected) {
-		t.Fatalf("Unexpected result, Diff: %v", graphql.Diff(expected, results))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, results))
 	}
 }
 
@@ -102,6 +102,6 @@ fragment frag on Follower {
 	results := printer.Print(astDoc)
 
 	if !reflect.DeepEqual(expected, results) {
-		t.Fatalf("Unexpected result, Diff: %v", graphql.Diff(results, expected))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(results, expected))
 	}
 }

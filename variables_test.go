@@ -1,16 +1,18 @@
-package graphql
+package graphql_test
 
 import (
 	"encoding/json"
 	"reflect"
 	"testing"
 
+	"github.com/chris-ramon/graphql-go"
 	"github.com/chris-ramon/graphql-go/gqlerrors"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/location"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
-var testComplexScalar *Scalar = NewScalar(ScalarConfig{
+var testComplexScalar *graphql.Scalar = graphql.NewScalar(graphql.ScalarConfig{
 	Name: "ComplexScalar",
 	Serialize: func(value interface{}) interface{} {
 		if value == "DeserializedValue" {
@@ -33,25 +35,25 @@ var testComplexScalar *Scalar = NewScalar(ScalarConfig{
 	},
 })
 
-var testInputObject *InputObject = NewInputObject(InputObjectConfig{
+var testInputObject *graphql.InputObject = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name: "TestInputObject",
-	Fields: InputObjectConfigFieldMap{
-		"a": &InputObjectFieldConfig{
-			Type: String,
+	Fields: graphql.InputObjectConfigFieldMap{
+		"a": &graphql.InputObjectFieldConfig{
+			Type: graphql.String,
 		},
-		"b": &InputObjectFieldConfig{
-			Type: NewList(String),
+		"b": &graphql.InputObjectFieldConfig{
+			Type: graphql.NewList(graphql.String),
 		},
-		"c": &InputObjectFieldConfig{
-			Type: NewNonNull(String),
+		"c": &graphql.InputObjectFieldConfig{
+			Type: graphql.NewNonNull(graphql.String),
 		},
-		"d": &InputObjectFieldConfig{
+		"d": &graphql.InputObjectFieldConfig{
 			Type: testComplexScalar,
 		},
 	},
 })
 
-func inputResolved(p GQLFRParams) interface{} {
+func inputResolved(p graphql.GQLFRParams) interface{} {
 	input, ok := p.Args["input"]
 	if !ok {
 		return nil
@@ -63,78 +65,78 @@ func inputResolved(p GQLFRParams) interface{} {
 	return string(b)
 }
 
-var testType *Object = NewObject(ObjectConfig{
+var testType *graphql.Object = graphql.NewObject(graphql.ObjectConfig{
 	Name: "TestType",
-	Fields: FieldConfigMap{
-		"fieldWithObjectInput": &FieldConfig{
-			Type: String,
-			Args: FieldConfigArgument{
-				"input": &ArgumentConfig{
+	Fields: graphql.FieldConfigMap{
+		"fieldWithObjectInput": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
 					Type: testInputObject,
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"fieldWithNullableStringInput": &FieldConfig{
-			Type: String,
-			Args: FieldConfigArgument{
-				"input": &ArgumentConfig{
-					Type: String,
+		"fieldWithNullableStringInput": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type: graphql.String,
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"fieldWithNonNullableStringInput": &FieldConfig{
-			Type: String,
-			Args: FieldConfigArgument{
-				"input": &ArgumentConfig{
-					Type: NewNonNull(String),
+		"fieldWithNonNullableStringInput": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"fieldWithDefaultArgumentValue": &FieldConfig{
-			Type: String,
-			Args: FieldConfigArgument{
-				"input": &ArgumentConfig{
-					Type:         String,
+		"fieldWithDefaultArgumentValue": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type:         graphql.String,
 					DefaultValue: "Hello World",
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"list": &FieldConfig{
-			Type: String,
-			Args: FieldConfigArgument{
-				"input": &ArgumentConfig{
-					Type: NewList(String),
+		"list": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type: graphql.NewList(graphql.String),
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"nnList": &FieldConfig{
-			Type: String,
-			Args: FieldConfigArgument{
-				"input": &ArgumentConfig{
-					Type: NewNonNull(NewList(String)),
+		"nnList": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.NewList(graphql.String)),
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"listNN": &FieldConfig{
-			Type: String,
-			Args: FieldConfigArgument{
-				"input": &ArgumentConfig{
-					Type: NewList(NewNonNull(String)),
+		"listNN": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type: graphql.NewList(graphql.NewNonNull(graphql.String)),
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"nnListNN": &FieldConfig{
-			Type: String,
-			Args: FieldConfigArgument{
-				"input": &ArgumentConfig{
-					Type: NewNonNull(NewList(NewNonNull(String))),
+		"nnListNN": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.String))),
 				},
 			},
 			Resolve: inputResolved,
@@ -142,7 +144,7 @@ var testType *Object = NewObject(ObjectConfig{
 	},
 })
 
-var variablesTestSchema, _ = NewSchema(SchemaConfig{
+var variablesTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 	Query: testType,
 })
 
@@ -152,25 +154,25 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_ExecutesWithComplexI
           fieldWithObjectInput(input: {a: "foo", b: ["bar"], c: "baz"})
         }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz"}`,
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingInlineStructs_ProperlyParsesSingleValueToList(t *testing.T) {
@@ -179,25 +181,25 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_ProperlyParsesSingle
           fieldWithObjectInput(input: {a: "foo", b: "bar", c: "baz"})
         }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz"}`,
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingInlineStructs_DoesNotUseIncorrectValue(t *testing.T) {
@@ -206,25 +208,25 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_DoesNotUseIncorrectV
           fieldWithObjectInput(input: ["foo", "bar", "baz"])
         }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": nil,
 		},
 	}
 	// parse query
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -234,7 +236,7 @@ func testVariables_ObjectsAndNullability_UsingVariables_GetAST(t *testing.T) *as
           fieldWithObjectInput(input: $input)
         }
 	`
-	return TestParse(t, doc)
+	return testutil.TestParse(t, doc)
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexInput(t *testing.T) {
 
@@ -245,7 +247,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexInput
 			"c": "baz",
 		},
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz"}`,
 		},
@@ -254,17 +256,17 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexInput
 	ast := testVariables_ObjectsAndNullability_UsingVariables_GetAST(t)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -275,25 +277,25 @@ func TestVariables_ObjectsAndNullability_UsingVariables_UsesDefaultValueWhenNotP
 		fieldWithObjectInput(input: $input)
 	  }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz"}`,
 		},
 	}
 
-	withDefaultsAST := TestParse(t, doc)
+	withDefaultsAST := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    withDefaultsAST,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ProperlyParsesSingleValueToList(t *testing.T) {
@@ -304,7 +306,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ProperlyParsesSingleValu
 			"c": "baz",
 		},
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz"}`,
 		},
@@ -313,17 +315,17 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ProperlyParsesSingleValu
 	ast := testVariables_ObjectsAndNullability_UsingVariables_GetAST(t)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexScalarInput(t *testing.T) {
@@ -333,7 +335,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexScala
 			"d": "SerializedValue",
 		},
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"c":"foo","d":"DeserializedValue"}`,
 		},
@@ -342,17 +344,17 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexScala
 	ast := testVariables_ObjectsAndNullability_UsingVariables_GetAST(t)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnNullForNestedNonNull(t *testing.T) {
@@ -363,7 +365,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnNullForNestedNon
 			"c": nil,
 		},
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -381,24 +383,24 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnNullForNestedNon
 	ast := testVariables_ObjectsAndNullability_UsingVariables_GetAST(t)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnIncorrectType(t *testing.T) {
 	params := map[string]interface{}{
 		"input": "foo bar",
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -416,17 +418,17 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnIncorrectType(t 
 	ast := testVariables_ObjectsAndNullability_UsingVariables_GetAST(t)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNestedNonNull(t *testing.T) {
@@ -436,7 +438,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNested
 			"b": "bar",
 		},
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -454,17 +456,17 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNested
 	ast := testVariables_ObjectsAndNullability_UsingVariables_GetAST(t)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknownInputField(t *testing.T) {
@@ -476,7 +478,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknow
 			"d": "dog",
 		},
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -494,17 +496,17 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknow
 	ast := testVariables_ObjectsAndNullability_UsingVariables_GetAST(t)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -514,25 +516,25 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmitted(t *testing.T)
         fieldWithNullableStringInput
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": nil,
 		},
 	}
 
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NullableScalars_AllowsNullableInputsToBeOmittedInAVariable(t *testing.T) {
@@ -541,25 +543,25 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmittedInAVariable(t 
         fieldWithNullableStringInput(input: $value)
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": nil,
 		},
 	}
 
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NullableScalars_AllowsNullableInputsToBeOmittedInAnUnlistedVariable(t *testing.T) {
@@ -568,25 +570,25 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmittedInAnUnlistedVa
         fieldWithNullableStringInput(input: $value)
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": nil,
 		},
 	}
 
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToNullInAVariable(t *testing.T) {
@@ -598,26 +600,26 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToNullInAVariable(
 	params := map[string]interface{}{
 		"value": nil,
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": nil,
 		},
 	}
 
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueInAVariable(t *testing.T) {
@@ -629,26 +631,26 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueInAVariabl
 	params := map[string]interface{}{
 		"value": "a",
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": `"a"`,
 		},
 	}
 
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueDirectly(t *testing.T) {
@@ -657,25 +659,25 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueDirectly(t
         fieldWithNullableStringInput(input: "a")
       }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": `"a"`,
 		},
 	}
 
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -687,7 +689,7 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeOmittedIn
         }
 	`
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -701,19 +703,19 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeOmittedIn
 		},
 	}
 
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeSetToNullInAVariable(t *testing.T) {
@@ -726,7 +728,7 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeSetToNull
 	params := map[string]interface{}{
 		"value": nil,
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -740,20 +742,20 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeSetToNull
 		},
 	}
 
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NonNullableScalars_AllowsNonNullableInputsToBeSetToAValueInAVariable(t *testing.T) {
@@ -766,26 +768,26 @@ func TestVariables_NonNullableScalars_AllowsNonNullableInputsToBeSetToAValueInAV
 	params := map[string]interface{}{
 		"value": "a",
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNonNullableStringInput": `"a"`,
 		},
 	}
 
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NonNullableScalars_AllowsNonNullableInputsToBeSetToAValueDirectly(t *testing.T) {
@@ -799,26 +801,26 @@ func TestVariables_NonNullableScalars_AllowsNonNullableInputsToBeSetToAValueDire
 		"value": "a",
 	}
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNonNullableStringInput": `"a"`,
 		},
 	}
 
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_NonNullableScalars_PassesAlongNullForNonNullableInputsIfExplicitlySetInTheQuery(t *testing.T) {
@@ -832,26 +834,26 @@ func TestVariables_NonNullableScalars_PassesAlongNullForNonNullableInputsIfExpli
 		"value": "a",
 	}
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNonNullableStringInput": nil,
 		},
 	}
 
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -865,25 +867,25 @@ func TestVariables_ListsAndNullability_AllowsListsToBeNull(t *testing.T) {
 		"input": nil,
 	}
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"list": nil,
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_AllowsListsToContainValues(t *testing.T) {
@@ -896,25 +898,25 @@ func TestVariables_ListsAndNullability_AllowsListsToContainValues(t *testing.T) 
 		"input": []interface{}{"A"},
 	}
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"list": `["A"]`,
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_AllowsListsToContainNull(t *testing.T) {
@@ -927,25 +929,25 @@ func TestVariables_ListsAndNullability_AllowsListsToContainNull(t *testing.T) {
 		"input": []interface{}{"A", nil, "B"},
 	}
 
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"list": `["A",null,"B"]`,
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowNonNullListsToBeNull(t *testing.T) {
@@ -954,7 +956,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListsToBeNull(t *testi
           nnList(input: $input)
         }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -967,19 +969,19 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListsToBeNull(t *testi
 			},
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_AllowsNonNullListsToContainValues(t *testing.T) {
@@ -991,25 +993,25 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsToContainValues(t *test
 	params := map[string]interface{}{
 		"input": []interface{}{"A"},
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nnList": `["A"]`,
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_AllowsNonNullListsToContainNull(t *testing.T) {
@@ -1021,25 +1023,25 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsToContainNull(t *testin
 	params := map[string]interface{}{
 		"input": []interface{}{"A", nil, "B"},
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nnList": `["A",null,"B"]`,
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToBeNull(t *testing.T) {
@@ -1051,25 +1053,25 @@ func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToBeNull(t *testing.
 	params := map[string]interface{}{
 		"input": nil,
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"listNN": nil,
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToContainValues(t *testing.T) {
@@ -1081,25 +1083,25 @@ func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToContainValues(t *t
 	params := map[string]interface{}{
 		"input": []interface{}{"A"},
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"listNN": `["A"]`,
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t *testing.T) {
@@ -1111,7 +1113,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t
 	params := map[string]interface{}{
 		"input": []interface{}{"A", nil, "B"},
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -1125,20 +1127,20 @@ func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t
 			},
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToBeNull(t *testing.T) {
@@ -1150,7 +1152,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToBeNull
 	params := map[string]interface{}{
 		"input": nil,
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -1163,20 +1165,20 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToBeNull
 			},
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_AllowsNonNullListsOfNonNulsToContainValues(t *testing.T) {
@@ -1188,25 +1190,25 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsOfNonNulsToContainValue
 	params := map[string]interface{}{
 		"input": []interface{}{"A"},
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nnListNN": `["A"]`,
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContainNull(t *testing.T) {
@@ -1218,7 +1220,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContai
 	params := map[string]interface{}{
 		"input": []interface{}{"A", nil, "B"},
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -1232,20 +1234,20 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContai
 			},
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowInvalidTypesToBeUsedAsValues(t *testing.T) {
@@ -1259,7 +1261,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowInvalidTypesToBeUsedAsValues(
 			"list": []interface{}{"A", "B"},
 		},
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -1272,20 +1274,20 @@ func TestVariables_ListsAndNullability_DoesNotAllowInvalidTypesToBeUsedAsValues(
 			},
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_ListsAndNullability_DoesNotAllowUnknownTypesToBeUsedAsValues(t *testing.T) {
@@ -1297,7 +1299,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowUnknownTypesToBeUsedAsValues(
 	params := map[string]interface{}{
 		"input": "whoknows",
 	}
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
@@ -1310,20 +1312,20 @@ func TestVariables_ListsAndNullability_DoesNotAllowUnknownTypesToBeUsedAsValues(
 			},
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -1333,24 +1335,24 @@ func TestVariables_UsesArgumentDefaultValues_WhenNoArgumentProvided(t *testing.T
       fieldWithDefaultArgumentValue
     }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithDefaultArgumentValue": `"Hello World"`,
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_UsesArgumentDefaultValues_WhenNullableVariableProvided(t *testing.T) {
@@ -1359,24 +1361,24 @@ func TestVariables_UsesArgumentDefaultValues_WhenNullableVariableProvided(t *tes
         fieldWithDefaultArgumentValue(input: $optional)
     }
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithDefaultArgumentValue": `"Hello World"`,
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestVariables_UsesArgumentDefaultValues_WhenArgumentProvidedCannotBeParsed(t *testing.T) {
@@ -1385,23 +1387,23 @@ func TestVariables_UsesArgumentDefaultValues_WhenArgumentProvidedCannotBeParsed(
 		fieldWithDefaultArgumentValue(input: WRONG_TYPE)
 	}
 	`
-	expected := &Result{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithDefaultArgumentValue": `"Hello World"`,
 		},
 	}
-	ast := TestParse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := TestExecute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", Diff(expected.Errors, result.Errors))
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, result))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
