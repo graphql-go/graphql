@@ -1,57 +1,68 @@
-package printer_test
+package printer
 
 import (
-	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/chris-ramon/graphql-go/language/printer"
-	"github.com/chris-ramon/graphql-go/testutil"
 	"io/ioutil"
 	"reflect"
 	"testing"
 )
 
+func parseee(t *testing.T, query string) *AstDocument {
+	astDoc, err := Parse(ParseParams{
+		Source: query,
+		Options: ParseOptions{
+			NoLocation: false,
+			NoSource:   true,
+		},
+	})
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+	return astDoc
+}
+
 func TestSchemaPrinter_PrintsMinimalAST(t *testing.T) {
-	astDoc := ast.NewScalarTypeDefinition(&ast.ScalarTypeDefinition{
-		Name: ast.NewName(&ast.Name{
+	astDoc := NewAstScalarDefinition(&AstScalarDefinition{
+		Name: NewAstName(&AstName{
 			Value: "foo",
 		}),
 	})
-	results := printer.Print(astDoc)
+	results := Print(astDoc)
 	expected := "scalar foo"
 	if !reflect.DeepEqual(results, expected) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, results))
+		t.Fatalf("Unexpected result, Diff: %v", Diff(expected, results))
 	}
 }
 
 func TestSchemaPrinter_DoesNotAlterAST(t *testing.T) {
-	b, err := ioutil.ReadFile("./../parser/schema-kitchen-sink.graphql")
+	b, err := ioutil.ReadFile("./schema-kitchen-sink.graphql")
 	if err != nil {
 		t.Fatalf("unable to load schema-kitchen-sink.graphql")
 	}
 
 	query := string(b)
-	astDoc := parse(t, query)
+	astDoc := parseee(t, query)
 
-	astDocBefore := testutil.ASTToJSON(t, astDoc)
+	astDocBefore := ASTToJSON(t, astDoc)
 
-	_ = printer.Print(astDoc)
+	_ = Print(astDoc)
 
-	astDocAfter := testutil.ASTToJSON(t, astDoc)
+	astDocAfter := ASTToJSON(t, astDoc)
 
-	_ = testutil.ASTToJSON(t, astDoc)
+	_ = ASTToJSON(t, astDoc)
 
 	if !reflect.DeepEqual(astDocAfter, astDocBefore) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(astDocAfter, astDocBefore))
+		t.Fatalf("Unexpected result, Diff: %v", Diff(astDocAfter, astDocBefore))
 	}
 }
 
 func TestSchemaPrinter_PrintsKitchenSink(t *testing.T) {
-	b, err := ioutil.ReadFile("./../parser/schema-kitchen-sink.graphql")
+	b, err := ioutil.ReadFile("./schema-kitchen-sink.graphql")
 	if err != nil {
 		t.Fatalf("unable to load schema-kitchen-sink.graphql")
 	}
 
 	query := string(b)
-	astDoc := parse(t, query)
+	astDoc := parseee(t, query)
 	expected := `type Foo implements Bar {
   one: Type
   two(argument: InputType!): Type
@@ -84,8 +95,8 @@ extend type Foo {
   seven(argument: [String]): Type
 }
 `
-	results := printer.Print(astDoc)
+	results := Print(astDoc)
 	if !reflect.DeepEqual(expected, results) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(results, expected))
+		t.Fatalf("Unexpected result, Diff: %v", Diff(results, expected))
 	}
 }

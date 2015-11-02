@@ -5,7 +5,7 @@ type Node interface {
 	GetLoc() *Location
 }
 
-// The list of all possible AST node types.
+// The list of all possible AST node graphql.
 // Ensure that all node types implements Node interface
 var _ Node = (*Name)(nil)
 var _ Node = (*Document)(nil)
@@ -27,19 +27,19 @@ var _ Node = (*ListValue)(nil)
 var _ Node = (*ObjectValue)(nil)
 var _ Node = (*ObjectField)(nil)
 var _ Node = (*Directive)(nil)
-var _ Node = (*ListType)(nil)
-var _ Node = (*NonNullType)(nil)
-var _ Node = (*ObjectTypeDefinition)(nil)
+var _ Node = (*List)(nil)
+var _ Node = (*NonNull)(nil)
+var _ Node = (*ObjectDefinition)(nil)
 var _ Node = (*FieldDefinition)(nil)
 var _ Node = (*InputValueDefinition)(nil)
-var _ Node = (*InterfaceTypeDefinition)(nil)
-var _ Node = (*UnionTypeDefinition)(nil)
-var _ Node = (*ScalarTypeDefinition)(nil)
-var _ Node = (*EnumTypeDefinition)(nil)
+var _ Node = (*InterfaceDefinition)(nil)
+var _ Node = (*UnionDefinition)(nil)
+var _ Node = (*ScalarDefinition)(nil)
+var _ Node = (*EnumDefinition)(nil)
 var _ Node = (*EnumValueDefinition)(nil)
-var _ Node = (*InputObjectTypeDefinition)(nil)
+var _ Node = (*InputObjectDefinition)(nil)
 var _ Node = (*TypeExtensionDefinition)(nil)
 
-// TODO: File issue in `graphql-js` where NamedType is not
+// TODO: File issue in `graphql-js` where Named is not
 // defined as a Node. This might be a mistake in `graphql-js`?
-var _ Node = (*NamedType)(nil)
+var _ Node = (*Named)(nil)

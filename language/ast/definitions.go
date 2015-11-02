@@ -14,7 +14,7 @@ type Definition interface {
 // Ensure that all definition types implements Definition interface
 var _ Definition = (*OperationDefinition)(nil)
 var _ Definition = (*FragmentDefinition)(nil)
-var _ Definition = (TypeDefinition)(nil)
+var _ Definition = (Definition)(nil)
 
 // OperationDefinition implements Node, Definition
 type OperationDefinition struct {
@@ -77,7 +77,7 @@ type FragmentDefinition struct {
 	Operation           string
 	Name                *Name
 	VariableDefinitions []*VariableDefinition
-	TypeCondition       *NamedType
+	TypeCondition       *Named
 	Directives          []*Directive
 	SelectionSet        *SelectionSet
 }
