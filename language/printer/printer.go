@@ -2,9 +2,10 @@ package printer
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/visitor"
-	"strings"
 )
 
 func getMapValue(m map[string]interface{}, key string) interface{} {
@@ -303,21 +304,21 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		return visitor.ActionNoChange, nil
 	},
 
-	"NamedType": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"Named": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			return visitor.ActionUpdate, getMapValueString(node, "Name")
 		}
 		return visitor.ActionNoChange, nil
 	},
-	"ListType": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"List": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			return visitor.ActionUpdate, "[" + getMapValueString(node, "Type") + "]"
 		}
 		return visitor.ActionNoChange, nil
 	},
-	"NonNullType": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"NonNull": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			return visitor.ActionUpdate, getMapValueString(node, "Type") + "!"
@@ -325,7 +326,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		return visitor.ActionNoChange, nil
 	},
 
-	"ObjectTypeDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"ObjectDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
@@ -358,7 +359,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		}
 		return visitor.ActionNoChange, nil
 	},
-	"InterfaceTypeDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"InterfaceDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
@@ -368,7 +369,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		}
 		return visitor.ActionNoChange, nil
 	},
-	"UnionTypeDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"UnionDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
@@ -378,7 +379,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		}
 		return visitor.ActionNoChange, nil
 	},
-	"ScalarTypeDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"ScalarDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
@@ -387,7 +388,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		}
 		return visitor.ActionNoChange, nil
 	},
-	"EnumTypeDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"EnumDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
@@ -405,7 +406,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		}
 		return visitor.ActionNoChange, nil
 	},
-	"InputObjectTypeDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"InputObjectDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")

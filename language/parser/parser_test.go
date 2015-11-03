@@ -1,14 +1,13 @@
 package parser
 
 import (
-	"reflect"
-	"testing"
-
 	"fmt"
 	"io/ioutil"
+	"reflect"
 	"strings"
+	"testing"
 
-	"github.com/chris-ramon/graphql-go/errors"
+	"github.com/chris-ramon/graphql-go/gqlerrors"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/language/source"
@@ -78,7 +77,7 @@ func TestParseProvidesUsefulErrors(t *testing.T) {
 	}
 	_, err := Parse(params)
 
-	expectedError := &graphqlerrors.GraphQLError{
+	expectedError := &gqlerrors.Error{
 		Message: `Syntax Error GraphQL (1:2) Expected Name, found EOF
 
 1: {
@@ -87,7 +86,7 @@ func TestParseProvidesUsefulErrors(t *testing.T) {
 		Positions: []int{1},
 		Locations: []location.SourceLocation{{1, 2}},
 	}
-	checkGraphQLError(t, err, expectedError)
+	checkError(t, err, expectedError)
 
 	testErrorMessagesTable := []errorMessageTest{
 		{
@@ -118,7 +117,7 @@ fragment MissingOn Type
 			t.Skipf("Skipped test: %v", test.source)
 		}
 		_, err := Parse(ParseParams{Source: test.source})
-		checkGraphQLErrorMessage(t, err, test.expectedMessage)
+		checkErrorMessage(t, err, test.expectedMessage)
 	}
 
 }
@@ -129,7 +128,7 @@ func TestParseProvidesUsefulErrorsWhenUsingSource(t *testing.T) {
 		`Syntax Error MyQuery.graphql (1:6) Expected Name, found EOF`,
 		false,
 	}
-	testGraphQLErrorMessage(t, test)
+	testErrorMessage(t, test)
 }
 
 func TestParsesVariableInlineValues(t *testing.T) {
@@ -147,7 +146,7 @@ func TestParsesConstantDefaultValues(t *testing.T) {
 		`Syntax Error GraphQL (1:37) Unexpected $`,
 		false,
 	}
-	testGraphQLErrorMessage(t, test)
+	testErrorMessage(t, test)
 }
 
 func TestDuplicatedKeysInInputObject(t *testing.T) {
@@ -156,7 +155,7 @@ func TestDuplicatedKeysInInputObject(t *testing.T) {
 		`Syntax Error GraphQL (1:22) Duplicate input object field a.`,
 		false,
 	}
-	testGraphQLErrorMessage(t, test)
+	testErrorMessage(t, test)
 }
 
 func TestDoesNotAcceptFragmentsNameOn(t *testing.T) {
@@ -165,7 +164,7 @@ func TestDoesNotAcceptFragmentsNameOn(t *testing.T) {
 		`Syntax Error GraphQL (1:10) Unexpected Name "on"`,
 		false,
 	}
-	testGraphQLErrorMessage(t, test)
+	testErrorMessage(t, test)
 }
 
 func TestDoesNotAcceptFragmentsSpreadOfOn(t *testing.T) {
@@ -174,7 +173,7 @@ func TestDoesNotAcceptFragmentsSpreadOfOn(t *testing.T) {
 		`Syntax Error GraphQL (1:9) Expected Name, found }`,
 		false,
 	}
-	testGraphQLErrorMessage(t, test)
+	testErrorMessage(t, test)
 }
 
 func TestDoesNotAllowNullAsValue(t *testing.T) {
@@ -183,11 +182,11 @@ func TestDoesNotAllowNullAsValue(t *testing.T) {
 		`Syntax Error GraphQL (1:39) Unexpected Name "null"`,
 		false,
 	}
-	testGraphQLErrorMessage(t, test)
+	testErrorMessage(t, test)
 }
 
 func TestParsesKitchenSink(t *testing.T) {
-	b, err := ioutil.ReadFile("./kitchen-sink.graphql")
+	b, err := ioutil.ReadFile("../../kitchen-sink.graphql")
 	if err != nil {
 		t.Fatalf("unable to load kitchen-sink.graphql")
 	}
@@ -360,7 +359,7 @@ func TestParseCreatesAst(t *testing.T) {
 		Definitions: []ast.Node{&oDef},
 	})
 	if !reflect.DeepEqual(document, expectedDocument) {
-		t.Fatalf("unexpected document, expected: %v, got: %v", expectedDocument, document)
+		t.Fatalf("unexpected document, expected: %v, got: %v", expectedDocument, document.Definitions)
 	}
 
 }
@@ -371,15 +370,15 @@ type errorMessageTest struct {
 	skipped         bool
 }
 
-func testGraphQLErrorMessage(t *testing.T, test errorMessageTest) {
+func testErrorMessage(t *testing.T, test errorMessageTest) {
 	if test.skipped != false {
 		t.Skipf("Skipped test: %v", test.source)
 	}
 	_, err := Parse(ParseParams{Source: test.source})
-	checkGraphQLErrorMessage(t, err, test.expectedMessage)
+	checkErrorMessage(t, err, test.expectedMessage)
 }
 
-func checkGraphQLError(t *testing.T, err error, expectedError *graphqlerrors.GraphQLError) {
+func checkError(t *testing.T, err error, expectedError *gqlerrors.Error) {
 	if expectedError == nil {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -393,19 +392,19 @@ func checkGraphQLError(t *testing.T, err error, expectedError *graphqlerrors.Gra
 	if err.Error() != expectedError.Message {
 		t.Fatalf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", expectedError, err.Error())
 	}
-	gErr := toGraphQLError(err)
+	gErr := toError(err)
 	if gErr == nil {
-		t.Fatalf("unexpected nil GraphQLError")
+		t.Fatalf("unexpected nil Error")
 	}
 	if len(expectedError.Positions) > 0 && !reflect.DeepEqual(gErr.Positions, expectedError.Positions) {
-		t.Fatalf("unexpected GraphQLError.Positions.\nexpected:\n%v\n\ngot:\n%v", expectedError.Positions, gErr.Positions)
+		t.Fatalf("unexpected Error.Positions.\nexpected:\n%v\n\ngot:\n%v", expectedError.Positions, gErr.Positions)
 	}
 	if len(expectedError.Locations) > 0 && !reflect.DeepEqual(gErr.Locations, expectedError.Locations) {
-		t.Fatalf("unexpected GraphQLError.Locations.\nexpected:\n%v\n\ngot:\n%v", expectedError.Locations, gErr.Locations)
+		t.Fatalf("unexpected Error.Locations.\nexpected:\n%v\n\ngot:\n%v", expectedError.Locations, gErr.Locations)
 	}
 }
 
-func checkGraphQLErrorMessage(t *testing.T, err error, expectedMessage string) {
+func checkErrorMessage(t *testing.T, err error, expectedMessage string) {
 	if err == nil {
 		t.Fatalf("unexpected nil error\nexpected:\n%v\n\ngot:\n%v", expectedMessage, err)
 	}
@@ -418,12 +417,12 @@ func checkGraphQLErrorMessage(t *testing.T, err error, expectedMessage string) {
 	}
 }
 
-func toGraphQLError(err error) *graphqlerrors.GraphQLError {
+func toError(err error) *gqlerrors.Error {
 	if err == nil {
 		return nil
 	}
 	switch err := err.(type) {
-	case *graphqlerrors.GraphQLError:
+	case *gqlerrors.Error:
 		return err
 	default:
 		return nil

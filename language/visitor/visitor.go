@@ -77,11 +77,11 @@ var QueryDocumentKeys KeyMap = KeyMap{
 		"Arguments",
 	},
 
-	"NamedType":   []string{"Name"},
-	"ListType":    []string{"Type"},
-	"NonNullType": []string{"Type"},
+	"Named":   []string{"Name"},
+	"List":    []string{"Type"},
+	"NonNull": []string{"Type"},
 
-	"ObjectTypeDefinition": []string{
+	"ObjectDefinition": []string{
 		"Name",
 		"Interfaces",
 		"Fields",
@@ -96,21 +96,21 @@ var QueryDocumentKeys KeyMap = KeyMap{
 		"Type",
 		"DefaultValue",
 	},
-	"InterfaceTypeDefinition": []string{
+	"InterfaceDefinition": []string{
 		"Name",
 		"Fields",
 	},
-	"UnionTypeDefinition": []string{
+	"UnionDefinition": []string{
 		"Name",
 		"Types",
 	},
-	"ScalarTypeDefinition": []string{"Name"},
-	"EnumTypeDefinition": []string{
+	"ScalarDefinition": []string{"Name"},
+	"EnumDefinition": []string{
 		"Name",
 		"Values",
 	},
 	"EnumValueDefinition": []string{"Name"},
-	"InputObjectTypeDefinition": []string{
+	"InputObjectDefinition": []string{
 		"Name",
 		"Fields",
 	},

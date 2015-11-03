@@ -1,21 +1,22 @@
-package gql
+package graphql_test
 
 import (
 	"reflect"
 	"testing"
 
-	"github.com/chris-ramon/graphql-go/types"
-
-	"./testutil"
+	"github.com/chris-ramon/graphql-go"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
 type T struct {
 	Query    string
-	Schema   types.GraphQLSchema
+	Schema   graphql.Schema
 	Expected interface{}
 }
 
-var (
+var Tests = []T{}
+
+func init() {
 	Tests = []T{
 		T{
 			Query: `
@@ -26,7 +27,7 @@ var (
 				}
 			`,
 			Schema: testutil.StarWarsSchema,
-			Expected: &types.GraphQLResult{
+			Expected: &graphql.Result{
 				Data: map[string]interface{}{
 					"hero": map[string]interface{}{
 						"name": "R2-D2",
@@ -45,9 +46,9 @@ var (
 						}
 					}
 				}
-				`,
+			`,
 			Schema: testutil.StarWarsSchema,
-			Expected: &types.GraphQLResult{
+			Expected: &graphql.Result{
 				Data: map[string]interface{}{
 					"hero": map[string]interface{}{
 						"id":   "2001",
@@ -68,21 +69,21 @@ var (
 			},
 		},
 	}
-)
+}
 
 func TestQuery(t *testing.T) {
 	for _, test := range Tests {
-		graphqlParams := GraphqlParams{
+		params := graphql.Params{
 			Schema:        test.Schema,
 			RequestString: test.Query,
 		}
-		testGraphql(test, graphqlParams, t)
+		testGraphql(test, params, t)
 	}
 }
 
-func testGraphql(test T, p GraphqlParams, t *testing.T) {
-	resultChannel := make(chan *types.GraphQLResult)
-	go Graphql(p, resultChannel)
+func testGraphql(test T, p graphql.Params, t *testing.T) {
+	resultChannel := make(chan *graphql.Result)
+	go graphql.Graphql(p, resultChannel)
 	result := <-resultChannel
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
@@ -95,17 +96,17 @@ func testGraphql(test T, p GraphqlParams, t *testing.T) {
 func TestBasicGraphQLExample(t *testing.T) {
 	// taken from `graphql-js` README
 
-	helloFieldResolved := func(p types.GQLFRParams) interface{} {
+	helloFieldResolved := func(p graphql.GQLFRParams) interface{} {
 		return "world"
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "RootQueryType",
-			Fields: types.GraphQLFieldConfigMap{
-				"hello": &types.GraphQLFieldConfig{
+			Fields: graphql.FieldConfigMap{
+				"hello": &graphql.FieldConfig{
 					Description: "Returns `world`",
-					Type:        types.GraphQLString,
+					Type:        graphql.String,
 					Resolve:     helloFieldResolved,
 				},
 			},
@@ -120,8 +121,8 @@ func TestBasicGraphQLExample(t *testing.T) {
 		"hello": "world",
 	}
 
-	resultChannel := make(chan *types.GraphQLResult)
-	go Graphql(GraphqlParams{
+	resultChannel := make(chan *graphql.Result)
+	go graphql.Graphql(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	}, resultChannel)

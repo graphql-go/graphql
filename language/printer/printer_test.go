@@ -1,13 +1,14 @@
 package printer_test
 
 import (
+	"io/ioutil"
+	"reflect"
+	"testing"
+
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/parser"
 	"github.com/chris-ramon/graphql-go/language/printer"
 	"github.com/chris-ramon/graphql-go/testutil"
-	"io/ioutil"
-	"reflect"
-	"testing"
 )
 
 func parse(t *testing.T, query string) *ast.Document {
@@ -24,7 +25,7 @@ func parse(t *testing.T, query string) *ast.Document {
 }
 
 func TestPrinter_DoesNotAlterAST(t *testing.T) {
-	b, err := ioutil.ReadFile("./../parser/kitchen-sink.graphql")
+	b, err := ioutil.ReadFile("../../kitchen-sink.graphql")
 	if err != nil {
 		t.Fatalf("unable to load kitchen-sink.graphql")
 	}
@@ -59,7 +60,7 @@ func TestPrinter_PrintsMinimalAST(t *testing.T) {
 }
 
 func TestPrinter_PrintsKitchenSink(t *testing.T) {
-	b, err := ioutil.ReadFile("./../parser/kitchen-sink.graphql")
+	b, err := ioutil.ReadFile("../../kitchen-sink.graphql")
 	if err != nil {
 		t.Fatalf("unable to load kitchen-sink.graphql")
 	}

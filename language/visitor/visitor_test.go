@@ -1,14 +1,16 @@
 package visitor_test
 
 import (
-	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/chris-ramon/graphql-go/language/parser"
-	"github.com/chris-ramon/graphql-go/language/visitor"
-	"github.com/chris-ramon/graphql-go/testutil"
+	"encoding/json"
 	"io/ioutil"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/chris-ramon/graphql-go/language/ast"
+	"github.com/chris-ramon/graphql-go/language/parser"
+	"github.com/chris-ramon/graphql-go/language/visitor"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
 func parse(t *testing.T, query string) *ast.Document {
@@ -64,6 +66,7 @@ func getMapValueString(m map[string]interface{}, key string) string {
 	}
 	return ""
 }
+
 func TestVisitor_AllowsForEditingOnEnter(t *testing.T) {
 
 	query := `{ a, b, c { a, b, c } }`
@@ -84,7 +87,7 @@ func TestVisitor_AllowsForEditingOnEnter(t *testing.T) {
 	}
 
 	editedAst := visitor.Visit(astDoc, v, nil)
-	if !reflect.DeepEqual(testutil.ASTToJSON(t, expectedAST), editedAst) {
+	if !reflect.DeepEqual(ASTToJSON(t, expectedAST), editedAst) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedAST, editedAst))
 	}
 
@@ -109,7 +112,7 @@ func TestVisitor_AllowsForEditingOnLeave(t *testing.T) {
 	}
 
 	editedAst := visitor.Visit(astDoc, v, nil)
-	if !reflect.DeepEqual(testutil.ASTToJSON(t, expectedAST), editedAst) {
+	if !reflect.DeepEqual(ASTToJSON(t, expectedAST), editedAst) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedAST, editedAst))
 	}
 }
@@ -308,7 +311,7 @@ func TestVisitor_AllowsANamedFunctionsVisitorAPI(t *testing.T) {
 	}
 }
 func TestVisitor_VisitsKitchenSink(t *testing.T) {
-	b, err := ioutil.ReadFile("./../parser/kitchen-sink.graphql")
+	b, err := ioutil.ReadFile("../../kitchen-sink.graphql")
 	if err != nil {
 		t.Fatalf("unable to load kitchen-sink.graphql")
 	}
@@ -327,20 +330,20 @@ func TestVisitor_VisitsKitchenSink(t *testing.T) {
 		[]interface{}{"enter", "Name", "Name", "Variable"},
 		[]interface{}{"leave", "Name", "Name", "Variable"},
 		[]interface{}{"leave", "Variable", "Variable", "VariableDefinition"},
-		[]interface{}{"enter", "NamedType", "Type", "VariableDefinition"},
-		[]interface{}{"enter", "Name", "Name", "NamedType"},
-		[]interface{}{"leave", "Name", "Name", "NamedType"},
-		[]interface{}{"leave", "NamedType", "Type", "VariableDefinition"},
+		[]interface{}{"enter", "Named", "Type", "VariableDefinition"},
+		[]interface{}{"enter", "Name", "Name", "Named"},
+		[]interface{}{"leave", "Name", "Name", "Named"},
+		[]interface{}{"leave", "Named", "Type", "VariableDefinition"},
 		[]interface{}{"leave", "VariableDefinition", 0, nil},
 		[]interface{}{"enter", "VariableDefinition", 1, nil},
 		[]interface{}{"enter", "Variable", "Variable", "VariableDefinition"},
 		[]interface{}{"enter", "Name", "Name", "Variable"},
 		[]interface{}{"leave", "Name", "Name", "Variable"},
 		[]interface{}{"leave", "Variable", "Variable", "VariableDefinition"},
-		[]interface{}{"enter", "NamedType", "Type", "VariableDefinition"},
-		[]interface{}{"enter", "Name", "Name", "NamedType"},
-		[]interface{}{"leave", "Name", "Name", "NamedType"},
-		[]interface{}{"leave", "NamedType", "Type", "VariableDefinition"},
+		[]interface{}{"enter", "Named", "Type", "VariableDefinition"},
+		[]interface{}{"enter", "Name", "Name", "Named"},
+		[]interface{}{"leave", "Name", "Name", "Named"},
+		[]interface{}{"leave", "Named", "Type", "VariableDefinition"},
 		[]interface{}{"enter", "EnumValue", "DefaultValue", "VariableDefinition"},
 		[]interface{}{"leave", "EnumValue", "DefaultValue", "VariableDefinition"},
 		[]interface{}{"leave", "VariableDefinition", 1, nil},
@@ -366,10 +369,10 @@ func TestVisitor_VisitsKitchenSink(t *testing.T) {
 		[]interface{}{"leave", "Name", "Name", "Field"},
 		[]interface{}{"leave", "Field", 0, nil},
 		[]interface{}{"enter", "InlineFragment", 1, nil},
-		[]interface{}{"enter", "NamedType", "TypeCondition", "InlineFragment"},
-		[]interface{}{"enter", "Name", "Name", "NamedType"},
-		[]interface{}{"leave", "Name", "Name", "NamedType"},
-		[]interface{}{"leave", "NamedType", "TypeCondition", "InlineFragment"},
+		[]interface{}{"enter", "Named", "TypeCondition", "InlineFragment"},
+		[]interface{}{"enter", "Name", "Name", "Named"},
+		[]interface{}{"leave", "Name", "Name", "Named"},
+		[]interface{}{"leave", "Named", "TypeCondition", "InlineFragment"},
 		[]interface{}{"enter", "Directive", 0, nil},
 		[]interface{}{"enter", "Name", "Name", "Directive"},
 		[]interface{}{"leave", "Name", "Name", "Directive"},
@@ -468,10 +471,10 @@ func TestVisitor_VisitsKitchenSink(t *testing.T) {
 		[]interface{}{"enter", "FragmentDefinition", 2, nil},
 		[]interface{}{"enter", "Name", "Name", "FragmentDefinition"},
 		[]interface{}{"leave", "Name", "Name", "FragmentDefinition"},
-		[]interface{}{"enter", "NamedType", "TypeCondition", "FragmentDefinition"},
-		[]interface{}{"enter", "Name", "Name", "NamedType"},
-		[]interface{}{"leave", "Name", "Name", "NamedType"},
-		[]interface{}{"leave", "NamedType", "TypeCondition", "FragmentDefinition"},
+		[]interface{}{"enter", "Named", "TypeCondition", "FragmentDefinition"},
+		[]interface{}{"enter", "Name", "Name", "Named"},
+		[]interface{}{"leave", "Name", "Name", "Named"},
+		[]interface{}{"leave", "Named", "TypeCondition", "FragmentDefinition"},
 		[]interface{}{"enter", "SelectionSet", "SelectionSet", "FragmentDefinition"},
 		[]interface{}{"enter", "Field", 0, nil},
 		[]interface{}{"enter", "Name", "Name", "Field"},
@@ -586,4 +589,17 @@ func TestVisitor_ProducesHelpfulErrorMessages(t *testing.T) {
 		"random": "Data",
 	}
 	_ = visitor.Visit(astDoc, nil, nil)
+}
+
+func ASTToJSON(t *testing.T, a ast.Node) interface{} {
+	b, err := json.Marshal(a)
+	if err != nil {
+		t.Fatalf("Failed to marshal Node %v", err)
+	}
+	var f interface{}
+	err = json.Unmarshal(b, &f)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal Node %v", err)
+	}
+	return f
 }

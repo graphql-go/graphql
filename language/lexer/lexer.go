@@ -3,7 +3,7 @@ package lexer
 import (
 	"fmt"
 
-	"github.com/chris-ramon/graphql-go/errors"
+	"github.com/chris-ramon/graphql-go/gqlerrors"
 	"github.com/chris-ramon/graphql-go/language/source"
 )
 
@@ -142,7 +142,7 @@ func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 		code = charCodeAt(body, position)
 		if code >= 48 && code <= 57 {
 			description := fmt.Sprintf("Invalid number, unexpected digit after 0: \"%c\".", code)
-			return Token{}, graphqlerrors.NewSyntaxError(s, position, description)
+			return Token{}, gqlerrors.NewSyntaxError(s, position, description)
 		}
 	} else {
 		p, err := readDigits(s, position, code)
@@ -207,7 +207,7 @@ func readDigits(s *source.Source, start int, firstCode rune) (int, error) {
 	} else {
 		description = fmt.Sprintf("Invalid number, expected digit but got: EOF.")
 	}
-	return position, graphqlerrors.NewSyntaxError(s, position, description)
+	return position, gqlerrors.NewSyntaxError(s, position, description)
 }
 
 func readString(s *source.Source, start int) (Token, error) {
@@ -256,13 +256,13 @@ func readString(s *source.Source, start int) (Token, error) {
 						charCodeAt(body, position+4),
 					)
 					if charCode < 0 {
-						return Token{}, graphqlerrors.NewSyntaxError(s, position, "Bad character escape sequence.")
+						return Token{}, gqlerrors.NewSyntaxError(s, position, "Bad character escape sequence.")
 					}
 					value += fmt.Sprintf("%c", charCode)
 					position += 4
 					break
 				default:
-					return Token{}, graphqlerrors.NewSyntaxError(s, position, "Bad character escape sequence.")
+					return Token{}, gqlerrors.NewSyntaxError(s, position, "Bad character escape sequence.")
 				}
 				position += 1
 				chunkStart = position
@@ -273,7 +273,7 @@ func readString(s *source.Source, start int) (Token, error) {
 		}
 	}
 	if code != 34 {
-		return Token{}, graphqlerrors.NewSyntaxError(s, position, "Unterminated string.")
+		return Token{}, gqlerrors.NewSyntaxError(s, position, "Unterminated string.")
 	}
 	value += body[chunkStart:position]
 	return makeToken(TokenKind[STRING], start, position+1, value), nil
@@ -388,7 +388,7 @@ func readToken(s *source.Source, fromPosition int) (Token, error) {
 		return token, nil
 	}
 	description := fmt.Sprintf("Unexpected character \"%c\".", code)
-	return Token{}, graphqlerrors.NewSyntaxError(s, position, description)
+	return Token{}, gqlerrors.NewSyntaxError(s, position, description)
 }
 
 func charCodeAt(body string, position int) rune {

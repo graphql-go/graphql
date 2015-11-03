@@ -1,35 +1,35 @@
-package types_test
+package graphql_test
 
 import (
-	"github.com/chris-ramon/graphql-go"
-	"github.com/chris-ramon/graphql-go/errors"
-	"github.com/chris-ramon/graphql-go/language/location"
-	"github.com/chris-ramon/graphql-go/testutil"
-	"github.com/chris-ramon/graphql-go/types"
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql-go"
+	"github.com/chris-ramon/graphql-go/gqlerrors"
+	"github.com/chris-ramon/graphql-go/language/location"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
-func graphql(t *testing.T, p gql.GraphqlParams) *types.GraphQLResult {
-	resultChannel := make(chan *types.GraphQLResult)
-	go gql.Graphql(p, resultChannel)
+func g(t *testing.T, p graphql.Params) *graphql.Result {
+	resultChannel := make(chan *graphql.Result)
+	go graphql.Graphql(p, resultChannel)
 	result := <-resultChannel
 	return result
 }
 
 func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
-	emptySchema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	emptySchema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "QueryRoot",
-			Fields: types.GraphQLFieldConfigMap{
-				"onlyField": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: graphql.FieldConfigMap{
+				"onlyField": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
 	})
 	if err != nil {
-		t.Fatalf("Error creating GraphQLSchema: %v", err.Error())
+		t.Fatalf("Error creating Schema: %v", err.Error())
 	}
 	expectedDataSubSet := map[string]interface{}{
 		"__schema": map[string]interface{}{
@@ -738,7 +738,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.Params{
 		Schema:        emptySchema,
 		RequestString: testutil.IntrospectionQuery,
 	})
@@ -749,39 +749,39 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 
 func TestIntrospection_ExecutesAnInputObject(t *testing.T) {
 
-	testInputObject := types.NewGraphQLInputObjectType(types.InputObjectConfig{
+	testInputObject := graphql.NewInputObject(graphql.InputObjectConfig{
 		Name: "TestInputObject",
-		Fields: types.InputObjectConfigFieldMap{
-			"a": &types.InputObjectFieldConfig{
-				Type:         types.GraphQLString,
+		Fields: graphql.InputObjectConfigFieldMap{
+			"a": &graphql.InputObjectFieldConfig{
+				Type:         graphql.String,
 				DefaultValue: "foo",
 			},
-			"b": &types.InputObjectFieldConfig{
-				Type: types.NewGraphQLList(types.GraphQLString),
+			"b": &graphql.InputObjectFieldConfig{
+				Type: graphql.NewList(graphql.String),
 			},
 		},
 	})
-	testType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: types.GraphQLFieldConfigMap{
-			"field": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"complex": &types.GraphQLArgumentConfig{
+		Fields: graphql.FieldConfigMap{
+			"field": &graphql.FieldConfig{
+				Type: graphql.String,
+				Args: graphql.FieldConfigArgument{
+					"complex": &graphql.ArgumentConfig{
 						Type: testInputObject,
 					},
 				},
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					return p.Args["complex"]
 				},
 			},
 		},
 	})
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: testType,
 	})
 	if err != nil {
-		t.Fatalf("Error creating GraphQLSchema: %v", err.Error())
+		t.Fatalf("Error creating Schema: %v", err.Error())
 	}
 	query := `
       {
@@ -850,7 +850,7 @@ func TestIntrospection_ExecutesAnInputObject(t *testing.T) {
 		},
 	}
 
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -861,19 +861,19 @@ func TestIntrospection_ExecutesAnInputObject(t *testing.T) {
 
 func TestIntrospection_SupportsThe__TypeRootField(t *testing.T) {
 
-	testType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: types.GraphQLFieldConfigMap{
-			"testField": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: graphql.FieldConfigMap{
+			"testField": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
 		},
 	})
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: testType,
 	})
 	if err != nil {
-		t.Fatalf("Error creating GraphQLSchema: %v", err.Error())
+		t.Fatalf("Error creating Schema: %v", err.Error())
 	}
 	query := `
       {
@@ -882,14 +882,14 @@ func TestIntrospection_SupportsThe__TypeRootField(t *testing.T) {
         }
       }
     `
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"__type": map[string]interface{}{
 				"name": "TestType",
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -899,23 +899,23 @@ func TestIntrospection_SupportsThe__TypeRootField(t *testing.T) {
 }
 func TestIntrospection_IdentifiesDeprecatedFields(t *testing.T) {
 
-	testType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: types.GraphQLFieldConfigMap{
-			"nonDeprecated": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: graphql.FieldConfigMap{
+			"nonDeprecated": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"deprecated": &types.GraphQLFieldConfig{
-				Type:              types.GraphQLString,
+			"deprecated": &graphql.FieldConfig{
+				Type:              graphql.String,
 				DeprecationReason: "Removed in 1.0",
 			},
 		},
 	})
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: testType,
 	})
 	if err != nil {
-		t.Fatalf("Error creating GraphQLSchema: %v", err.Error())
+		t.Fatalf("Error creating Schema: %v", err.Error())
 	}
 	query := `
       {
@@ -929,7 +929,7 @@ func TestIntrospection_IdentifiesDeprecatedFields(t *testing.T) {
         }
       }
     `
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"__type": map[string]interface{}{
 				"name": "TestType",
@@ -948,7 +948,7 @@ func TestIntrospection_IdentifiesDeprecatedFields(t *testing.T) {
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -958,23 +958,23 @@ func TestIntrospection_IdentifiesDeprecatedFields(t *testing.T) {
 }
 func TestIntrospection_RespectsTheIncludeDeprecatedParameterForFields(t *testing.T) {
 
-	testType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: types.GraphQLFieldConfigMap{
-			"nonDeprecated": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: graphql.FieldConfigMap{
+			"nonDeprecated": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"deprecated": &types.GraphQLFieldConfig{
-				Type:              types.GraphQLString,
+			"deprecated": &graphql.FieldConfig{
+				Type:              graphql.String,
 				DeprecationReason: "Removed in 1.0",
 			},
 		},
 	})
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: testType,
 	})
 	if err != nil {
-		t.Fatalf("Error creating GraphQLSchema: %v", err.Error())
+		t.Fatalf("Error creating Schema: %v", err.Error())
 	}
 	query := `
       {
@@ -992,7 +992,7 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForFields(t *testing
         }
       }
     `
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"__type": map[string]interface{}{
 				"name": "TestType",
@@ -1017,7 +1017,7 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForFields(t *testing
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1027,34 +1027,34 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForFields(t *testing
 }
 func TestIntrospection_IdentifiesDeprecatedEnumValues(t *testing.T) {
 
-	testEnum := types.NewGraphQLEnumType(types.GraphQLEnumTypeConfig{
+	testEnum := graphql.NewEnum(graphql.EnumConfig{
 		Name: "TestEnum",
-		Values: types.GraphQLEnumValueConfigMap{
-			"NONDEPRECATED": &types.GraphQLEnumValueConfig{
+		Values: graphql.EnumValueConfigMap{
+			"NONDEPRECATED": &graphql.EnumValueConfig{
 				Value: 0,
 			},
-			"DEPRECATED": &types.GraphQLEnumValueConfig{
+			"DEPRECATED": &graphql.EnumValueConfig{
 				Value:             1,
 				DeprecationReason: "Removed in 1.0",
 			},
-			"ALSONONDEPRECATED": &types.GraphQLEnumValueConfig{
+			"ALSONONDEPRECATED": &graphql.EnumValueConfig{
 				Value: 2,
 			},
 		},
 	})
-	testType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: types.GraphQLFieldConfigMap{
-			"testEnum": &types.GraphQLFieldConfig{
+		Fields: graphql.FieldConfigMap{
+			"testEnum": &graphql.FieldConfig{
 				Type: testEnum,
 			},
 		},
 	})
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: testType,
 	})
 	if err != nil {
-		t.Fatalf("Error creating GraphQLSchema: %v", err.Error())
+		t.Fatalf("Error creating Schema: %v", err.Error())
 	}
 	query := `
       {
@@ -1068,7 +1068,7 @@ func TestIntrospection_IdentifiesDeprecatedEnumValues(t *testing.T) {
         }
       }
     `
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"__type": map[string]interface{}{
 				"name": "TestEnum",
@@ -1092,7 +1092,7 @@ func TestIntrospection_IdentifiesDeprecatedEnumValues(t *testing.T) {
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1102,34 +1102,34 @@ func TestIntrospection_IdentifiesDeprecatedEnumValues(t *testing.T) {
 }
 func TestIntrospection_RespectsTheIncludeDeprecatedParameterForEnumValues(t *testing.T) {
 
-	testEnum := types.NewGraphQLEnumType(types.GraphQLEnumTypeConfig{
+	testEnum := graphql.NewEnum(graphql.EnumConfig{
 		Name: "TestEnum",
-		Values: types.GraphQLEnumValueConfigMap{
-			"NONDEPRECATED": &types.GraphQLEnumValueConfig{
+		Values: graphql.EnumValueConfigMap{
+			"NONDEPRECATED": &graphql.EnumValueConfig{
 				Value: 0,
 			},
-			"DEPRECATED": &types.GraphQLEnumValueConfig{
+			"DEPRECATED": &graphql.EnumValueConfig{
 				Value:             1,
 				DeprecationReason: "Removed in 1.0",
 			},
-			"ALSONONDEPRECATED": &types.GraphQLEnumValueConfig{
+			"ALSONONDEPRECATED": &graphql.EnumValueConfig{
 				Value: 2,
 			},
 		},
 	})
-	testType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: types.GraphQLFieldConfigMap{
-			"testEnum": &types.GraphQLFieldConfig{
+		Fields: graphql.FieldConfigMap{
+			"testEnum": &graphql.FieldConfig{
 				Type: testEnum,
 			},
 		},
 	})
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: testType,
 	})
 	if err != nil {
-		t.Fatalf("Error creating GraphQLSchema: %v", err.Error())
+		t.Fatalf("Error creating Schema: %v", err.Error())
 	}
 	query := `
       {
@@ -1147,7 +1147,7 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForEnumValues(t *tes
         }
       }
     `
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"__type": map[string]interface{}{
 				"name": "TestEnum",
@@ -1181,7 +1181,7 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForEnumValues(t *tes
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1191,19 +1191,19 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForEnumValues(t *tes
 }
 func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testing.T) {
 
-	testType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: types.GraphQLFieldConfigMap{
-			"testField": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: graphql.FieldConfigMap{
+			"testField": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
 		},
 	})
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: testType,
 	})
 	if err != nil {
-		t.Fatalf("Error creating GraphQLSchema: %v", err.Error())
+		t.Fatalf("Error creating Schema: %v", err.Error())
 	}
 	query := `
       {
@@ -1212,9 +1212,9 @@ func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testin
         }
       }
     `
-	expected := &types.GraphQLResult{
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+	expected := &graphql.Result{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Field "__type" argument "name" of type "String!" ` +
 					`is required but not provided.`,
 				Locations: []location.SourceLocation{
@@ -1223,7 +1223,7 @@ func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testin
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1235,19 +1235,19 @@ func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testin
 
 func TestIntrospection_ExposesDescriptionsOnTypesAndFields(t *testing.T) {
 
-	queryRoot := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	queryRoot := graphql.NewObject(graphql.ObjectConfig{
 		Name: "QueryRoot",
-		Fields: types.GraphQLFieldConfigMap{
-			"onlyField": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: graphql.FieldConfigMap{
+			"onlyField": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
 		},
 	})
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: queryRoot,
 	})
 	if err != nil {
-		t.Fatalf("Error creating GraphQLSchema: %v", err.Error())
+		t.Fatalf("Error creating Schema: %v", err.Error())
 	}
 	query := `
       {
@@ -1261,7 +1261,7 @@ func TestIntrospection_ExposesDescriptionsOnTypesAndFields(t *testing.T) {
         }
       }
     `
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"schemaType": map[string]interface{}{
 				"name": "__Schema",
@@ -1291,7 +1291,7 @@ mutation operations.`,
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1301,19 +1301,19 @@ mutation operations.`,
 }
 func TestIntrospection_ExposesDescriptionsOnEnums(t *testing.T) {
 
-	queryRoot := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	queryRoot := graphql.NewObject(graphql.ObjectConfig{
 		Name: "QueryRoot",
-		Fields: types.GraphQLFieldConfigMap{
-			"onlyField": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: graphql.FieldConfigMap{
+			"onlyField": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
 		},
 	})
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: queryRoot,
 	})
 	if err != nil {
-		t.Fatalf("Error creating GraphQLSchema: %v", err.Error())
+		t.Fatalf("Error creating Schema: %v", err.Error())
 	}
 	query := `
       {
@@ -1327,7 +1327,7 @@ func TestIntrospection_ExposesDescriptionsOnEnums(t *testing.T) {
         }
       }
     `
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"typeKindType": map[string]interface{}{
 				"name":        "__TypeKind",
@@ -1369,7 +1369,7 @@ func TestIntrospection_ExposesDescriptionsOnEnums(t *testing.T) {
 			},
 		},
 	}
-	result := graphql(t, gql.GraphqlParams{
+	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})

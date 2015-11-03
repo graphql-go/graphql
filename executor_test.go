@@ -1,15 +1,15 @@
-package executor_test
+package graphql_test
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/chris-ramon/graphql-go/errors"
-	"github.com/chris-ramon/graphql-go/executor"
-	"github.com/chris-ramon/graphql-go/language/location"
-	"github.com/chris-ramon/graphql-go/testutil"
-	"github.com/chris-ramon/graphql-go/types"
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql-go"
+	"github.com/chris-ramon/graphql-go/gqlerrors"
+	"github.com/chris-ramon/graphql-go/language/location"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
 func TestExecutesArbitraryCode(t *testing.T) {
@@ -67,7 +67,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
       }
     `
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"b": "Banana",
 			"x": "Cookie",
@@ -103,7 +103,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 	}
 
 	// Schema Definitions
-	picResolverFn := func(p types.GQLFRParams) interface{} {
+	picResolverFn := func(p graphql.GQLFRParams) interface{} {
 		// get and type assert ResolveFn for this field
 		picResolver, ok := p.Source.(map[string]interface{})["pic"].(func(size int) string)
 		if !ok {
@@ -116,67 +116,67 @@ func TestExecutesArbitraryCode(t *testing.T) {
 		}
 		return picResolver(sizeArg)
 	}
-	dataType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	dataType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "DataType",
-		Fields: types.GraphQLFieldConfigMap{
-			"a": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: graphql.FieldConfigMap{
+			"a": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"b": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"b": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"c": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"c": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"d": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"d": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"e": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"e": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"f": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"f": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"pic": &types.GraphQLFieldConfig{
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"size": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLInt,
+			"pic": &graphql.FieldConfig{
+				Args: graphql.FieldConfigArgument{
+					"size": &graphql.ArgumentConfig{
+						Type: graphql.Int,
 					},
 				},
-				Type:    types.GraphQLString,
+				Type:    graphql.String,
 				Resolve: picResolverFn,
 			},
 		},
 	})
-	deepDataType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	deepDataType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "DeepDataType",
-		Fields: types.GraphQLFieldConfigMap{
-			"a": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: graphql.FieldConfigMap{
+			"a": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"b": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"b": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"c": &types.GraphQLFieldConfig{
-				Type: types.NewGraphQLList(types.GraphQLString),
+			"c": &graphql.FieldConfig{
+				Type: graphql.NewList(graphql.String),
 			},
-			"deeper": &types.GraphQLFieldConfig{
-				Type: types.NewGraphQLList(dataType),
+			"deeper": &graphql.FieldConfig{
+				Type: graphql.NewList(dataType),
 			},
 		},
 	})
 
-	// Exploring a way to have a GraphQLObjectType within itself
+	// Exploring a way to have a Object within itself
 	// in this case DataType has DeepDataType has DataType
-	dataType.AddFieldConfig("deep", &types.GraphQLFieldConfig{
+	dataType.AddFieldConfig("deep", &graphql.FieldConfig{
 		Type: deepDataType,
 	})
 	// in this case DataType has DataType
-	dataType.AddFieldConfig("promise", &types.GraphQLFieldConfig{
+	dataType.AddFieldConfig("promise", &graphql.FieldConfig{
 		Type: dataType,
 	})
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: dataType,
 	})
 	if err != nil {
@@ -184,21 +184,21 @@ func TestExecutesArbitraryCode(t *testing.T) {
 	}
 
 	// parse query
-	astDoc := testutil.Parse(t, query)
+	astDoc := testutil.TestParse(t, query)
 
 	// execute
 	args := map[string]interface{}{
 		"size": 100,
 	}
 	operationName := "Example"
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema:        schema,
 		Root:          data,
 		AST:           astDoc,
 		OperationName: operationName,
 		Args:          args,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -223,7 +223,7 @@ func TestMergesParallelFragments(t *testing.T) {
       }
     `
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "Apple",
 			"b": "Banana",
@@ -239,38 +239,38 @@ func TestMergesParallelFragments(t *testing.T) {
 		},
 	}
 
-	typeObjectType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	typeObjectType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Type",
-		Fields: types.GraphQLFieldConfigMap{
-			"a": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+		Fields: graphql.FieldConfigMap{
+			"a": &graphql.FieldConfig{
+				Type: graphql.String,
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					return "Apple"
 				},
 			},
-			"b": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+			"b": &graphql.FieldConfig{
+				Type: graphql.String,
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					return "Banana"
 				},
 			},
-			"c": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+			"c": &graphql.FieldConfig{
+				Type: graphql.String,
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					return "Cherry"
 				},
 			},
 		},
 	})
-	deepTypeFieldConfig := &types.GraphQLFieldConfig{
+	deepTypeFieldConfig := &graphql.FieldConfig{
 		Type: typeObjectType,
-		Resolve: func(p types.GQLFRParams) interface{} {
+		Resolve: func(p graphql.GQLFRParams) interface{} {
 			return p.Source
 		},
 	}
 	typeObjectType.AddFieldConfig("deep", deepTypeFieldConfig)
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: typeObjectType,
 	})
 	if err != nil {
@@ -278,14 +278,14 @@ func TestMergesParallelFragments(t *testing.T) {
 	}
 
 	// parse query
-	ast := testutil.Parse(t, query)
+	ast := testutil.TestParse(t, query)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -306,13 +306,13 @@ func TestThreadsContextCorrectly(t *testing.T) {
 
 	var resolvedContext map[string]interface{}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
-					Resolve: func(p types.GQLFRParams) interface{} {
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
+					Resolve: func(p graphql.GQLFRParams) interface{} {
 						resolvedContext = p.Source.(map[string]interface{})
 						return resolvedContext
 					},
@@ -325,15 +325,15 @@ func TestThreadsContextCorrectly(t *testing.T) {
 	}
 
 	// parse query
-	ast := testutil.Parse(t, query)
+	ast := testutil.TestParse(t, query)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		Root:   data,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -354,21 +354,21 @@ func TestCorrectlyThreadsArguments(t *testing.T) {
 
 	var resolvedArgs map[string]interface{}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"b": &types.GraphQLFieldConfig{
-					Args: types.GraphQLFieldConfigArgumentMap{
-						"numArg": &types.GraphQLArgumentConfig{
-							Type: types.GraphQLInt,
+			Fields: graphql.FieldConfigMap{
+				"b": &graphql.FieldConfig{
+					Args: graphql.FieldConfigArgument{
+						"numArg": &graphql.ArgumentConfig{
+							Type: graphql.Int,
 						},
-						"stringArg": &types.GraphQLArgumentConfig{
-							Type: types.GraphQLString,
+						"stringArg": &graphql.ArgumentConfig{
+							Type: graphql.String,
 						},
 					},
-					Type: types.GraphQLString,
-					Resolve: func(p types.GQLFRParams) interface{} {
+					Type: graphql.String,
+					Resolve: func(p graphql.GQLFRParams) interface{} {
 						resolvedArgs = p.Args
 						return resolvedArgs
 					},
@@ -381,14 +381,14 @@ func TestCorrectlyThreadsArguments(t *testing.T) {
 	}
 
 	// parse query
-	ast := testutil.Parse(t, query)
+	ast := testutil.TestParse(t, query)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -415,8 +415,8 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 		"sync":      "sync",
 		"syncError": nil,
 	}
-	expectedErrors := []graphqlerrors.GraphQLFormattedError{
-		graphqlerrors.GraphQLFormattedError{
+	expectedErrors := []gqlerrors.FormattedError{
+		gqlerrors.FormattedError{
 			Message: "Error getting syncError",
 			Locations: []location.SourceLocation{
 				location.SourceLocation{
@@ -434,15 +434,15 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 			panic("Error getting syncError")
 		},
 	}
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"sync": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: graphql.FieldConfigMap{
+				"sync": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
-				"syncError": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+				"syncError": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -452,15 +452,15 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 	}
 
 	// parse query
-	ast := testutil.Parse(t, query)
+	ast := testutil.TestParse(t, query)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 		Root:   data,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) == 0 {
 		t.Fatalf("wrong result, expected errors, got %v", len(result.Errors))
 	}
@@ -479,18 +479,18 @@ func TestUsesTheInlineOperationIfNoOperationIsProvided(t *testing.T) {
 		"a": "b",
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "b",
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -500,15 +500,15 @@ func TestUsesTheInlineOperationIfNoOperationIsProvided(t *testing.T) {
 	}
 
 	// parse query
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 		Root:   data,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -524,18 +524,18 @@ func TestUsesTheOnlyOperationIfNoOperationIsProvided(t *testing.T) {
 		"a": "b",
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "b",
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -545,15 +545,15 @@ func TestUsesTheOnlyOperationIfNoOperationIsProvided(t *testing.T) {
 	}
 
 	// parse query
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 		Root:   data,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -569,19 +569,19 @@ func TestThrowsIfNoOperationIsProvidedWithMultipleOperations(t *testing.T) {
 		"a": "b",
 	}
 
-	expectedErrors := []graphqlerrors.GraphQLFormattedError{
-		graphqlerrors.GraphQLFormattedError{
+	expectedErrors := []gqlerrors.FormattedError{
+		gqlerrors.FormattedError{
 			Message:   "Must provide operation name if query contains multiple operations.",
 			Locations: []location.SourceLocation{},
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -591,15 +591,15 @@ func TestThrowsIfNoOperationIsProvidedWithMultipleOperations(t *testing.T) {
 	}
 
 	// parse query
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 		Root:   data,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != 1 {
 		t.Fatalf("wrong result, expected len(1) unexpected len: %v", len(result.Errors))
 	}
@@ -619,26 +619,26 @@ func TestUsesTheQuerySchemaForQueries(t *testing.T) {
 		"c": "d",
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "b",
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Q",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
-		Mutation: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+		Mutation: graphql.NewObject(graphql.ObjectConfig{
 			Name: "M",
-			Fields: types.GraphQLFieldConfigMap{
-				"c": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: graphql.FieldConfigMap{
+				"c": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -648,16 +648,16 @@ func TestUsesTheQuerySchemaForQueries(t *testing.T) {
 	}
 
 	// parse query
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema:        schema,
 		AST:           ast,
 		Root:          data,
 		OperationName: "Q",
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -674,26 +674,26 @@ func TestUsesTheMutationSchemaForMutations(t *testing.T) {
 		"c": "d",
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"c": "d",
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Q",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
-		Mutation: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+		Mutation: graphql.NewObject(graphql.ObjectConfig{
 			Name: "M",
-			Fields: types.GraphQLFieldConfigMap{
-				"c": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: graphql.FieldConfigMap{
+				"c": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -703,16 +703,16 @@ func TestUsesTheMutationSchemaForMutations(t *testing.T) {
 	}
 
 	// parse query
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema:        schema,
 		AST:           ast,
 		Root:          data,
 		OperationName: "M",
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -740,7 +740,7 @@ func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
 		"e": func() interface{} { return "e" },
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -750,24 +750,24 @@ func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
-				"b": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+				"b": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
-				"c": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+				"c": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
-				"d": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+				"d": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
-				"e": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+				"e": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -777,15 +777,15 @@ func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
 	}
 
 	// parse query
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 		Root:   data,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -822,18 +822,18 @@ func TestAvoidsRecursion(t *testing.T) {
 		"a": "b",
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "b",
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -843,16 +843,16 @@ func TestAvoidsRecursion(t *testing.T) {
 	}
 
 	// parse query
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema:        schema,
 		AST:           ast,
 		Root:          data,
 		OperationName: "Q",
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -868,24 +868,24 @@ func TestDoesNotIncludeIllegalFieldsInOutput(t *testing.T) {
       thisIsIllegalDontIncludeMe
     }`
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Q",
-			Fields: types.GraphQLFieldConfigMap{
-				"a": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: graphql.FieldConfigMap{
+				"a": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
-		Mutation: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+		Mutation: graphql.NewObject(graphql.ObjectConfig{
 			Name: "M",
-			Fields: types.GraphQLFieldConfigMap{
-				"c": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: graphql.FieldConfigMap{
+				"c": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -895,14 +895,14 @@ func TestDoesNotIncludeIllegalFieldsInOutput(t *testing.T) {
 	}
 
 	// parse query
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, expected len(%v) errors, got len(%v)", len(expected.Errors), len(result.Errors))
 	}
@@ -915,36 +915,36 @@ func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
 
 	doc := `{ field(a: true, c: false, e: 0) }`
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"field": `{"a":true,"c":false,"e":0}`,
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: types.GraphQLFieldConfigMap{
-				"field": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
-					Args: types.GraphQLFieldConfigArgumentMap{
-						"a": &types.GraphQLArgumentConfig{
-							Type: types.GraphQLBoolean,
+			Fields: graphql.FieldConfigMap{
+				"field": &graphql.FieldConfig{
+					Type: graphql.String,
+					Args: graphql.FieldConfigArgument{
+						"a": &graphql.ArgumentConfig{
+							Type: graphql.Boolean,
 						},
-						"b": &types.GraphQLArgumentConfig{
-							Type: types.GraphQLBoolean,
+						"b": &graphql.ArgumentConfig{
+							Type: graphql.Boolean,
 						},
-						"c": &types.GraphQLArgumentConfig{
-							Type: types.GraphQLBoolean,
+						"c": &graphql.ArgumentConfig{
+							Type: graphql.Boolean,
 						},
-						"d": &types.GraphQLArgumentConfig{
-							Type: types.GraphQLInt,
+						"d": &graphql.ArgumentConfig{
+							Type: graphql.Int,
 						},
-						"e": &types.GraphQLArgumentConfig{
-							Type: types.GraphQLInt,
+						"e": &graphql.ArgumentConfig{
+							Type: graphql.Int,
 						},
 					},
-					Resolve: func(p types.GQLFRParams) interface{} {
+					Resolve: func(p graphql.GQLFRParams) interface{} {
 						args, _ := json.Marshal(p.Args)
 						return string(args)
 					},
@@ -957,14 +957,14 @@ func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
 	}
 
 	// parse query
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -991,7 +991,7 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 		},
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"specials": []interface{}{
 				map[string]interface{}{
@@ -1000,38 +1000,38 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 				nil,
 			},
 		},
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
-				Message:   `Expected value of type "SpecialType" but got: executor_test.testNotSpecialType.`,
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
+				Message:   `Expected value of type "SpecialType" but got: graphql_test.testNotSpecialType.`,
 				Locations: []location.SourceLocation{},
 			},
 		},
 	}
 
-	specialType := types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	specialType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "SpecialType",
-		IsTypeOf: func(value interface{}, info types.GraphQLResolveInfo) bool {
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			if _, ok := value.(testSpecialType); ok {
 				return true
 			}
 			return false
 		},
-		Fields: types.GraphQLFieldConfigMap{
-			"value": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
-				Resolve: func(p types.GQLFRParams) interface{} {
+		Fields: graphql.FieldConfigMap{
+			"value": &graphql.FieldConfig{
+				Type: graphql.String,
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					return p.Source.(testSpecialType).Value
 				},
 			},
 		},
 	})
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
-			Fields: types.GraphQLFieldConfigMap{
-				"specials": &types.GraphQLFieldConfig{
-					Type: types.NewGraphQLList(specialType),
-					Resolve: func(p types.GQLFRParams) interface{} {
+			Fields: graphql.FieldConfigMap{
+				"specials": &graphql.FieldConfig{
+					Type: graphql.NewList(specialType),
+					Resolve: func(p graphql.GQLFRParams) interface{} {
 						return p.Source.(map[string]interface{})["specials"]
 					},
 				},
@@ -1043,15 +1043,15 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 	}
 
 	// parse query
-	ast := testutil.Parse(t, query)
+	ast := testutil.TestParse(t, query)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 		Root:   data,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) == 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -1067,22 +1067,22 @@ func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
 
       type Query { foo: String }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
-				Message:   "GraphQL cannot execute a request containing a ObjectTypeDefinition",
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
+				Message:   "GraphQL cannot execute a request containing a ObjectDefinition",
 				Locations: []location.SourceLocation{},
 			},
 		},
 	}
 
-	schema, err := types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-		Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
-			Fields: types.GraphQLFieldConfigMap{
-				"foo": &types.GraphQLFieldConfig{
-					Type: types.GraphQLString,
+			Fields: graphql.FieldConfigMap{
+				"foo": &graphql.FieldConfig{
+					Type: graphql.String,
 				},
 			},
 		}),
@@ -1092,14 +1092,14 @@ func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
 	}
 
 	// parse query
-	ast := testutil.Parse(t, query)
+	ast := testutil.TestParse(t, query)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != 1 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
