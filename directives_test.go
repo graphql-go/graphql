@@ -1,22 +1,22 @@
-package executor_test
+package graphql_test
 
 import (
-	"github.com/chris-ramon/graphql-go/executor"
-	"github.com/chris-ramon/graphql-go/testutil"
-	"github.com/chris-ramon/graphql-go/types"
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql-go"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
-var directivesTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
-	Query: types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var directivesTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
+	Query: graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: types.GraphQLFieldConfigMap{
-			"a": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: graphql.FieldConfigMap{
+			"a": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"b": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"b": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
 		},
 	}),
@@ -27,19 +27,19 @@ var directivesTestData map[string]interface{} = map[string]interface{}{
 	"b": func() interface{} { return "b" },
 }
 
-func executeDirectivesTestQuery(t *testing.T, doc string) *types.GraphQLResult {
-	ast := testutil.Parse(t, doc)
-	ep := executor.ExecuteParams{
+func executeDirectivesTestQuery(t *testing.T, doc string) *graphql.Result {
+	ast := testutil.TestParse(t, doc)
+	ep := graphql.ExecuteParams{
 		Schema: directivesTestSchema,
 		AST:    ast,
 		Root:   directivesTestData,
 	}
-	return testutil.Execute(t, ep)
+	return testutil.TestExecute(t, ep)
 }
 
 func TestDirectivesWorksWithoutDirectives(t *testing.T) {
 	query := `{ a, b }`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -56,7 +56,7 @@ func TestDirectivesWorksWithoutDirectives(t *testing.T) {
 
 func TestDirectivesWorksOnScalarsIfTrueIncludesScalar(t *testing.T) {
 	query := `{ a, b @include(if: true) }`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -73,7 +73,7 @@ func TestDirectivesWorksOnScalarsIfTrueIncludesScalar(t *testing.T) {
 
 func TestDirectivesWorksOnScalarsIfFalseOmitsOnScalar(t *testing.T) {
 	query := `{ a, b @include(if: false) }`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -89,7 +89,7 @@ func TestDirectivesWorksOnScalarsIfFalseOmitsOnScalar(t *testing.T) {
 
 func TestDirectivesWorksOnScalarsUnlessFalseIncludesScalar(t *testing.T) {
 	query := `{ a, b @skip(if: false) }`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -106,7 +106,7 @@ func TestDirectivesWorksOnScalarsUnlessFalseIncludesScalar(t *testing.T) {
 
 func TestDirectivesWorksOnScalarsUnlessTrueOmitsScalar(t *testing.T) {
 	query := `{ a, b @skip(if: true) }`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -130,7 +130,7 @@ func TestDirectivesWorksOnFragmentSpreadsIfFalseOmitsFragmentSpread(t *testing.T
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -154,7 +154,7 @@ func TestDirectivesWorksOnFragmentSpreadsIfTrueIncludesFragmentSpread(t *testing
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -179,7 +179,7 @@ func TestDirectivesWorksOnFragmentSpreadsUnlessFalseIncludesFragmentSpread(t *te
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -204,7 +204,7 @@ func TestDirectivesWorksOnFragmentSpreadsUnlessTrueOmitsFragmentSpread(t *testin
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -230,7 +230,7 @@ func TestDirectivesWorksOnInlineFragmentIfFalseOmitsInlineFragment(t *testing.T)
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -256,7 +256,7 @@ func TestDirectivesWorksOnInlineFragmentIfTrueIncludesInlineFragment(t *testing.
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -283,7 +283,7 @@ func TestDirectivesWorksOnInlineFragmentUnlessFalseIncludesInlineFragment(t *tes
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -310,7 +310,7 @@ func TestDirectivesWorksOnInlineFragmentUnlessTrueIncludesInlineFragment(t *test
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -334,7 +334,7 @@ func TestDirectivesWorksOnFragmentIfFalseOmitsFragment(t *testing.T) {
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 		},
@@ -358,7 +358,7 @@ func TestDirectivesWorksOnFragmentIfTrueIncludesFragment(t *testing.T) {
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -383,7 +383,7 @@ func TestDirectivesWorksOnFragmentUnlessFalseIncludesFragment(t *testing.T) {
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 			"b": "b",
@@ -408,7 +408,7 @@ func TestDirectivesWorksOnFragmentUnlessTrueOmitsFragment(t *testing.T) {
           b
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
 		},

@@ -1,16 +1,17 @@
 package printer_test
 
 import (
-	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/chris-ramon/graphql-go/language/printer"
-	"github.com/chris-ramon/graphql-go/testutil"
 	"io/ioutil"
 	"reflect"
 	"testing"
+
+	"github.com/chris-ramon/graphql-go/language/ast"
+	"github.com/chris-ramon/graphql-go/language/printer"
+	"github.com/chris-ramon/graphql-go/testutil"
 )
 
 func TestSchemaPrinter_PrintsMinimalAST(t *testing.T) {
-	astDoc := ast.NewScalarTypeDefinition(&ast.ScalarTypeDefinition{
+	astDoc := ast.NewScalarDefinition(&ast.ScalarDefinition{
 		Name: ast.NewName(&ast.Name{
 			Value: "foo",
 		}),
@@ -23,7 +24,7 @@ func TestSchemaPrinter_PrintsMinimalAST(t *testing.T) {
 }
 
 func TestSchemaPrinter_DoesNotAlterAST(t *testing.T) {
-	b, err := ioutil.ReadFile("./../parser/schema-kitchen-sink.graphql")
+	b, err := ioutil.ReadFile("../../schema-kitchen-sink.graphql")
 	if err != nil {
 		t.Fatalf("unable to load schema-kitchen-sink.graphql")
 	}
@@ -45,7 +46,7 @@ func TestSchemaPrinter_DoesNotAlterAST(t *testing.T) {
 }
 
 func TestSchemaPrinter_PrintsKitchenSink(t *testing.T) {
-	b, err := ioutil.ReadFile("./../parser/schema-kitchen-sink.graphql")
+	b, err := ioutil.ReadFile("../../schema-kitchen-sink.graphql")
 	if err != nil {
 		t.Fatalf("unable to load schema-kitchen-sink.graphql")
 	}

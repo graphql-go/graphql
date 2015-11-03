@@ -3,7 +3,7 @@ package parser
 import (
 	"fmt"
 
-	"github.com/chris-ramon/graphql-go/errors"
+	"github.com/chris-ramon/graphql-go/gqlerrors"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/lexer"
 	"github.com/chris-ramon/graphql-go/language/source"
@@ -309,7 +309,7 @@ func parseSelectionSet(parser *Parser) (*ast.SelectionSet, error) {
 	selections := []ast.Selection{}
 	for _, iSelection := range iSelections {
 		if iSelection != nil {
-			// type assert interface{} into ast.Selection interface
+			// type assert interface{} into Selection interface
 			selections = append(selections, iSelection.(ast.Selection))
 		}
 	}
@@ -423,7 +423,7 @@ func parseFragment(parser *Parser) (interface{}, error) {
 	}
 	if parser.Token.Value == "on" {
 		advance(parser)
-		name, err := parseNamedType(parser)
+		name, err := parseNamed(parser)
 		if err != nil {
 			return nil, err
 		}
@@ -471,7 +471,7 @@ func parseFragmentDefinition(parser *Parser) (*ast.FragmentDefinition, error) {
 	if err != nil {
 		return nil, err
 	}
-	typeCondition, err := parseNamedType(parser)
+	typeCondition, err := parseNamed(parser)
 	if err != nil {
 		return nil, err
 	}
@@ -623,7 +623,7 @@ func parseObjectField(parser *Parser, isConst bool, fieldNames map[string]bool) 
 	fieldName := name.Value
 	if _, ok := fieldNames[fieldName]; ok {
 		descp := fmt.Sprintf("Duplicate input object field %v.", fieldName)
-		return nil, "", graphqlerrors.NewSyntaxError(parser.Source, start, descp)
+		return nil, "", gqlerrors.NewSyntaxError(parser.Source, start, descp)
 	}
 	_, err = expect(parser, lexer.TokenKind[lexer.COLON])
 	if err != nil {
@@ -693,19 +693,19 @@ func parseType(parser *Parser) (ast.Type, error) {
 		if err != nil {
 			return ttype, err
 		}
-		ttype = ast.NewListType(&ast.ListType{
+		ttype = ast.NewList(&ast.List{
 			Type: ttype,
 			Loc:  loc(parser, start),
 		})
 	} else {
-		name, err := parseNamedType(parser)
+		name, err := parseNamed(parser)
 		if err != nil {
 			return ttype, err
 		}
 		ttype = name
 	}
 	if skip(parser, lexer.TokenKind[lexer.BANG]) {
-		ttype = ast.NewNonNullType(&ast.NonNullType{
+		ttype = ast.NewNonNull(&ast.NonNull{
 			Type: ttype,
 			Loc:  loc(parser, start),
 		})
@@ -714,13 +714,13 @@ func parseType(parser *Parser) (ast.Type, error) {
 	return ttype, nil
 }
 
-func parseNamedType(parser *Parser) (*ast.NamedType, error) {
+func parseNamed(parser *Parser) (*ast.Named, error) {
 	start := parser.Token.Start
 	name, err := parseName(parser)
 	if err != nil {
 		return nil, err
 	}
-	return ast.NewNamedType(&ast.NamedType{
+	return ast.NewNamed(&ast.Named{
 		Name: name,
 		Loc:  loc(parser, start),
 	}), nil
@@ -728,7 +728,7 @@ func parseNamedType(parser *Parser) (*ast.NamedType, error) {
 
 /* Implements the parsing rules in the Type Definition section. */
 
-func parseObjectTypeDefinition(parser *Parser) (*ast.ObjectTypeDefinition, error) {
+func parseObjectTypeDefinition(parser *Parser) (*ast.ObjectDefinition, error) {
 	start := parser.Token.Start
 	_, err := expectKeyWord(parser, "type")
 	if err != nil {
@@ -752,7 +752,7 @@ func parseObjectTypeDefinition(parser *Parser) (*ast.ObjectTypeDefinition, error
 			fields = append(fields, iField.(*ast.FieldDefinition))
 		}
 	}
-	return ast.NewObjectTypeDefinition(&ast.ObjectTypeDefinition{
+	return ast.NewObjectDefinition(&ast.ObjectDefinition{
 		Name:       name,
 		Loc:        loc(parser, start),
 		Interfaces: interfaces,
@@ -760,12 +760,12 @@ func parseObjectTypeDefinition(parser *Parser) (*ast.ObjectTypeDefinition, error
 	}), nil
 }
 
-func parseImplementsInterfaces(parser *Parser) ([]*ast.NamedType, error) {
-	types := []*ast.NamedType{}
+func parseImplementsInterfaces(parser *Parser) ([]*ast.Named, error) {
+	types := []*ast.Named{}
 	if parser.Token.Value == "implements" {
 		advance(parser)
 		for {
-			ttype, err := parseNamedType(parser)
+			ttype, err := parseNamed(parser)
 			if err != nil {
 				return types, err
 			}
@@ -854,7 +854,7 @@ func parseInputValueDef(parser *Parser) (interface{}, error) {
 	}), nil
 }
 
-func parseInterfaceTypeDefinition(parser *Parser) (*ast.InterfaceTypeDefinition, error) {
+func parseInterfaceTypeDefinition(parser *Parser) (*ast.InterfaceDefinition, error) {
 	start := parser.Token.Start
 	_, err := expectKeyWord(parser, "interface")
 	if err != nil {
@@ -874,14 +874,14 @@ func parseInterfaceTypeDefinition(parser *Parser) (*ast.InterfaceTypeDefinition,
 			fields = append(fields, iField.(*ast.FieldDefinition))
 		}
 	}
-	return ast.NewInterfaceTypeDefinition(&ast.InterfaceTypeDefinition{
+	return ast.NewInterfaceDefinition(&ast.InterfaceDefinition{
 		Name:   name,
 		Loc:    loc(parser, start),
 		Fields: fields,
 	}), nil
 }
 
-func parseUnionTypeDefinition(parser *Parser) (*ast.UnionTypeDefinition, error) {
+func parseUnionTypeDefinition(parser *Parser) (*ast.UnionDefinition, error) {
 	start := parser.Token.Start
 	_, err := expectKeyWord(parser, "union")
 	if err != nil {
@@ -899,17 +899,17 @@ func parseUnionTypeDefinition(parser *Parser) (*ast.UnionTypeDefinition, error) 
 	if err != nil {
 		return nil, err
 	}
-	return ast.NewUnionTypeDefinition(&ast.UnionTypeDefinition{
+	return ast.NewUnionDefinition(&ast.UnionDefinition{
 		Name:  name,
 		Loc:   loc(parser, start),
 		Types: types,
 	}), nil
 }
 
-func parseUnionMembers(parser *Parser) ([]*ast.NamedType, error) {
-	members := []*ast.NamedType{}
+func parseUnionMembers(parser *Parser) ([]*ast.Named, error) {
+	members := []*ast.Named{}
 	for {
-		member, err := parseNamedType(parser)
+		member, err := parseNamed(parser)
 		if err != nil {
 			return members, err
 		}
@@ -921,7 +921,7 @@ func parseUnionMembers(parser *Parser) ([]*ast.NamedType, error) {
 	return members, nil
 }
 
-func parseScalarTypeDefinition(parser *Parser) (*ast.ScalarTypeDefinition, error) {
+func parseScalarTypeDefinition(parser *Parser) (*ast.ScalarDefinition, error) {
 	start := parser.Token.Start
 	_, err := expectKeyWord(parser, "scalar")
 	if err != nil {
@@ -931,14 +931,14 @@ func parseScalarTypeDefinition(parser *Parser) (*ast.ScalarTypeDefinition, error
 	if err != nil {
 		return nil, err
 	}
-	def := ast.NewScalarTypeDefinition(&ast.ScalarTypeDefinition{
+	def := ast.NewScalarDefinition(&ast.ScalarDefinition{
 		Name: name,
 		Loc:  loc(parser, start),
 	})
 	return def, nil
 }
 
-func parseEnumTypeDefinition(parser *Parser) (*ast.EnumTypeDefinition, error) {
+func parseEnumTypeDefinition(parser *Parser) (*ast.EnumDefinition, error) {
 	start := parser.Token.Start
 	_, err := expectKeyWord(parser, "enum")
 	if err != nil {
@@ -958,7 +958,7 @@ func parseEnumTypeDefinition(parser *Parser) (*ast.EnumTypeDefinition, error) {
 			values = append(values, iEnumValueDef.(*ast.EnumValueDefinition))
 		}
 	}
-	return ast.NewEnumTypeDefinition(&ast.EnumTypeDefinition{
+	return ast.NewEnumDefinition(&ast.EnumDefinition{
 		Name:   name,
 		Loc:    loc(parser, start),
 		Values: values,
@@ -977,7 +977,7 @@ func parseEnumValueDefinition(parser *Parser) (interface{}, error) {
 	}), nil
 }
 
-func parseInputObjectTypeDefinition(parser *Parser) (*ast.InputObjectTypeDefinition, error) {
+func parseInputObjectTypeDefinition(parser *Parser) (*ast.InputObjectDefinition, error) {
 	start := parser.Token.Start
 	_, err := expectKeyWord(parser, "input")
 	if err != nil {
@@ -997,7 +997,7 @@ func parseInputObjectTypeDefinition(parser *Parser) (*ast.InputObjectTypeDefinit
 			fields = append(fields, iInputValueDefinition.(*ast.InputValueDefinition))
 		}
 	}
-	return ast.NewInputObjectTypeDefinition(&ast.InputObjectTypeDefinition{
+	return ast.NewInputObjectDefinition(&ast.InputObjectDefinition{
 		Name:   name,
 		Loc:    loc(parser, start),
 		Fields: fields,
@@ -1079,7 +1079,7 @@ func expect(parser *Parser, kind int) (lexer.Token, error) {
 		return token, nil
 	}
 	descp := fmt.Sprintf("Expected %s, found %s", lexer.GetTokenKindDesc(kind), lexer.GetTokenDesc(token))
-	return token, graphqlerrors.NewSyntaxError(parser.Source, token.Start, descp)
+	return token, gqlerrors.NewSyntaxError(parser.Source, token.Start, descp)
 }
 
 // If the next token is a keyword with the given value, return that token after
@@ -1091,7 +1091,7 @@ func expectKeyWord(parser *Parser, value string) (lexer.Token, error) {
 		return token, nil
 	}
 	descp := fmt.Sprintf("Expected \"%s\", found %s", value, lexer.GetTokenDesc(token))
-	return token, graphqlerrors.NewSyntaxError(parser.Source, token.Start, descp)
+	return token, gqlerrors.NewSyntaxError(parser.Source, token.Start, descp)
 }
 
 // Helper function for creating an error when an unexpected lexed token
@@ -1104,7 +1104,7 @@ func unexpected(parser *Parser, atToken lexer.Token) error {
 		token = parser.Token
 	}
 	description := fmt.Sprintf("Unexpected %v", lexer.GetTokenDesc(token))
-	return graphqlerrors.NewSyntaxError(parser.Source, token.Start, description)
+	return gqlerrors.NewSyntaxError(parser.Source, token.Start, description)
 }
 
 //  Returns a possibly empty list of parse nodes, determined by

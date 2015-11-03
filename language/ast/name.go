@@ -1,6 +1,8 @@
 package ast
 
-import "github.com/chris-ramon/graphql-go/language/kinds"
+import (
+	"github.com/chris-ramon/graphql-go/language/kinds"
+)
 
 // Name implements Node
 type Name struct {

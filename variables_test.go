@@ -1,18 +1,18 @@
-package executor_test
+package graphql_test
 
 import (
 	"encoding/json"
-	"github.com/chris-ramon/graphql-go/errors"
-	"github.com/chris-ramon/graphql-go/executor"
+	"reflect"
+	"testing"
+
+	"github.com/chris-ramon/graphql-go"
+	"github.com/chris-ramon/graphql-go/gqlerrors"
 	"github.com/chris-ramon/graphql-go/language/ast"
 	"github.com/chris-ramon/graphql-go/language/location"
 	"github.com/chris-ramon/graphql-go/testutil"
-	"github.com/chris-ramon/graphql-go/types"
-	"reflect"
-	"testing"
 )
 
-var testComplexScalar *types.GraphQLScalarType = types.NewGraphQLScalarType(types.GraphQLScalarTypeConfig{
+var testComplexScalar *graphql.Scalar = graphql.NewScalar(graphql.ScalarConfig{
 	Name: "ComplexScalar",
 	Serialize: func(value interface{}) interface{} {
 		if value == "DeserializedValue" {
@@ -35,25 +35,25 @@ var testComplexScalar *types.GraphQLScalarType = types.NewGraphQLScalarType(type
 	},
 })
 
-var testInputObject *types.GraphQLInputObjectType = types.NewGraphQLInputObjectType(types.InputObjectConfig{
+var testInputObject *graphql.InputObject = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name: "TestInputObject",
-	Fields: types.InputObjectConfigFieldMap{
-		"a": &types.InputObjectFieldConfig{
-			Type: types.GraphQLString,
+	Fields: graphql.InputObjectConfigFieldMap{
+		"a": &graphql.InputObjectFieldConfig{
+			Type: graphql.String,
 		},
-		"b": &types.InputObjectFieldConfig{
-			Type: types.NewGraphQLList(types.GraphQLString),
+		"b": &graphql.InputObjectFieldConfig{
+			Type: graphql.NewList(graphql.String),
 		},
-		"c": &types.InputObjectFieldConfig{
-			Type: types.NewGraphQLNonNull(types.GraphQLString),
+		"c": &graphql.InputObjectFieldConfig{
+			Type: graphql.NewNonNull(graphql.String),
 		},
-		"d": &types.InputObjectFieldConfig{
+		"d": &graphql.InputObjectFieldConfig{
 			Type: testComplexScalar,
 		},
 	},
 })
 
-func inputResolved(p types.GQLFRParams) interface{} {
+func inputResolved(p graphql.GQLFRParams) interface{} {
 	input, ok := p.Args["input"]
 	if !ok {
 		return nil
@@ -65,78 +65,78 @@ func inputResolved(p types.GQLFRParams) interface{} {
 	return string(b)
 }
 
-var testType *types.GraphQLObjectType = types.NewGraphQLObjectType(types.GraphQLObjectTypeConfig{
+var testType *graphql.Object = graphql.NewObject(graphql.ObjectConfig{
 	Name: "TestType",
-	Fields: types.GraphQLFieldConfigMap{
-		"fieldWithObjectInput": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"input": &types.GraphQLArgumentConfig{
+	Fields: graphql.FieldConfigMap{
+		"fieldWithObjectInput": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
 					Type: testInputObject,
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"fieldWithNullableStringInput": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"input": &types.GraphQLArgumentConfig{
-					Type: types.GraphQLString,
+		"fieldWithNullableStringInput": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type: graphql.String,
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"fieldWithNonNullableStringInput": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"input": &types.GraphQLArgumentConfig{
-					Type: types.NewGraphQLNonNull(types.GraphQLString),
+		"fieldWithNonNullableStringInput": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"fieldWithDefaultArgumentValue": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"input": &types.GraphQLArgumentConfig{
-					Type:         types.GraphQLString,
+		"fieldWithDefaultArgumentValue": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type:         graphql.String,
 					DefaultValue: "Hello World",
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"list": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"input": &types.GraphQLArgumentConfig{
-					Type: types.NewGraphQLList(types.GraphQLString),
+		"list": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type: graphql.NewList(graphql.String),
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"nnList": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"input": &types.GraphQLArgumentConfig{
-					Type: types.NewGraphQLNonNull(types.NewGraphQLList(types.GraphQLString)),
+		"nnList": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.NewList(graphql.String)),
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"listNN": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"input": &types.GraphQLArgumentConfig{
-					Type: types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLString)),
+		"listNN": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type: graphql.NewList(graphql.NewNonNull(graphql.String)),
 				},
 			},
 			Resolve: inputResolved,
 		},
-		"nnListNN": &types.GraphQLFieldConfig{
-			Type: types.GraphQLString,
-			Args: types.GraphQLFieldConfigArgumentMap{
-				"input": &types.GraphQLArgumentConfig{
-					Type: types.NewGraphQLNonNull(types.NewGraphQLList(types.NewGraphQLNonNull(types.GraphQLString))),
+		"nnListNN": &graphql.FieldConfig{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.String))),
 				},
 			},
 			Resolve: inputResolved,
@@ -144,7 +144,7 @@ var testType *types.GraphQLObjectType = types.NewGraphQLObjectType(types.GraphQL
 	},
 })
 
-var variablesTestSchema, _ = types.NewGraphQLSchema(types.GraphQLSchemaConfig{
+var variablesTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 	Query: testType,
 })
 
@@ -154,20 +154,20 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_ExecutesWithComplexI
           fieldWithObjectInput(input: {a: "foo", b: ["bar"], c: "baz"})
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz"}`,
 		},
 	}
 	// parse query
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -181,20 +181,20 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_ProperlyParsesSingle
           fieldWithObjectInput(input: {a: "foo", b: "bar", c: "baz"})
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz"}`,
 		},
 	}
 	// parse query
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -208,20 +208,20 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_DoesNotUseIncorrectV
           fieldWithObjectInput(input: ["foo", "bar", "baz"])
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": nil,
 		},
 	}
 	// parse query
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -236,7 +236,7 @@ func testVariables_ObjectsAndNullability_UsingVariables_GetAST(t *testing.T) *as
           fieldWithObjectInput(input: $input)
         }
 	`
-	return testutil.Parse(t, doc)
+	return testutil.TestParse(t, doc)
 }
 func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexInput(t *testing.T) {
 
@@ -247,7 +247,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexInput
 			"c": "baz",
 		},
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz"}`,
 		},
@@ -256,12 +256,12 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexInput
 	ast := testVariables_ObjectsAndNullability_UsingVariables_GetAST(t)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -277,20 +277,20 @@ func TestVariables_ObjectsAndNullability_UsingVariables_UsesDefaultValueWhenNotP
 		fieldWithObjectInput(input: $input)
 	  }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz"}`,
 		},
 	}
 
-	withDefaultsAST := testutil.Parse(t, doc)
+	withDefaultsAST := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    withDefaultsAST,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -306,7 +306,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ProperlyParsesSingleValu
 			"c": "baz",
 		},
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz"}`,
 		},
@@ -315,12 +315,12 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ProperlyParsesSingleValu
 	ast := testVariables_ObjectsAndNullability_UsingVariables_GetAST(t)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -335,7 +335,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexScala
 			"d": "SerializedValue",
 		},
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithObjectInput": `{"c":"foo","d":"DeserializedValue"}`,
 		},
@@ -344,12 +344,12 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexScala
 	ast := testVariables_ObjectsAndNullability_UsingVariables_GetAST(t)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -365,10 +365,10 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnNullForNestedNon
 			"c": nil,
 		},
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
 					`got: {"a":"foo","b":"bar","c":null}.`,
 				Locations: []location.SourceLocation{
@@ -383,12 +383,12 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnNullForNestedNon
 	ast := testVariables_ObjectsAndNullability_UsingVariables_GetAST(t)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -400,10 +400,10 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnIncorrectType(t 
 	params := map[string]interface{}{
 		"input": "foo bar",
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
 					`got: "foo bar".`,
 				Locations: []location.SourceLocation{
@@ -418,12 +418,12 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnIncorrectType(t 
 	ast := testVariables_ObjectsAndNullability_UsingVariables_GetAST(t)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -438,10 +438,10 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNested
 			"b": "bar",
 		},
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
 					`got: {"a":"foo","b":"bar"}.`,
 				Locations: []location.SourceLocation{
@@ -456,12 +456,12 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNested
 	ast := testVariables_ObjectsAndNullability_UsingVariables_GetAST(t)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -478,10 +478,10 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknow
 			"d": "dog",
 		},
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
 					`got: {"a":"foo","b":"bar","c":"baz","d":"dog"}.`,
 				Locations: []location.SourceLocation{
@@ -496,12 +496,12 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknow
 	ast := testVariables_ObjectsAndNullability_UsingVariables_GetAST(t)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -516,20 +516,20 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmitted(t *testing.T)
         fieldWithNullableStringInput
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": nil,
 		},
 	}
 
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -543,20 +543,20 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmittedInAVariable(t 
         fieldWithNullableStringInput(input: $value)
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": nil,
 		},
 	}
 
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -570,20 +570,20 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmittedInAnUnlistedVa
         fieldWithNullableStringInput(input: $value)
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": nil,
 		},
 	}
 
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -600,21 +600,21 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToNullInAVariable(
 	params := map[string]interface{}{
 		"value": nil,
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": nil,
 		},
 	}
 
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -631,21 +631,21 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueInAVariabl
 	params := map[string]interface{}{
 		"value": "a",
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": `"a"`,
 		},
 	}
 
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -659,20 +659,20 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueDirectly(t
         fieldWithNullableStringInput(input: "a")
       }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNullableStringInput": `"a"`,
 		},
 	}
 
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -689,10 +689,10 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeOmittedIn
         }
 	`
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$value" of required type "String!" was not provided.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -703,14 +703,14 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeOmittedIn
 		},
 	}
 
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -728,10 +728,10 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeSetToNull
 	params := map[string]interface{}{
 		"value": nil,
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$value" of required type "String!" was not provided.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -742,15 +742,15 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeSetToNull
 		},
 	}
 
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -768,21 +768,21 @@ func TestVariables_NonNullableScalars_AllowsNonNullableInputsToBeSetToAValueInAV
 	params := map[string]interface{}{
 		"value": "a",
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNonNullableStringInput": `"a"`,
 		},
 	}
 
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -801,21 +801,21 @@ func TestVariables_NonNullableScalars_AllowsNonNullableInputsToBeSetToAValueDire
 		"value": "a",
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNonNullableStringInput": `"a"`,
 		},
 	}
 
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -834,21 +834,21 @@ func TestVariables_NonNullableScalars_PassesAlongNullForNonNullableInputsIfExpli
 		"value": "a",
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithNonNullableStringInput": nil,
 		},
 	}
 
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -867,20 +867,20 @@ func TestVariables_ListsAndNullability_AllowsListsToBeNull(t *testing.T) {
 		"input": nil,
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"list": nil,
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -898,20 +898,20 @@ func TestVariables_ListsAndNullability_AllowsListsToContainValues(t *testing.T) 
 		"input": []interface{}{"A"},
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"list": `["A"]`,
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -929,20 +929,20 @@ func TestVariables_ListsAndNullability_AllowsListsToContainNull(t *testing.T) {
 		"input": []interface{}{"A", nil, "B"},
 	}
 
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"list": `["A",null,"B"]`,
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -956,10 +956,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListsToBeNull(t *testi
           nnList(input: $input)
         }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" of required type "[String]!" was not provided.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -969,14 +969,14 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListsToBeNull(t *testi
 			},
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -993,20 +993,20 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsToContainValues(t *test
 	params := map[string]interface{}{
 		"input": []interface{}{"A"},
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nnList": `["A"]`,
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -1023,20 +1023,20 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsToContainNull(t *testin
 	params := map[string]interface{}{
 		"input": []interface{}{"A", nil, "B"},
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nnList": `["A",null,"B"]`,
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -1053,20 +1053,20 @@ func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToBeNull(t *testing.
 	params := map[string]interface{}{
 		"input": nil,
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"listNN": nil,
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -1083,20 +1083,20 @@ func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToContainValues(t *t
 	params := map[string]interface{}{
 		"input": []interface{}{"A"},
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"listNN": `["A"]`,
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -1113,10 +1113,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t
 	params := map[string]interface{}{
 		"input": []interface{}{"A", nil, "B"},
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "[String!]" but got: ` +
 					`["A",null,"B"].`,
 				Locations: []location.SourceLocation{
@@ -1127,15 +1127,15 @@ func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t
 			},
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -1152,10 +1152,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToBeNull
 	params := map[string]interface{}{
 		"input": nil,
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" of required type "[String!]!" was not provided.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -1165,15 +1165,15 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToBeNull
 			},
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -1190,20 +1190,20 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsOfNonNulsToContainValue
 	params := map[string]interface{}{
 		"input": []interface{}{"A"},
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nnListNN": `["A"]`,
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -1220,10 +1220,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContai
 	params := map[string]interface{}{
 		"input": []interface{}{"A", nil, "B"},
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "[String!]!" but got: ` +
 					`["A",null,"B"].`,
 				Locations: []location.SourceLocation{
@@ -1234,15 +1234,15 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContai
 			},
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -1261,10 +1261,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowInvalidTypesToBeUsedAsValues(
 			"list": []interface{}{"A", "B"},
 		},
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "TestType!" which cannot be used as an input type.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -1274,15 +1274,15 @@ func TestVariables_ListsAndNullability_DoesNotAllowInvalidTypesToBeUsedAsValues(
 			},
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -1299,10 +1299,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowUnknownTypesToBeUsedAsValues(
 	params := map[string]interface{}{
 		"input": "whoknows",
 	}
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: nil,
-		Errors: []graphqlerrors.GraphQLFormattedError{
-			graphqlerrors.GraphQLFormattedError{
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
 				Message: `Variable "$input" expected value of type "UnknownType!" which cannot be used as an input type.`,
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
@@ -1312,15 +1312,15 @@ func TestVariables_ListsAndNullability_DoesNotAllowUnknownTypesToBeUsedAsValues(
 			},
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -1335,19 +1335,19 @@ func TestVariables_UsesArgumentDefaultValues_WhenNoArgumentProvided(t *testing.T
       fieldWithDefaultArgumentValue
     }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithDefaultArgumentValue": `"Hello World"`,
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -1361,19 +1361,19 @@ func TestVariables_UsesArgumentDefaultValues_WhenNullableVariableProvided(t *tes
         fieldWithDefaultArgumentValue(input: $optional)
     }
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithDefaultArgumentValue": `"Hello World"`,
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -1387,19 +1387,19 @@ func TestVariables_UsesArgumentDefaultValues_WhenArgumentProvidedCannotBeParsed(
 		fieldWithDefaultArgumentValue(input: WRONG_TYPE)
 	}
 	`
-	expected := &types.GraphQLResult{
+	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"fieldWithDefaultArgumentValue": `"Hello World"`,
 		},
 	}
-	ast := testutil.Parse(t, doc)
+	ast := testutil.TestParse(t, doc)
 
 	// execute
-	ep := executor.ExecuteParams{
+	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,
 	}
-	result := testutil.Execute(t, ep)
+	result := testutil.TestExecute(t, ep)
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}

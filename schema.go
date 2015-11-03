@@ -1,4 +1,4 @@
-package types
+package graphql
 
 import (
 	"fmt"
@@ -10,29 +10,29 @@ A Schema is created by supplying the root types of each type of operation,
 query and mutation (optional). A schema definition is then supplied to the
 validator and executor.
 Example:
-    myAppSchema, err := NewGraphQLSchema(GraphQLSchemaConfig({
+    myAppSchema, err := NewSchema(SchemaConfig({
       Query: MyAppQueryRootType
       Mutation: MyAppMutationRootType
     });
 */
-type GraphQLSchemaConfig struct {
-	Query    *GraphQLObjectType
-	Mutation *GraphQLObjectType
+type SchemaConfig struct {
+	Query    *Object
+	Mutation *Object
 }
 
-// chose to name as GraphQLTypeMap instead of TypeMap
-type GraphQLTypeMap map[string]GraphQLType
+// chose to name as TypeMap instead of TypeMap
+type TypeMap map[string]Type
 
-type GraphQLSchema struct {
-	schemaConfig GraphQLSchemaConfig
-	typeMap      GraphQLTypeMap
-	directives   []*GraphQLDirective
+type Schema struct {
+	schemaConfig SchemaConfig
+	typeMap      TypeMap
+	directives   []*Directive
 }
 
-func NewGraphQLSchema(config GraphQLSchemaConfig) (GraphQLSchema, error) {
+func NewSchema(config SchemaConfig) (Schema, error) {
 	var err error
 
-	schema := GraphQLSchema{}
+	schema := Schema{}
 
 	err = invariant(config.Query != nil, "Schema query must be Object Type but got: nil.")
 	if err != nil {
@@ -50,8 +50,8 @@ func NewGraphQLSchema(config GraphQLSchemaConfig) (GraphQLSchema, error) {
 	schema.schemaConfig = config
 
 	// Build type map now to detect any errors within this schema.
-	typeMap := GraphQLTypeMap{}
-	objectTypes := []*GraphQLObjectType{
+	typeMap := TypeMap{}
+	objectTypes := []*Object{
 		schema.GetQueryType(),
 		schema.GetMutationType(),
 		__Type,
@@ -73,7 +73,7 @@ func NewGraphQLSchema(config GraphQLSchemaConfig) (GraphQLSchema, error) {
 	// Enforce correct interface implementations
 	for _, ttype := range typeMap {
 		switch ttype := ttype.(type) {
-		case *GraphQLObjectType:
+		case *Object:
 			for _, iface := range ttype.GetInterfaces() {
 				err := assertObjectImplementsInterface(ttype, iface)
 				if err != nil {
@@ -86,48 +86,48 @@ func NewGraphQLSchema(config GraphQLSchemaConfig) (GraphQLSchema, error) {
 	return schema, nil
 }
 
-func (gq *GraphQLSchema) GetQueryType() *GraphQLObjectType {
+func (gq *Schema) GetQueryType() *Object {
 	return gq.schemaConfig.Query
 }
 
-func (gq *GraphQLSchema) GetMutationType() *GraphQLObjectType {
+func (gq *Schema) GetMutationType() *Object {
 	return gq.schemaConfig.Mutation
 }
 
-func (gq *GraphQLSchema) GetDirectives() []*GraphQLDirective {
+func (gq *Schema) GetDirectives() []*Directive {
 	if len(gq.directives) == 0 {
-		gq.directives = []*GraphQLDirective{
-			GraphQLIncludeDirective,
-			GraphQLSkipDirective,
+		gq.directives = []*Directive{
+			IncludeDirective,
+			SkipDirective,
 		}
 	}
 	return gq.directives
 }
 
-func (gq *GraphQLSchema) GetTypeMap() GraphQLTypeMap {
+func (gq *Schema) GetTypeMap() TypeMap {
 	return gq.typeMap
 }
 
-func (gq *GraphQLSchema) GetType(name string) GraphQLType {
+func (gq *Schema) GetType(name string) Type {
 	return gq.GetTypeMap()[name]
 }
 
-func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLTypeMap, error) {
+func typeMapReducer(typeMap TypeMap, objectType Type) (TypeMap, error) {
 	var err error
 	if objectType == nil || objectType.GetName() == "" {
 		return typeMap, nil
 	}
 
 	switch objectType := objectType.(type) {
-	case *GraphQLList:
+	case *List:
 		if objectType.OfType != nil {
 			return typeMapReducer(typeMap, objectType.OfType)
 		}
-	case *GraphQLNonNull:
+	case *NonNull:
 		if objectType.OfType != nil {
 			return typeMapReducer(typeMap, objectType.OfType)
 		}
-	case *GraphQLObjectType:
+	case *Object:
 		if objectType.err != nil {
 			return typeMap, objectType.err
 		}
@@ -150,7 +150,7 @@ func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLType
 	typeMap[objectType.GetName()] = objectType
 
 	switch objectType := objectType.(type) {
-	case *GraphQLUnionType:
+	case *Union:
 		types := objectType.GetPossibleTypes()
 		if objectType.err != nil {
 			return typeMap, objectType.err
@@ -164,7 +164,7 @@ func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLType
 				return typeMap, err
 			}
 		}
-	case *GraphQLInterfaceType:
+	case *Interface:
 		types := objectType.GetPossibleTypes()
 		if objectType.err != nil {
 			return typeMap, objectType.err
@@ -178,7 +178,7 @@ func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLType
 				return typeMap, err
 			}
 		}
-	case *GraphQLObjectType:
+	case *Object:
 		interfaces := objectType.GetInterfaces()
 		if objectType.err != nil {
 			return typeMap, objectType.err
@@ -195,7 +195,7 @@ func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLType
 	}
 
 	switch objectType := objectType.(type) {
-	case *GraphQLObjectType:
+	case *Object:
 		fieldMap := objectType.GetFields()
 		if objectType.err != nil {
 			return typeMap, objectType.err
@@ -212,7 +212,7 @@ func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLType
 				return typeMap, err
 			}
 		}
-	case *GraphQLInterfaceType:
+	case *Interface:
 		fieldMap := objectType.GetFields()
 		if objectType.err != nil {
 			return typeMap, objectType.err
@@ -229,7 +229,7 @@ func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLType
 				return typeMap, err
 			}
 		}
-	case *GraphQLInputObjectType:
+	case *InputObject:
 		fieldMap := objectType.GetFields()
 		if objectType.err != nil {
 			return typeMap, objectType.err
@@ -244,7 +244,7 @@ func typeMapReducer(typeMap GraphQLTypeMap, objectType GraphQLType) (GraphQLType
 	return typeMap, nil
 }
 
-func assertObjectImplementsInterface(object *GraphQLObjectType, iface *GraphQLInterfaceType) error {
+func assertObjectImplementsInterface(object *Object, iface *Interface) error {
 	objectFieldMap := object.GetFields()
 	ifaceFieldMap := iface.GetFields()
 
@@ -278,7 +278,7 @@ func assertObjectImplementsInterface(object *GraphQLObjectType, iface *GraphQLIn
 		// Assert each interface field arg is implemented.
 		for _, ifaceArg := range ifaceField.Args {
 			argName := ifaceArg.Name
-			var objectArg *GraphQLArgument
+			var objectArg *Argument
 			for _, arg := range objectField.Args {
 				if arg.Name == argName {
 					objectArg = arg
@@ -315,7 +315,7 @@ func assertObjectImplementsInterface(object *GraphQLObjectType, iface *GraphQLIn
 		// Assert argument set invariance.
 		for _, objectArg := range objectField.Args {
 			argName := objectArg.Name
-			var ifaceArg *GraphQLArgument
+			var ifaceArg *Argument
 			for _, arg := range ifaceField.Args {
 				if arg.Name == argName {
 					ifaceArg = arg
@@ -337,14 +337,14 @@ func assertObjectImplementsInterface(object *GraphQLObjectType, iface *GraphQLIn
 	return nil
 }
 
-func isEqualType(typeA GraphQLType, typeB GraphQLType) bool {
-	if typeA, ok := typeA.(*GraphQLNonNull); ok {
-		if typeB, ok := typeB.(*GraphQLNonNull); ok {
+func isEqualType(typeA Type, typeB Type) bool {
+	if typeA, ok := typeA.(*NonNull); ok {
+		if typeB, ok := typeB.(*NonNull); ok {
 			return isEqualType(typeA.OfType, typeB.OfType)
 		}
 	}
-	if typeA, ok := typeA.(*GraphQLList); ok {
-		if typeB, ok := typeB.(*GraphQLList); ok {
+	if typeA, ok := typeA.(*List); ok {
+		if typeB, ok := typeB.(*List); ok {
 			return isEqualType(typeA.OfType, typeB.OfType)
 		}
 	}

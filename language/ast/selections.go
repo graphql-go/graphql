@@ -78,7 +78,7 @@ func (fs *FragmentSpread) GetLoc() *Location {
 type InlineFragment struct {
 	Kind          string
 	Loc           *Location
-	TypeCondition *NamedType
+	TypeCondition *Named
 	Directives    []*Directive
 	SelectionSet  *SelectionSet
 }

@@ -1,4 +1,4 @@
-package graphqlerrors
+package gqlerrors
 
 import (
 	"fmt"
@@ -9,9 +9,9 @@ import (
 	"github.com/chris-ramon/graphql-go/language/source"
 )
 
-func NewSyntaxError(s *source.Source, position int, description string) *GraphQLError {
+func NewSyntaxError(s *source.Source, position int, description string) *Error {
 	l := location.GetLocation(s, position)
-	return NewGraphQLError(
+	return NewError(
 		fmt.Sprintf("Syntax Error %s (%d:%d) %s\n\n%s", s.Name, l.Line, l.Column, description, highlightSourceAtLocation(s, l)),
 		[]ast.Node{},
 		"",

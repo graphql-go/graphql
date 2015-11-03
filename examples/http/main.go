@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/chris-ramon/graphql-go"
-	"github.com/chris-ramon/graphql-go/types"
 )
 
 type user struct {
@@ -23,15 +22,15 @@ var data map[string]user
        - Fields: a map of fields by using GraphQLFieldConfigMap
    Setup type of field use GraphQLFieldConfig
 */
-var userType = types.NewGraphQLObjectType(
-	types.GraphQLObjectTypeConfig{
+var userType = graphql.NewObject(
+	graphql.ObjectConfig{
 		Name: "User",
-		Fields: types.GraphQLFieldConfigMap{
-			"id": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+		Fields: graphql.FieldConfigMap{
+			"id": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
-			"name": &types.GraphQLFieldConfig{
-				Type: types.GraphQLString,
+			"name": &graphql.FieldConfig{
+				Type: graphql.String,
 			},
 		},
 	},
@@ -46,18 +45,18 @@ var userType = types.NewGraphQLObjectType(
        - Args: arguments to query with current field
        - Resolve: function to query data using params from [Args] and return value with current type
 */
-var queryType = types.NewGraphQLObjectType(
-	types.GraphQLObjectTypeConfig{
+var queryType = graphql.NewObject(
+	graphql.ObjectConfig{
 		Name: "Query",
-		Fields: types.GraphQLFieldConfigMap{
-			"user": &types.GraphQLFieldConfig{
+		Fields: graphql.FieldConfigMap{
+			"user": &graphql.FieldConfig{
 				Type: userType,
-				Args: types.GraphQLFieldConfigArgumentMap{
-					"id": &types.GraphQLArgumentConfig{
-						Type: types.GraphQLString,
+				Args: graphql.FieldConfigArgument{
+					"id": &graphql.ArgumentConfig{
+						Type: graphql.String,
 					},
 				},
-				Resolve: func(p types.GQLFRParams) interface{} {
+				Resolve: func(p graphql.GQLFRParams) interface{} {
 					idQuery, isOK := p.Args["id"].(string)
 					if isOK {
 						return data[idQuery]
@@ -68,19 +67,19 @@ var queryType = types.NewGraphQLObjectType(
 		},
 	})
 
-var schema, _ = types.NewGraphQLSchema(
-	types.GraphQLSchemaConfig{
+var schema, _ = graphql.NewSchema(
+	graphql.SchemaConfig{
 		Query: queryType,
 	},
 )
 
-func executeQuery(query string, schema types.GraphQLSchema) *types.GraphQLResult {
-	graphqlParams := gql.GraphqlParams{
+func executeQuery(query string, schema graphql.Schema) *graphql.Result {
+	params := graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	}
-	resultChannel := make(chan *types.GraphQLResult)
-	go gql.Graphql(graphqlParams, resultChannel)
+	resultChannel := make(chan *graphql.Result)
+	go graphql.Graphql(params, resultChannel)
 	result := <-resultChannel
 	if len(result.Errors) > 0 {
 		fmt.Println("wrong result, unexpected errors: %v", result.Errors)

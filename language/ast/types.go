@@ -11,96 +11,96 @@ type Type interface {
 }
 
 // Ensure that all value types implements Value interface
-var _ Type = (*NamedType)(nil)
-var _ Type = (*ListType)(nil)
-var _ Type = (*NonNullType)(nil)
+var _ Type = (*Named)(nil)
+var _ Type = (*List)(nil)
+var _ Type = (*NonNull)(nil)
 
-// NamedType implements Node, Type
-type NamedType struct {
+// Named implements Node, Type
+type Named struct {
 	Kind string
 	Loc  *Location
 	Name *Name
 }
 
-func NewNamedType(t *NamedType) *NamedType {
+func NewNamed(t *Named) *Named {
 	if t == nil {
-		t = &NamedType{}
+		t = &Named{}
 	}
-	return &NamedType{
-		Kind: kinds.NamedType,
+	return &Named{
+		Kind: kinds.Named,
 		Loc:  t.Loc,
 		Name: t.Name,
 	}
 }
 
-func (t *NamedType) GetKind() string {
+func (t *Named) GetKind() string {
 	return t.Kind
 }
 
-func (t *NamedType) GetLoc() *Location {
+func (t *Named) GetLoc() *Location {
 	return t.Loc
 }
 
-func (t *NamedType) String() string {
+func (t *Named) String() string {
 	return t.GetKind()
 }
 
-// ListType implements Node, Type
-type ListType struct {
+// List implements Node, Type
+type List struct {
 	Kind string
 	Loc  *Location
 	Type Type
 }
 
-func NewListType(t *ListType) *ListType {
+func NewList(t *List) *List {
 	if t == nil {
-		t = &ListType{}
+		t = &List{}
 	}
-	return &ListType{
-		Kind: kinds.ListType,
+	return &List{
+		Kind: kinds.List,
 		Loc:  t.Loc,
 		Type: t.Type,
 	}
 }
 
-func (t *ListType) GetKind() string {
+func (t *List) GetKind() string {
 	return t.Kind
 }
 
-func (t *ListType) GetLoc() *Location {
+func (t *List) GetLoc() *Location {
 	return t.Loc
 }
 
-func (t *ListType) String() string {
+func (t *List) String() string {
 	return t.GetKind()
 }
 
-// NonNullType implements Node, Type
-type NonNullType struct {
+// NonNull implements Node, Type
+type NonNull struct {
 	Kind string
 	Loc  *Location
 	Type Type
 }
 
-func NewNonNullType(t *NonNullType) *NonNullType {
+func NewNonNull(t *NonNull) *NonNull {
 	if t == nil {
-		t = &NonNullType{}
+		t = &NonNull{}
 	}
-	return &NonNullType{
-		Kind: kinds.NonNullType,
+	return &NonNull{
+		Kind: kinds.NonNull,
 		Loc:  t.Loc,
 		Type: t.Type,
 	}
 }
 
-func (t *NonNullType) GetKind() string {
+func (t *NonNull) GetKind() string {
 	return t.Kind
 }
 
-func (t *NonNullType) GetLoc() *Location {
+func (t *NonNull) GetLoc() *Location {
 	return t.Loc
 }
 
-func (t *NonNullType) String() string {
+func (t *NonNull) String() string {
 	return t.GetKind()
 }
