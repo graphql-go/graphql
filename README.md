@@ -7,16 +7,15 @@ A *work-in-progress* implementation of GraphQL for Go.
 
 This project was originally a port of [v0.4.3](https://github.com/graphql/graphql-js/releases/tag/v0.4.3) of [graphql-js](https://github.com/graphql/graphql-js) (excluding the Validator), which was based on the July 2015 GraphQL specification. `graphql` is currently several versions behind `graphql-js`, however future efforts will be guided directly by the [latest formal GraphQL specification](https://github.com/facebook/graphql/releases) (currently: [October 2015](https://github.com/facebook/graphql/releases/tag/October2015)).
 
-### Install
-`go get https://github.com/chris-ramon/graphql-go`
-
 ### Third Party Libraries
 | Name          | Author        | Description  |
 |:-------------:|:-------------:|:------------:|
 | [graphql-go-handler](https://github.com/sogko/graphql-go-handler) | [Hafiz Ismail](https://github.com/sogko) | Middleware to handle GraphQL queries through HTTP requests. |
+| [graphql-relay-go](https://github.com/sogko/graphql-relay-go) | [Hafiz Ismail](https://github.com/sogko) | Lib to construct a graphql-go server supporting react-relay. |
+| [golang-relay-starter-kit](https://github.com/sogko/golang-relay-starter-kit) | [Hafiz Ismail](https://github.com/sogko) | Barebones starting point for a Relay application with Golang GraphQL server. |
 
 ### Blog Posts
-* [Golang + GraphQL + Relay](http://wehavefaces.net/)
+- [Golang + GraphQL + Relay](http://wehavefaces.net/)
 
 ### Roadmap
 - [x] Lexer
