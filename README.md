@@ -9,12 +9,9 @@ Installation
 go get github.com/chris-ramon/graphql
 ```
 
-Example
-A simple example that defines a schema with `hello` field, it’s resolve function
-returns a string `world` then a graphql query is perform against that schema
-the result is printed as JSON.
-
-For more complex examples see [examples](https://github.com/chris-ramon/graphql/tree/master/examples/) directory and [graphql_test.go](https://github.com/chris-ramon/graphql/blob/master/graphql_test.go).
+A simple example that defines a schema with a `hello` string field
+it’s resolve function returns a string `world` then a graphql query
+is perform against that schema the result is printed as JSON:
 
 ```go
 package main
@@ -61,6 +58,8 @@ func main() {
 	fmt.Printf("%s \n", rJSON)
 }
 ```
+
+For more complex examples see [examples](https://github.com/chris-ramon/graphql/tree/master/examples/) directory and [graphql tests](https://github.com/chris-ramon/graphql/blob/master/graphql_test.go).
 
 ### Origin and Current Direction
 
