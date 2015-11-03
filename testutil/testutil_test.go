@@ -1,8 +1,9 @@
 package testutil_test
 
 import (
-	"github.com/chris-ramon/graphql-go/testutil"
 	"testing"
+
+	"github.com/chris-ramon/graphql/testutil"
 )
 
 func TestSubsetSlice_Simple(t *testing.T) {
