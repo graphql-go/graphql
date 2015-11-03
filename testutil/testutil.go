@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/chris-ramon/graphql-go"
-	"github.com/chris-ramon/graphql-go/language/ast"
-	"github.com/chris-ramon/graphql-go/language/parser"
+	"github.com/chris-ramon/graphql"
+	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/chris-ramon/graphql/language/parser"
 	"github.com/kr/pretty"
 )
 
