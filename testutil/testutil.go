@@ -357,10 +357,7 @@ func TestParse(t *testing.T, query string) *ast.Document {
 	return astDoc
 }
 func TestExecute(t *testing.T, ep graphql.ExecuteParams) *graphql.Result {
-	resultChannel := make(chan *graphql.Result)
-	go graphql.Execute(ep, resultChannel)
-	result := <-resultChannel
-	return result
+	return graphql.Execute(ep)
 }
 
 func Diff(a, b interface{}) []string {

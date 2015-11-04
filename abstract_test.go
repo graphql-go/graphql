@@ -145,13 +145,10 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 		Errors: nil,
 	}
 
-	resultChannel := make(chan *graphql.Result)
-
-	go graphql.Graphql(graphql.Params{
+	result := graphql.Graphql(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
-	}, resultChannel)
-	result := <-resultChannel
+	})
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -280,13 +277,10 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 		Errors: nil,
 	}
 
-	resultChannel := make(chan *graphql.Result)
-
-	go graphql.Graphql(graphql.Params{
+	result := graphql.Graphql(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
-	}, resultChannel)
-	result := <-resultChannel
+	})
 
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
@@ -451,13 +445,10 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 		},
 	}
 
-	resultChannel := make(chan *graphql.Result)
-
-	go graphql.Graphql(graphql.Params{
+	result := graphql.Graphql(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
-	}, resultChannel)
-	result := <-resultChannel
+	})
 	if len(result.Errors) == 0 {
 		t.Fatalf("wrong result, expected errors: %v, got: %v", len(expected.Errors), len(result.Errors))
 	}
@@ -609,13 +600,10 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 		},
 	}
 
-	resultChannel := make(chan *graphql.Result)
-
-	go graphql.Graphql(graphql.Params{
+	result := graphql.Graphql(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
-	}, resultChannel)
-	result := <-resultChannel
+	})
 	if len(result.Errors) == 0 {
 		t.Fatalf("wrong result, expected errors: %v, got: %v", len(expected.Errors), len(result.Errors))
 	}

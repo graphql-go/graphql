@@ -82,9 +82,7 @@ func TestQuery(t *testing.T) {
 }
 
 func testGraphql(test T, p graphql.Params, t *testing.T) {
-	resultChannel := make(chan *graphql.Result)
-	go graphql.Graphql(p, resultChannel)
-	result := <-resultChannel
+	result := graphql.Graphql(p)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -121,12 +119,10 @@ func TestBasicGraphQLExample(t *testing.T) {
 		"hello": "world",
 	}
 
-	resultChannel := make(chan *graphql.Result)
-	go graphql.Graphql(graphql.Params{
+	result := graphql.Graphql(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
-	}, resultChannel)
-	result := <-resultChannel
+	})
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
