@@ -7,7 +7,7 @@ A *work-in-progress* implementation of GraphQL for Go.
 
 To install the library, run:
 ```bash
-go get github.com/chris-ramon/graphql
+go get github.com/graphql-go/graphql
 ```
 
 The following is a simple example which defines a schema with a single `hello` string-type field and a `Resolve` method which returns the string `world`. A GraphQL query is performed against this schema with the resulting output printed in JSON format.
@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/chris-ramon/graphql"
+	"github.com/graphql-go/graphql"
 )
 
 func main() {
@@ -57,7 +57,7 @@ func main() {
 	fmt.Printf("%s \n", rJSON) // {“data”:{“hello”:”world”}}
 }
 ```
-For more complex examples, refer to the [examples/](https://github.com/chris-ramon/graphql/tree/master/examples/) directory and [graphql_test.go])(https://github.com/chris-ramon/graphql/blob/master/graphql_test.go)_.
+For more complex examples, refer to the [examples/](https://github.com/graphql-go/graphql/tree/master/examples/) directory and [graphql_test.go])(https://github.com/graphql-go/graphql/blob/master/graphql_test.go)_.
 
 ### Origin and Current Direction
 
