@@ -1,6 +1,7 @@
 package graphql
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -17,23 +18,24 @@ type ExecuteParams struct {
 	Args          map[string]interface{}
 }
 
-func Execute(p ExecuteParams, resultChan chan *Result) {
-	var errors []gqlerrors.FormattedError
-	var result Result
-	params := BuildExecutionCtxParams{
+func Execute(p ExecuteParams) (result *Result) {
+	result = &Result{}
+
+	exeContext, err := buildExecutionContext(BuildExecutionCtxParams{
 		Schema:        p.Schema,
 		Root:          p.Root,
 		AST:           p.AST,
 		OperationName: p.OperationName,
 		Args:          p.Args,
-		Errors:        errors,
-		Result:        &result,
-		ResultChan:    resultChan,
-	}
-	exeContext := buildExecutionContext(params)
-	if result.HasErrors() {
+		Errors:        nil,
+		Result:        result,
+	})
+
+	if err != nil {
+		result.Errors = append(result.Errors, gqlerrors.FormatError(err))
 		return
 	}
+
 	defer func() {
 		if r := recover(); r != nil {
 			var err error
@@ -42,15 +44,14 @@ func Execute(p ExecuteParams, resultChan chan *Result) {
 			}
 			exeContext.Errors = append(exeContext.Errors, gqlerrors.FormatError(err))
 			result.Errors = exeContext.Errors
-			resultChan <- &result
 		}
 	}()
-	eOperationParams := ExecuteOperationParams{
+
+	return executeOperation(ExecuteOperationParams{
 		ExecutionContext: exeContext,
 		Root:             p.Root,
 		Operation:        exeContext.Operation,
-	}
-	executeOperation(eOperationParams, resultChan)
+	})
 }
 
 type BuildExecutionCtxParams struct {
@@ -61,7 +62,6 @@ type BuildExecutionCtxParams struct {
 	Args          map[string]interface{}
 	Errors        []gqlerrors.FormattedError
 	Result        *Result
-	ResultChan    chan *Result
 }
 type ExecutionContext struct {
 	Schema         Schema
@@ -72,7 +72,7 @@ type ExecutionContext struct {
 	Errors         []gqlerrors.FormattedError
 }
 
-func buildExecutionContext(p BuildExecutionCtxParams) *ExecutionContext {
+func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error) {
 	eCtx := &ExecutionContext{}
 	operations := map[string]ast.Definition{}
 	fragments := map[string]ast.Definition{}
@@ -91,20 +91,14 @@ func buildExecutionContext(p BuildExecutionCtxParams) *ExecutionContext {
 			}
 			fragments[key] = stm
 		default:
-			err := gqlerrors.NewFormattedError(
-				fmt.Sprintf("GraphQL cannot execute a request containing a %v", statement.GetKind()),
-			)
-			p.Result.Errors = append(p.Result.Errors, err)
-			p.ResultChan <- p.Result
-			return eCtx
+			return nil, fmt.Errorf("GraphQL cannot execute a request containing a %v", statement.GetKind())
 		}
 	}
+
 	if (p.OperationName == "") && (len(operations) != 1) {
-		err := gqlerrors.NewFormattedError("Must provide operation name if query contains multiple operations.")
-		p.Result.Errors = append(p.Result.Errors, err)
-		p.ResultChan <- p.Result
-		return eCtx
+		return nil, errors.New("Must provide operation name if query contains multiple operations.")
 	}
+
 	opName := p.OperationName
 	if opName == "" {
 		// get first opName
@@ -113,18 +107,15 @@ func buildExecutionContext(p BuildExecutionCtxParams) *ExecutionContext {
 			break
 		}
 	}
+
 	operation, found := operations[opName]
 	if !found {
-		err := gqlerrors.NewFormattedError(fmt.Sprintf(`Unknown operation named "%v".`, opName))
-		p.Result.Errors = append(p.Result.Errors, err)
-		p.ResultChan <- p.Result
-		return eCtx
+		return nil, fmt.Errorf(`Unknown operation named "%v".`, opName)
 	}
+
 	variableValues, err := getVariableValues(p.Schema, operation.GetVariableDefinitions(), p.Args)
 	if err != nil {
-		p.Result.Errors = append(p.Result.Errors, gqlerrors.FormatError(err))
-		p.ResultChan <- p.Result
-		return eCtx
+		return nil, err
 	}
 
 	eCtx.Schema = p.Schema
@@ -133,7 +124,7 @@ func buildExecutionContext(p BuildExecutionCtxParams) *ExecutionContext {
 	eCtx.Operation = operation
 	eCtx.VariableValues = variableValues
 	eCtx.Errors = p.Errors
-	return eCtx
+	return eCtx, nil
 }
 
 type ExecuteOperationParams struct {
@@ -142,59 +133,49 @@ type ExecuteOperationParams struct {
 	Operation        ast.Definition
 }
 
-func executeOperation(p ExecuteOperationParams, resultChan chan *Result) {
-	var results Result
-	operationType := getOperationRootType(p.ExecutionContext.Schema, p.Operation, resultChan)
+func executeOperation(p ExecuteOperationParams) *Result {
+	operationType, err := getOperationRootType(p.ExecutionContext.Schema, p.Operation)
+	if err != nil {
+		return &Result{Errors: gqlerrors.FormatErrors(err)}
+	}
 
-	collectFieldsParams := CollectFieldsParams{
+	fields := collectFields(CollectFieldsParams{
 		ExeContext:    p.ExecutionContext,
 		OperationType: operationType,
 		SelectionSet:  p.Operation.GetSelectionSet(),
-	}
-	fields := collectFields(collectFieldsParams)
+	})
+
 	executeFieldsParams := ExecuteFieldsParams{
 		ExecutionContext: p.ExecutionContext,
 		ParentType:       operationType,
 		Source:           p.Root,
 		Fields:           fields,
 	}
+
 	if p.Operation.GetOperation() == "mutation" {
-		executeFieldsSerially(executeFieldsParams, resultChan)
-		return
+		return executeFieldsSerially(executeFieldsParams)
+	} else {
+		return executeFields(executeFieldsParams)
 	}
-	results = executeFields(executeFieldsParams)
-	results.Errors = p.ExecutionContext.Errors
-	resultChan <- &results
 }
 
 // Extracts the root type of the operation from the schema.
-func getOperationRootType(schema Schema, operation ast.Definition, r chan *Result) (objType *Object) {
+func getOperationRootType(schema Schema, operation ast.Definition) (*Object, error) {
 	if operation == nil {
-		var result Result
-		err := gqlerrors.NewFormattedError("Can only execute queries and mutations")
-		result.Errors = append(result.Errors, err)
-		r <- &result
-		return objType
+		return nil, errors.New("Can only execute queries and mutations")
 	}
+
 	switch operation.GetOperation() {
 	case "query":
-		return schema.GetQueryType()
+		return schema.GetQueryType(), nil
 	case "mutation":
 		mutationType := schema.GetMutationType()
 		if mutationType.Name == "" {
-			var result Result
-			err := gqlerrors.NewFormattedError("Schema is not configured for mutations")
-			result.Errors = append(result.Errors, err)
-			r <- &result
-			return objType
+			return nil, errors.New("Schema is not configured for mutations")
 		}
-		return mutationType
+		return mutationType, nil
 	default:
-		var result Result
-		err := gqlerrors.NewFormattedError("Can only execute queries and mutations")
-		result.Errors = append(result.Errors, err)
-		r <- &result
-		return objType
+		return nil, errors.New("Can only execute queries and mutations")
 	}
 }
 
@@ -206,14 +187,13 @@ type ExecuteFieldsParams struct {
 }
 
 // Implements the "Evaluating selection sets" section of the spec for "write" mode.
-func executeFieldsSerially(p ExecuteFieldsParams, resultChan chan *Result) {
+func executeFieldsSerially(p ExecuteFieldsParams) *Result {
 	if p.Source == nil {
 		p.Source = map[string]interface{}{}
 	}
 	if p.Fields == nil {
 		p.Fields = map[string][]*ast.Field{}
 	}
-	var result Result
 
 	finalResults := map[string]interface{}{}
 	for responseName, fieldASTs := range p.Fields {
@@ -223,19 +203,22 @@ func executeFieldsSerially(p ExecuteFieldsParams, resultChan chan *Result) {
 		}
 		finalResults[responseName] = resolved
 	}
-	result.Errors = p.ExecutionContext.Errors
-	result.Data = finalResults
-	resultChan <- &result
+
+	return &Result{
+		Data:   finalResults,
+		Errors: p.ExecutionContext.Errors,
+	}
 }
 
 // Implements the "Evaluating selection sets" section of the spec for "read" mode.
-func executeFields(p ExecuteFieldsParams) (result Result) {
+func executeFields(p ExecuteFieldsParams) *Result {
 	if p.Source == nil {
 		p.Source = map[string]interface{}{}
 	}
 	if p.Fields == nil {
 		p.Fields = map[string][]*ast.Field{}
 	}
+
 	finalResults := map[string]interface{}{}
 	for responseName, fieldASTs := range p.Fields {
 		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
@@ -244,11 +227,11 @@ func executeFields(p ExecuteFieldsParams) (result Result) {
 		}
 		finalResults[responseName] = resolved
 	}
-	result.Errors = p.ExecutionContext.Errors
-	if len(finalResults) > 0 {
-		result.Data = finalResults
+
+	return &Result{
+		Data:   finalResults,
+		Errors: p.ExecutionContext.Errors,
 	}
-	return result
 }
 
 type CollectFieldsParams struct {

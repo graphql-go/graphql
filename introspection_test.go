@@ -11,10 +11,7 @@ import (
 )
 
 func g(t *testing.T, p graphql.Params) *graphql.Result {
-	resultChannel := make(chan *graphql.Result)
-	go graphql.Graphql(p, resultChannel)
-	result := <-resultChannel
-	return result
+	return graphql.Graphql(p)
 }
 
 func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
