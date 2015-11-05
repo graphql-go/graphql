@@ -4,10 +4,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/chris-ramon/graphql-go"
-	"github.com/chris-ramon/graphql-go/gqlerrors"
-	"github.com/chris-ramon/graphql-go/language/location"
-	"github.com/chris-ramon/graphql-go/testutil"
+	"github.com/chris-ramon/graphql"
+	"github.com/chris-ramon/graphql/gqlerrors"
+	"github.com/chris-ramon/graphql/language/location"
+	"github.com/chris-ramon/graphql/testutil"
 )
 
 // testNumberHolder maps to numberHolderType
