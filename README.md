@@ -1,6 +1,5 @@
 # graphql [![Build Status](https://travis-ci.org/graphql-go/graphql.svg)](https://travis-ci.org/graphql-go/graphql) [![GoDoc](https://godoc.org/graphql.co/graphql?status.svg)](https://godoc.org/github.com/graphql-go/graphql) [![Coverage Status](https://coveralls.io/repos/graphql-go/graphql/badge.svg?branch=master&service=github)](https://coveralls.io/github/graphql-go/graphql?branch=master) [![Join the chat at https://gitter.im/chris-ramon/graphql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/graphql-go/graphql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-
 A *work-in-progress* implementation of GraphQL for Go.
 
 ### Getting Started
@@ -47,9 +46,7 @@ func main() {
 		}
 	`
 	params := graphql.Params{Schema: schema, RequestString: query}
-	result := make(chan *graphql.Result)
-	go graphql.Graphql(params, result)
-	r := <-result
+	r := graphql.Graphql(params)
 	if len(r.Errors) > 0 {
 		log.Fatalf("failed to execute graphql operation, errors: %+v", r.Errors)
 	}
