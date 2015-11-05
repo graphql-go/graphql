@@ -4,15 +4,13 @@
 A *work-in-progress* implementation of GraphQL for Go.
 
 ### Getting Started
-Installation
-```
+
+To install the library, run:
+```bash
 go get github.com/chris-ramon/graphql
 ```
 
-A simple example that defines a schema with a `hello` string field,
-it’s resolve function returns a string `world`.
-Then a graphql query is perform against that schema, finally
-the result is printed as JSON:
+The following is a simple example which defines a schema with a single `hello` string-type field and a `Resolve` method which returns the string `world`. A GraphQL query is performed against this schema with the resulting output printed in JSON format.
 
 ```go
 package main
@@ -59,8 +57,7 @@ func main() {
 	fmt.Printf("%s \n", rJSON) // {“data”:{“hello”:”world”}}
 }
 ```
-
-For more complex examples see [examples](https://github.com/chris-ramon/graphql/tree/master/examples/) directory and [graphql tests](https://github.com/chris-ramon/graphql/blob/master/graphql_test.go).
+For more complex examples, refer to the [examples/](https://github.com/chris-ramon/graphql/tree/master/examples/) directory and [graphql_test.go])(https://github.com/chris-ramon/graphql/blob/master/graphql_test.go)_.
 
 ### Origin and Current Direction
 
