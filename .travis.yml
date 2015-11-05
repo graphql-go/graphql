@@ -10,4 +10,3 @@ before_install:
 
 script:
   - $HOME/gopath/bin/goveralls -service=travis-ci
-
