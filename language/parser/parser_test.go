@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/chris-ramon/graphql/gqlerrors"
-	"github.com/chris-ramon/graphql/language/ast"
-	"github.com/chris-ramon/graphql/language/location"
-	"github.com/chris-ramon/graphql/language/source"
+	"github.com/graphql-go/graphql/gqlerrors"
+	"github.com/graphql-go/graphql/language/ast"
+	"github.com/graphql-go/graphql/language/location"
+	"github.com/graphql-go/graphql/language/source"
 )
 
 func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
