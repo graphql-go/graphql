@@ -16,59 +16,29 @@ type ParseOptions struct {
 	NoSource   bool
 }
 
-type ParseParams struct {
-	Source  interface{}
-	Options ParseOptions
-}
-
 type Parser struct {
 	LexToken lexer.Lexer
 	Source   *source.Source
-	Options  ParseOptions
+	Options  *ParseOptions
 	PrevEnd  int
 	Token    lexer.Token
 }
 
-func Parse(p ParseParams) (*ast.Document, error) {
-	var sourceObj *source.Source
-	switch p.Source.(type) {
-	case *source.Source:
-		sourceObj = p.Source.(*source.Source)
-	default:
-		body, _ := p.Source.(string)
-		sourceObj = source.NewSource(&source.Source{Body: body})
-	}
-	parser, err := makeParser(sourceObj, p.Options)
+func Parse(s *source.Source, options *ParseOptions) (*ast.Document, error) {
+	parser, err := makeParser(s, options)
 	if err != nil {
 		return nil, err
 	}
-	doc, err := parseDocument(parser)
-	if err != nil {
-		return nil, err
-	}
-	return doc, nil
+	return parseDocument(parser)
 }
 
 // TODO: test and expose parseValue as a public
-func parseValue(p ParseParams) (ast.Value, error) {
-	var value ast.Value
-	var sourceObj *source.Source
-	switch p.Source.(type) {
-	case *source.Source:
-		sourceObj = p.Source.(*source.Source)
-	default:
-		body, _ := p.Source.(string)
-		sourceObj = source.NewSource(&source.Source{Body: body})
-	}
-	parser, err := makeParser(sourceObj, p.Options)
+func parseValue(s *source.Source, options *ParseOptions) (ast.Value, error) {
+	parser, err := makeParser(s, options)
 	if err != nil {
-		return value, err
+		return nil, err
 	}
-	value, err = parseValueLiteral(parser, false)
-	if err != nil {
-		return value, err
-	}
-	return value, nil
+	return parseValueLiteral(parser, false)
 }
 
 // Converts a name lex token into a name parse node.
@@ -83,11 +53,14 @@ func parseName(parser *Parser) (*ast.Name, error) {
 	}), nil
 }
 
-func makeParser(s *source.Source, opts ParseOptions) (*Parser, error) {
+func makeParser(s *source.Source, opts *ParseOptions) (*Parser, error) {
+	if opts == nil {
+		opts = &ParseOptions{}
+	}
 	lexToken := lexer.Lex(s)
 	token, err := lexToken(0)
 	if err != nil {
-		return &Parser{}, err
+		return nil, err
 	}
 	return &Parser{
 		LexToken: lexToken,
@@ -107,12 +80,14 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
 		if skip(parser, lexer.TokenKind[lexer.EOF]) {
 			break
 		}
+
+		var (
+			node ast.Node
+			err  error
+		)
+
 		if peek(parser, lexer.TokenKind[lexer.BRACE_L]) {
-			node, err := parseOperationDefinition(parser)
-			if err != nil {
-				return nil, err
-			}
-			nodes = append(nodes, node)
+			node, err = parseOperationDefinition(parser)
 		} else if peek(parser, lexer.TokenKind[lexer.NAME]) {
 			switch parser.Token.Value {
 			case "query":
@@ -120,70 +95,36 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
 			case "mutation":
 				fallthrough
 			case "subscription": // Note: subscription is an experimental non-spec addition.
-				node, err := parseOperationDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				node, err = parseOperationDefinition(parser)
 			case "fragment":
-				node, err := parseFragmentDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				node, err = parseFragmentDefinition(parser)
 			case "type":
-				node, err := parseObjectTypeDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				node, err = parseObjectTypeDefinition(parser)
 			case "interface":
-				node, err := parseInterfaceTypeDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				node, err = parseInterfaceTypeDefinition(parser)
 			case "union":
-				node, err := parseUnionTypeDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				node, err = parseUnionTypeDefinition(parser)
 			case "scalar":
-				node, err := parseScalarTypeDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				node, err = parseScalarTypeDefinition(parser)
 			case "enum":
-				node, err := parseEnumTypeDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				node, err = parseEnumTypeDefinition(parser)
 			case "input":
-				node, err := parseInputObjectTypeDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				node, err = parseInputObjectTypeDefinition(parser)
 			case "extend":
-				node, err := parseTypeExtensionDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				node, err = parseTypeExtensionDefinition(parser)
 			default:
-				if err := unexpected(parser, lexer.Token{}); err != nil {
-					return nil, err
-				}
+				err = unexpected(parser, lexer.Token{})
 			}
 		} else {
-			if err := unexpected(parser, lexer.Token{}); err != nil {
-				return nil, err
-			}
+			err = unexpected(parser, lexer.Token{})
 		}
+
+		if err != nil {
+			return nil, err
+		}
+		nodes = append(nodes, node)
 	}
+
 	return ast.NewDocument(&ast.Document{
 		Loc:         loc(parser, start),
 		Definitions: nodes,

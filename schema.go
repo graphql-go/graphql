@@ -29,10 +29,10 @@ type Schema struct {
 	directives   []*Directive
 }
 
-func NewSchema(config SchemaConfig) (Schema, error) {
+func NewSchema(config SchemaConfig) (*Schema, error) {
 	var err error
 
-	schema := Schema{}
+	schema := &Schema{}
 
 	err = invariant(config.Query != nil, "Schema query must be Object Type but got: nil.")
 	if err != nil {
