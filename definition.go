@@ -505,7 +505,7 @@ type ResolveInfo struct {
 	FieldASTs      []*ast.Field
 	ReturnType     Output
 	ParentType     Composite
-	Schema         Schema
+	Schema         *Schema
 	Fragments      map[string]ast.Definition
 	RootValue      interface{}
 	Operation      ast.Definition

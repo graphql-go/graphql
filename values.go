@@ -15,7 +15,7 @@ import (
 // Prepares an object map of variableValues of the correct type based on the
 // provided variable definitions and arbitrary input. If the input cannot be
 // parsed to match the variable definitions, a GraphQLError will be returned.
-func getVariableValues(schema Schema, definitionASTs []*ast.VariableDefinition, inputs map[string]interface{}) (map[string]interface{}, error) {
+func getVariableValues(schema *Schema, definitionASTs []*ast.VariableDefinition, inputs map[string]interface{}) (map[string]interface{}, error) {
 	values := map[string]interface{}{}
 	for _, defAST := range definitionASTs {
 		if defAST == nil || defAST.Variable == nil || defAST.Variable.Name == nil {
@@ -62,7 +62,7 @@ func getArgumentValues(argDefs []*Argument, argASTs []*ast.Argument, variableVar
 
 // Given a variable definition, and any value of input, return a value which
 // adheres to the variable definition, or throw an error.
-func getVariableValue(schema Schema, definitionAST *ast.VariableDefinition, input interface{}) (interface{}, error) {
+func getVariableValue(schema *Schema, definitionAST *ast.VariableDefinition, input interface{}) (interface{}, error) {
 	ttype, err := typeFromAST(schema, definitionAST.Type)
 	if err != nil {
 		return nil, err
@@ -178,7 +178,7 @@ func coerceValue(ttype Input, value interface{}) interface{} {
 // graphql-js/src/utilities.js`
 // TODO: figure out where to organize utils
 
-func typeFromAST(schema Schema, inputTypeAST ast.Type) (Type, error) {
+func typeFromAST(schema *Schema, inputTypeAST ast.Type) (Type, error) {
 	switch inputTypeAST := inputTypeAST.(type) {
 	case *ast.List:
 		innerType, err := typeFromAST(schema, inputTypeAST.Type)

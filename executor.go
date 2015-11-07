@@ -10,61 +10,17 @@ import (
 	"github.com/graphql-go/graphql/language/ast"
 )
 
-type ExecuteParams struct {
-	Schema        Schema
-	Root          interface{}
-	AST           *ast.Document
-	OperationName string
-	Args          map[string]interface{}
-}
-
-func Execute(p ExecuteParams) (result *Result) {
-	result = &Result{}
-
-	exeContext, err := buildExecutionContext(BuildExecutionCtxParams{
-		Schema:        p.Schema,
-		Root:          p.Root,
-		AST:           p.AST,
-		OperationName: p.OperationName,
-		Args:          p.Args,
-		Errors:        nil,
-		Result:        result,
-	})
-
+func Execute(schema *Schema, document *ast.Document) *Result {
+	eCtx, err := buildExecutionContext(schema, document)
 	if err != nil {
-		result.Errors = append(result.Errors, gqlerrors.FormatError(err))
-		return
+		return &Result{Errors: gqlerrors.FormatErrors(err)}
 	}
 
-	defer func() {
-		if r := recover(); r != nil {
-			var err error
-			if r, ok := r.(error); ok {
-				err = gqlerrors.FormatError(r)
-			}
-			exeContext.Errors = append(exeContext.Errors, gqlerrors.FormatError(err))
-			result.Errors = exeContext.Errors
-		}
-	}()
-
-	return executeOperation(ExecuteOperationParams{
-		ExecutionContext: exeContext,
-		Root:             p.Root,
-		Operation:        exeContext.Operation,
-	})
+	return executeOperation(eCtx)
 }
 
-type BuildExecutionCtxParams struct {
-	Schema        Schema
-	Root          interface{}
-	AST           *ast.Document
-	OperationName string
-	Args          map[string]interface{}
-	Errors        []gqlerrors.FormattedError
-	Result        *Result
-}
 type ExecutionContext struct {
-	Schema         Schema
+	Schema         *Schema
 	Fragments      map[string]ast.Definition
 	Root           interface{}
 	Operation      ast.Definition
@@ -72,58 +28,49 @@ type ExecutionContext struct {
 	Errors         []gqlerrors.FormattedError
 }
 
-func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error) {
-	eCtx := &ExecutionContext{}
+func buildExecutionContext(schema *Schema, document *ast.Document) (*ExecutionContext, error) {
+	var (
+		found bool
+		err   error
+	)
+
+	eCtx := &ExecutionContext{
+		Schema: schema,
+	}
+	operationName := ""              // Should this be supplied or determined automatically?
+	args := map[string]interface{}{} // Should this be supplied or determined automatically?
+
 	operations := map[string]ast.Definition{}
-	fragments := map[string]ast.Definition{}
-	for _, statement := range p.AST.Definitions {
+	for _, statement := range document.Definitions {
 		switch stm := statement.(type) {
 		case *ast.OperationDefinition:
-			key := ""
-			if stm.GetName() != nil && stm.GetName().Value != "" {
-				key = stm.GetName().Value
-			}
+			key := stm.GetName().GetValue()
 			operations[key] = stm
-		case *ast.FragmentDefinition:
-			key := ""
-			if stm.GetName() != nil && stm.GetName().Value != "" {
-				key = stm.GetName().Value
+			if operationName == "" {
+				operationName = key
 			}
-			fragments[key] = stm
+		case *ast.FragmentDefinition:
+			key := stm.GetName().GetValue()
+			eCtx.Fragments[key] = stm
 		default:
 			return nil, fmt.Errorf("GraphQL cannot execute a request containing a %v", statement.GetKind())
 		}
 	}
 
-	if (p.OperationName == "") && (len(operations) != 1) {
-		return nil, errors.New("Must provide operation name if query contains multiple operations.")
+	if operationName == "" && len(operations) != 1 {
+		return nil, errors.New("TODO: Figure out how to run multiple operations in a single document")
 	}
 
-	opName := p.OperationName
-	if opName == "" {
-		// get first opName
-		for k, _ := range operations {
-			opName = k
-			break
-		}
-	}
-
-	operation, found := operations[opName]
+	eCtx.Operation, found = operations[operationName]
 	if !found {
-		return nil, fmt.Errorf(`Unknown operation named "%v".`, opName)
+		return nil, fmt.Errorf(`Unknown operation named %q.`, operationName)
 	}
 
-	variableValues, err := getVariableValues(p.Schema, operation.GetVariableDefinitions(), p.Args)
+	eCtx.VariableValues, err = getVariableValues(schema, eCtx.Operation.GetVariableDefinitions(), args)
 	if err != nil {
 		return nil, err
 	}
 
-	eCtx.Schema = p.Schema
-	eCtx.Fragments = fragments
-	eCtx.Root = p.Root
-	eCtx.Operation = operation
-	eCtx.VariableValues = variableValues
-	eCtx.Errors = p.Errors
 	return eCtx, nil
 }
 
@@ -133,26 +80,26 @@ type ExecuteOperationParams struct {
 	Operation        ast.Definition
 }
 
-func executeOperation(p ExecuteOperationParams) *Result {
-	operationType, err := getOperationRootType(p.ExecutionContext.Schema, p.Operation)
+func executeOperation(eCtx *ExecutionContext) *Result {
+	operationType, err := getOperationRootType(eCtx.Schema, eCtx.Operation)
 	if err != nil {
 		return &Result{Errors: gqlerrors.FormatErrors(err)}
 	}
 
 	fields := collectFields(CollectFieldsParams{
-		ExeContext:    p.ExecutionContext,
+		ExeContext:    eCtx,
 		OperationType: operationType,
-		SelectionSet:  p.Operation.GetSelectionSet(),
+		SelectionSet:  eCtx.Operation.GetSelectionSet(),
 	})
 
 	executeFieldsParams := ExecuteFieldsParams{
-		ExecutionContext: p.ExecutionContext,
+		ExecutionContext: eCtx,
 		ParentType:       operationType,
-		Source:           p.Root,
+		Source:           eCtx.Root,
 		Fields:           fields,
 	}
 
-	if p.Operation.GetOperation() == "mutation" {
+	if eCtx.Operation.GetOperation() == "mutation" {
 		return executeFieldsSerially(executeFieldsParams)
 	} else {
 		return executeFields(executeFieldsParams)
@@ -160,7 +107,7 @@ func executeOperation(p ExecuteOperationParams) *Result {
 }
 
 // Extracts the root type of the operation from the schema.
-func getOperationRootType(schema Schema, operation ast.Definition) (*Object, error) {
+func getOperationRootType(schema *Schema, operation ast.Definition) (*Object, error) {
 	if operation == nil {
 		return nil, errors.New("Can only execute queries and mutations")
 	}
@@ -736,7 +683,7 @@ func defaultResolveFn(p GQLFRParams) interface{} {
  * added to the query type, but that would require mutating type
  * definitions, which would cause issues.
  */
-func getFieldDef(schema Schema, parentType *Object, fieldName string) *FieldDefinition {
+func getFieldDef(schema *Schema, parentType *Object, fieldName string) *FieldDefinition {
 
 	if parentType == nil {
 		return nil

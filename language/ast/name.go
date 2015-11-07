@@ -23,9 +23,22 @@ func NewName(node *Name) *Name {
 }
 
 func (node *Name) GetKind() string {
+	if node == nil {
+		return ""
+	}
 	return node.Kind
 }
 
 func (node *Name) GetLoc() *Location {
+	if node == nil {
+		return nil
+	}
 	return node.Loc
+}
+
+func (node *Name) GetValue() string {
+	if node == nil {
+		return ""
+	}
+	return node.Value
 }

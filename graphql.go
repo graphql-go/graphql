@@ -6,38 +6,21 @@ import (
 	"github.com/graphql-go/graphql/language/source"
 )
 
-type Params struct {
-	Schema         Schema
-	RequestString  string
-	RootObject     map[string]interface{}
-	VariableValues map[string]interface{}
-	OperationName  string
-}
-
-func Graphql(p Params) *Result {
-	source := source.NewSource(&source.Source{
-		Body: p.RequestString,
-		Name: "GraphQL request",
-	})
-	AST, err := parser.Parse(parser.ParseParams{Source: source})
+func Do(schema *Schema, request string) *Result {
+	source := source.NewSource("GraphQL request", request)
+	document, err := parser.Parse(source, nil)
 	if err != nil {
 		return &Result{
 			Errors: gqlerrors.FormatErrors(err),
 		}
 	}
-	validationResult := ValidateDocument(p.Schema, AST)
 
-	if !validationResult.IsValid {
+	valid, errs := ValidateDocument(schema, document)
+	if !valid {
 		return &Result{
-			Errors: validationResult.Errors,
+			Errors: gqlerrors.FormatErrors(errs...),
 		}
 	}
 
-	return Execute(ExecuteParams{
-		Schema:        p.Schema,
-		Root:          p.RootObject,
-		AST:           AST,
-		OperationName: p.OperationName,
-		Args:          p.VariableValues,
-	})
+	return Execute(schema, document)
 }
