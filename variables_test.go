@@ -53,7 +53,7 @@ var testInputObject *graphql.InputObject = graphql.NewInputObject(graphql.InputO
 	},
 })
 
-func inputResolved(p graphql.GQLFRParams) interface{} {
+func inputResolved(p graphql.ResolveParams) interface{} {
 	input, ok := p.Args["input"]
 	if !ok {
 		return nil

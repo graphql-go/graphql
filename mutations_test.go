@@ -66,7 +66,7 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p graphql.GQLFRParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) interface{} {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
@@ -80,7 +80,7 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p graphql.GQLFRParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) interface{} {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
@@ -94,7 +94,7 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p graphql.GQLFRParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) interface{} {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
@@ -108,7 +108,7 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p graphql.GQLFRParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) interface{} {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)

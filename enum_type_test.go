@@ -39,7 +39,7 @@ var enumTypeTestQueryType = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.String,
 				},
 			},
-			Resolve: func(p graphql.GQLFRParams) interface{} {
+			Resolve: func(p graphql.ResolveParams) interface{} {
 				if fromInt, ok := p.Args["fromInt"]; ok {
 					return fromInt
 				}
@@ -62,7 +62,7 @@ var enumTypeTestQueryType = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.Int,
 				},
 			},
-			Resolve: func(p graphql.GQLFRParams) interface{} {
+			Resolve: func(p graphql.ResolveParams) interface{} {
 				if fromInt, ok := p.Args["fromInt"]; ok {
 					return fromInt
 				}
@@ -84,7 +84,7 @@ var enumTypeTestMutationType = graphql.NewObject(graphql.ObjectConfig{
 					Type: enumTypeTestColorType,
 				},
 			},
-			Resolve: func(p graphql.GQLFRParams) interface{} {
+			Resolve: func(p graphql.ResolveParams) interface{} {
 				if color, ok := p.Args["color"]; ok {
 					return color
 				}

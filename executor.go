@@ -498,7 +498,7 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	// it is wrapped as a Error with locations. Log this error and return
 	// null if allowed, otherwise throw the error so the parent field can handle
 	// it.
-	result = resolveFn(GQLFRParams{
+	result = resolveFn(ResolveParams{
 		Source: source,
 		Args:   args,
 		Info:   info,
@@ -674,7 +674,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 
 }
 
-func defaultResolveFn(p GQLFRParams) interface{} {
+func defaultResolveFn(p ResolveParams) interface{} {
 	// try to resolve p.Source as a struct first
 	sourceVal := reflect.ValueOf(p.Source)
 	if sourceVal.IsValid() && sourceVal.Type().Kind() == reflect.Ptr {

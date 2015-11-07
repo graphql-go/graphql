@@ -103,7 +103,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 	}
 
 	// Schema Definitions
-	picResolverFn := func(p graphql.GQLFRParams) interface{} {
+	picResolverFn := func(p graphql.ResolveParams) interface{} {
 		// get and type assert ResolveFn for this field
 		picResolver, ok := p.Source.(map[string]interface{})["pic"].(func(size int) string)
 		if !ok {
@@ -244,19 +244,19 @@ func TestMergesParallelFragments(t *testing.T) {
 		Fields: graphql.Fields{
 			"a": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.GQLFRParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) interface{} {
 					return "Apple"
 				},
 			},
 			"b": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.GQLFRParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) interface{} {
 					return "Banana"
 				},
 			},
 			"c": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.GQLFRParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) interface{} {
 					return "Cherry"
 				},
 			},
@@ -264,7 +264,7 @@ func TestMergesParallelFragments(t *testing.T) {
 	})
 	deepTypeFieldConfig := &graphql.Field{
 		Type: typeObjectType,
-		Resolve: func(p graphql.GQLFRParams) interface{} {
+		Resolve: func(p graphql.ResolveParams) interface{} {
 			return p.Source
 		},
 	}
@@ -312,7 +312,7 @@ func TestThreadsContextCorrectly(t *testing.T) {
 			Fields: graphql.Fields{
 				"a": &graphql.Field{
 					Type: graphql.String,
-					Resolve: func(p graphql.GQLFRParams) interface{} {
+					Resolve: func(p graphql.ResolveParams) interface{} {
 						resolvedContext = p.Source.(map[string]interface{})
 						return resolvedContext
 					},
@@ -368,7 +368,7 @@ func TestCorrectlyThreadsArguments(t *testing.T) {
 						},
 					},
 					Type: graphql.String,
-					Resolve: func(p graphql.GQLFRParams) interface{} {
+					Resolve: func(p graphql.ResolveParams) interface{} {
 						resolvedArgs = p.Args
 						return resolvedArgs
 					},
@@ -944,7 +944,7 @@ func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
 							Type: graphql.Int,
 						},
 					},
-					Resolve: func(p graphql.GQLFRParams) interface{} {
+					Resolve: func(p graphql.ResolveParams) interface{} {
 						args, _ := json.Marshal(p.Args)
 						return string(args)
 					},
@@ -1019,7 +1019,7 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 		Fields: graphql.Fields{
 			"value": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.GQLFRParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) interface{} {
 					return p.Source.(testSpecialType).Value
 				},
 			},
@@ -1031,7 +1031,7 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 			Fields: graphql.Fields{
 				"specials": &graphql.Field{
 					Type: graphql.NewList(specialType),
-					Resolve: func(p graphql.GQLFRParams) interface{} {
+					Resolve: func(p graphql.ResolveParams) interface{} {
 						return p.Source.(map[string]interface{})["specials"]
 					},
 				},

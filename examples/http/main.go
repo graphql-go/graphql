@@ -56,7 +56,7 @@ var queryType = graphql.NewObject(
 						Type: graphql.String,
 					},
 				},
-				Resolve: func(p graphql.GQLFRParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) interface{} {
 					idQuery, isOK := p.Args["id"].(string)
 					if isOK {
 						return data[idQuery]

@@ -86,7 +86,7 @@ func init() {
 		Fields: Fields{
 			"kind": &Field{
 				Type: NewNonNull(__TypeKind),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) interface{} {
 					switch p.Source.(type) {
 					case *Scalar:
 						return TypeKindScalar
@@ -137,7 +137,7 @@ func init() {
 			},
 			"defaultValue": &Field{
 				Type: String,
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) interface{} {
 					if inputVal, ok := p.Source.(*Argument); ok {
 						if inputVal.DefaultValue == nil {
 							return nil
@@ -169,7 +169,7 @@ func init() {
 			},
 			"args": &Field{
 				Type: NewNonNull(NewList(NewNonNull(__InputValue))),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) interface{} {
 					if field, ok := p.Source.(*FieldDefinition); ok {
 						return field.Args
 					}
@@ -181,7 +181,7 @@ func init() {
 			},
 			"isDeprecated": &Field{
 				Type: NewNonNull(Boolean),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) interface{} {
 					if field, ok := p.Source.(*FieldDefinition); ok {
 						return (field.DeprecationReason != "")
 					}
@@ -232,7 +232,7 @@ mutation operations.`,
 				Type: NewNonNull(NewList(
 					NewNonNull(__Type),
 				)),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) interface{} {
 					if schema, ok := p.Source.(Schema); ok {
 						results := []Type{}
 						for _, ttype := range schema.GetTypeMap() {
@@ -246,7 +246,7 @@ mutation operations.`,
 			"queryType": &Field{
 				Description: "The type that query operations will be rooted at.",
 				Type:        NewNonNull(__Type),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) interface{} {
 					if schema, ok := p.Source.(Schema); ok {
 						return schema.GetQueryType()
 					}
@@ -257,7 +257,7 @@ mutation operations.`,
 				Description: `If this server supports mutation, the type that ` +
 					`mutation operations will be rooted at.`,
 				Type: __Type,
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) interface{} {
 					if schema, ok := p.Source.(Schema); ok {
 						if schema.GetMutationType() != nil {
 							return schema.GetMutationType()
@@ -271,7 +271,7 @@ mutation operations.`,
 				Type: NewNonNull(NewList(
 					NewNonNull(__Directive),
 				)),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) interface{} {
 					if schema, ok := p.Source.(Schema); ok {
 						return schema.GetDirectives()
 					}
@@ -292,7 +292,7 @@ mutation operations.`,
 			},
 			"isDeprecated": &Field{
 				Type: NewNonNull(Boolean),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) interface{} {
 					if field, ok := p.Source.(*EnumValueDefinition); ok {
 						return (field.DeprecationReason != "")
 					}
@@ -315,7 +315,7 @@ mutation operations.`,
 				DefaultValue: false,
 			},
 		},
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(p ResolveParams) interface{} {
 			includeDeprecated, _ := p.Args["includeDeprecated"].(bool)
 			switch ttype := p.Source.(type) {
 			case *Object:
@@ -348,7 +348,7 @@ mutation operations.`,
 	})
 	__Type.AddFieldConfig("interfaces", &Field{
 		Type: NewList(NewNonNull(__Type)),
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(p ResolveParams) interface{} {
 			switch ttype := p.Source.(type) {
 			case *Object:
 				return ttype.GetInterfaces()
@@ -358,7 +358,7 @@ mutation operations.`,
 	})
 	__Type.AddFieldConfig("possibleTypes", &Field{
 		Type: NewList(NewNonNull(__Type)),
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(p ResolveParams) interface{} {
 			switch ttype := p.Source.(type) {
 			case *Interface:
 				return ttype.GetPossibleTypes()
@@ -376,7 +376,7 @@ mutation operations.`,
 				DefaultValue: false,
 			},
 		},
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(p ResolveParams) interface{} {
 			includeDeprecated, _ := p.Args["includeDeprecated"].(bool)
 			switch ttype := p.Source.(type) {
 			case *Enum:
@@ -397,7 +397,7 @@ mutation operations.`,
 	})
 	__Type.AddFieldConfig("inputFields", &Field{
 		Type: NewList(NewNonNull(__InputValue)),
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(p ResolveParams) interface{} {
 			switch ttype := p.Source.(type) {
 			case *InputObject:
 				fields := []*InputObjectField{}
@@ -423,7 +423,7 @@ mutation operations.`,
 		Type:        NewNonNull(__Schema),
 		Description: "Access the current type schema of this server.",
 		Args:        []*Argument{},
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(p ResolveParams) interface{} {
 			return p.Info.Schema
 		},
 	}
@@ -437,7 +437,7 @@ mutation operations.`,
 				Type: NewNonNull(String),
 			},
 		},
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(p ResolveParams) interface{} {
 			name, ok := p.Args["name"].(string)
 			if !ok {
 				return nil
@@ -451,7 +451,7 @@ mutation operations.`,
 		Type:        NewNonNull(String),
 		Description: "The name of the current Object type at runtime.",
 		Args:        []*Argument{},
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(p ResolveParams) interface{} {
 			return p.Info.ParentType.GetName()
 		},
 	}

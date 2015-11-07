@@ -490,7 +490,7 @@ func defineFieldMap(ttype Named, fields Fields) (FieldDefinitionMap, error) {
 }
 
 // TODO: clean up GQLFRParams fields
-type GQLFRParams struct {
+type ResolveParams struct {
 	Source interface{}
 	Args   map[string]interface{}
 	Info   ResolveInfo
@@ -498,7 +498,7 @@ type GQLFRParams struct {
 }
 
 // TODO: relook at FieldResolveFn params
-type FieldResolveFn func(p GQLFRParams) interface{}
+type FieldResolveFn func(p ResolveParams) interface{}
 
 type ResolveInfo struct {
 	FieldName      string

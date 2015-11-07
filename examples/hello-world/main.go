@@ -13,7 +13,7 @@ func main() {
 	fields := graphql.Fields{
 		"hello": &graphql.Field{
 			Type: graphql.String,
-			Resolve: func(p graphql.GQLFRParams) interface{} {
+			Resolve: func(p graphql.ResolveParams) interface{} {
 				return "world"
 			},
 		},
