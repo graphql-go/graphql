@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"regexp"
 
-	"github.com/chris-ramon/graphql/language/ast"
+	"github.com/graphql-go/graphql/language/ast"
 )
 
 // These are all of the possible kinds of

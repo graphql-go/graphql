@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/chris-ramon/graphql"
+	"github.com/graphql-go/graphql"
 )
 
 type user struct {
@@ -74,13 +74,10 @@ var schema, _ = graphql.NewSchema(
 )
 
 func executeQuery(query string, schema graphql.Schema) *graphql.Result {
-	params := graphql.Params{
+	result := graphql.Graphql(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
-	}
-	resultChannel := make(chan *graphql.Result)
-	go graphql.Graphql(params, resultChannel)
-	result := <-resultChannel
+	})
 	if len(result.Errors) > 0 {
 		fmt.Println("wrong result, unexpected errors: %v", result.Errors)
 	}

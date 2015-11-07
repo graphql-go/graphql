@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/chris-ramon/graphql"
+	"github.com/graphql-go/graphql"
 )
 
 type intSerializationTest struct {

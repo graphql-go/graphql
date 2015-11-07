@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/chris-ramon/graphql/language/source"
+	"github.com/graphql-go/graphql/language/source"
 )
 
 type Test struct {

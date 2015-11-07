@@ -1,9 +1,9 @@
 package graphql
 
 import (
-	"github.com/chris-ramon/graphql/gqlerrors"
-	"github.com/chris-ramon/graphql/language/parser"
-	"github.com/chris-ramon/graphql/language/source"
+	"github.com/graphql-go/graphql/gqlerrors"
+	"github.com/graphql-go/graphql/language/parser"
+	"github.com/graphql-go/graphql/language/source"
 )
 
 type Params struct {
@@ -14,36 +14,30 @@ type Params struct {
 	OperationName  string
 }
 
-func Graphql(p Params, resultChannel chan *Result) {
+func Graphql(p Params) *Result {
 	source := source.NewSource(&source.Source{
 		Body: p.RequestString,
 		Name: "GraphQL request",
 	})
 	AST, err := parser.Parse(parser.ParseParams{Source: source})
 	if err != nil {
-		result := Result{
+		return &Result{
 			Errors: gqlerrors.FormatErrors(err),
 		}
-		resultChannel <- &result
-		return
 	}
 	validationResult := ValidateDocument(p.Schema, AST)
 
 	if !validationResult.IsValid {
-		result := Result{
+		return &Result{
 			Errors: validationResult.Errors,
 		}
-		resultChannel <- &result
-		return
-	} else {
-		ep := ExecuteParams{
-			Schema:        p.Schema,
-			Root:          p.RootObject,
-			AST:           AST,
-			OperationName: p.OperationName,
-			Args:          p.VariableValues,
-		}
-		Execute(ep, resultChannel)
-		return
 	}
+
+	return Execute(ExecuteParams{
+		Schema:        p.Schema,
+		Root:          p.RootObject,
+		AST:           AST,
+		OperationName: p.OperationName,
+		Args:          p.VariableValues,
+	})
 }

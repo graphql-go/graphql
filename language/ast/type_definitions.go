@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/chris-ramon/graphql/language/kinds"
+	"github.com/graphql-go/graphql/language/kinds"
 )
 
 // Ensure that all typeDefinition types implements Definition interface
