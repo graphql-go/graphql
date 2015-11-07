@@ -343,7 +343,7 @@ func NewObject(config ObjectConfig) *Object {
 
 	return objectType
 }
-func (gt *Object) AddFieldConfig(fieldName string, fieldConfig *FieldConfig) {
+func (gt *Object) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	if fieldName == "" || fieldConfig == nil {
 		return
 	}
@@ -512,9 +512,9 @@ type ResolveInfo struct {
 	VariableValues map[string]interface{}
 }
 
-type Fields map[string]*FieldConfig
+type Fields map[string]*Field
 
-type FieldConfig struct {
+type Field struct {
 	Name              string              `json:"name"` // used by graphlql-relay
 	Type              Output              `json:"type"`
 	Args              FieldConfigArgument `json:"args"`
@@ -629,7 +629,7 @@ func NewInterface(config InterfaceConfig) *Interface {
 	return it
 }
 
-func (it *Interface) AddFieldConfig(fieldName string, fieldConfig *FieldConfig) {
+func (it *Interface) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	if fieldName == "" || fieldConfig == nil {
 		return
 	}

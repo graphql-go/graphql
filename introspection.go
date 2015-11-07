@@ -84,7 +84,7 @@ func init() {
 	__Type = NewObject(ObjectConfig{
 		Name: "__Type",
 		Fields: Fields{
-			"kind": &FieldConfig{
+			"kind": &Field{
 				Type: NewNonNull(__TypeKind),
 				Resolve: func(p GQLFRParams) interface{} {
 					switch p.Source.(type) {
@@ -108,34 +108,34 @@ func init() {
 					panic(fmt.Sprintf("Unknown kind of type: %v", p.Source))
 				},
 			},
-			"name": &FieldConfig{
+			"name": &Field{
 				Type: String,
 			},
-			"description": &FieldConfig{
+			"description": &Field{
 				Type: String,
 			},
-			"fields":        &FieldConfig{},
-			"interfaces":    &FieldConfig{},
-			"possibleTypes": &FieldConfig{},
-			"enumValues":    &FieldConfig{},
-			"inputFields":   &FieldConfig{},
-			"ofType":        &FieldConfig{},
+			"fields":        &Field{},
+			"interfaces":    &Field{},
+			"possibleTypes": &Field{},
+			"enumValues":    &Field{},
+			"inputFields":   &Field{},
+			"ofType":        &Field{},
 		},
 	})
 
 	__InputValue = NewObject(ObjectConfig{
 		Name: "__InputValue",
 		Fields: Fields{
-			"name": &FieldConfig{
+			"name": &Field{
 				Type: NewNonNull(String),
 			},
-			"description": &FieldConfig{
+			"description": &Field{
 				Type: String,
 			},
-			"type": &FieldConfig{
+			"type": &Field{
 				Type: NewNonNull(__Type),
 			},
-			"defaultValue": &FieldConfig{
+			"defaultValue": &Field{
 				Type: String,
 				Resolve: func(p GQLFRParams) interface{} {
 					if inputVal, ok := p.Source.(*Argument); ok {
@@ -161,13 +161,13 @@ func init() {
 	__Field = NewObject(ObjectConfig{
 		Name: "__Field",
 		Fields: Fields{
-			"name": &FieldConfig{
+			"name": &Field{
 				Type: NewNonNull(String),
 			},
-			"description": &FieldConfig{
+			"description": &Field{
 				Type: String,
 			},
-			"args": &FieldConfig{
+			"args": &Field{
 				Type: NewNonNull(NewList(NewNonNull(__InputValue))),
 				Resolve: func(p GQLFRParams) interface{} {
 					if field, ok := p.Source.(*FieldDefinition); ok {
@@ -176,10 +176,10 @@ func init() {
 					return []interface{}{}
 				},
 			},
-			"type": &FieldConfig{
+			"type": &Field{
 				Type: NewNonNull(__Type),
 			},
-			"isDeprecated": &FieldConfig{
+			"isDeprecated": &Field{
 				Type: NewNonNull(Boolean),
 				Resolve: func(p GQLFRParams) interface{} {
 					if field, ok := p.Source.(*FieldDefinition); ok {
@@ -188,7 +188,7 @@ func init() {
 					return false
 				},
 			},
-			"deprecationReason": &FieldConfig{
+			"deprecationReason": &Field{
 				Type: String,
 			},
 		},
@@ -197,24 +197,24 @@ func init() {
 	__Directive = NewObject(ObjectConfig{
 		Name: "__Directive",
 		Fields: Fields{
-			"name": &FieldConfig{
+			"name": &Field{
 				Type: NewNonNull(String),
 			},
-			"description": &FieldConfig{
+			"description": &Field{
 				Type: String,
 			},
-			"args": &FieldConfig{
+			"args": &Field{
 				Type: NewNonNull(NewList(
 					NewNonNull(__InputValue),
 				)),
 			},
-			"onOperation": &FieldConfig{
+			"onOperation": &Field{
 				Type: NewNonNull(Boolean),
 			},
-			"onFragment": &FieldConfig{
+			"onFragment": &Field{
 				Type: NewNonNull(Boolean),
 			},
-			"onField": &FieldConfig{
+			"onField": &Field{
 				Type: NewNonNull(Boolean),
 			},
 		},
@@ -227,7 +227,7 @@ server. It exposes all available types and directives on
 the server, as well as the entry points for query and
 mutation operations.`,
 		Fields: Fields{
-			"types": &FieldConfig{
+			"types": &Field{
 				Description: "A list of all types supported by this server.",
 				Type: NewNonNull(NewList(
 					NewNonNull(__Type),
@@ -243,7 +243,7 @@ mutation operations.`,
 					return []Type{}
 				},
 			},
-			"queryType": &FieldConfig{
+			"queryType": &Field{
 				Description: "The type that query operations will be rooted at.",
 				Type:        NewNonNull(__Type),
 				Resolve: func(p GQLFRParams) interface{} {
@@ -253,7 +253,7 @@ mutation operations.`,
 					return nil
 				},
 			},
-			"mutationType": &FieldConfig{
+			"mutationType": &Field{
 				Description: `If this server supports mutation, the type that ` +
 					`mutation operations will be rooted at.`,
 				Type: __Type,
@@ -266,7 +266,7 @@ mutation operations.`,
 					return nil
 				},
 			},
-			"directives": &FieldConfig{
+			"directives": &Field{
 				Description: `A list of all directives supported by this server.`,
 				Type: NewNonNull(NewList(
 					NewNonNull(__Directive),
@@ -284,13 +284,13 @@ mutation operations.`,
 	__EnumValue = NewObject(ObjectConfig{
 		Name: "__EnumValue",
 		Fields: Fields{
-			"name": &FieldConfig{
+			"name": &Field{
 				Type: NewNonNull(String),
 			},
-			"description": &FieldConfig{
+			"description": &Field{
 				Type: String,
 			},
-			"isDeprecated": &FieldConfig{
+			"isDeprecated": &Field{
 				Type: NewNonNull(Boolean),
 				Resolve: func(p GQLFRParams) interface{} {
 					if field, ok := p.Source.(*EnumValueDefinition); ok {
@@ -299,7 +299,7 @@ mutation operations.`,
 					return false
 				},
 			},
-			"deprecationReason": &FieldConfig{
+			"deprecationReason": &Field{
 				Type: String,
 			},
 		},
@@ -307,7 +307,7 @@ mutation operations.`,
 
 	// Again, adding field configs to __Type that have cyclic reference here
 	// because golang don't like them too much during init/compile-time
-	__Type.AddFieldConfig("fields", &FieldConfig{
+	__Type.AddFieldConfig("fields", &Field{
 		Type: NewList(NewNonNull(__Field)),
 		Args: FieldConfigArgument{
 			"includeDeprecated": &ArgumentConfig{
@@ -346,7 +346,7 @@ mutation operations.`,
 			return nil
 		},
 	})
-	__Type.AddFieldConfig("interfaces", &FieldConfig{
+	__Type.AddFieldConfig("interfaces", &Field{
 		Type: NewList(NewNonNull(__Type)),
 		Resolve: func(p GQLFRParams) interface{} {
 			switch ttype := p.Source.(type) {
@@ -356,7 +356,7 @@ mutation operations.`,
 			return nil
 		},
 	})
-	__Type.AddFieldConfig("possibleTypes", &FieldConfig{
+	__Type.AddFieldConfig("possibleTypes", &Field{
 		Type: NewList(NewNonNull(__Type)),
 		Resolve: func(p GQLFRParams) interface{} {
 			switch ttype := p.Source.(type) {
@@ -368,7 +368,7 @@ mutation operations.`,
 			return nil
 		},
 	})
-	__Type.AddFieldConfig("enumValues", &FieldConfig{
+	__Type.AddFieldConfig("enumValues", &Field{
 		Type: NewList(NewNonNull(__EnumValue)),
 		Args: FieldConfigArgument{
 			"includeDeprecated": &ArgumentConfig{
@@ -395,7 +395,7 @@ mutation operations.`,
 			return nil
 		},
 	})
-	__Type.AddFieldConfig("inputFields", &FieldConfig{
+	__Type.AddFieldConfig("inputFields", &Field{
 		Type: NewList(NewNonNull(__InputValue)),
 		Resolve: func(p GQLFRParams) interface{} {
 			switch ttype := p.Source.(type) {
@@ -409,7 +409,7 @@ mutation operations.`,
 			return nil
 		},
 	})
-	__Type.AddFieldConfig("ofType", &FieldConfig{
+	__Type.AddFieldConfig("ofType", &Field{
 		Type: __Type,
 	})
 

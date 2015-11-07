@@ -22,7 +22,7 @@ var someScalarType = graphql.NewScalar(graphql.ScalarConfig{
 var someObjectType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "SomeObject",
 	Fields: graphql.Fields{
-		"f": &graphql.FieldConfig{
+		"f": &graphql.Field{
 			Type: graphql.String,
 		},
 	},
@@ -33,7 +33,7 @@ var objectWithIsTypeOf = graphql.NewObject(graphql.ObjectConfig{
 		return true
 	},
 	Fields: graphql.Fields{
-		"f": &graphql.FieldConfig{
+		"f": &graphql.Field{
 			Type: graphql.String,
 		},
 	},
@@ -53,7 +53,7 @@ var someInterfaceType = graphql.NewInterface(graphql.InterfaceConfig{
 		return nil
 	},
 	Fields: graphql.Fields{
-		"f": &graphql.FieldConfig{
+		"f": &graphql.Field{
 			Type: graphql.String,
 		},
 	},
@@ -108,7 +108,7 @@ func schemaWithFieldType(ttype graphql.Output) (graphql.Schema, error) {
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"f": &graphql.FieldConfig{
+				"f": &graphql.Field{
 					Type: ttype,
 				},
 			},
@@ -120,7 +120,7 @@ func schemaWithInputObject(ttype graphql.Input) (graphql.Schema, error) {
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"f": &graphql.FieldConfig{
+				"f": &graphql.Field{
 					Type: graphql.String,
 					Args: graphql.FieldConfigArgument{
 						"args": &graphql.ArgumentConfig{
@@ -137,7 +137,7 @@ func schemaWithObjectFieldOfType(fieldType graphql.Input) (graphql.Schema, error
 	badObjectType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "BadObject",
 		Fields: graphql.Fields{
-			"badField": &graphql.FieldConfig{
+			"badField": &graphql.Field{
 				Type: fieldType,
 			},
 		},
@@ -146,7 +146,7 @@ func schemaWithObjectFieldOfType(fieldType graphql.Input) (graphql.Schema, error
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"f": &graphql.FieldConfig{
+				"f": &graphql.Field{
 					Type: badObjectType,
 				},
 			},
@@ -159,7 +159,7 @@ func schemaWithObjectImplementingType(implementedType *graphql.Interface) (graph
 		Name:       "BadObject",
 		Interfaces: []*graphql.Interface{implementedType},
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -168,7 +168,7 @@ func schemaWithObjectImplementingType(implementedType *graphql.Interface) (graph
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"f": &graphql.FieldConfig{
+				"f": &graphql.Field{
 					Type: badObjectType,
 				},
 			},
@@ -188,7 +188,7 @@ func schemaWithUnionOfType(ttype *graphql.Object) (graphql.Schema, error) {
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"f": &graphql.FieldConfig{
+				"f": &graphql.Field{
 					Type: badObjectType,
 				},
 			},
@@ -200,7 +200,7 @@ func schemaWithInterfaceFieldOfType(ttype graphql.Type) (graphql.Schema, error) 
 	badInterfaceType := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "BadInterface",
 		Fields: graphql.Fields{
-			"badField": &graphql.FieldConfig{
+			"badField": &graphql.Field{
 				Type: ttype,
 			},
 		},
@@ -209,7 +209,7 @@ func schemaWithInterfaceFieldOfType(ttype graphql.Type) (graphql.Schema, error) 
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"f": &graphql.FieldConfig{
+				"f": &graphql.Field{
 					Type: badInterfaceType,
 				},
 			},
@@ -221,7 +221,7 @@ func schemaWithArgOfType(ttype graphql.Type) (graphql.Schema, error) {
 	badObject := graphql.NewObject(graphql.ObjectConfig{
 		Name: "BadObject",
 		Fields: graphql.Fields{
-			"badField": &graphql.FieldConfig{
+			"badField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"badArg": &graphql.ArgumentConfig{
@@ -235,7 +235,7 @@ func schemaWithArgOfType(ttype graphql.Type) (graphql.Schema, error) {
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"f": &graphql.FieldConfig{
+				"f": &graphql.Field{
 					Type: badObject,
 				},
 			},
@@ -256,7 +256,7 @@ func schemaWithInputFieldOfType(ttype graphql.Type) (graphql.Schema, error) {
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"f": &graphql.FieldConfig{
+				"f": &graphql.Field{
 					Type: graphql.String,
 					Args: graphql.FieldConfigArgument{
 						"badArg": &graphql.ArgumentConfig{
@@ -281,7 +281,7 @@ func TestTypeSystem_SchemaMustHaveObjectRootTypes_AcceptsASchemaWhoseQueryAndMut
 	mutationObject := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Mutation",
 		Fields: graphql.Fields{
-			"edit": &graphql.FieldConfig{
+			"edit": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -313,10 +313,10 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichRedef
 	queryType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
 		Fields: graphql.Fields{
-			"normal": &graphql.FieldConfig{
+			"normal": &graphql.Field{
 				Type: graphql.String,
 			},
-			"fake": &graphql.FieldConfig{
+			"fake": &graphql.Field{
 				Type: fakeString,
 			},
 		},
@@ -334,7 +334,7 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichDefin
 	a := graphql.NewObject(graphql.ObjectConfig{
 		Name: "SameName",
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -342,7 +342,7 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichDefin
 	b := graphql.NewObject(graphql.ObjectConfig{
 		Name: "SameName",
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -350,10 +350,10 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichDefin
 	queryType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
 		Fields: graphql.Fields{
-			"a": &graphql.FieldConfig{
+			"a": &graphql.Field{
 				Type: a,
 			},
-			"b": &graphql.FieldConfig{
+			"b": &graphql.Field{
 				Type: b,
 			},
 		},
@@ -374,7 +374,7 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichHaveS
 			return nil
 		},
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -385,7 +385,7 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichHaveS
 			anotherInterface,
 		},
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -396,7 +396,7 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichHaveS
 			anotherInterface,
 		},
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -404,7 +404,7 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichHaveS
 	queryType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
 		Fields: graphql.Fields{
-			"iface": &graphql.FieldConfig{
+			"iface": &graphql.Field{
 				Type: anotherInterface,
 			},
 		},
@@ -422,7 +422,7 @@ func TestTypeSystem_ObjectsMustHaveFields_AcceptsAnObjectTypeWithFieldsObject(t 
 	_, err := schemaWithFieldType(graphql.NewObject(graphql.ObjectConfig{
 		Name: "SomeObject",
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -445,7 +445,7 @@ func TestTypeSystem_ObjectsMustHaveFields_RejectsAnObjectTypeWithIncorrectlyName
 	badObject := graphql.NewObject(graphql.ObjectConfig{
 		Name: "SomeObject",
 		Fields: graphql.Fields{
-			"bad-name-with-dashes": &graphql.FieldConfig{
+			"bad-name-with-dashes": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -472,7 +472,7 @@ func TestTypeSystem_FieldsArgsMustBeProperlyNamed_AcceptsFieldArgsWithValidNames
 	_, err := schemaWithFieldType(graphql.NewObject(graphql.ObjectConfig{
 		Name: "SomeObject",
 		Fields: graphql.Fields{
-			"goodField": &graphql.FieldConfig{
+			"goodField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"goodArgs": &graphql.ArgumentConfig{
@@ -490,7 +490,7 @@ func TestTypeSystem_FieldsArgsMustBeProperlyNamed_RejectsFieldArgWithInvalidName
 	_, err := schemaWithFieldType(graphql.NewObject(graphql.ObjectConfig{
 		Name: "SomeObject",
 		Fields: graphql.Fields{
-			"badField": &graphql.FieldConfig{
+			"badField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"bad-name-with-dashes": &graphql.ArgumentConfig{
@@ -510,7 +510,7 @@ func TestTypeSystem_FieldsArgsMustBeObjects_AcceptsAnObjectTypeWithFieldArgs(t *
 	_, err := schemaWithFieldType(graphql.NewObject(graphql.ObjectConfig{
 		Name: "SomeObject",
 		Fields: graphql.Fields{
-			"goodField": &graphql.FieldConfig{
+			"goodField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"goodArgs": &graphql.ArgumentConfig{
@@ -532,7 +532,7 @@ func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithArrayInte
 			return nil
 		},
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -543,7 +543,7 @@ func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithArrayInte
 			return []*graphql.Interface{anotherInterfaceType}
 		}),
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -560,7 +560,7 @@ func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithInterface
 			return nil
 		},
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -569,7 +569,7 @@ func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithInterface
 		Name:       "SomeObject",
 		Interfaces: []*graphql.Interface{anotherInterfaceType},
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -676,7 +676,7 @@ func TestTypeSystem_ObjectTypesMustBeAssertable_AcceptsAnObjectTypeWithAnIsTypeO
 			return true
 		},
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -694,7 +694,7 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceTypeDefinin
 			return nil
 		},
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -703,7 +703,7 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceTypeDefinin
 		Name:       "SomeObject",
 		Interfaces: []*graphql.Interface{anotherInterfaceType},
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -717,7 +717,7 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceWithImpleme
 	anotherInterfaceType := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -729,7 +729,7 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceWithImpleme
 			return true
 		},
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -747,7 +747,7 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceTypeDefinin
 			return nil
 		},
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -759,7 +759,7 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceTypeDefinin
 			return true
 		},
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -969,7 +969,7 @@ func TestTypeSystem_ObjectsCanOnlyImplementInterfaces_AcceptsAnObjectImplementin
 			return nil
 		},
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -1107,7 +1107,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 			return nil
 		},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"input": &graphql.ArgumentConfig{
@@ -1121,7 +1121,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 		Name:       "AnotherObject",
 		Interfaces: []*graphql.Interface{anotherInterface},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"input": &graphql.ArgumentConfig{
@@ -1143,7 +1143,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 			return nil
 		},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"input": &graphql.ArgumentConfig{
@@ -1157,7 +1157,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 		Name:       "AnotherObject",
 		Interfaces: []*graphql.Interface{anotherInterface},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"input": &graphql.ArgumentConfig{
@@ -1165,7 +1165,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 					},
 				},
 			},
-			"anotherfield": &graphql.FieldConfig{
+			"anotherfield": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -1182,7 +1182,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWhi
 			return nil
 		},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"input": &graphql.ArgumentConfig{
@@ -1196,7 +1196,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWhi
 		Name:       "AnotherObject",
 		Interfaces: []*graphql.Interface{anotherInterface},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"input": &graphql.ArgumentConfig{
@@ -1222,7 +1222,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMis
 			return nil
 		},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"input": &graphql.ArgumentConfig{
@@ -1236,7 +1236,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMis
 		Name:       "AnotherObject",
 		Interfaces: []*graphql.Interface{anotherInterface},
 		Fields: graphql.Fields{
-			"anotherfield": &graphql.FieldConfig{
+			"anotherfield": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -1254,7 +1254,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 			return nil
 		},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"input": &graphql.ArgumentConfig{
@@ -1268,7 +1268,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 		Name:       "AnotherObject",
 		Interfaces: []*graphql.Interface{anotherInterface},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: someScalarType,
 				Args: graphql.FieldConfigArgument{
 					"input": &graphql.ArgumentConfig{
@@ -1291,7 +1291,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMis
 			return nil
 		},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"input": &graphql.ArgumentConfig{
@@ -1305,7 +1305,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMis
 		Name:       "AnotherObject",
 		Interfaces: []*graphql.Interface{anotherInterface},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -1323,7 +1323,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 			return nil
 		},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"input": &graphql.ArgumentConfig{
@@ -1337,7 +1337,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 		Name:       "AnotherObject",
 		Interfaces: []*graphql.Interface{anotherInterface},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"input": &graphql.ArgumentConfig{
@@ -1360,7 +1360,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWit
 			return nil
 		},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.NewList(graphql.String)),
 			},
 		},
@@ -1369,7 +1369,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWit
 		Name:       "AnotherObject",
 		Interfaces: []*graphql.Interface{anotherInterface},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.NewList(graphql.String)),
 			},
 		},
@@ -1386,7 +1386,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 			return nil
 		},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -1395,7 +1395,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 		Name:       "AnotherObject",
 		Interfaces: []*graphql.Interface{anotherInterface},
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
 			},
 		},

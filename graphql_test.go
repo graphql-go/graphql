@@ -102,7 +102,7 @@ func TestBasicGraphQLExample(t *testing.T) {
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "RootQueryType",
 			Fields: graphql.Fields{
-				"hello": &graphql.FieldConfig{
+				"hello": &graphql.Field{
 					Description: "Returns `world`",
 					Type:        graphql.String,
 					Resolve:     helloFieldResolved,

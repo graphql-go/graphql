@@ -41,7 +41,7 @@ func (r *testRoot) PromiseAndFailToChangeTheNumber(newNumber int) *testNumberHol
 var numberHolderType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "NumberHolder",
 	Fields: graphql.Fields{
-		"theNumber": &graphql.FieldConfig{
+		"theNumber": &graphql.Field{
 			Type: graphql.Int,
 		},
 	},
@@ -51,7 +51,7 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 	Query: graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
 		Fields: graphql.Fields{
-			"numberHolder": &graphql.FieldConfig{
+			"numberHolder": &graphql.Field{
 				Type: numberHolderType,
 			},
 		},
@@ -59,7 +59,7 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 	Mutation: graphql.NewObject(graphql.ObjectConfig{
 		Name: "Mutation",
 		Fields: graphql.Fields{
-			"immediatelyChangeTheNumber": &graphql.FieldConfig{
+			"immediatelyChangeTheNumber": &graphql.Field{
 				Type: numberHolderType,
 				Args: graphql.FieldConfigArgument{
 					"newNumber": &graphql.ArgumentConfig{
@@ -73,7 +73,7 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 					return obj.ImmediatelyChangeTheNumber(newNumber)
 				},
 			},
-			"promiseToChangeTheNumber": &graphql.FieldConfig{
+			"promiseToChangeTheNumber": &graphql.Field{
 				Type: numberHolderType,
 				Args: graphql.FieldConfigArgument{
 					"newNumber": &graphql.ArgumentConfig{
@@ -87,7 +87,7 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 					return obj.PromiseToChangeTheNumber(newNumber)
 				},
 			},
-			"failToChangeTheNumber": &graphql.FieldConfig{
+			"failToChangeTheNumber": &graphql.Field{
 				Type: numberHolderType,
 				Args: graphql.FieldConfigArgument{
 					"newNumber": &graphql.ArgumentConfig{
@@ -101,7 +101,7 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 					return obj.FailToChangeTheNumber(newNumber)
 				},
 			},
-			"promiseAndFailToChangeTheNumber": &graphql.FieldConfig{
+			"promiseAndFailToChangeTheNumber": &graphql.Field{
 				Type: numberHolderType,
 				Args: graphql.FieldConfigArgument{
 					"newNumber": &graphql.ArgumentConfig{

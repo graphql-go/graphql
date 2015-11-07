@@ -29,7 +29,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 	petType := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "Pet",
 		Fields: graphql.Fields{
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -46,7 +46,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 			return ok
 		},
 		Fields: graphql.Fields{
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if dog, ok := p.Source.(*testDog); ok {
@@ -55,7 +55,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 					return nil
 				},
 			},
-			"woofs": &graphql.FieldConfig{
+			"woofs": &graphql.Field{
 				Type: graphql.Boolean,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if dog, ok := p.Source.(*testDog); ok {
@@ -77,7 +77,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 			return ok
 		},
 		Fields: graphql.Fields{
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if cat, ok := p.Source.(*testCat); ok {
@@ -86,7 +86,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 					return nil
 				},
 			},
-			"meows": &graphql.FieldConfig{
+			"meows": &graphql.Field{
 				Type: graphql.Boolean,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if cat, ok := p.Source.(*testCat); ok {
@@ -101,7 +101,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"pets": &graphql.FieldConfig{
+				"pets": &graphql.Field{
 					Type: graphql.NewList(petType),
 					Resolve: func(p graphql.GQLFRParams) interface{} {
 						return []interface{}{
@@ -166,7 +166,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 			return ok
 		},
 		Fields: graphql.Fields{
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if dog, ok := p.Source.(*testDog); ok {
@@ -175,7 +175,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 					return nil
 				},
 			},
-			"woofs": &graphql.FieldConfig{
+			"woofs": &graphql.Field{
 				Type: graphql.Boolean,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if dog, ok := p.Source.(*testDog); ok {
@@ -193,7 +193,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 			return ok
 		},
 		Fields: graphql.Fields{
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if cat, ok := p.Source.(*testCat); ok {
@@ -202,7 +202,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 					return nil
 				},
 			},
-			"meows": &graphql.FieldConfig{
+			"meows": &graphql.Field{
 				Type: graphql.Boolean,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if cat, ok := p.Source.(*testCat); ok {
@@ -233,7 +233,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"pets": &graphql.FieldConfig{
+				"pets": &graphql.Field{
 					Type: graphql.NewList(petType),
 					Resolve: func(p graphql.GQLFRParams) interface{} {
 						return []interface{}{
@@ -298,7 +298,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 	petType := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "Pet",
 		Fields: graphql.Fields{
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -319,7 +319,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 	humanType = graphql.NewObject(graphql.ObjectConfig{
 		Name: "Human",
 		Fields: graphql.Fields{
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if human, ok := p.Source.(*testHuman); ok {
@@ -340,7 +340,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 			return ok
 		},
 		Fields: graphql.Fields{
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if dog, ok := p.Source.(*testDog); ok {
@@ -349,7 +349,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 					return nil
 				},
 			},
-			"woofs": &graphql.FieldConfig{
+			"woofs": &graphql.Field{
 				Type: graphql.Boolean,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if dog, ok := p.Source.(*testDog); ok {
@@ -370,7 +370,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 			return ok
 		},
 		Fields: graphql.Fields{
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if cat, ok := p.Source.(*testCat); ok {
@@ -379,7 +379,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 					return nil
 				},
 			},
-			"meows": &graphql.FieldConfig{
+			"meows": &graphql.Field{
 				Type: graphql.Boolean,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if cat, ok := p.Source.(*testCat); ok {
@@ -394,7 +394,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"pets": &graphql.FieldConfig{
+				"pets": &graphql.Field{
 					Type: graphql.NewList(petType),
 					Resolve: func(p graphql.GQLFRParams) interface{} {
 						return []interface{}{
@@ -462,7 +462,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 	humanType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Human",
 		Fields: graphql.Fields{
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if human, ok := p.Source.(*testHuman); ok {
@@ -480,7 +480,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 			return ok
 		},
 		Fields: graphql.Fields{
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if dog, ok := p.Source.(*testDog); ok {
@@ -489,7 +489,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 					return nil
 				},
 			},
-			"woofs": &graphql.FieldConfig{
+			"woofs": &graphql.Field{
 				Type: graphql.Boolean,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if dog, ok := p.Source.(*testDog); ok {
@@ -507,7 +507,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 			return ok
 		},
 		Fields: graphql.Fields{
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if cat, ok := p.Source.(*testCat); ok {
@@ -516,7 +516,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 					return nil
 				},
 			},
-			"meows": &graphql.FieldConfig{
+			"meows": &graphql.Field{
 				Type: graphql.Boolean,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
 					if cat, ok := p.Source.(*testCat); ok {
@@ -549,7 +549,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"pets": &graphql.FieldConfig{
+				"pets": &graphql.Field{
 					Type: graphql.NewList(petType),
 					Resolve: func(p graphql.GQLFRParams) interface{} {
 						return []interface{}{

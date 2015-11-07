@@ -26,7 +26,7 @@ var enumTypeTestColorType = graphql.NewEnum(graphql.EnumConfig{
 var enumTypeTestQueryType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Query",
 	Fields: graphql.Fields{
-		"colorEnum": &graphql.FieldConfig{
+		"colorEnum": &graphql.Field{
 			Type: enumTypeTestColorType,
 			Args: graphql.FieldConfigArgument{
 				"fromEnum": &graphql.ArgumentConfig{
@@ -52,7 +52,7 @@ var enumTypeTestQueryType = graphql.NewObject(graphql.ObjectConfig{
 				return nil
 			},
 		},
-		"colorInt": &graphql.FieldConfig{
+		"colorInt": &graphql.Field{
 			Type: graphql.Int,
 			Args: graphql.FieldConfigArgument{
 				"fromEnum": &graphql.ArgumentConfig{
@@ -77,7 +77,7 @@ var enumTypeTestQueryType = graphql.NewObject(graphql.ObjectConfig{
 var enumTypeTestMutationType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
 	Fields: graphql.Fields{
-		"favoriteEnum": &graphql.FieldConfig{
+		"favoriteEnum": &graphql.Field{
 			Type: enumTypeTestColorType,
 			Args: graphql.FieldConfigArgument{
 				"color": &graphql.ArgumentConfig{

@@ -120,15 +120,15 @@ func init() {
 		Name:        "Character",
 		Description: "A character in the Star Wars Trilogy",
 		Fields: graphql.Fields{
-			"id": &graphql.FieldConfig{
+			"id": &graphql.Field{
 				Type:        graphql.NewNonNull(graphql.String),
 				Description: "The id of the character.",
 			},
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type:        graphql.String,
 				Description: "The name of the character.",
 			},
-			"appearsIn": &graphql.FieldConfig{
+			"appearsIn": &graphql.Field{
 				Type:        graphql.NewList(episodeEnum),
 				Description: "Which movies they appear in.",
 			},
@@ -144,7 +144,7 @@ func init() {
 			return droidType
 		},
 	})
-	characterInterface.AddFieldConfig("friends", &graphql.FieldConfig{
+	characterInterface.AddFieldConfig("friends", &graphql.Field{
 		Type:        graphql.NewList(characterInterface),
 		Description: "The friends of the character, or an empty list if they have none.",
 	})
@@ -153,7 +153,7 @@ func init() {
 		Name:        "Human",
 		Description: "A humanoid creature in the Star Wars universe.",
 		Fields: graphql.Fields{
-			"id": &graphql.FieldConfig{
+			"id": &graphql.Field{
 				Type:        graphql.NewNonNull(graphql.String),
 				Description: "The id of the human.",
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -163,7 +163,7 @@ func init() {
 					return nil
 				},
 			},
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type:        graphql.String,
 				Description: "The name of the human.",
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -173,7 +173,7 @@ func init() {
 					return nil
 				},
 			},
-			"friends": &graphql.FieldConfig{
+			"friends": &graphql.Field{
 				Type:        graphql.NewList(characterInterface),
 				Description: "The friends of the human, or an empty list if they have none.",
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -183,7 +183,7 @@ func init() {
 					return []interface{}{}
 				},
 			},
-			"appearsIn": &graphql.FieldConfig{
+			"appearsIn": &graphql.Field{
 				Type:        graphql.NewList(episodeEnum),
 				Description: "Which movies they appear in.",
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -193,7 +193,7 @@ func init() {
 					return nil
 				},
 			},
-			"homePlanet": &graphql.FieldConfig{
+			"homePlanet": &graphql.Field{
 				Type:        graphql.String,
 				Description: "The home planet of the human, or null if unknown.",
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -212,7 +212,7 @@ func init() {
 		Name:        "Droid",
 		Description: "A mechanical creature in the Star Wars universe.",
 		Fields: graphql.Fields{
-			"id": &graphql.FieldConfig{
+			"id": &graphql.Field{
 				Type:        graphql.NewNonNull(graphql.String),
 				Description: "The id of the droid.",
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -222,7 +222,7 @@ func init() {
 					return nil
 				},
 			},
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type:        graphql.String,
 				Description: "The name of the droid.",
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -232,7 +232,7 @@ func init() {
 					return nil
 				},
 			},
-			"friends": &graphql.FieldConfig{
+			"friends": &graphql.Field{
 				Type:        graphql.NewList(characterInterface),
 				Description: "The friends of the droid, or an empty list if they have none.",
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -249,7 +249,7 @@ func init() {
 					return []interface{}{}
 				},
 			},
-			"appearsIn": &graphql.FieldConfig{
+			"appearsIn": &graphql.Field{
 				Type:        graphql.NewList(episodeEnum),
 				Description: "Which movies they appear in.",
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -259,7 +259,7 @@ func init() {
 					return nil
 				},
 			},
-			"primaryFunction": &graphql.FieldConfig{
+			"primaryFunction": &graphql.Field{
 				Type:        graphql.String,
 				Description: "The primary function of the droid.",
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -278,7 +278,7 @@ func init() {
 	queryType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
 		Fields: graphql.Fields{
-			"hero": &graphql.FieldConfig{
+			"hero": &graphql.Field{
 				Type: characterInterface,
 				Args: graphql.FieldConfigArgument{
 					"episode": &graphql.ArgumentConfig{
@@ -291,7 +291,7 @@ func init() {
 					return GetHero(p.Args["episode"])
 				},
 			},
-			"human": &graphql.FieldConfig{
+			"human": &graphql.Field{
 				Type: humanType,
 				Args: graphql.FieldConfigArgument{
 					"id": &graphql.ArgumentConfig{
@@ -303,7 +303,7 @@ func init() {
 					return GetHuman(p.Args["id"].(int))
 				},
 			},
-			"droid": &graphql.FieldConfig{
+			"droid": &graphql.Field{
 				Type: droidType,
 				Args: graphql.FieldConfigArgument{
 					"id": &graphql.ArgumentConfig{

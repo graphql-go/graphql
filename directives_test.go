@@ -12,10 +12,10 @@ var directivesTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 	Query: graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
 		Fields: graphql.Fields{
-			"a": &graphql.FieldConfig{
+			"a": &graphql.Field{
 				Type: graphql.String,
 			},
-			"b": &graphql.FieldConfig{
+			"b": &graphql.Field{
 				Type: graphql.String,
 			},
 		},

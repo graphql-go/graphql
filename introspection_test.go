@@ -19,7 +19,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "QueryRoot",
 			Fields: graphql.Fields{
-				"onlyField": &graphql.FieldConfig{
+				"onlyField": &graphql.Field{
 					Type: graphql.String,
 				},
 			},
@@ -761,7 +761,7 @@ func TestIntrospection_ExecutesAnInputObject(t *testing.T) {
 	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
 		Fields: graphql.Fields{
-			"field": &graphql.FieldConfig{
+			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"complex": &graphql.ArgumentConfig{
@@ -861,7 +861,7 @@ func TestIntrospection_SupportsThe__TypeRootField(t *testing.T) {
 	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
 		Fields: graphql.Fields{
-			"testField": &graphql.FieldConfig{
+			"testField": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -899,10 +899,10 @@ func TestIntrospection_IdentifiesDeprecatedFields(t *testing.T) {
 	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
 		Fields: graphql.Fields{
-			"nonDeprecated": &graphql.FieldConfig{
+			"nonDeprecated": &graphql.Field{
 				Type: graphql.String,
 			},
-			"deprecated": &graphql.FieldConfig{
+			"deprecated": &graphql.Field{
 				Type:              graphql.String,
 				DeprecationReason: "Removed in 1.0",
 			},
@@ -958,10 +958,10 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForFields(t *testing
 	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
 		Fields: graphql.Fields{
-			"nonDeprecated": &graphql.FieldConfig{
+			"nonDeprecated": &graphql.Field{
 				Type: graphql.String,
 			},
-			"deprecated": &graphql.FieldConfig{
+			"deprecated": &graphql.Field{
 				Type:              graphql.String,
 				DeprecationReason: "Removed in 1.0",
 			},
@@ -1042,7 +1042,7 @@ func TestIntrospection_IdentifiesDeprecatedEnumValues(t *testing.T) {
 	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
 		Fields: graphql.Fields{
-			"testEnum": &graphql.FieldConfig{
+			"testEnum": &graphql.Field{
 				Type: testEnum,
 			},
 		},
@@ -1117,7 +1117,7 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForEnumValues(t *tes
 	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
 		Fields: graphql.Fields{
-			"testEnum": &graphql.FieldConfig{
+			"testEnum": &graphql.Field{
 				Type: testEnum,
 			},
 		},
@@ -1191,7 +1191,7 @@ func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testin
 	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
 		Fields: graphql.Fields{
-			"testField": &graphql.FieldConfig{
+			"testField": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -1235,7 +1235,7 @@ func TestIntrospection_ExposesDescriptionsOnTypesAndFields(t *testing.T) {
 	queryRoot := graphql.NewObject(graphql.ObjectConfig{
 		Name: "QueryRoot",
 		Fields: graphql.Fields{
-			"onlyField": &graphql.FieldConfig{
+			"onlyField": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -1301,7 +1301,7 @@ func TestIntrospection_ExposesDescriptionsOnEnums(t *testing.T) {
 	queryRoot := graphql.NewObject(graphql.ObjectConfig{
 		Name: "QueryRoot",
 		Fields: graphql.Fields{
-			"onlyField": &graphql.FieldConfig{
+			"onlyField": &graphql.Field{
 				Type: graphql.String,
 			},
 		},

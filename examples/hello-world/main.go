@@ -11,7 +11,7 @@ import (
 func main() {
 	// Schema
 	fields := graphql.Fields{
-		"hello": &graphql.FieldConfig{
+		"hello": &graphql.Field{
 			Type: graphql.String,
 			Resolve: func(p graphql.GQLFRParams) interface{} {
 				return "world"

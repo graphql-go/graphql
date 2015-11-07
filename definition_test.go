@@ -12,13 +12,13 @@ import (
 var blogImage = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Image",
 	Fields: graphql.Fields{
-		"url": &graphql.FieldConfig{
+		"url": &graphql.Field{
 			Type: graphql.String,
 		},
-		"width": &graphql.FieldConfig{
+		"width": &graphql.Field{
 			Type: graphql.Int,
 		},
-		"height": &graphql.FieldConfig{
+		"height": &graphql.Field{
 			Type: graphql.Int,
 		},
 	},
@@ -26,13 +26,13 @@ var blogImage = graphql.NewObject(graphql.ObjectConfig{
 var blogAuthor = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Author",
 	Fields: graphql.Fields{
-		"id": &graphql.FieldConfig{
+		"id": &graphql.Field{
 			Type: graphql.String,
 		},
-		"name": &graphql.FieldConfig{
+		"name": &graphql.Field{
 			Type: graphql.String,
 		},
-		"pic": &graphql.FieldConfig{
+		"pic": &graphql.Field{
 			Type: blogImage,
 			Args: graphql.FieldConfigArgument{
 				"width": &graphql.ArgumentConfig{
@@ -43,25 +43,25 @@ var blogAuthor = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"recentArticle": &graphql.FieldConfig{},
+		"recentArticle": &graphql.Field{},
 	},
 })
 var blogArticle = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Article",
 	Fields: graphql.Fields{
-		"id": &graphql.FieldConfig{
+		"id": &graphql.Field{
 			Type: graphql.String,
 		},
-		"isPublished": &graphql.FieldConfig{
+		"isPublished": &graphql.Field{
 			Type: graphql.Boolean,
 		},
-		"author": &graphql.FieldConfig{
+		"author": &graphql.Field{
 			Type: blogAuthor,
 		},
-		"title": &graphql.FieldConfig{
+		"title": &graphql.Field{
 			Type: graphql.String,
 		},
-		"body": &graphql.FieldConfig{
+		"body": &graphql.Field{
 			Type: graphql.String,
 		},
 	},
@@ -69,7 +69,7 @@ var blogArticle = graphql.NewObject(graphql.ObjectConfig{
 var blogQuery = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Query",
 	Fields: graphql.Fields{
-		"article": &graphql.FieldConfig{
+		"article": &graphql.Field{
 			Type: blogArticle,
 			Args: graphql.FieldConfigArgument{
 				"id": &graphql.ArgumentConfig{
@@ -77,7 +77,7 @@ var blogQuery = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"feed": &graphql.FieldConfig{
+		"feed": &graphql.Field{
 			Type: graphql.NewList(blogArticle),
 		},
 	},
@@ -86,7 +86,7 @@ var blogQuery = graphql.NewObject(graphql.ObjectConfig{
 var blogMutation = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
 	Fields: graphql.Fields{
-		"writeArticle": &graphql.FieldConfig{
+		"writeArticle": &graphql.Field{
 			Type: blogArticle,
 		},
 	},
@@ -118,7 +118,7 @@ var inputObjectType = graphql.NewInputObject(graphql.InputObjectConfig{
 })
 
 func init() {
-	blogAuthor.AddFieldConfig("recentArticle", &graphql.FieldConfig{
+	blogAuthor.AddFieldConfig("recentArticle", &graphql.Field{
 		Type: blogArticle,
 	})
 }
@@ -247,7 +247,7 @@ func TestTypeSystem_DefinitionExample_IncludesNestedInputObjectsInTheMap(t *test
 	someMutation := graphql.NewObject(graphql.ObjectConfig{
 		Name: "SomeMutation",
 		Fields: graphql.Fields{
-			"mutateSomething": &graphql.FieldConfig{
+			"mutateSomething": &graphql.Field{
 				Type: blogArticle,
 				Args: graphql.FieldConfigArgument{
 					"input": &graphql.ArgumentConfig{
@@ -274,7 +274,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesSubTypesInTheTypeMap(t *
 	someInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "SomeInterface",
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.Int,
 			},
 		},
@@ -283,7 +283,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesSubTypesInTheTypeMap(t *
 	someSubType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "SomeSubtype",
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.Int,
 			},
 		},
@@ -296,7 +296,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesSubTypesInTheTypeMap(t *
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"iface": &graphql.FieldConfig{
+				"iface": &graphql.Field{
 					Type: someInterface,
 				},
 			},
@@ -315,7 +315,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesThunkSubtypesInTheTypeMa
 	someInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "SomeInterface",
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.Int,
 			},
 		},
@@ -324,7 +324,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesThunkSubtypesInTheTypeMa
 	someSubType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "SomeSubtype",
 		Fields: graphql.Fields{
-			"f": &graphql.FieldConfig{
+			"f": &graphql.Field{
 				Type: graphql.Int,
 			},
 		},
@@ -339,7 +339,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesThunkSubtypesInTheTypeMa
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"iface": &graphql.FieldConfig{
+				"iface": &graphql.Field{
 					Type: someInterface,
 				},
 			},
@@ -460,10 +460,10 @@ func TestTypeSystem_DefinitionExample_ProhibitsNilTypeInUnions(t *testing.T) {
 }
 func TestTypeSystem_DefinitionExample_DoesNotMutatePassedFieldDefinitions(t *testing.T) {
 	fields := graphql.Fields{
-		"field1": &graphql.FieldConfig{
+		"field1": &graphql.Field{
 			Type: graphql.String,
 		},
-		"field2": &graphql.FieldConfig{
+		"field2": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"id": &graphql.ArgumentConfig{
@@ -485,10 +485,10 @@ func TestTypeSystem_DefinitionExample_DoesNotMutatePassedFieldDefinitions(t *tes
 	}
 
 	expectedFields := graphql.Fields{
-		"field1": &graphql.FieldConfig{
+		"field1": &graphql.Field{
 			Type: graphql.String,
 		},
-		"field2": &graphql.FieldConfig{
+		"field2": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"id": &graphql.ArgumentConfig{
