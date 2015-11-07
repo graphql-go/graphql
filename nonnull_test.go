@@ -494,8 +494,8 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
-	sort.Sort(gqlerrors.GQLFormattedErrorSlice(expected.Errors))
-	sort.Sort(gqlerrors.GQLFormattedErrorSlice(result.Errors))
+	sort.Sort(gqlerrors.FormattedErrors(expected.Errors))
+	sort.Sort(gqlerrors.FormattedErrors(result.Errors))
 	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -599,8 +599,8 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
-	sort.Sort(gqlerrors.GQLFormattedErrorSlice(expected.Errors))
-	sort.Sort(gqlerrors.GQLFormattedErrorSlice(result.Errors))
+	sort.Sort(gqlerrors.FormattedErrors(expected.Errors))
+	sort.Sort(gqlerrors.FormattedErrors(result.Errors))
 	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -997,8 +997,8 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldReturnsNullInALongChainOf
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
-	sort.Sort(gqlerrors.GQLFormattedErrorSlice(expected.Errors))
-	sort.Sort(gqlerrors.GQLFormattedErrorSlice(result.Errors))
+	sort.Sort(gqlerrors.FormattedErrors(expected.Errors))
+	sort.Sort(gqlerrors.FormattedErrors(result.Errors))
 	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
