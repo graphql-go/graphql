@@ -145,7 +145,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 		Errors: nil,
 	}
 
-	result := graphql.Graphql(graphql.Params{
+	result := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -277,7 +277,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 		Errors: nil,
 	}
 
-	result := graphql.Graphql(graphql.Params{
+	result := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -445,7 +445,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 		},
 	}
 
-	result := graphql.Graphql(graphql.Params{
+	result := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -600,7 +600,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 		},
 	}
 
-	result := graphql.Graphql(graphql.Params{
+	result := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})

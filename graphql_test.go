@@ -82,7 +82,7 @@ func TestQuery(t *testing.T) {
 }
 
 func testGraphql(test T, p graphql.Params, t *testing.T) {
-	result := graphql.Graphql(p)
+	result := graphql.Do(p)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -119,7 +119,7 @@ func TestBasicGraphQLExample(t *testing.T) {
 		"hello": "world",
 	}
 
-	result := graphql.Graphql(graphql.Params{
+	result := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})

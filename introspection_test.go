@@ -11,7 +11,7 @@ import (
 )
 
 func g(t *testing.T, p graphql.Params) *graphql.Result {
-	return graphql.Graphql(p)
+	return graphql.Do(p)
 }
 
 func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
