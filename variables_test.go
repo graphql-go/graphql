@@ -67,7 +67,7 @@ func inputResolved(p graphql.GQLFRParams) interface{} {
 
 var testType *graphql.Object = graphql.NewObject(graphql.ObjectConfig{
 	Name: "TestType",
-	Fields: graphql.FieldConfigMap{
+	Fields: graphql.Fields{
 		"fieldWithObjectInput": &graphql.FieldConfig{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{

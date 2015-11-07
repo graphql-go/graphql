@@ -25,7 +25,7 @@ var data map[string]user
 var userType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "User",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"id": &graphql.FieldConfig{
 				Type: graphql.String,
 			},
@@ -48,7 +48,7 @@ var userType = graphql.NewObject(
 var queryType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Query",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"user": &graphql.FieldConfig{
 				Type: userType,
 				Args: graphql.FieldConfigArgument{

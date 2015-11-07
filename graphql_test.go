@@ -101,7 +101,7 @@ func TestBasicGraphQLExample(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "RootQueryType",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"hello": &graphql.FieldConfig{
 					Description: "Returns `world`",
 					Type:        graphql.String,

@@ -48,7 +48,7 @@ var nullingData = map[string]interface{}{
 
 var dataType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "DataType",
-	Fields: graphql.FieldConfigMap{
+	Fields: graphql.Fields{
 		"sync": &graphql.FieldConfig{
 			Type: graphql.String,
 		},

@@ -300,11 +300,11 @@ type IsTypeOfFn func(value interface{}, info ResolveInfo) bool
 type InterfacesThunk func() []*Interface
 
 type ObjectConfig struct {
-	Name        string         `json:"description"`
-	Interfaces  interface{}    `json:"interfaces"`
-	Fields      FieldConfigMap `json:"fields"`
-	IsTypeOf    IsTypeOfFn     `json:"isTypeOf"`
-	Description string         `json:"description"`
+	Name        string      `json:"description"`
+	Interfaces  interface{} `json:"interfaces"`
+	Fields      Fields      `json:"fields"`
+	IsTypeOf    IsTypeOfFn  `json:"isTypeOf"`
+	Description string      `json:"description"`
 }
 
 func NewObject(config ObjectConfig) *Object {
@@ -418,7 +418,7 @@ func defineInterfaces(ttype *Object, interfaces []*Interface) ([]*Interface, err
 	return ifaces, nil
 }
 
-func defineFieldMap(ttype Named, fields FieldConfigMap) (FieldDefinitionMap, error) {
+func defineFieldMap(ttype Named, fields Fields) (FieldDefinitionMap, error) {
 
 	resultFieldMap := FieldDefinitionMap{}
 
@@ -512,7 +512,7 @@ type ResolveInfo struct {
 	VariableValues map[string]interface{}
 }
 
-type FieldConfigMap map[string]*FieldConfig
+type Fields map[string]*FieldConfig
 
 type FieldConfig struct {
 	Name              string              `json:"name"` // used by graphlql-relay
@@ -600,8 +600,8 @@ type Interface struct {
 	err error
 }
 type InterfaceConfig struct {
-	Name        string         `json:"name"`
-	Fields      FieldConfigMap `json:"fields"`
+	Name        string `json:"name"`
+	Fields      Fields `json:"fields"`
 	ResolveType ResolveTypeFn
 	Description string `json:"description"`
 }

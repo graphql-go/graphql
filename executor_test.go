@@ -118,7 +118,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 	}
 	dataType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "DataType",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"a": &graphql.FieldConfig{
 				Type: graphql.String,
 			},
@@ -150,7 +150,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 	})
 	deepDataType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "DeepDataType",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"a": &graphql.FieldConfig{
 				Type: graphql.String,
 			},
@@ -241,7 +241,7 @@ func TestMergesParallelFragments(t *testing.T) {
 
 	typeObjectType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Type",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"a": &graphql.FieldConfig{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -309,7 +309,7 @@ func TestThreadsContextCorrectly(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"a": &graphql.FieldConfig{
 					Type: graphql.String,
 					Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -357,7 +357,7 @@ func TestCorrectlyThreadsArguments(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"b": &graphql.FieldConfig{
 					Args: graphql.FieldConfigArgument{
 						"numArg": &graphql.ArgumentConfig{
@@ -437,7 +437,7 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"sync": &graphql.FieldConfig{
 					Type: graphql.String,
 				},
@@ -488,7 +488,7 @@ func TestUsesTheInlineOperationIfNoOperationIsProvided(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"a": &graphql.FieldConfig{
 					Type: graphql.String,
 				},
@@ -533,7 +533,7 @@ func TestUsesTheOnlyOperationIfNoOperationIsProvided(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"a": &graphql.FieldConfig{
 					Type: graphql.String,
 				},
@@ -579,7 +579,7 @@ func TestThrowsIfNoOperationIsProvidedWithMultipleOperations(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"a": &graphql.FieldConfig{
 					Type: graphql.String,
 				},
@@ -628,7 +628,7 @@ func TestUsesTheQuerySchemaForQueries(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Q",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"a": &graphql.FieldConfig{
 					Type: graphql.String,
 				},
@@ -636,7 +636,7 @@ func TestUsesTheQuerySchemaForQueries(t *testing.T) {
 		}),
 		Mutation: graphql.NewObject(graphql.ObjectConfig{
 			Name: "M",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"c": &graphql.FieldConfig{
 					Type: graphql.String,
 				},
@@ -683,7 +683,7 @@ func TestUsesTheMutationSchemaForMutations(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Q",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"a": &graphql.FieldConfig{
 					Type: graphql.String,
 				},
@@ -691,7 +691,7 @@ func TestUsesTheMutationSchemaForMutations(t *testing.T) {
 		}),
 		Mutation: graphql.NewObject(graphql.ObjectConfig{
 			Name: "M",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"c": &graphql.FieldConfig{
 					Type: graphql.String,
 				},
@@ -753,7 +753,7 @@ func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"a": &graphql.FieldConfig{
 					Type: graphql.String,
 				},
@@ -831,7 +831,7 @@ func TestAvoidsRecursion(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"a": &graphql.FieldConfig{
 					Type: graphql.String,
 				},
@@ -875,7 +875,7 @@ func TestDoesNotIncludeIllegalFieldsInOutput(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Q",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"a": &graphql.FieldConfig{
 					Type: graphql.String,
 				},
@@ -883,7 +883,7 @@ func TestDoesNotIncludeIllegalFieldsInOutput(t *testing.T) {
 		}),
 		Mutation: graphql.NewObject(graphql.ObjectConfig{
 			Name: "M",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"c": &graphql.FieldConfig{
 					Type: graphql.String,
 				},
@@ -924,7 +924,7 @@ func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"field": &graphql.FieldConfig{
 					Type: graphql.String,
 					Args: graphql.FieldConfigArgument{
@@ -1016,7 +1016,7 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 			}
 			return false
 		},
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"value": &graphql.FieldConfig{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -1028,7 +1028,7 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"specials": &graphql.FieldConfig{
 					Type: graphql.NewList(specialType),
 					Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -1080,7 +1080,7 @@ func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"foo": &graphql.FieldConfig{
 					Type: graphql.String,
 				},

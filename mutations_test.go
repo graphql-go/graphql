@@ -40,7 +40,7 @@ func (r *testRoot) PromiseAndFailToChangeTheNumber(newNumber int) *testNumberHol
 // numberHolderType creates a mapping to testNumberHolder
 var numberHolderType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "NumberHolder",
-	Fields: graphql.FieldConfigMap{
+	Fields: graphql.Fields{
 		"theNumber": &graphql.FieldConfig{
 			Type: graphql.Int,
 		},
@@ -50,7 +50,7 @@ var numberHolderType = graphql.NewObject(graphql.ObjectConfig{
 var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 	Query: graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"numberHolder": &graphql.FieldConfig{
 				Type: numberHolderType,
 			},
@@ -58,7 +58,7 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 	}),
 	Mutation: graphql.NewObject(graphql.ObjectConfig{
 		Name: "Mutation",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"immediatelyChangeTheNumber": &graphql.FieldConfig{
 				Type: numberHolderType,
 				Args: graphql.FieldConfigArgument{

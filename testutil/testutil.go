@@ -119,7 +119,7 @@ func init() {
 	characterInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name:        "Character",
 		Description: "A character in the Star Wars Trilogy",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"id": &graphql.FieldConfig{
 				Type:        graphql.NewNonNull(graphql.String),
 				Description: "The id of the character.",
@@ -152,7 +152,7 @@ func init() {
 	humanType = graphql.NewObject(graphql.ObjectConfig{
 		Name:        "Human",
 		Description: "A humanoid creature in the Star Wars universe.",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"id": &graphql.FieldConfig{
 				Type:        graphql.NewNonNull(graphql.String),
 				Description: "The id of the human.",
@@ -211,7 +211,7 @@ func init() {
 	droidType = graphql.NewObject(graphql.ObjectConfig{
 		Name:        "Droid",
 		Description: "A mechanical creature in the Star Wars universe.",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"id": &graphql.FieldConfig{
 				Type:        graphql.NewNonNull(graphql.String),
 				Description: "The id of the droid.",
@@ -277,7 +277,7 @@ func init() {
 
 	queryType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"hero": &graphql.FieldConfig{
 				Type: characterInterface,
 				Args: graphql.FieldConfigArgument{

@@ -28,7 +28,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 
 	petType := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "Pet",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"name": &graphql.FieldConfig{
 				Type: graphql.String,
 			},
@@ -45,7 +45,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 			_, ok := value.(*testDog)
 			return ok
 		},
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"name": &graphql.FieldConfig{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -76,7 +76,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 			_, ok := value.(*testCat)
 			return ok
 		},
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"name": &graphql.FieldConfig{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -100,7 +100,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"pets": &graphql.FieldConfig{
 					Type: graphql.NewList(petType),
 					Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -165,7 +165,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 			_, ok := value.(*testDog)
 			return ok
 		},
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"name": &graphql.FieldConfig{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -192,7 +192,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 			_, ok := value.(*testCat)
 			return ok
 		},
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"name": &graphql.FieldConfig{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -232,7 +232,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"pets": &graphql.FieldConfig{
 					Type: graphql.NewList(petType),
 					Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -297,7 +297,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 	var humanType *graphql.Object
 	petType := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "Pet",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"name": &graphql.FieldConfig{
 				Type: graphql.String,
 			},
@@ -318,7 +318,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 
 	humanType = graphql.NewObject(graphql.ObjectConfig{
 		Name: "Human",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"name": &graphql.FieldConfig{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -339,7 +339,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 			_, ok := value.(*testDog)
 			return ok
 		},
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"name": &graphql.FieldConfig{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -369,7 +369,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 			_, ok := value.(*testCat)
 			return ok
 		},
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"name": &graphql.FieldConfig{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -393,7 +393,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"pets": &graphql.FieldConfig{
 					Type: graphql.NewList(petType),
 					Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -461,7 +461,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 
 	humanType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Human",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"name": &graphql.FieldConfig{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -479,7 +479,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 			_, ok := value.(*testDog)
 			return ok
 		},
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"name": &graphql.FieldConfig{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -506,7 +506,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 			_, ok := value.(*testCat)
 			return ok
 		},
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"name": &graphql.FieldConfig{
 				Type: graphql.String,
 				Resolve: func(p graphql.GQLFRParams) interface{} {
@@ -548,7 +548,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"pets": &graphql.FieldConfig{
 					Type: graphql.NewList(petType),
 					Resolve: func(p graphql.GQLFRParams) interface{} {

@@ -17,7 +17,7 @@ func checkList(t *testing.T, testType graphql.Type, testData interface{}, expect
 
 	dataType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "DataType",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"test": &graphql.FieldConfig{
 				Type: testType,
 			},

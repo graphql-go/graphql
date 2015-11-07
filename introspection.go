@@ -83,7 +83,7 @@ func init() {
 	// Note: some fields (for e.g "fields", "interfaces") are defined later due to cyclic reference
 	__Type = NewObject(ObjectConfig{
 		Name: "__Type",
-		Fields: FieldConfigMap{
+		Fields: Fields{
 			"kind": &FieldConfig{
 				Type: NewNonNull(__TypeKind),
 				Resolve: func(p GQLFRParams) interface{} {
@@ -125,7 +125,7 @@ func init() {
 
 	__InputValue = NewObject(ObjectConfig{
 		Name: "__InputValue",
-		Fields: FieldConfigMap{
+		Fields: Fields{
 			"name": &FieldConfig{
 				Type: NewNonNull(String),
 			},
@@ -160,7 +160,7 @@ func init() {
 
 	__Field = NewObject(ObjectConfig{
 		Name: "__Field",
-		Fields: FieldConfigMap{
+		Fields: Fields{
 			"name": &FieldConfig{
 				Type: NewNonNull(String),
 			},
@@ -196,7 +196,7 @@ func init() {
 
 	__Directive = NewObject(ObjectConfig{
 		Name: "__Directive",
-		Fields: FieldConfigMap{
+		Fields: Fields{
 			"name": &FieldConfig{
 				Type: NewNonNull(String),
 			},
@@ -226,7 +226,7 @@ func init() {
 server. It exposes all available types and directives on
 the server, as well as the entry points for query and
 mutation operations.`,
-		Fields: FieldConfigMap{
+		Fields: Fields{
 			"types": &FieldConfig{
 				Description: "A list of all types supported by this server.",
 				Type: NewNonNull(NewList(
@@ -283,7 +283,7 @@ mutation operations.`,
 
 	__EnumValue = NewObject(ObjectConfig{
 		Name: "__EnumValue",
-		Fields: FieldConfigMap{
+		Fields: Fields{
 			"name": &FieldConfig{
 				Type: NewNonNull(String),
 			},

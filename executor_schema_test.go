@@ -75,7 +75,7 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 
 	blogImage := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Image",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"url": &graphql.FieldConfig{
 				Type: graphql.String,
 			},
@@ -89,7 +89,7 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 	})
 	blogAuthor := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Author",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"id": &graphql.FieldConfig{
 				Type: graphql.String,
 			},
@@ -120,7 +120,7 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 	})
 	blogArticle := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Article",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"id": &graphql.FieldConfig{
 				Type: graphql.NewNonNull(graphql.String),
 			},
@@ -148,7 +148,7 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 
 	blogQuery := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"article": &graphql.FieldConfig{
 				Type: blogArticle,
 				Args: graphql.FieldConfigArgument{

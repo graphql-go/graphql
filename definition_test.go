@@ -11,7 +11,7 @@ import (
 
 var blogImage = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Image",
-	Fields: graphql.FieldConfigMap{
+	Fields: graphql.Fields{
 		"url": &graphql.FieldConfig{
 			Type: graphql.String,
 		},
@@ -25,7 +25,7 @@ var blogImage = graphql.NewObject(graphql.ObjectConfig{
 })
 var blogAuthor = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Author",
-	Fields: graphql.FieldConfigMap{
+	Fields: graphql.Fields{
 		"id": &graphql.FieldConfig{
 			Type: graphql.String,
 		},
@@ -48,7 +48,7 @@ var blogAuthor = graphql.NewObject(graphql.ObjectConfig{
 })
 var blogArticle = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Article",
-	Fields: graphql.FieldConfigMap{
+	Fields: graphql.Fields{
 		"id": &graphql.FieldConfig{
 			Type: graphql.String,
 		},
@@ -68,7 +68,7 @@ var blogArticle = graphql.NewObject(graphql.ObjectConfig{
 })
 var blogQuery = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Query",
-	Fields: graphql.FieldConfigMap{
+	Fields: graphql.Fields{
 		"article": &graphql.FieldConfig{
 			Type: blogArticle,
 			Args: graphql.FieldConfigArgument{
@@ -85,7 +85,7 @@ var blogQuery = graphql.NewObject(graphql.ObjectConfig{
 
 var blogMutation = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
-	Fields: graphql.FieldConfigMap{
+	Fields: graphql.Fields{
 		"writeArticle": &graphql.FieldConfig{
 			Type: blogArticle,
 		},
@@ -246,7 +246,7 @@ func TestTypeSystem_DefinitionExample_IncludesNestedInputObjectsInTheMap(t *test
 	})
 	someMutation := graphql.NewObject(graphql.ObjectConfig{
 		Name: "SomeMutation",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"mutateSomething": &graphql.FieldConfig{
 				Type: blogArticle,
 				Args: graphql.FieldConfigArgument{
@@ -273,7 +273,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesSubTypesInTheTypeMap(t *
 
 	someInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "SomeInterface",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"f": &graphql.FieldConfig{
 				Type: graphql.Int,
 			},
@@ -282,7 +282,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesSubTypesInTheTypeMap(t *
 
 	someSubType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "SomeSubtype",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"f": &graphql.FieldConfig{
 				Type: graphql.Int,
 			},
@@ -295,7 +295,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesSubTypesInTheTypeMap(t *
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"iface": &graphql.FieldConfig{
 					Type: someInterface,
 				},
@@ -314,7 +314,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesThunkSubtypesInTheTypeMa
 
 	someInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "SomeInterface",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"f": &graphql.FieldConfig{
 				Type: graphql.Int,
 			},
@@ -323,7 +323,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesThunkSubtypesInTheTypeMa
 
 	someSubType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "SomeSubtype",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"f": &graphql.FieldConfig{
 				Type: graphql.Int,
 			},
@@ -338,7 +338,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesThunkSubtypesInTheTypeMa
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
-			Fields: graphql.FieldConfigMap{
+			Fields: graphql.Fields{
 				"iface": &graphql.FieldConfig{
 					Type: someInterface,
 				},
@@ -459,7 +459,7 @@ func TestTypeSystem_DefinitionExample_ProhibitsNilTypeInUnions(t *testing.T) {
 	}
 }
 func TestTypeSystem_DefinitionExample_DoesNotMutatePassedFieldDefinitions(t *testing.T) {
-	fields := graphql.FieldConfigMap{
+	fields := graphql.Fields{
 		"field1": &graphql.FieldConfig{
 			Type: graphql.String,
 		},
@@ -484,7 +484,7 @@ func TestTypeSystem_DefinitionExample_DoesNotMutatePassedFieldDefinitions(t *tes
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(testObject1.GetFields(), testObject2.GetFields()))
 	}
 
-	expectedFields := graphql.FieldConfigMap{
+	expectedFields := graphql.Fields{
 		"field1": &graphql.FieldConfig{
 			Type: graphql.String,
 		},

@@ -11,7 +11,7 @@ import (
 var directivesTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 	Query: graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: graphql.FieldConfigMap{
+		Fields: graphql.Fields{
 			"a": &graphql.FieldConfig{
 				Type: graphql.String,
 			},

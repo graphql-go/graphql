@@ -10,7 +10,7 @@ import (
 
 func main() {
 	// Schema
-	fields := graphql.FieldConfigMap{
+	fields := graphql.Fields{
 		"hello": &graphql.FieldConfig{
 			Type: graphql.String,
 			Resolve: func(p graphql.GQLFRParams) interface{} {
