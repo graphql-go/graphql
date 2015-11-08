@@ -52,8 +52,8 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 	// Build type map now to detect any errors within this schema.
 	typeMap := TypeMap{}
 	objectTypes := []*Object{
-		schema.GetQueryType(),
-		schema.GetMutationType(),
+		schema.QueryType(),
+		schema.MutationType(),
 		__Type,
 		__Schema,
 	}
@@ -74,7 +74,7 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 	for _, ttype := range typeMap {
 		switch ttype := ttype.(type) {
 		case *Object:
-			for _, iface := range ttype.GetInterfaces() {
+			for _, iface := range ttype.Interfaces() {
 				err := assertObjectImplementsInterface(ttype, iface)
 				if err != nil {
 					return schema, err
@@ -86,15 +86,15 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 	return schema, nil
 }
 
-func (gq *Schema) GetQueryType() *Object {
+func (gq *Schema) QueryType() *Object {
 	return gq.schemaConfig.Query
 }
 
-func (gq *Schema) GetMutationType() *Object {
+func (gq *Schema) MutationType() *Object {
 	return gq.schemaConfig.Mutation
 }
 
-func (gq *Schema) GetDirectives() []*Directive {
+func (gq *Schema) Directives() []*Directive {
 	if len(gq.directives) == 0 {
 		gq.directives = []*Directive{
 			IncludeDirective,
@@ -104,17 +104,17 @@ func (gq *Schema) GetDirectives() []*Directive {
 	return gq.directives
 }
 
-func (gq *Schema) GetTypeMap() TypeMap {
+func (gq *Schema) TypeMap() TypeMap {
 	return gq.typeMap
 }
 
-func (gq *Schema) GetType(name string) Type {
-	return gq.GetTypeMap()[name]
+func (gq *Schema) Type(name string) Type {
+	return gq.TypeMap()[name]
 }
 
 func typeMapReducer(typeMap TypeMap, objectType Type) (TypeMap, error) {
 	var err error
-	if objectType == nil || objectType.GetName() == "" {
+	if objectType == nil || objectType.Name() == "" {
 		return typeMap, nil
 	}
 
@@ -133,25 +133,25 @@ func typeMapReducer(typeMap TypeMap, objectType Type) (TypeMap, error) {
 		}
 	}
 
-	if mappedObjectType, ok := typeMap[objectType.GetName()]; ok {
+	if mappedObjectType, ok := typeMap[objectType.Name()]; ok {
 		err := invariant(
 			mappedObjectType == objectType,
-			fmt.Sprintf(`Schema must contain unique named types but contains multiple types named "%v".`, objectType.GetName()),
+			fmt.Sprintf(`Schema must contain unique named types but contains multiple types named "%v".`, objectType.Name()),
 		)
 		if err != nil {
 			return typeMap, err
 		}
 		return typeMap, err
 	}
-	if objectType.GetName() == "" {
+	if objectType.Name() == "" {
 		return typeMap, nil
 	}
 
-	typeMap[objectType.GetName()] = objectType
+	typeMap[objectType.Name()] = objectType
 
 	switch objectType := objectType.(type) {
 	case *Union:
-		types := objectType.GetPossibleTypes()
+		types := objectType.PossibleTypes()
 		if objectType.err != nil {
 			return typeMap, objectType.err
 		}
@@ -165,7 +165,7 @@ func typeMapReducer(typeMap TypeMap, objectType Type) (TypeMap, error) {
 			}
 		}
 	case *Interface:
-		types := objectType.GetPossibleTypes()
+		types := objectType.PossibleTypes()
 		if objectType.err != nil {
 			return typeMap, objectType.err
 		}
@@ -179,7 +179,7 @@ func typeMapReducer(typeMap TypeMap, objectType Type) (TypeMap, error) {
 			}
 		}
 	case *Object:
-		interfaces := objectType.GetInterfaces()
+		interfaces := objectType.Interfaces()
 		if objectType.err != nil {
 			return typeMap, objectType.err
 		}
@@ -196,7 +196,7 @@ func typeMapReducer(typeMap TypeMap, objectType Type) (TypeMap, error) {
 
 	switch objectType := objectType.(type) {
 	case *Object:
-		fieldMap := objectType.GetFields()
+		fieldMap := objectType.Fields()
 		if objectType.err != nil {
 			return typeMap, objectType.err
 		}
@@ -213,7 +213,7 @@ func typeMapReducer(typeMap TypeMap, objectType Type) (TypeMap, error) {
 			}
 		}
 	case *Interface:
-		fieldMap := objectType.GetFields()
+		fieldMap := objectType.Fields()
 		if objectType.err != nil {
 			return typeMap, objectType.err
 		}
@@ -230,7 +230,7 @@ func typeMapReducer(typeMap TypeMap, objectType Type) (TypeMap, error) {
 			}
 		}
 	case *InputObject:
-		fieldMap := objectType.GetFields()
+		fieldMap := objectType.Fields()
 		if objectType.err != nil {
 			return typeMap, objectType.err
 		}
@@ -245,8 +245,8 @@ func typeMapReducer(typeMap TypeMap, objectType Type) (TypeMap, error) {
 }
 
 func assertObjectImplementsInterface(object *Object, iface *Interface) error {
-	objectFieldMap := object.GetFields()
-	ifaceFieldMap := iface.GetFields()
+	objectFieldMap := object.Fields()
+	ifaceFieldMap := iface.Fields()
 
 	// Assert each interface field is implemented.
 	for fieldName, _ := range ifaceFieldMap {
@@ -277,10 +277,10 @@ func assertObjectImplementsInterface(object *Object, iface *Interface) error {
 
 		// Assert each interface field arg is implemented.
 		for _, ifaceArg := range ifaceField.Args {
-			argName := ifaceArg.Name
+			argName := ifaceArg.name
 			var objectArg *Argument
 			for _, arg := range objectField.Args {
-				if arg.Name == argName {
+				if arg.name == argName {
 					objectArg = arg
 					break
 				}
@@ -314,10 +314,10 @@ func assertObjectImplementsInterface(object *Object, iface *Interface) error {
 		}
 		// Assert argument set invariance.
 		for _, objectArg := range objectField.Args {
-			argName := objectArg.Name
+			argName := objectArg.name
 			var ifaceArg *Argument
 			for _, arg := range ifaceField.Args {
-				if arg.Name == argName {
+				if arg.name == argName {
 					ifaceArg = arg
 					break
 				}

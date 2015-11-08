@@ -235,7 +235,7 @@ mutation operations.`,
 				Resolve: func(p ResolveParams) interface{} {
 					if schema, ok := p.Source.(Schema); ok {
 						results := []Type{}
-						for _, ttype := range schema.GetTypeMap() {
+						for _, ttype := range schema.TypeMap() {
 							results = append(results, ttype)
 						}
 						return results
@@ -248,7 +248,7 @@ mutation operations.`,
 				Type:        NewNonNull(__Type),
 				Resolve: func(p ResolveParams) interface{} {
 					if schema, ok := p.Source.(Schema); ok {
-						return schema.GetQueryType()
+						return schema.QueryType()
 					}
 					return nil
 				},
@@ -259,8 +259,8 @@ mutation operations.`,
 				Type: __Type,
 				Resolve: func(p ResolveParams) interface{} {
 					if schema, ok := p.Source.(Schema); ok {
-						if schema.GetMutationType() != nil {
-							return schema.GetMutationType()
+						if schema.MutationType() != nil {
+							return schema.MutationType()
 						}
 					}
 					return nil
@@ -273,7 +273,7 @@ mutation operations.`,
 				)),
 				Resolve: func(p ResolveParams) interface{} {
 					if schema, ok := p.Source.(Schema); ok {
-						return schema.GetDirectives()
+						return schema.Directives()
 					}
 					return nil
 				},
@@ -323,7 +323,7 @@ mutation operations.`,
 					return nil
 				}
 				fields := []*FieldDefinition{}
-				for _, field := range ttype.GetFields() {
+				for _, field := range ttype.Fields() {
 					if !includeDeprecated && field.DeprecationReason != "" {
 						continue
 					}
@@ -335,7 +335,7 @@ mutation operations.`,
 					return nil
 				}
 				fields := []*FieldDefinition{}
-				for _, field := range ttype.GetFields() {
+				for _, field := range ttype.Fields() {
 					if !includeDeprecated && field.DeprecationReason != "" {
 						continue
 					}
@@ -351,7 +351,7 @@ mutation operations.`,
 		Resolve: func(p ResolveParams) interface{} {
 			switch ttype := p.Source.(type) {
 			case *Object:
-				return ttype.GetInterfaces()
+				return ttype.Interfaces()
 			}
 			return nil
 		},
@@ -361,9 +361,9 @@ mutation operations.`,
 		Resolve: func(p ResolveParams) interface{} {
 			switch ttype := p.Source.(type) {
 			case *Interface:
-				return ttype.GetPossibleTypes()
+				return ttype.PossibleTypes()
 			case *Union:
-				return ttype.GetPossibleTypes()
+				return ttype.PossibleTypes()
 			}
 			return nil
 		},
@@ -381,10 +381,10 @@ mutation operations.`,
 			switch ttype := p.Source.(type) {
 			case *Enum:
 				if includeDeprecated {
-					return ttype.GetValues()
+					return ttype.Values()
 				}
 				values := []*EnumValueDefinition{}
-				for _, value := range ttype.GetValues() {
+				for _, value := range ttype.Values() {
 					if value.DeprecationReason != "" {
 						continue
 					}
@@ -401,7 +401,7 @@ mutation operations.`,
 			switch ttype := p.Source.(type) {
 			case *InputObject:
 				fields := []*InputObjectField{}
-				for _, field := range ttype.GetFields() {
+				for _, field := range ttype.Fields() {
 					fields = append(fields, field)
 				}
 				return fields
@@ -433,7 +433,7 @@ mutation operations.`,
 		Description: "Request the type information of a single type.",
 		Args: []*Argument{
 			&Argument{
-				Name: "name",
+				name: "name",
 				Type: NewNonNull(String),
 			},
 		},
@@ -442,7 +442,7 @@ mutation operations.`,
 			if !ok {
 				return nil
 			}
-			return p.Info.Schema.GetType(name)
+			return p.Info.Schema.Type(name)
 		},
 	}
 
@@ -452,7 +452,7 @@ mutation operations.`,
 		Description: "The name of the current Object type at runtime.",
 		Args:        []*Argument{},
 		Resolve: func(p ResolveParams) interface{} {
-			return p.Info.ParentType.GetName()
+			return p.Info.ParentType.Name()
 		},
 	}
 

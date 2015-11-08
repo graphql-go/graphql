@@ -131,11 +131,11 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 		t.Fatalf("unexpected error, got: %v", err)
 	}
 
-	if blogSchema.GetQueryType() != blogQuery {
+	if blogSchema.QueryType() != blogQuery {
 		t.Fatalf("expected blogSchema.GetQueryType() == blogQuery")
 	}
 
-	articleField, _ := blogQuery.GetFields()["article"]
+	articleField, _ := blogQuery.Fields()["article"]
 	if articleField == nil {
 		t.Fatalf("articleField is nil")
 	}
@@ -143,8 +143,8 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 	if articleFieldType != blogArticle {
 		t.Fatalf("articleFieldType expected to equal blogArticle, got: %v", articleField.Type)
 	}
-	if articleFieldType.GetName() != "Article" {
-		t.Fatalf("articleFieldType.Name expected to equal `Article`, got: %v", articleField.Type.GetName())
+	if articleFieldType.Name() != "Article" {
+		t.Fatalf("articleFieldType.Name expected to equal `Article`, got: %v", articleField.Type.Name())
 	}
 	if articleField.Name != "article" {
 		t.Fatalf("articleField.Name expected to equal `article`, got: %v", articleField.Name)
@@ -155,7 +155,7 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 	}
 
 	// TODO: expose a Object.GetField(key string), instead of this ghetto way of accessing a field map?
-	titleField := articleFieldTypeObject.GetFields()["title"]
+	titleField := articleFieldTypeObject.Fields()["title"]
 	if titleField == nil {
 		t.Fatalf("titleField is nil")
 	}
@@ -165,11 +165,11 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 	if titleField.Type != graphql.String {
 		t.Fatalf("titleField.Type expected to equal graphql.String, got: %v", titleField.Type)
 	}
-	if titleField.Type.GetName() != "String" {
-		t.Fatalf("titleField.Type.GetName() expected to equal `String`, got: %v", titleField.Type.GetName())
+	if titleField.Type.Name() != "String" {
+		t.Fatalf("titleField.Type.GetName() expected to equal `String`, got: %v", titleField.Type.Name())
 	}
 
-	authorField := articleFieldTypeObject.GetFields()["author"]
+	authorField := articleFieldTypeObject.Fields()["author"]
 	if authorField == nil {
 		t.Fatalf("authorField is nil")
 	}
@@ -178,7 +178,7 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 		t.Fatalf("expected authorField.Type to be Object`, got: %v", authorField)
 	}
 
-	recentArticleField := authorFieldObject.GetFields()["recentArticle"]
+	recentArticleField := authorFieldObject.Fields()["recentArticle"]
 	if recentArticleField == nil {
 		t.Fatalf("recentArticleField is nil")
 	}
@@ -186,7 +186,7 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 		t.Fatalf("recentArticleField.Type expected to equal blogArticle, got: %v", recentArticleField.Type)
 	}
 
-	feedField := blogQuery.GetFields()["feed"]
+	feedField := blogQuery.Fields()["feed"]
 	feedFieldList, ok := feedField.Type.(*graphql.List)
 	if !ok {
 		t.Fatalf("expected feedFieldList to be List`, got: %v", authorField)
@@ -207,11 +207,11 @@ func TestTypeSystem_DefinitionExample_DefinesAMutationScheme(t *testing.T) {
 		t.Fatalf("unexpected error, got: %v", err)
 	}
 
-	if blogSchema.GetMutationType() != blogMutation {
+	if blogSchema.MutationType() != blogMutation {
 		t.Fatalf("expected blogSchema.GetMutationType() == blogMutation")
 	}
 
-	writeMutation, _ := blogMutation.GetFields()["writeArticle"]
+	writeMutation, _ := blogMutation.Fields()["writeArticle"]
 	if writeMutation == nil {
 		t.Fatalf("writeMutation is nil")
 	}
@@ -219,8 +219,8 @@ func TestTypeSystem_DefinitionExample_DefinesAMutationScheme(t *testing.T) {
 	if writeMutationType != blogArticle {
 		t.Fatalf("writeMutationType expected to equal blogArticle, got: %v", writeMutationType)
 	}
-	if writeMutationType.GetName() != "Article" {
-		t.Fatalf("writeMutationType.Name expected to equal `Article`, got: %v", writeMutationType.GetName())
+	if writeMutationType.Name() != "Article" {
+		t.Fatalf("writeMutationType.Name expected to equal `Article`, got: %v", writeMutationType.Name())
 	}
 	if writeMutation.Name != "writeArticle" {
 		t.Fatalf("writeMutation.Name expected to equal `writeArticle`, got: %v", writeMutation.Name)
@@ -264,8 +264,8 @@ func TestTypeSystem_DefinitionExample_IncludesNestedInputObjectsInTheMap(t *test
 	if err != nil {
 		t.Fatalf("unexpected error, got: %v", err)
 	}
-	if schema.GetType("NestedInputObject") != nestedInputObject {
-		t.Fatalf(`schema.GetType("NestedInputObject") expected to equal nestedInputObject, got: %v`, schema.GetType("NestedInputObject"))
+	if schema.Type("NestedInputObject") != nestedInputObject {
+		t.Fatalf(`schema.GetType("NestedInputObject") expected to equal nestedInputObject, got: %v`, schema.Type("NestedInputObject"))
 	}
 }
 
@@ -305,8 +305,8 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesSubTypesInTheTypeMap(t *
 	if err != nil {
 		t.Fatalf("unexpected error, got: %v", err)
 	}
-	if schema.GetType("SomeSubtype") != someSubType {
-		t.Fatalf(`schema.GetType("SomeSubtype") expected to equal someSubType, got: %v`, schema.GetType("SomeSubtype"))
+	if schema.Type("SomeSubtype") != someSubType {
+		t.Fatalf(`schema.GetType("SomeSubtype") expected to equal someSubType, got: %v`, schema.Type("SomeSubtype"))
 	}
 }
 
@@ -348,8 +348,8 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesThunkSubtypesInTheTypeMa
 	if err != nil {
 		t.Fatalf("unexpected error, got: %v", err)
 	}
-	if schema.GetType("SomeSubtype") != someSubType {
-		t.Fatalf(`schema.GetType("SomeSubtype") expected to equal someSubType, got: %v`, schema.GetType("SomeSubtype"))
+	if schema.Type("SomeSubtype") != someSubType {
+		t.Fatalf(`schema.GetType("SomeSubtype") expected to equal someSubType, got: %v`, schema.Type("SomeSubtype"))
 	}
 }
 
@@ -437,15 +437,15 @@ func TestTypeSystem_DefinitionExample_IdentifiesOutputTypes(t *testing.T) {
 func TestTypeSystem_DefinitionExample_ProhibitsNestingNonNullInsideNonNull(t *testing.T) {
 	ttype := graphql.NewNonNull(graphql.NewNonNull(graphql.Int))
 	expected := `Can only create NonNull of a Nullable Type but got: Int!.`
-	if ttype.GetError().Error() != expected {
-		t.Fatalf(`expected %v , got: %v`, expected, ttype.GetError())
+	if ttype.Error().Error() != expected {
+		t.Fatalf(`expected %v , got: %v`, expected, ttype.Error())
 	}
 }
 func TestTypeSystem_DefinitionExample_ProhibitsNilInNonNull(t *testing.T) {
 	ttype := graphql.NewNonNull(nil)
 	expected := `Can only create NonNull of a Nullable Type but got: <nil>.`
-	if ttype.GetError().Error() != expected {
-		t.Fatalf(`expected %v , got: %v`, expected, ttype.GetError())
+	if ttype.Error().Error() != expected {
+		t.Fatalf(`expected %v , got: %v`, expected, ttype.Error())
 	}
 }
 func TestTypeSystem_DefinitionExample_ProhibitsNilTypeInUnions(t *testing.T) {
@@ -454,8 +454,8 @@ func TestTypeSystem_DefinitionExample_ProhibitsNilTypeInUnions(t *testing.T) {
 		Types: []*graphql.Object{nil},
 	})
 	expected := `BadUnion may only contain Object types, it cannot contain: <nil>.`
-	if ttype.GetError().Error() != expected {
-		t.Fatalf(`expected %v , got: %v`, expected, ttype.GetError())
+	if ttype.Error().Error() != expected {
+		t.Fatalf(`expected %v , got: %v`, expected, ttype.Error())
 	}
 }
 func TestTypeSystem_DefinitionExample_DoesNotMutatePassedFieldDefinitions(t *testing.T) {
@@ -480,8 +480,8 @@ func TestTypeSystem_DefinitionExample_DoesNotMutatePassedFieldDefinitions(t *tes
 		Name:   "Test2",
 		Fields: fields,
 	})
-	if !reflect.DeepEqual(testObject1.GetFields(), testObject2.GetFields()) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(testObject1.GetFields(), testObject2.GetFields()))
+	if !reflect.DeepEqual(testObject1.Fields(), testObject2.Fields()) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(testObject1.Fields(), testObject2.Fields()))
 	}
 
 	expectedFields := graphql.Fields{
@@ -525,8 +525,8 @@ func TestTypeSystem_DefinitionExample_DoesNotMutatePassedFieldDefinitions(t *tes
 		Name:   "Test2",
 		Fields: inputFields,
 	})
-	if !reflect.DeepEqual(testInputObject1.GetFields(), testInputObject2.GetFields()) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(testInputObject1.GetFields(), testInputObject2.GetFields()))
+	if !reflect.DeepEqual(testInputObject1.Fields(), testInputObject2.Fields()) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(testInputObject1.Fields(), testInputObject2.Fields()))
 	}
 	if !reflect.DeepEqual(inputFields, expectedInputFields) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedInputFields, fields))

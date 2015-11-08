@@ -44,7 +44,7 @@ func getArgumentValues(argDefs []*Argument, argASTs []*ast.Argument, variableVar
 	results := map[string]interface{}{}
 	for _, argDef := range argDefs {
 
-		name := argDef.Name
+		name := argDef.name
 		var valueAST ast.Value
 		if argAST, ok := argASTMap[name]; ok {
 			valueAST = argAST.Value
@@ -147,7 +147,7 @@ func coerceValue(ttype Input, value interface{}) interface{} {
 		}
 
 		obj := map[string]interface{}{}
-		for fieldName, field := range ttype.GetFields() {
+		for fieldName, field := range ttype.Fields() {
 			value, _ := valueMap[fieldName]
 			fieldValue := coerceValue(field.Type, value)
 			if isNullish(fieldValue) {
@@ -197,7 +197,7 @@ func typeFromAST(schema Schema, inputTypeAST ast.Type) (Type, error) {
 		if inputTypeAST.Name != nil {
 			nameValue = inputTypeAST.Name.Value
 		}
-		ttype := schema.GetType(nameValue)
+		ttype := schema.Type(nameValue)
 		return ttype, nil
 	default:
 		return nil, invariant(inputTypeAST.GetKind() == kinds.Named, "Must be a named type.")
@@ -243,7 +243,7 @@ func isValidInputValue(value interface{}, ttype Input) bool {
 		if !ok {
 			return false
 		}
-		fields := ttype.GetFields()
+		fields := ttype.Fields()
 
 		// Ensure every provided field is defined.
 		for fieldName, _ := range valueMap {
@@ -362,7 +362,7 @@ func valueFromAST(valueAST ast.Value, ttype Input, variables map[string]interfac
 
 		}
 		obj := map[string]interface{}{}
-		for fieldName, field := range ttype.GetFields() {
+		for fieldName, field := range ttype.Fields() {
 			fieldAST, ok := fieldASTs[fieldName]
 			if !ok || fieldAST == nil {
 				continue

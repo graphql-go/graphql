@@ -167,10 +167,10 @@ func getOperationRootType(schema Schema, operation ast.Definition) (*Object, err
 
 	switch operation.GetOperation() {
 	case "query":
-		return schema.GetQueryType(), nil
+		return schema.QueryType(), nil
 	case "mutation":
-		mutationType := schema.GetMutationType()
-		if mutationType.Name == "" {
+		mutationType := schema.MutationType()
+		if mutationType.name == "" {
 			return nil, errors.New("Schema is not configured for mutations")
 		}
 		return mutationType, nil
@@ -622,7 +622,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	case *Object:
 		objectType = returnType
 	case Abstract:
-		objectType = returnType.GetObjectType(result, info)
+		objectType = returnType.ObjectType(result, info)
 		if objectType != nil && !returnType.IsPossibleType(objectType) {
 			panic(gqlerrors.NewFormattedError(
 				fmt.Sprintf(`Runtime Object type "%v" is not a possible type `+
@@ -743,15 +743,15 @@ func getFieldDef(schema Schema, parentType *Object, fieldName string) *FieldDefi
 	}
 
 	if fieldName == SchemaMetaFieldDef.Name &&
-		schema.GetQueryType() == parentType {
+		schema.QueryType() == parentType {
 		return SchemaMetaFieldDef
 	}
 	if fieldName == TypeMetaFieldDef.Name &&
-		schema.GetQueryType() == parentType {
+		schema.QueryType() == parentType {
 		return TypeMetaFieldDef
 	}
 	if fieldName == TypeNameMetaFieldDef.Name {
 		return TypeNameMetaFieldDef
 	}
-	return parentType.GetFields()[fieldName]
+	return parentType.Fields()[fieldName]
 }

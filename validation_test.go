@@ -1060,16 +1060,16 @@ func TestTypeSystem_ListMustAcceptGraphQLTypes_AcceptsAnTypeAsItemTypeOfList(t *
 	})
 	for _, ttype := range testTypes {
 		result := graphql.NewList(ttype)
-		if result.GetError() != nil {
-			t.Fatalf(`unexpected error: %v for type "%v"`, result.GetError(), ttype)
+		if result.Error() != nil {
+			t.Fatalf(`unexpected error: %v for type "%v"`, result.Error(), ttype)
 		}
 	}
 }
 func TestTypeSystem_ListMustAcceptGraphQLTypes_RejectsANilTypeAsItemTypeOfList(t *testing.T) {
 	result := graphql.NewList(nil)
 	expectedError := `Can only create List of a Type but got: <nil>.`
-	if result.GetError() == nil || result.GetError().Error() != expectedError {
-		t.Fatalf("Expected error: %v, got %v", expectedError, result.GetError())
+	if result.Error() == nil || result.Error().Error() != expectedError {
+		t.Fatalf("Expected error: %v, got %v", expectedError, result.Error())
 	}
 }
 
@@ -1087,16 +1087,16 @@ func TestTypeSystem_NonNullMustAcceptGraphQLTypes_AcceptsAnTypeAsNullableTypeOfN
 	}
 	for _, ttype := range nullableTypes {
 		result := graphql.NewNonNull(ttype)
-		if result.GetError() != nil {
-			t.Fatalf(`unexpected error: %v for type "%v"`, result.GetError(), ttype)
+		if result.Error() != nil {
+			t.Fatalf(`unexpected error: %v for type "%v"`, result.Error(), ttype)
 		}
 	}
 }
 func TestTypeSystem_NonNullMustAcceptGraphQLTypes_RejectsNilAsNonNullableType(t *testing.T) {
 	result := graphql.NewNonNull(nil)
 	expectedError := `Can only create NonNull of a Nullable Type but got: <nil>.`
-	if result.GetError() == nil || result.GetError().Error() != expectedError {
-		t.Fatalf("Expected error: %v, got %v", expectedError, result.GetError())
+	if result.Error() == nil || result.Error().Error() != expectedError {
+		t.Fatalf("Expected error: %v, got %v", expectedError, result.Error())
 	}
 }
 
