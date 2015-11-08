@@ -433,8 +433,8 @@ mutation operations.`,
 		Description: "Request the type information of a single type.",
 		Args: []*Argument{
 			&Argument{
-				name: "name",
-				Type: NewNonNull(String),
+				PrivateName: "name",
+				Type:        NewNonNull(String),
 			},
 		},
 		Resolve: func(p ResolveParams) interface{} {

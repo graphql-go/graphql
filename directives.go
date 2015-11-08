@@ -36,9 +36,9 @@ var IncludeDirective *Directive = NewDirective(&Directive{
 		"the `if` argument is true.",
 	Args: []*Argument{
 		&Argument{
-			name:        "if",
-			Type:        NewNonNull(Boolean),
-			description: "Included when true.",
+			PrivateName:        "if",
+			Type:               NewNonNull(Boolean),
+			PrivateDescription: "Included when true.",
 		},
 	},
 	OnOperation: false,
@@ -55,9 +55,9 @@ var SkipDirective *Directive = NewDirective(&Directive{
 		"argument is true.",
 	Args: []*Argument{
 		&Argument{
-			name:        "if",
-			Type:        NewNonNull(Boolean),
-			description: "Skipped when true.",
+			PrivateName:        "if",
+			Type:               NewNonNull(Boolean),
+			PrivateDescription: "Skipped when true.",
 		},
 	},
 	OnOperation: false,

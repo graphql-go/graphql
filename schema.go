@@ -277,10 +277,10 @@ func assertObjectImplementsInterface(object *Object, iface *Interface) error {
 
 		// Assert each interface field arg is implemented.
 		for _, ifaceArg := range ifaceField.Args {
-			argName := ifaceArg.name
+			argName := ifaceArg.PrivateName
 			var objectArg *Argument
 			for _, arg := range objectField.Args {
-				if arg.name == argName {
+				if arg.PrivateName == argName {
 					objectArg = arg
 					break
 				}
@@ -314,10 +314,10 @@ func assertObjectImplementsInterface(object *Object, iface *Interface) error {
 		}
 		// Assert argument set invariance.
 		for _, objectArg := range objectField.Args {
-			argName := objectArg.name
+			argName := objectArg.PrivateName
 			var ifaceArg *Argument
 			for _, arg := range ifaceField.Args {
-				if arg.name == argName {
+				if arg.PrivateName == argName {
 					ifaceArg = arg
 					break
 				}

@@ -156,8 +156,8 @@ func GetNamed(ttype Type) Named {
  *
  */
 type Scalar struct {
-	name        string `json:"name"`
-	description string `json:"description"`
+	PrivateName        string `json:"name"`
+	PrivateDescription string `json:"description"`
 
 	scalarConfig ScalarConfig
 	err          error
@@ -187,8 +187,8 @@ func NewScalar(config ScalarConfig) *Scalar {
 		return st
 	}
 
-	st.name = config.Name
-	st.description = config.Description
+	st.PrivateName = config.Name
+	st.PrivateDescription = config.Description
 
 	err = invariant(
 		config.Serialize != nil,
@@ -233,14 +233,14 @@ func (st *Scalar) ParseLiteral(valueAST ast.Value) interface{} {
 	return st.scalarConfig.ParseLiteral(valueAST)
 }
 func (st *Scalar) Name() string {
-	return st.name
+	return st.PrivateName
 }
 func (st *Scalar) Description() string {
-	return st.description
+	return st.PrivateDescription
 
 }
 func (st *Scalar) String() string {
-	return st.name
+	return st.PrivateName
 }
 func (st *Scalar) Error() error {
 	return st.err
@@ -284,9 +284,9 @@ func (st *Scalar) Error() error {
  *
  */
 type Object struct {
-	name        string `json:"name"`
-	description string `json:"description"`
-	IsTypeOf    IsTypeOfFn
+	PrivateName        string `json:"name"`
+	PrivateDescription string `json:"description"`
+	IsTypeOf           IsTypeOfFn
 
 	typeConfig ObjectConfig
 	fields     FieldDefinitionMap
@@ -321,8 +321,8 @@ func NewObject(config ObjectConfig) *Object {
 		return objectType
 	}
 
-	objectType.name = config.Name
-	objectType.description = config.Description
+	objectType.PrivateName = config.Name
+	objectType.PrivateDescription = config.Description
 	objectType.IsTypeOf = config.IsTypeOf
 	objectType.typeConfig = config
 
@@ -351,13 +351,13 @@ func (gt *Object) AddFieldConfig(fieldName string, fieldConfig *Field) {
 
 }
 func (gt *Object) Name() string {
-	return gt.name
+	return gt.PrivateName
 }
 func (gt *Object) Description() string {
 	return ""
 }
 func (gt *Object) String() string {
-	return gt.name
+	return gt.PrivateName
 }
 func (gt *Object) Fields() FieldDefinitionMap {
 	fields, err := defineFieldMap(gt, gt.typeConfig.Fields)
@@ -477,10 +477,10 @@ func defineFieldMap(ttype Named, fields Fields) (FieldDefinitionMap, error) {
 				return resultFieldMap, err
 			}
 			fieldArg := &Argument{
-				name:         argName,
-				description:  arg.Description,
-				Type:         arg.Type,
-				DefaultValue: arg.DefaultValue,
+				PrivateName:        argName,
+				PrivateDescription: arg.Description,
+				Type:               arg.Type,
+				DefaultValue:       arg.DefaultValue,
 			}
 			fieldDef.Args = append(fieldDef.Args, fieldArg)
 		}
@@ -549,21 +549,21 @@ type FieldArgument struct {
 }
 
 type Argument struct {
-	name         string      `json:"name"`
-	Type         Input       `json:"type"`
-	DefaultValue interface{} `json:"defaultValue"`
-	description  string      `json:"description"`
+	PrivateName        string      `json:"name"`
+	Type               Input       `json:"type"`
+	DefaultValue       interface{} `json:"defaultValue"`
+	PrivateDescription string      `json:"description"`
 }
 
 func (st *Argument) Name() string {
-	return st.name
+	return st.PrivateName
 }
 func (st *Argument) Description() string {
-	return st.description
+	return st.PrivateDescription
 
 }
 func (st *Argument) String() string {
-	return st.name
+	return st.PrivateName
 }
 func (st *Argument) Error() error {
 	return nil
@@ -588,9 +588,9 @@ func (st *Argument) Error() error {
  *
  */
 type Interface struct {
-	name        string `json:"name"`
-	description string `json:"description"`
-	ResolveType ResolveTypeFn
+	PrivateName        string `json:"name"`
+	PrivateDescription string `json:"description"`
+	ResolveType        ResolveTypeFn
 
 	typeConfig      InterfaceConfig
 	fields          FieldDefinitionMap
@@ -620,8 +620,8 @@ func NewInterface(config InterfaceConfig) *Interface {
 		it.err = err
 		return it
 	}
-	it.name = config.Name
-	it.description = config.Description
+	it.PrivateName = config.Name
+	it.PrivateDescription = config.Description
 	it.ResolveType = config.ResolveType
 	it.typeConfig = config
 	it.implementations = []*Object{}
@@ -636,10 +636,10 @@ func (it *Interface) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	it.typeConfig.Fields[fieldName] = fieldConfig
 }
 func (it *Interface) Name() string {
-	return it.name
+	return it.PrivateName
 }
 func (it *Interface) Description() string {
-	return it.description
+	return it.PrivateDescription
 }
 func (it *Interface) Fields() (fields FieldDefinitionMap) {
 	it.fields, it.err = defineFieldMap(it, it.typeConfig.Fields)
@@ -658,11 +658,11 @@ func (it *Interface) IsPossibleType(ttype *Object) bool {
 			if possibleType == nil {
 				continue
 			}
-			possibleTypes[possibleType.name] = true
+			possibleTypes[possibleType.PrivateName] = true
 		}
 		it.possibleTypes = possibleTypes
 	}
-	if val, ok := it.possibleTypes[ttype.name]; ok {
+	if val, ok := it.possibleTypes[ttype.PrivateName]; ok {
 		return val
 	}
 	return false
@@ -674,7 +674,7 @@ func (it *Interface) ObjectType(value interface{}, info ResolveInfo) *Object {
 	return getTypeOf(value, info, it)
 }
 func (it *Interface) String() string {
-	return it.name
+	return it.PrivateName
 }
 func (it *Interface) Error() error {
 	return it.err
@@ -717,9 +717,9 @@ func getTypeOf(value interface{}, info ResolveInfo, abstractType Abstract) *Obje
  *
  */
 type Union struct {
-	name        string `json:"name"`
-	description string `json:"description"`
-	ResolveType ResolveTypeFn
+	PrivateName        string `json:"name"`
+	PrivateDescription string `json:"description"`
+	ResolveType        ResolveTypeFn
 
 	typeConfig    UnionConfig
 	types         []*Object
@@ -747,8 +747,8 @@ func NewUnion(config UnionConfig) *Union {
 		objectType.err = err
 		return objectType
 	}
-	objectType.name = config.Name
-	objectType.description = config.Description
+	objectType.PrivateName = config.Name
+	objectType.PrivateDescription = config.Description
 	objectType.ResolveType = config.ResolveType
 
 	err = invariant(
@@ -801,12 +801,12 @@ func (ut *Union) IsPossibleType(ttype *Object) bool {
 			if possibleType == nil {
 				continue
 			}
-			possibleTypes[possibleType.name] = true
+			possibleTypes[possibleType.PrivateName] = true
 		}
 		ut.possibleTypes = possibleTypes
 	}
 
-	if val, ok := ut.possibleTypes[ttype.name]; ok {
+	if val, ok := ut.possibleTypes[ttype.PrivateName]; ok {
 		return val
 	}
 	return false
@@ -818,13 +818,13 @@ func (ut *Union) ObjectType(value interface{}, info ResolveInfo) *Object {
 	return getTypeOf(value, info, ut)
 }
 func (ut *Union) String() string {
-	return ut.name
+	return ut.PrivateName
 }
 func (ut *Union) Name() string {
-	return ut.name
+	return ut.PrivateName
 }
 func (ut *Union) Description() string {
-	return ut.description
+	return ut.PrivateDescription
 }
 func (ut *Union) Error() error {
 	return ut.err
@@ -852,8 +852,8 @@ func (ut *Union) Error() error {
  * will be used as it's internal value.
  */
 type Enum struct {
-	name        string `json:"name"`
-	description string `json:"description"`
+	PrivateName        string `json:"name"`
+	PrivateDescription string `json:"description"`
 
 	enumConfig   EnumConfig
 	values       []*EnumValueDefinition
@@ -890,8 +890,8 @@ func NewEnum(config EnumConfig) *Enum {
 		return gt
 	}
 
-	gt.name = config.Name
-	gt.description = config.Description
+	gt.PrivateName = config.Name
+	gt.PrivateDescription = config.Description
 	gt.values, err = gt.defineEnumValues(config.Values)
 	if err != nil {
 		gt.err = err
@@ -965,13 +965,13 @@ func (gt *Enum) ParseLiteral(valueAST ast.Value) interface{} {
 	return nil
 }
 func (gt *Enum) Name() string {
-	return gt.name
+	return gt.PrivateName
 }
 func (gt *Enum) Description() string {
 	return ""
 }
 func (gt *Enum) String() string {
-	return gt.name
+	return gt.PrivateName
 }
 func (gt *Enum) Error() error {
 	return gt.err
@@ -1021,8 +1021,8 @@ func (gt *Enum) getNameLookup() map[string]*EnumValueDefinition {
  *
  */
 type InputObject struct {
-	name        string `json:"name"`
-	description string `json:"description"`
+	PrivateName        string `json:"name"`
+	PrivateDescription string `json:"description"`
 
 	typeConfig InputObjectConfig
 	fields     InputObjectFieldMap
@@ -1035,21 +1035,21 @@ type InputObjectFieldConfig struct {
 	Description  string      `json:"description"`
 }
 type InputObjectField struct {
-	name         string      `json:"name"`
-	Type         Input       `json:"type"`
-	DefaultValue interface{} `json:"defaultValue"`
-	description  string      `json:"description"`
+	PrivateName        string      `json:"name"`
+	Type               Input       `json:"type"`
+	DefaultValue       interface{} `json:"defaultValue"`
+	PrivateDescription string      `json:"description"`
 }
 
 func (st *InputObjectField) Name() string {
-	return st.name
+	return st.PrivateName
 }
 func (st *InputObjectField) Description() string {
-	return st.description
+	return st.PrivateDescription
 
 }
 func (st *InputObjectField) String() string {
-	return st.name
+	return st.PrivateName
 }
 func (st *InputObjectField) Error() error {
 	return nil
@@ -1073,8 +1073,8 @@ func NewInputObject(config InputObjectConfig) *InputObject {
 		return gt
 	}
 
-	gt.name = config.Name
-	gt.description = config.Description
+	gt.PrivateName = config.Name
+	gt.PrivateDescription = config.Description
 	gt.typeConfig = config
 	gt.fields = gt.defineFieldMap()
 	return gt
@@ -1116,9 +1116,9 @@ func (gt *InputObject) defineFieldMap() InputObjectFieldMap {
 			return resultFieldMap
 		}
 		field := &InputObjectField{}
-		field.name = fieldName
+		field.PrivateName = fieldName
 		field.Type = fieldConfig.Type
-		field.description = fieldConfig.Description
+		field.PrivateDescription = fieldConfig.Description
 		field.DefaultValue = fieldConfig.DefaultValue
 		resultFieldMap[fieldName] = field
 	}
@@ -1128,13 +1128,13 @@ func (gt *InputObject) Fields() InputObjectFieldMap {
 	return gt.fields
 }
 func (gt *InputObject) Name() string {
-	return gt.name
+	return gt.PrivateName
 }
 func (gt *InputObject) Description() string {
-	return gt.description
+	return gt.PrivateDescription
 }
 func (gt *InputObject) String() string {
-	return gt.name
+	return gt.PrivateName
 }
 func (gt *InputObject) Error() error {
 	return gt.err
@@ -1213,8 +1213,8 @@ func (gl *List) Error() error {
  * Note: the enforcement of non-nullability occurs within the executor.
  */
 type NonNull struct {
-	name   string `json:"name"` // added to conform with introspection for NonNull.Name = nil
-	OfType Type   `json:"ofType"`
+	PrivateName string `json:"name"` // added to conform with introspection for NonNull.Name = nil
+	OfType      Type   `json:"ofType"`
 
 	err error
 }

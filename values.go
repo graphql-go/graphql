@@ -44,7 +44,7 @@ func getArgumentValues(argDefs []*Argument, argASTs []*ast.Argument, variableVar
 	results := map[string]interface{}{}
 	for _, argDef := range argDefs {
 
-		name := argDef.name
+		name := argDef.PrivateName
 		var valueAST ast.Value
 		if argAST, ok := argASTMap[name]; ok {
 			valueAST = argAST.Value

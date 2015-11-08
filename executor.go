@@ -170,7 +170,7 @@ func getOperationRootType(schema Schema, operation ast.Definition) (*Object, err
 		return schema.QueryType(), nil
 	case "mutation":
 		mutationType := schema.MutationType()
-		if mutationType.name == "" {
+		if mutationType.PrivateName == "" {
 			return nil, errors.New("Schema is not configured for mutations")
 		}
 		return mutationType, nil
