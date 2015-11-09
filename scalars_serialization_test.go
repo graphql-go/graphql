@@ -28,21 +28,22 @@ type boolSerializationTest struct {
 
 func TestTypeSystem_Scalar_SerializesOutputInt(t *testing.T) {
 	tests := []intSerializationTest{
-		{1, 1},
-		{0, 0},
-		{-1, -1},
-		{float32(0.1), 0},
-		{float32(1.1), 1},
-		{float32(-1.1), -1},
-		{float32(1e5), 100000}, // Bigger than 2^32, but still representable as an Int
-		{9876504321, 9876504321},
-		{-9876504321, -9876504321},
+		{1, int64(1)},
+		{0, int64(0)},
+		{-1, int64(-1)},
+		{float32(0.1), int64(0)},
+		{float32(1.1), int64(1)},
+		{float32(-1.1), int64(-1)},
+		// Bigger than 2^32, but still representable as an Int
+		{float32(1e5), int64(100000)},
+		{9876504321, int64(9876504321)},
+		{-9876504321, int64(-9876504321)},
 		{float64(1e100), nil},
 		{float64(-1e100), nil},
-		{"-1.1", -1},
+		{"-1.1", int64(-1)},
 		{"one", nil},
-		{false, 0},
-		{true, 1},
+		{false, int64(0)},
+		{true, int64(1)},
 	}
 
 	for _, test := range tests {
