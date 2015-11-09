@@ -25,7 +25,7 @@ func Graphql(p Params) *Result {
 			Errors: gqlerrors.FormatErrors(err),
 		}
 	}
-	validationResult := ValidateDocument(p.Schema, AST)
+	validationResult := ValidateDocument(&p.Schema, AST, nil)
 
 	if !validationResult.IsValid {
 		return &Result{

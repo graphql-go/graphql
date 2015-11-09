@@ -100,6 +100,19 @@ var _ Composite = (*Object)(nil)
 var _ Composite = (*Interface)(nil)
 var _ Composite = (*Union)(nil)
 
+func IsCompositeType(ttype interface{}) bool {
+	if _, ok := ttype.(*Object); ok {
+		return true
+	}
+	if _, ok := ttype.(*Interface); ok {
+		return true
+	}
+	if _, ok := ttype.(*Union); ok {
+		return true
+	}
+	return false
+}
+
 // These types may describe the parent context of a selection set.
 type Abstract interface {
 	GetObjectType(value interface{}, info ResolveInfo) *Object
@@ -109,6 +122,34 @@ type Abstract interface {
 
 var _ Abstract = (*Interface)(nil)
 var _ Abstract = (*Union)(nil)
+
+func IsAbstractType(ttype Type) bool {
+	if _, ok := ttype.(*Interface); ok {
+		return true
+	}
+	if _, ok := ttype.(*Union); ok {
+		return true
+	}
+	return false
+}
+
+type Nullable interface {
+}
+
+var _ Nullable = (*Scalar)(nil)
+var _ Nullable = (*Object)(nil)
+var _ Nullable = (*Interface)(nil)
+var _ Nullable = (*Union)(nil)
+var _ Nullable = (*Enum)(nil)
+var _ Nullable = (*InputObject)(nil)
+var _ Nullable = (*List)(nil)
+
+func GetNullable(ttype Type) Nullable {
+	if ttype, ok := ttype.(*NonNull); ok {
+		return ttype.OfType
+	}
+	return ttype
+}
 
 // These named types do not include modifiers like List or NonNull.
 type Named interface {

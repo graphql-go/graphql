@@ -104,6 +104,15 @@ func (gq *Schema) GetDirectives() []*Directive {
 	return gq.directives
 }
 
+func (gq *Schema) GetDirective(name string) *Directive {
+	for _, directive := range gq.GetDirectives() {
+		if directive.Name == name {
+			return directive
+		}
+	}
+	return nil
+}
+
 func (gq *Schema) GetTypeMap() TypeMap {
 	return gq.typeMap
 }
