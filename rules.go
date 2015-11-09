@@ -36,9 +36,8 @@ func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInsta
 						argDef := context.GetArgument()
 						if argDef != nil && !isValidLiteralValue(argDef.Type, value) {
 							argNameValue := ""
-							argName := argAST.Name
-							if argName != nil {
-								argNameValue = argName.Value
+							if argAST.Name != nil {
+								argNameValue = argAST.Name.Value
 							}
 							// TODO: helper to construct gqlerror with message + []ast.Node
 							return visitor.ActionNoChange, gqlerrors.NewError(
@@ -146,22 +145,32 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) bool {
 		// Ensure every provided field is defined.
 		// Ensure every defined field is valid.
 		fieldASTs := valueAST.Fields
+		fieldASTMap := map[string]*ast.ObjectField{}
 		for _, fieldAST := range fieldASTs {
 			fieldASTName := ""
 			if fieldAST.Name != nil {
 				fieldASTName = fieldAST.Name.Value
 			}
+
+			fieldASTMap[fieldASTName] = fieldAST
+
+			// check if field is defined
 			field, ok := fields[fieldASTName]
-			if !ok {
-				return false
-			}
-			if fieldAST == nil {
-				return false
-			}
-			if !isValidLiteralValue(field.Type, fieldAST.Value) {
+			if !ok || field == nil {
 				return false
 			}
 		}
+		for fieldName, field := range fields {
+			fieldAST, _ := fieldASTMap[fieldName]
+			var fieldASTValue ast.Value
+			if fieldAST != nil {
+				fieldASTValue = fieldAST.Value
+			}
+			if !isValidLiteralValue(field.Type, fieldASTValue) {
+				return false
+			}
+		}
+		return true
 	}
 
 	if ttype, ok := ttype.(*Scalar); ok {
