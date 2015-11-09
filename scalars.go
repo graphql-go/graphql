@@ -2,29 +2,52 @@ package graphql
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/graphql-go/graphql/language/ast"
 )
 
-var (
-	MaxInt = 9007199254740991
-	MinInt = -9007199254740991
+const (
+	MaxInt int64 = 9007199254740991
+	MinInt int64 = -9007199254740991
 )
 
 func coerceInt(value interface{}) interface{} {
 	switch value := value.(type) {
 	case bool:
 		if value == true {
-			return int(1)
+			return int64(1)
 		}
-		return int(0)
+		return int64(0)
 	case int:
-		return value
+		return int64(value)
+	case int8:
+		return int64(value)
+	case int16:
+		return int64(value)
+	case int32:
+		return int64(value)
+	case int64:
+		return intOrNil(value)
+	case uint:
+		return int64(value)
+	case uint8:
+		return int64(value)
+	case uint16:
+		return int64(value)
+	case uint32:
+		return int64(value)
+	case uint64:
+		if value > uint64(math.MaxInt64) {
+			// bypass intOrNil
+			return nil
+		}
+		return intOrNil(int64(value))
 	case float32:
-		return intOrNil(int(value))
+		return intOrNil(int64(value))
 	case float64:
-		return intOrNil(int(value))
+		return intOrNil(int64(value))
 	case string:
 		val, err := strconv.ParseFloat(value, 0)
 		if err != nil {
@@ -32,14 +55,15 @@ func coerceInt(value interface{}) interface{} {
 		}
 		return coerceInt(val)
 	}
-	return int(0)
+
+	return nil
 }
 
 // Integers are only safe when between -(2^53 - 1) and 2^53 - 1 due to being
 // encoded in JavaScript and represented in JSON as double-precision floating
 // point numbers, as specified by IEEE 754.
-func intOrNil(value int) interface{} {
-	if value <= MaxInt && value >= MinInt {
+func intOrNil(value int64) interface{} {
+	if MinInt <= value && value <= MaxInt {
 		return value
 	}
 	return nil
@@ -52,7 +76,7 @@ var Int *Scalar = NewScalar(ScalarConfig{
 	ParseLiteral: func(valueAST ast.Value) interface{} {
 		switch valueAST := valueAST.(type) {
 		case *ast.IntValue:
-			if intValue, err := strconv.Atoi(valueAST.Value); err == nil {
+			if intValue, err := strconv.ParseInt(valueAST.Value, 10, 64); err == nil {
 				return intValue
 			}
 		}
