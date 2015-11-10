@@ -79,7 +79,7 @@ func executeQuery(query string, schema graphql.Schema) *graphql.Result {
 		RequestString: query,
 	})
 	if len(result.Errors) > 0 {
-		fmt.Println("wrong result, unexpected errors: %v", result.Errors)
+		fmt.Printf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	return result
 }
@@ -93,7 +93,7 @@ func main() {
 	})
 
 	fmt.Println("Now server is running on port 8080")
-	fmt.Println("Test with Get      : curl -g \"http://localhost:8080/graphql?query={user(id:%221%22){name}}\"")
+	fmt.Println("Test with Get      : curl -g 'http://localhost:8080/graphql?query={user(id:\"1\"){name}}'")
 	http.ListenAndServe(":8080", nil)
 }
 
