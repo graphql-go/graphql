@@ -594,10 +594,6 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	// If field type is Scalar or Enum, serialize to a valid value, returning
 	// null if serialization is not possible.
 	if returnType, ok := returnType.(*Scalar); ok {
-		err := invariant(returnType.Serialize != nil, "Missing serialize method on type")
-		if err != nil {
-			panic(gqlerrors.FormatError(err))
-		}
 		serializedResult := returnType.Serialize(result)
 		if isNullish(serializedResult) {
 			return nil
@@ -605,10 +601,6 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		return serializedResult
 	}
 	if returnType, ok := returnType.(*Enum); ok {
-		err := invariant(returnType.Serialize != nil, "Missing serialize method on type")
-		if err != nil {
-			panic(gqlerrors.FormatError(err))
-		}
 		serializedResult := returnType.Serialize(result)
 		if isNullish(serializedResult) {
 			return nil
