@@ -14,8 +14,9 @@ import (
  */
 var SpecifiedRules = []ValidationRuleFn{
 	ArgumentsOfCorrectTypeRule,
-	KnownTypeNamesRule,
 	DefaultValuesOfCorrectTypeRule,
+	FieldsOnCorrectTypeRule,
+	KnownTypeNamesRule,
 }
 
 type ValidationRuleInstance struct {
@@ -24,6 +25,13 @@ type ValidationRuleInstance struct {
 }
 type ValidationRuleFn func(context *ValidationContext) *ValidationRuleInstance
 
+/**
+ * ArgumentsOfCorrectTypeRule
+ * Argument values of correct type
+ *
+ * A GraphQL document is only valid if all field argument literal values are
+ * of the type expected by their position.
+ */
 func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
@@ -59,6 +67,14 @@ func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInsta
 		VisitorOpts: visitorOpts,
 	}
 }
+
+/**
+ * DefaultValuesOfCorrectTypeRule
+ * Variable default values of correct type
+ *
+ * A GraphQL document is only valid if all variable default values are of the
+ * type expected by their definition.
+ */
 func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
@@ -104,6 +120,59 @@ func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleI
 		VisitorOpts: visitorOpts,
 	}
 }
+
+/**
+ * FieldsOnCorrectTypeRule
+ * Fields on correct type
+ *
+ * A GraphQL document is only valid if all fields selected are defined by the
+ * parent type, or are an allowed meta field such as __typenamme
+ */
+func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance {
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.Field: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					var action = visitor.ActionNoChange
+					var result interface{}
+					if node, ok := p.Node.(*ast.Field); ok {
+						ttype := context.GetParentType()
+
+						if ttype != nil {
+							fieldDef := context.GetFieldDef()
+							if fieldDef == nil {
+								nodeName := ""
+								if node.Name != nil {
+									nodeName = node.Name.Value
+								}
+								return visitor.ActionNoChange, gqlerrors.NewError(
+									fmt.Sprintf(`Cannot query field "%v" on "%v".`,
+										nodeName, ttype.GetName()),
+									[]ast.Node{node},
+									"",
+									nil,
+									[]int{},
+								)
+							}
+						}
+					}
+					return action, result
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+/**
+ * KnownTypeNamesRule
+ * Known type names
+ *
+ * A GraphQL document is only valid if referenced types (specifically
+ * variable definitions and fragment conditions) are defined by the type schema.
+ */
 func KnownTypeNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
