@@ -31,17 +31,8 @@ func TestValidate_KnownTypeNames_UnknownTypeNamesAreInValid(t *testing.T) {
         name
       }
     `, []gqlerrors.FormattedError{
-		ruleError(
-			`Unknown type "JumbledUpLetters".`,
-			2, 23,
-		),
-		ruleError(
-			`Unknown type "Badger".`,
-			5, 25,
-		),
-		ruleError(
-			`Unknown type "Peettt".`,
-			8, 29,
-		),
+		ruleError(`Unknown type "JumbledUpLetters".`, 2, 23),
+		ruleError(`Unknown type "Badger".`, 5, 25),
+		ruleError(`Unknown type "Peettt".`, 8, 29),
 	})
 }

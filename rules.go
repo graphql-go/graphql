@@ -18,6 +18,8 @@ var SpecifiedRules = []ValidationRuleFn{
 	FieldsOnCorrectTypeRule,
 	FragmentsOnCompositeTypesRule,
 	KnownArgumentNamesRule,
+	KnownDirectivesRule,
+	KnownFragmentNamesRule,
 	KnownTypeNamesRule,
 }
 
@@ -26,6 +28,16 @@ type ValidationRuleInstance struct {
 	VisitSpreadFragments bool
 }
 type ValidationRuleFn func(context *ValidationContext) *ValidationRuleInstance
+
+func newValidationRuleError(message string, nodes []ast.Node) (string, error) {
+	return visitor.ActionNoChange, gqlerrors.NewError(
+		message,
+		nodes,
+		"",
+		nil,
+		[]int{},
+	)
+}
 
 /**
  * ArgumentsOfCorrectTypeRule
@@ -49,14 +61,10 @@ func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInsta
 							if argAST.Name != nil {
 								argNameValue = argAST.Name.Value
 							}
-							// TODO: helper to construct gqlerror with message + []ast.Node
-							return visitor.ActionNoChange, gqlerrors.NewError(
+							return newValidationRuleError(
 								fmt.Sprintf(`Argument "%v" expected type "%v" but got: %v.`,
 									argNameValue, argDef.Type, printer.Print(value)),
 								[]ast.Node{value},
-								"",
-								nil,
-								[]int{},
 							)
 						}
 					}
@@ -93,23 +101,17 @@ func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleI
 						ttype := context.GetInputType()
 
 						if ttype, ok := ttype.(*NonNull); ok && defaultValue != nil {
-							return visitor.ActionNoChange, gqlerrors.NewError(
+							return newValidationRuleError(
 								fmt.Sprintf(`Variable "$%v" of type "%v" is required and will not use the default value. Perhaps you meant to use type "%v".`,
 									name, ttype, ttype.OfType),
 								[]ast.Node{defaultValue},
-								"",
-								nil,
-								[]int{},
 							)
 						}
 						if ttype != nil && defaultValue != nil && !isValidLiteralValue(ttype, defaultValue) {
-							return visitor.ActionNoChange, gqlerrors.NewError(
+							return newValidationRuleError(
 								fmt.Sprintf(`Variable "$%v" of type "%v" has invalid default value: %v.`,
 									name, ttype, printer.Print(defaultValue)),
 								[]ast.Node{defaultValue},
-								"",
-								nil,
-								[]int{},
 							)
 						}
 					}
@@ -147,15 +149,256 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 								if node.Name != nil {
 									nodeName = node.Name.Value
 								}
-								return visitor.ActionNoChange, gqlerrors.NewError(
+								return newValidationRuleError(
 									fmt.Sprintf(`Cannot query field "%v" on "%v".`,
 										nodeName, ttype.GetName()),
 									[]ast.Node{node},
-									"",
-									nil,
-									[]int{},
 								)
 							}
+						}
+					}
+					return action, result
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+/**
+ * FragmentsOnCompositeTypesRule
+ * Fragments on composite type
+ *
+ * Fragments use a type condition to determine if they apply, since fragments
+ * can only be spread into a composite type (object, interface, or union), the
+ * type condition must also be a composite type.
+ */
+func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleInstance {
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.InlineFragment: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.InlineFragment); ok {
+						ttype := context.GetType()
+						if ttype != nil && !IsCompositeType(ttype) {
+							return newValidationRuleError(
+								fmt.Sprintf(`Fragment cannot condition on non composite type "%v".`, ttype),
+								[]ast.Node{node.TypeCondition},
+							)
+						}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.FragmentDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.FragmentDefinition); ok {
+						ttype := context.GetType()
+						if ttype != nil && !IsCompositeType(ttype) {
+							nodeName := ""
+							if node.Name != nil {
+								nodeName = node.Name.Value
+							}
+							return newValidationRuleError(
+								fmt.Sprintf(`Fragment "%v" cannot condition on non composite type "%v".`, nodeName, printer.Print(node.TypeCondition)),
+								[]ast.Node{node.TypeCondition},
+							)
+						}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+/**
+ * KnownArgumentNamesRule
+ * Known argument names
+ *
+ * A GraphQL field is only valid if all supplied arguments are defined by
+ * that field.
+ */
+func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance {
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.Argument: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					var action = visitor.ActionNoChange
+					var result interface{}
+					if node, ok := p.Node.(*ast.Argument); ok {
+						var argumentOf ast.Node
+						if len(p.Ancestors) > 0 {
+							argumentOf = p.Ancestors[len(p.Ancestors)-1]
+						}
+						if argumentOf == nil {
+							return action, result
+						}
+						if argumentOf.GetKind() == "Field" {
+							fieldDef := context.GetFieldDef()
+							if fieldDef == nil {
+								return action, result
+							}
+							nodeName := ""
+							if node.Name != nil {
+								nodeName = node.Name.Value
+							}
+							var fieldArgDef *Argument
+							for _, arg := range fieldDef.Args {
+								if arg.Name == nodeName {
+									fieldArgDef = arg
+								}
+							}
+							if fieldArgDef == nil {
+								parentType := context.GetParentType()
+								parentTypeName := ""
+								if parentType != nil {
+									parentTypeName = parentType.GetName()
+								}
+								return newValidationRuleError(
+									fmt.Sprintf(`Unknown argument "%v" on field "%v" of type "%v".`, nodeName, fieldDef.Name, parentTypeName),
+									[]ast.Node{node},
+								)
+							}
+						} else if argumentOf.GetKind() == "Directive" {
+							directive := context.GetDirective()
+							if directive == nil {
+								return action, result
+							}
+							nodeName := ""
+							if node.Name != nil {
+								nodeName = node.Name.Value
+							}
+							var directiveArgDef *Argument
+							for _, arg := range directive.Args {
+								if arg.Name == nodeName {
+									directiveArgDef = arg
+								}
+							}
+							if directiveArgDef == nil {
+								return newValidationRuleError(
+									fmt.Sprintf(`Unknown argument "%v" on directive "@%v".`, nodeName, directive.Name),
+									[]ast.Node{node},
+								)
+							}
+						}
+
+					}
+					return action, result
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+/**
+ * Known directives
+ *
+ * A GraphQL document is only valid if all `@directives` are known by the
+ * schema and legally positioned.
+ */
+func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.Directive: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					var action = visitor.ActionNoChange
+					var result interface{}
+					if node, ok := p.Node.(*ast.Directive); ok {
+
+						nodeName := ""
+						if node.Name != nil {
+							nodeName = node.Name.Value
+						}
+
+						var directiveDef *Directive
+						for _, def := range context.GetSchema().GetDirectives() {
+							if def.Name == nodeName {
+								directiveDef = def
+							}
+						}
+						if directiveDef == nil {
+							return newValidationRuleError(
+								fmt.Sprintf(`Unknown directive "%v".`, nodeName),
+								[]ast.Node{node},
+							)
+						}
+
+						var appliedTo ast.Node
+						if len(p.Ancestors) > 0 {
+							appliedTo = p.Ancestors[len(p.Ancestors)-1]
+						}
+						if appliedTo == nil {
+							return action, result
+						}
+
+						if appliedTo.GetKind() == kinds.OperationDefinition && directiveDef.OnOperation == false {
+							return newValidationRuleError(
+								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "operation"),
+								[]ast.Node{node},
+							)
+						}
+						if appliedTo.GetKind() == kinds.Field && directiveDef.OnField == false {
+							return newValidationRuleError(
+								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "field"),
+								[]ast.Node{node},
+							)
+						}
+						if (appliedTo.GetKind() == kinds.FragmentSpread ||
+							appliedTo.GetKind() == kinds.InlineFragment ||
+							appliedTo.GetKind() == kinds.FragmentDefinition) && directiveDef.OnFragment == false {
+							return newValidationRuleError(
+								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "fragment"),
+								[]ast.Node{node},
+							)
+						}
+
+					}
+					return action, result
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+/**
+ * KnownFragmentNamesRule
+ * Known fragment names
+ *
+ * A GraphQL document is only valid if all `...Fragment` fragment spreads refer
+ * to fragments defined in the same document.
+ */
+func KnownFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance {
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.FragmentSpread: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					var action = visitor.ActionNoChange
+					var result interface{}
+					if node, ok := p.Node.(*ast.FragmentSpread); ok {
+
+						fragmentName := ""
+						if node.Name != nil {
+							fragmentName = node.Name.Value
+						}
+
+						fragment := context.GetFragment(fragmentName)
+						if fragment == nil {
+							return newValidationRuleError(
+								fmt.Sprintf(`Unknown fragment "%v".`, fragmentName),
+								[]ast.Node{node.Name},
+							)
 						}
 					}
 					return action, result
@@ -188,154 +431,13 @@ func KnownTypeNamesRule(context *ValidationContext) *ValidationRuleInstance {
 						}
 						ttype := context.GetSchema().GetType(typeNameValue)
 						if ttype == nil {
-							return visitor.ActionNoChange, gqlerrors.NewError(
+							return newValidationRuleError(
 								fmt.Sprintf(`Unknown type "%v".`, typeNameValue),
 								[]ast.Node{node},
-								"",
-								nil,
-								[]int{},
 							)
 						}
 					}
 					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
-	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
-	}
-}
-
-/**
- * FragmentsOnCompositeTypesRule
- * Fragments on composite type
- *
- * Fragments use a type condition to determine if they apply, since fragments
- * can only be spread into a composite type (object, interface, or union), the
- * type condition must also be a composite type.
- */
-func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleInstance {
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.InlineFragment: visitor.NamedVisitFuncs{
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.InlineFragment); ok {
-						ttype := context.GetType()
-						if ttype != nil && !IsCompositeType(ttype) {
-							return visitor.ActionNoChange, gqlerrors.NewError(
-								fmt.Sprintf(`Fragment cannot condition on non composite type "%v".`, ttype),
-								[]ast.Node{node.TypeCondition},
-								"",
-								nil,
-								[]int{},
-							)
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.FragmentDefinition: visitor.NamedVisitFuncs{
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.FragmentDefinition); ok {
-						ttype := context.GetType()
-						if ttype != nil && !IsCompositeType(ttype) {
-							nodeName := ""
-							if node.Name != nil {
-								nodeName = node.Name.Value
-							}
-							return visitor.ActionNoChange, gqlerrors.NewError(
-								fmt.Sprintf(`Fragment "%v" cannot condition on non composite type "%v".`, nodeName, printer.Print(node.TypeCondition)),
-								[]ast.Node{node.TypeCondition},
-								"",
-								nil,
-								[]int{},
-							)
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
-	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
-	}
-}
-
-/**
- * KnownArgumentNamesRule
- * Known argument names
- *
- * A GraphQL field is only valid if all supplied arguments are defined by
- * that field.
- */
-func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance {
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Argument: visitor.NamedVisitFuncs{
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					var action = visitor.ActionNoChange
-					var result interface{}
-					if node, ok := p.Node.(*ast.Argument); ok {
-						argumentOf := p.Ancestors[len(p.Ancestors)-1]
-						if argumentOf.GetKind() == "Field" {
-							fieldDef := context.GetFieldDef()
-							if fieldDef == nil {
-								return action, result
-							}
-							nodeName := ""
-							if node.Name != nil {
-								nodeName = node.Name.Value
-							}
-							var fieldArgDef *Argument
-							for _, arg := range fieldDef.Args {
-								if arg.Name == nodeName {
-									fieldArgDef = arg
-								}
-							}
-							if fieldArgDef == nil {
-								parentType := context.GetParentType()
-								parentTypeName := ""
-								if parentType != nil {
-									parentTypeName = parentType.GetName()
-								}
-								return visitor.ActionNoChange, gqlerrors.NewError(
-									fmt.Sprintf(`Unknown argument "%v" on field "%v" of type "%v".`, nodeName, fieldDef.Name, parentTypeName),
-									[]ast.Node{node},
-									"",
-									nil,
-									[]int{},
-								)
-							}
-						} else if argumentOf.GetKind() == "Directive" {
-							directive := context.GetDirective()
-							if directive == nil {
-								return action, result
-							}
-							nodeName := ""
-							if node.Name != nil {
-								nodeName = node.Name.Value
-							}
-							var directiveArgDef *Argument
-							for _, arg := range directive.Args {
-								if arg.Name == nodeName {
-									directiveArgDef = arg
-								}
-							}
-							if directiveArgDef == nil {
-								return visitor.ActionNoChange, gqlerrors.NewError(
-									fmt.Sprintf(`Unknown argument "%v" on directive "@%v".`, nodeName, directive.Name),
-									[]ast.Node{node},
-									"",
-									nil,
-									[]int{},
-								)
-							}
-						}
-
-					}
-					return action, result
 				},
 			},
 		},
