@@ -738,7 +738,6 @@ func GetVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitF
 			// { leave: { Kind() {} } }
 			return specificKindVisitor
 		}
-		return nil
 
 	} else {
 		// { leave() {} }
@@ -750,6 +749,7 @@ func GetVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitF
 			// { enter: { Kind() {} } }
 			return specificKindVisitor
 		}
-		return nil
 	}
+
+	return nil
 }
