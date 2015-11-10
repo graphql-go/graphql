@@ -15,13 +15,13 @@ import (
 var SpecifiedRules = []ValidationRuleFn{
 	ArgumentsOfCorrectTypeRule,
 	KnownTypeNamesRule,
+	DefaultValuesOfCorrectTypeRule,
 }
 
 type ValidationRuleInstance struct {
 	VisitorOpts          *visitor.VisitorOptions
 	VisitSpreadFragments bool
 }
-
 type ValidationRuleFn func(context *ValidationContext) *ValidationRuleInstance
 
 func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance {
@@ -59,7 +59,51 @@ func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInsta
 		VisitorOpts: visitorOpts,
 	}
 }
+func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance {
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.VariableDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					var action = visitor.ActionNoChange
+					var result interface{}
+					if varDefAST, ok := p.Node.(*ast.VariableDefinition); ok {
+						name := ""
+						if varDefAST.Variable != nil && varDefAST.Variable.Name != nil {
+							name = varDefAST.Variable.Name.Value
+						}
+						defaultValue := varDefAST.DefaultValue
+						ttype := context.GetInputType()
 
+						if ttype, ok := ttype.(*NonNull); ok && defaultValue != nil {
+							return visitor.ActionNoChange, gqlerrors.NewError(
+								fmt.Sprintf(`Variable "$%v" of type "%v" is required and will not use the default value. Perhaps you meant to use type "%v".`,
+									name, ttype, ttype.OfType),
+								[]ast.Node{defaultValue},
+								"",
+								nil,
+								[]int{},
+							)
+						}
+						if ttype != nil && defaultValue != nil && !isValidLiteralValue(ttype, defaultValue) {
+							return visitor.ActionNoChange, gqlerrors.NewError(
+								fmt.Sprintf(`Variable "$%v" of type "%v" has invalid default value: %v.`,
+									name, ttype, printer.Print(defaultValue)),
+								[]ast.Node{defaultValue},
+								"",
+								nil,
+								[]int{},
+							)
+						}
+					}
+					return action, result
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
 func KnownTypeNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
