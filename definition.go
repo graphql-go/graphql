@@ -123,16 +123,6 @@ type Abstract interface {
 var _ Abstract = (*Interface)(nil)
 var _ Abstract = (*Union)(nil)
 
-func IsAbstractType(ttype Type) bool {
-	if _, ok := ttype.(*Interface); ok {
-		return true
-	}
-	if _, ok := ttype.(*Union); ok {
-		return true
-	}
-	return false
-}
-
 type Nullable interface {
 }
 
