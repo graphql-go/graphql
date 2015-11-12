@@ -7,6 +7,7 @@ import (
 	"github.com/graphql-go/graphql/language/kinds"
 	"github.com/graphql-go/graphql/language/printer"
 	"github.com/graphql-go/graphql/language/visitor"
+	"strings"
 )
 
 /**
@@ -21,6 +22,8 @@ var SpecifiedRules = []ValidationRuleFn{
 	KnownDirectivesRule,
 	KnownFragmentNamesRule,
 	KnownTypeNamesRule,
+	LoneAnonymousOperationRule,
+	NoFragmentCyclesRule,
 }
 
 type ValidationRuleInstance struct {
@@ -448,6 +451,171 @@ func KnownTypeNamesRule(context *ValidationContext) *ValidationRuleInstance {
 }
 
 /**
+ * LoneAnonymousOperationRule
+ * Lone anonymous operation
+ *
+ * A GraphQL document is only valid if when it contains an anonymous operation
+ * (the query short-hand) that it contains only that one operation definition.
+ */
+func LoneAnonymousOperationRule(context *ValidationContext) *ValidationRuleInstance {
+	var operationCount = 0
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.Document: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.Document); ok {
+						operationCount = 0
+						for _, definition := range node.Definitions {
+							if definition.GetKind() == kinds.OperationDefinition {
+								operationCount = operationCount + 1
+							}
+						}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.OperationDefinition); ok {
+						if node.Name == nil && operationCount > 1 {
+							return newValidationRuleError(
+								`This anonymous operation must be the only defined operation.`,
+								[]ast.Node{node},
+							)
+						}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+type nodeSet struct {
+	set map[ast.Node]bool
+}
+
+func newNodeSet() *nodeSet {
+	return &nodeSet{
+		set: map[ast.Node]bool{},
+	}
+}
+func (set *nodeSet) Has(node ast.Node) bool {
+	_, ok := set.set[node]
+	return ok
+}
+func (set *nodeSet) Add(node ast.Node) bool {
+	if set.Has(node) {
+		return false
+	}
+	set.set[node] = true
+	return true
+}
+
+/**
+ * NoFragmentCyclesRule
+ */
+func NoFragmentCyclesRule(context *ValidationContext) *ValidationRuleInstance {
+	// Gather all the fragment spreads ASTs for each fragment definition.
+	// Importantly this does not include inline fragments.
+	definitions := context.GetDocument().Definitions
+	spreadsInFragment := map[string][]*ast.FragmentSpread{}
+	for _, node := range definitions {
+		if node.GetKind() == kinds.FragmentDefinition {
+			if node, ok := node.(*ast.FragmentDefinition); ok && node != nil {
+				nodeName := ""
+				if node.Name != nil {
+					nodeName = node.Name.Value
+				}
+				spreadsInFragment[nodeName] = gatherSpreads(node)
+			}
+		}
+	}
+	// Tracks spreads known to lead to cycles to ensure that cycles are not
+	// redundantly reported.
+	knownToLeadToCycle := newNodeSet()
+
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.FragmentDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.FragmentDefinition); ok && node != nil {
+						errors := []error{}
+						spreadPath := []*ast.FragmentSpread{}
+						initialName := ""
+						if node.Name != nil {
+							initialName = node.Name.Value
+						}
+						var detectCycleRecursive func(fragmentName string)
+						detectCycleRecursive = func(fragmentName string) {
+							spreadNodes, _ := spreadsInFragment[fragmentName]
+							for _, spreadNode := range spreadNodes {
+								if knownToLeadToCycle.Has(spreadNode) {
+									continue
+								}
+								spreadNodeName := ""
+								if spreadNode.Name != nil {
+									spreadNodeName = spreadNode.Name.Value
+								}
+								if spreadNodeName == initialName {
+									cyclePath := []ast.Node{}
+									for _, path := range spreadPath {
+										cyclePath = append(cyclePath, path)
+									}
+									cyclePath = append(cyclePath, spreadNode)
+									for _, spread := range cyclePath {
+										knownToLeadToCycle.Add(spread)
+									}
+									via := ""
+									spreadNames := []string{}
+									for _, s := range spreadPath {
+										if s.Name != nil {
+											spreadNames = append(spreadNames, s.Name.Value)
+										}
+									}
+									if len(spreadNames) > 0 {
+										via = " via " + strings.Join(spreadNames, ", ")
+									}
+									_, err := newValidationRuleError(
+										fmt.Sprintf(`Cannot spread fragment "%v" within itself%v.`, initialName, via),
+										cyclePath,
+									)
+									errors = append(errors, err)
+									continue
+								}
+								spreadPathHasCurrentNode := false
+								for _, spread := range spreadPath {
+									if spread == spreadNode {
+										spreadPathHasCurrentNode = true
+									}
+								}
+								if spreadPathHasCurrentNode {
+									continue
+								}
+								spreadPath = append(spreadPath, spreadNode)
+								detectCycleRecursive(spreadNodeName)
+								_, spreadPath = spreadPath[len(spreadPath)-1], spreadPath[:len(spreadPath)-1]
+							}
+						}
+						detectCycleRecursive(initialName)
+						if len(errors) > 0 {
+							return visitor.ActionNoChange, errors
+						}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+/**
  * Utility for validators which determines if a value literal AST is valid given
  * an input type.
  *
@@ -538,4 +706,26 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) bool {
 	// Must be input type (not scalar or enum)
 	// Silently fail, instead of panic()
 	return false
+}
+
+/**
+ * Given an operation or fragment AST node, gather all the
+ * named spreads defined within the scope of the fragment
+ * or operation
+ */
+func gatherSpreads(node ast.Node) (spreadNodes []*ast.FragmentSpread) {
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.FragmentSpread: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.FragmentSpread); ok && node != nil {
+						spreadNodes = append(spreadNodes, node)
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	visitor.Visit(node, visitorOpts, nil)
+	return spreadNodes
 }

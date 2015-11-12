@@ -72,6 +72,10 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 						errors = append(errors, gqlerrors.FormatError(err))
 						action = visitor.ActionSkip
 					}
+					if err, ok := result.([]error); ok && err != nil {
+						errors = append(errors, gqlerrors.FormatErrors(err...)...)
+						action = visitor.ActionSkip
+					}
 
 					// If any validation instances provide the flag `visitSpreadFragments`
 					// and this node is a fragment spread, visit the fragment definition
@@ -117,6 +121,10 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 					// deeper nodes.
 					if err, ok := result.(error); ok && err != nil {
 						errors = append(errors, gqlerrors.FormatError(err))
+						action = visitor.ActionSkip
+					}
+					if err, ok := result.([]error); ok && err != nil {
+						errors = append(errors, gqlerrors.FormatErrors(err...)...)
 						action = visitor.ActionSkip
 					}
 

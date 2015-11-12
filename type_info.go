@@ -79,6 +79,7 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 		var fieldDef *FieldDefinition
 		if parentType != nil {
 			fieldDef = getTypeInfoFieldDef(*schema, parentType.(Type), node)
+		} else {
 		}
 		ti.fieldDefStack = append(ti.fieldDefStack, fieldDef)
 		if fieldDef != nil {
@@ -212,22 +213,22 @@ func getTypeInfoFieldDef(schema Schema, parentType Type, fieldAST *ast.Field) *F
 		return TypeMetaFieldDef
 	}
 	if name == TypeNameMetaFieldDef.Name {
-		if _, ok := parentType.(*Object); ok {
+		if _, ok := parentType.(*Object); ok && parentType != nil {
 			return TypeNameMetaFieldDef
 		}
-		if _, ok := parentType.(*Interface); ok {
+		if _, ok := parentType.(*Interface); ok && parentType != nil {
 			return TypeNameMetaFieldDef
 		}
-		if _, ok := parentType.(*Union); ok {
+		if _, ok := parentType.(*Union); ok && parentType != nil {
 			return TypeNameMetaFieldDef
 		}
 	}
 
-	if parentType, ok := parentType.(*Object); ok {
+	if parentType, ok := parentType.(*Object); ok && parentType != nil {
 		field, _ := parentType.GetFields()[name]
 		return field
 	}
-	if parentType, ok := parentType.(*Interface); ok {
+	if parentType, ok := parentType.(*Interface); ok && parentType != nil {
 		field, _ := parentType.GetFields()[name]
 		return field
 	}
