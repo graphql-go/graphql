@@ -80,7 +80,8 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 					// If any validation instances provide the flag `visitSpreadFragments`
 					// and this node is a fragment spread, visit the fragment definition
 					// from this point.
-					if result == nil && instance.VisitSpreadFragments == true && kind == kinds.FragmentSpread {
+					if action == visitor.ActionNoChange && result == nil &&
+						instance.VisitSpreadFragments == true && kind == kinds.FragmentSpread {
 						node, _ := node.(*ast.FragmentSpread)
 						name := node.Name
 						nameVal := ""
@@ -93,7 +94,7 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 						}
 					}
 
-					// If the result is "false" (ie action === Action.Skip, we're not visiting any descendent nodes,
+					// If the result is "false" (ie action === Action.Skip), we're not visiting any descendent nodes,
 					// but need to update typeInfo.
 					if action == visitor.ActionSkip {
 						typeInfo.Leave(node)

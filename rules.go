@@ -24,6 +24,7 @@ var SpecifiedRules = []ValidationRuleFn{
 	KnownTypeNamesRule,
 	LoneAnonymousOperationRule,
 	NoFragmentCyclesRule,
+	NoUndefinedVariablesRule,
 }
 
 type ValidationRuleInstance struct {
@@ -612,6 +613,95 @@ func NoFragmentCyclesRule(context *ValidationContext) *ValidationRuleInstance {
 	}
 	return &ValidationRuleInstance{
 		VisitorOpts: visitorOpts,
+	}
+}
+
+/**
+ * NoUndefinedVariables
+ * No undefined variables
+ *
+ * A GraphQL operation is only valid if all variables encountered, both directly
+ * and via fragment spreads, are defined by that operation.
+ */
+func NoUndefinedVariablesRule(context *ValidationContext) *ValidationRuleInstance {
+	var operation *ast.OperationDefinition
+	var visitedFragmentNames = map[string]bool{}
+	var definedVariableNames = map[string]bool{}
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.OperationDefinition); ok && node != nil {
+						operation = node
+						visitedFragmentNames = map[string]bool{}
+						definedVariableNames = map[string]bool{}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.VariableDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.VariableDefinition); ok && node != nil {
+						variableName := ""
+						if node.Variable != nil && node.Variable.Name != nil {
+							variableName = node.Variable.Name.Value
+						}
+						definedVariableNames[variableName] = true
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.Variable: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if variable, ok := p.Node.(*ast.Variable); ok && variable != nil {
+						variableName := ""
+						if variable.Name != nil {
+							variableName = variable.Name.Value
+						}
+						if val, _ := definedVariableNames[variableName]; !val {
+							withinFragment := false
+							for _, node := range p.Ancestors {
+								if node.GetKind() == kinds.FragmentDefinition {
+									withinFragment = true
+									break
+								}
+							}
+							if withinFragment == true && operation != nil && operation.Name != nil {
+								return newValidationRuleError(
+									fmt.Sprintf(`Variable "$%v" is not defined by operation "%v".`, variableName, operation.Name.Value),
+									[]ast.Node{variable, operation},
+								)
+							}
+							return newValidationRuleError(
+								fmt.Sprintf(`Variable "$%v" is not defined.`, variableName),
+								[]ast.Node{variable},
+							)
+						}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.FragmentSpread: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.FragmentSpread); ok && node != nil {
+						// Only visit fragments of a particular name once per operation
+						fragmentName := ""
+						if node.Name != nil {
+							fragmentName = node.Name.Value
+						}
+						if val, ok := visitedFragmentNames[fragmentName]; ok && val == true {
+							return visitor.ActionSkip, nil
+						}
+						visitedFragmentNames[fragmentName] = true
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitSpreadFragments: true,
+		VisitorOpts:          visitorOpts,
 	}
 }
 
