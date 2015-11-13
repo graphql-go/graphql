@@ -297,14 +297,15 @@ type Object struct {
 
 type IsTypeOfFn func(value interface{}, info ResolveInfo) bool
 
+type ObjectFieldMapThunk func() FieldConfigMap
 type InterfacesThunk func() []*Interface
 
 type ObjectConfig struct {
-	Name        string         `json:"description"`
-	Interfaces  interface{}    `json:"interfaces"`
-	Fields      FieldConfigMap `json:"fields"`
-	IsTypeOf    IsTypeOfFn     `json:"isTypeOf"`
-	Description string         `json:"description"`
+	Name        string      `json:"description"`
+	Interfaces  interface{} `json:"interfaces"`
+	Fields      interface{} `json:"fields"`
+	IsTypeOf    IsTypeOfFn  `json:"isTypeOf"`
+	Description string      `json:"description"`
 }
 
 func NewObject(config ObjectConfig) *Object {
@@ -347,8 +348,10 @@ func (gt *Object) AddFieldConfig(fieldName string, fieldConfig *FieldConfig) {
 	if fieldName == "" || fieldConfig == nil {
 		return
 	}
-	gt.typeConfig.Fields[fieldName] = fieldConfig
-
+	switch gt.typeConfig.Fields.(type) {
+	case FieldConfigMap:
+		gt.typeConfig.Fields.(FieldConfigMap)[fieldName] = fieldConfig
+	}
 }
 func (gt *Object) GetName() string {
 	return gt.Name
@@ -418,19 +421,26 @@ func defineInterfaces(ttype *Object, interfaces []*Interface) ([]*Interface, err
 	return ifaces, nil
 }
 
-func defineFieldMap(ttype Named, fields FieldConfigMap) (FieldDefinitionMap, error) {
+func defineFieldMap(ttype Named, fields interface{}) (FieldDefinitionMap, error) {
+	var fieldMap FieldConfigMap
+	switch fields.(type) {
+	case FieldConfigMap:
+		fieldMap = fields.(FieldConfigMap)
+	case ObjectFieldMapThunk:
+		fieldMap = fields.(ObjectFieldMapThunk)()
+	}
 
 	resultFieldMap := FieldDefinitionMap{}
 
 	err := invariant(
-		len(fields) > 0,
+		len(fieldMap) > 0,
 		fmt.Sprintf(`%v fields must be an object with field names as keys or a function which return such an object.`, ttype),
 	)
 	if err != nil {
 		return resultFieldMap, err
 	}
 
-	for fieldName, field := range fields {
+	for fieldName, field := range fieldMap {
 		if field == nil {
 			continue
 		}
@@ -1026,8 +1036,8 @@ type InputObject struct {
 
 	typeConfig InputObjectConfig
 	fields     InputObjectFieldMap
-
-	err error
+	init       bool
+	err        error
 }
 type InputObjectFieldConfig struct {
 	Type         Input       `json:"type"`
@@ -1076,7 +1086,7 @@ func NewInputObject(config InputObjectConfig) *InputObject {
 	gt.Name = config.Name
 	gt.Description = config.Description
 	gt.typeConfig = config
-	gt.fields = gt.defineFieldMap()
+	//gt.fields = gt.defineFieldMap()
 	return gt
 }
 
@@ -1122,9 +1132,13 @@ func (gt *InputObject) defineFieldMap() InputObjectFieldMap {
 		field.DefaultValue = fieldConfig.DefaultValue
 		resultFieldMap[fieldName] = field
 	}
+	gt.init = true
 	return resultFieldMap
 }
 func (gt *InputObject) GetFields() InputObjectFieldMap {
+	if !gt.init {
+		gt.fields = gt.defineFieldMap()
+	}
 	return gt.fields
 }
 func (gt *InputObject) GetName() string {

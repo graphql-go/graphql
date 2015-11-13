@@ -533,3 +533,25 @@ func TestTypeSystem_DefinitionExample_DoesNotMutatePassedFieldDefinitions(t *tes
 	}
 
 }
+
+func TestTypeSystem_DefinitionExampe_AllowsCyclicFieldTypes(t *testing.T) {
+	personType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Person",
+		Fields: (graphql.ObjectFieldMapThunk)(func() graphql.FieldConfigMap {
+			return graphql.FieldConfigMap{
+				"name": &graphql.FieldConfig{
+					Type: graphql.String,
+				},
+				"bestFriend": &graphql.FieldConfig{
+					Type: personType,
+				},
+			}
+		}),
+	})
+
+	fieldMap := personType.GetFields()
+	if !reflect.DeepEqual(fieldMap["name"].Type, graphql.String) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(fieldMap["bestFriend"].Type, personType))
+	}
+
+}
