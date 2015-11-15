@@ -25,6 +25,7 @@ var SpecifiedRules = []ValidationRuleFn{
 	LoneAnonymousOperationRule,
 	NoFragmentCyclesRule,
 	NoUndefinedVariablesRule,
+	NoUnusedFragmentsRule,
 }
 
 type ValidationRuleInstance struct {
@@ -702,6 +703,108 @@ func NoUndefinedVariablesRule(context *ValidationContext) *ValidationRuleInstanc
 	return &ValidationRuleInstance{
 		VisitSpreadFragments: true,
 		VisitorOpts:          visitorOpts,
+	}
+}
+
+/**
+ * NoUnusedFragmentsRule
+ * No unused fragments
+ *
+ * A GraphQL document is only valid if all fragment definitions are spread
+ * within operations, or spread within other fragments spread within operations.
+ */
+func NoUnusedFragmentsRule(context *ValidationContext) *ValidationRuleInstance {
+
+	var fragmentDefs = []*ast.FragmentDefinition{}
+	var spreadsWithinOperation = []map[string]bool{}
+	var fragAdjacencies = map[string]map[string]bool{}
+	var spreadNames = map[string]bool{}
+
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.OperationDefinition); ok && node != nil {
+						spreadNames = map[string]bool{}
+						spreadsWithinOperation = append(spreadsWithinOperation, spreadNames)
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.FragmentDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if def, ok := p.Node.(*ast.FragmentDefinition); ok && def != nil {
+						defName := ""
+						if def.Name != nil {
+							defName = def.Name.Value
+						}
+
+						fragmentDefs = append(fragmentDefs, def)
+						spreadNames = map[string]bool{}
+						fragAdjacencies[defName] = spreadNames
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.FragmentSpread: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if spread, ok := p.Node.(*ast.FragmentSpread); ok && spread != nil {
+						spreadName := ""
+						if spread.Name != nil {
+							spreadName = spread.Name.Value
+						}
+						spreadNames[spreadName] = true
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.Document: visitor.NamedVisitFuncs{
+				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+
+					fragmentNameUsed := map[string]interface{}{}
+
+					var reduceSpreadFragments func(spreads map[string]bool)
+					reduceSpreadFragments = func(spreads map[string]bool) {
+						for fragName, _ := range spreads {
+							if isFragNameUsed, _ := fragmentNameUsed[fragName]; isFragNameUsed != true {
+								fragmentNameUsed[fragName] = true
+
+								if adjacencies, ok := fragAdjacencies[fragName]; ok {
+									reduceSpreadFragments(adjacencies)
+								}
+							}
+						}
+					}
+					for _, spreadWithinOperation := range spreadsWithinOperation {
+						reduceSpreadFragments(spreadWithinOperation)
+					}
+					errors := []error{}
+					for _, def := range fragmentDefs {
+						defName := ""
+						if def.Name != nil {
+							defName = def.Name.Value
+						}
+
+						isFragNameUsed, ok := fragmentNameUsed[defName]
+						if !ok || isFragNameUsed != true {
+							_, err := newValidationRuleError(
+								fmt.Sprintf(`Fragment "%v" is never used.`, defName),
+								[]ast.Node{def},
+							)
+
+							errors = append(errors, err)
+						}
+					}
+					if len(errors) > 0 {
+						return visitor.ActionNoChange, errors
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
 	}
 }
 

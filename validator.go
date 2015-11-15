@@ -179,11 +179,11 @@ func (ctx *ValidationContext) GetFragment(name string) *ast.FragmentDefinition {
 		fragments := map[string]*ast.FragmentDefinition{}
 		for _, def := range defs {
 			if def, ok := def.(*ast.FragmentDefinition); ok {
-				name := ""
+				defName := ""
 				if def.Name != nil {
-					name = def.Name.Value
+					defName = def.Name.Value
 				}
-				fragments[name] = def
+				fragments[defName] = def
 			}
 		}
 		ctx.fragments = fragments
