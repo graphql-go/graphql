@@ -27,6 +27,7 @@ var SpecifiedRules = []ValidationRuleFn{
 	NoFragmentCyclesRule,
 	NoUndefinedVariablesRule,
 	NoUnusedFragmentsRule,
+	NoUnusedVariablesRule,
 	OverlappingFieldsCanBeMergedRule,
 }
 
@@ -807,6 +808,93 @@ func NoUnusedFragmentsRule(context *ValidationContext) *ValidationRuleInstance {
 	}
 	return &ValidationRuleInstance{
 		VisitorOpts: visitorOpts,
+	}
+}
+
+/**
+ * NoUnusedVariablesRule
+ * No unused variables
+ *
+ * A GraphQL operation is only valid if all variables defined by an operation
+ * are used, either directly or within a spread fragment.
+ */
+func NoUnusedVariablesRule(context *ValidationContext) *ValidationRuleInstance {
+
+	var visitedFragmentNames = map[string]bool{}
+	var variableDefs = []*ast.VariableDefinition{}
+	var variableNameUsed = map[string]bool{}
+
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+				Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+					visitedFragmentNames = map[string]bool{}
+					variableDefs = []*ast.VariableDefinition{}
+					variableNameUsed = map[string]bool{}
+					return visitor.ActionNoChange, nil
+				},
+				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+					errors := []error{}
+					for _, def := range variableDefs {
+						variableName := ""
+						if def.Variable != nil && def.Variable.Name != nil {
+							variableName = def.Variable.Name.Value
+						}
+						if isVariableNameUsed, _ := variableNameUsed[variableName]; isVariableNameUsed != true {
+							_, err := newValidationRuleError(
+								fmt.Sprintf(`Variable "$%v" is never used.`, variableName),
+								[]ast.Node{def},
+							)
+							errors = append(errors, err)
+						}
+					}
+					if len(errors) > 0 {
+						return visitor.ActionNoChange, errors
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.VariableDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if def, ok := p.Node.(*ast.VariableDefinition); ok && def != nil {
+						variableDefs = append(variableDefs, def)
+					}
+					// Do not visit deeper, or else the defined variable name will be visited.
+					return visitor.ActionSkip, nil
+				},
+			},
+			kinds.Variable: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if variable, ok := p.Node.(*ast.Variable); ok && variable != nil {
+						if variable.Name != nil {
+							variableNameUsed[variable.Name.Value] = true
+						}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.FragmentSpread: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if spreadAST, ok := p.Node.(*ast.FragmentSpread); ok && spreadAST != nil {
+						// Only visit fragments of a particular name once per operation
+						spreadName := ""
+						if spreadAST.Name != nil {
+							spreadName = spreadAST.Name.Value
+						}
+						if hasVisitedFragmentNames, _ := visitedFragmentNames[spreadName]; hasVisitedFragmentNames == true {
+							return visitor.ActionSkip, nil
+						}
+						visitedFragmentNames[spreadName] = true
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		// Visit FragmentDefinition after visiting FragmentSpread
+		VisitSpreadFragments: true,
+		VisitorOpts:          visitorOpts,
 	}
 }
 
