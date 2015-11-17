@@ -7,6 +7,7 @@ import (
 	"github.com/graphql-go/graphql/language/kinds"
 	"github.com/graphql-go/graphql/language/printer"
 	"github.com/graphql-go/graphql/language/visitor"
+	"sort"
 	"strings"
 )
 
@@ -26,6 +27,7 @@ var SpecifiedRules = []ValidationRuleFn{
 	NoFragmentCyclesRule,
 	NoUndefinedVariablesRule,
 	NoUnusedFragmentsRule,
+	OverlappingFieldsCanBeMergedRule,
 }
 
 type ValidationRuleInstance struct {
@@ -797,6 +799,415 @@ func NoUnusedFragmentsRule(context *ValidationContext) *ValidationRuleInstance {
 					}
 					if len(errors) > 0 {
 						return visitor.ActionNoChange, errors
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+type fieldDefPair struct {
+	Field    *ast.Field
+	FieldDef *FieldDefinition
+}
+
+func collectFieldASTsAndDefs(context *ValidationContext, parentType Named, selectionSet *ast.SelectionSet, visitedFragmentNames map[string]bool, astAndDefs map[string][]*fieldDefPair) map[string][]*fieldDefPair {
+
+	if astAndDefs == nil {
+		astAndDefs = map[string][]*fieldDefPair{}
+	}
+	if visitedFragmentNames == nil {
+		visitedFragmentNames = map[string]bool{}
+	}
+	if selectionSet == nil {
+		return astAndDefs
+	}
+	for _, selection := range selectionSet.Selections {
+		switch selection := selection.(type) {
+		case *ast.Field:
+			fieldName := ""
+			if selection.Name != nil {
+				fieldName = selection.Name.Value
+			}
+			var fieldDef *FieldDefinition
+			if parentType, ok := parentType.(*Object); ok {
+				fieldDef, _ = parentType.GetFields()[fieldName]
+			}
+			if parentType, ok := parentType.(*Interface); ok {
+				fieldDef, _ = parentType.GetFields()[fieldName]
+			}
+
+			responseName := fieldName
+			if selection.Alias != nil {
+				responseName = selection.Alias.Value
+			}
+			_, ok := astAndDefs[responseName]
+			if !ok {
+				astAndDefs[responseName] = []*fieldDefPair{}
+			}
+			astAndDefs[responseName] = append(astAndDefs[responseName], &fieldDefPair{
+				Field:    selection,
+				FieldDef: fieldDef,
+			})
+		case *ast.InlineFragment:
+			parentType, _ := typeFromAST(*context.GetSchema(), selection.TypeCondition)
+			astAndDefs = collectFieldASTsAndDefs(
+				context,
+				parentType,
+				selection.SelectionSet,
+				visitedFragmentNames,
+				astAndDefs,
+			)
+		case *ast.FragmentSpread:
+			fragName := ""
+			if selection.Name != nil {
+				fragName = selection.Name.Value
+			}
+			if _, ok := visitedFragmentNames[fragName]; ok {
+				continue
+			}
+			visitedFragmentNames[fragName] = true
+			fragment := context.GetFragment(fragName)
+			if fragment == nil {
+				continue
+			}
+			parentType, _ := typeFromAST(*context.GetSchema(), fragment.TypeCondition)
+			astAndDefs = collectFieldASTsAndDefs(
+				context,
+				parentType,
+				fragment.SelectionSet,
+				visitedFragmentNames,
+				astAndDefs,
+			)
+		}
+	}
+	return astAndDefs
+}
+
+/**
+ * pairSet A way to keep track of pairs of things when the ordering of the pair does
+ * not matter. We do this by maintaining a sort of double adjacency sets.
+ */
+type pairSet struct {
+	data map[ast.Node]*nodeSet
+}
+
+func newPairSet() *pairSet {
+	return &pairSet{
+		data: map[ast.Node]*nodeSet{},
+	}
+}
+func (pair *pairSet) Has(a ast.Node, b ast.Node) bool {
+	first, ok := pair.data[a]
+	if !ok || first == nil {
+		return false
+	}
+	res := first.Has(b)
+	return res
+}
+func (pair *pairSet) Add(a ast.Node, b ast.Node) bool {
+	pair.data = pairSetAdd(pair.data, a, b)
+	pair.data = pairSetAdd(pair.data, b, a)
+	return true
+}
+
+func pairSetAdd(data map[ast.Node]*nodeSet, a, b ast.Node) map[ast.Node]*nodeSet {
+	set, ok := data[a]
+	if !ok || set == nil {
+		set = newNodeSet()
+		data[a] = set
+	}
+	set.Add(b)
+	return data
+}
+
+type conflictReason struct {
+	Name    string
+	Message interface{} // conflictReason || []conflictReason
+}
+type conflict struct {
+	Reason conflictReason
+	Fields []ast.Node
+}
+
+func sameDirectives(directives1 []*ast.Directive, directives2 []*ast.Directive) bool {
+	if len(directives1) != len(directives1) {
+		return false
+	}
+	for _, directive1 := range directives1 {
+		directive1Name := ""
+		if directive1.Name != nil {
+			directive1Name = directive1.Name.Value
+		}
+
+		var foundDirective2 *ast.Directive
+		for _, directive2 := range directives2 {
+			directive2Name := ""
+			if directive2.Name != nil {
+				directive2Name = directive2.Name.Value
+			}
+			if directive1Name == directive2Name {
+				foundDirective2 = directive2
+			}
+			break
+		}
+		if foundDirective2 == nil {
+			return false
+		}
+		if sameArguments(directive1.Arguments, foundDirective2.Arguments) == false {
+			return false
+		}
+	}
+
+	return true
+}
+func sameArguments(args1 []*ast.Argument, args2 []*ast.Argument) bool {
+	if len(args1) != len(args2) {
+		return false
+	}
+
+	for _, arg1 := range args1 {
+		arg1Name := ""
+		if arg1.Name != nil {
+			arg1Name = arg1.Name.Value
+		}
+
+		var foundArgs2 *ast.Argument
+		for _, arg2 := range args2 {
+			arg2Name := ""
+			if arg2.Name != nil {
+				arg2Name = arg2.Name.Value
+			}
+			if arg1Name == arg2Name {
+				foundArgs2 = arg2
+			}
+			break
+		}
+		if foundArgs2 == nil {
+			return false
+		}
+		if sameValue(arg1.Value, foundArgs2.Value) == false {
+			return false
+		}
+	}
+
+	return true
+}
+func sameValue(value1 ast.Value, value2 ast.Value) bool {
+	if value1 == nil && value2 == nil {
+		return true
+	}
+	val1 := printer.Print(value1)
+	val2 := printer.Print(value2)
+
+	return val1 == val2
+}
+func sameType(type1 Type, type2 Type) bool {
+	t := fmt.Sprintf("%v", type1)
+	t2 := fmt.Sprintf("%v", type2)
+	return t == t2
+}
+
+/**
+ * OverlappingFieldsCanBeMergedRule
+ * Overlapping fields can be merged
+ *
+ * A selection set is only valid if all fields (including spreading any
+ * fragments) either correspond to distinct response names or can be merged
+ * without ambiguity.
+ */
+func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRuleInstance {
+
+	comparedSet := newPairSet()
+	var findConflicts func(fieldMap map[string][]*fieldDefPair) (conflicts []*conflict)
+	findConflict := func(responseName string, pair *fieldDefPair, pair2 *fieldDefPair) *conflict {
+
+		ast1 := pair.Field
+		def1 := pair.FieldDef
+
+		ast2 := pair2.Field
+		def2 := pair2.FieldDef
+
+		if ast1 == ast2 || comparedSet.Has(ast1, ast2) {
+			return nil
+		}
+		comparedSet.Add(ast1, ast2)
+
+		name1 := ""
+		if ast1.Name != nil {
+			name1 = ast1.Name.Value
+		}
+		name2 := ""
+		if ast2.Name != nil {
+			name2 = ast2.Name.Value
+		}
+		if name1 != name2 {
+			return &conflict{
+				Reason: conflictReason{
+					Name:    responseName,
+					Message: fmt.Sprintf(`%v and %v are different fields`, name1, name2),
+				},
+				Fields: []ast.Node{ast1, ast2},
+			}
+		}
+
+		var type1 Type
+		var type2 Type
+		if def1 != nil {
+			type1 = def1.Type
+		}
+		if def2 != nil {
+			type2 = def2.Type
+		}
+
+		if type1 != nil && type2 != nil && !sameType(type1, type2) {
+			return &conflict{
+				Reason: conflictReason{
+					Name:    responseName,
+					Message: fmt.Sprintf(`they return differing types %v and %v`, type1, type2),
+				},
+				Fields: []ast.Node{ast1, ast2},
+			}
+		}
+		if !sameArguments(ast1.Arguments, ast2.Arguments) {
+			return &conflict{
+				Reason: conflictReason{
+					Name:    responseName,
+					Message: `they have differing arguments`,
+				},
+				Fields: []ast.Node{ast1, ast2},
+			}
+		}
+		if !sameDirectives(ast1.Directives, ast2.Directives) {
+			return &conflict{
+				Reason: conflictReason{
+					Name:    responseName,
+					Message: `they have differing directives`,
+				},
+				Fields: []ast.Node{ast1, ast2},
+			}
+		}
+
+		selectionSet1 := ast1.SelectionSet
+		selectionSet2 := ast2.SelectionSet
+		if selectionSet1 != nil && selectionSet2 != nil {
+			visitedFragmentNames := map[string]bool{}
+			subfieldMap := collectFieldASTsAndDefs(
+				context,
+				GetNamed(type1),
+				selectionSet1,
+				visitedFragmentNames,
+				nil,
+			)
+			subfieldMap = collectFieldASTsAndDefs(
+				context,
+				GetNamed(type2),
+				selectionSet2,
+				visitedFragmentNames,
+				subfieldMap,
+			)
+			conflicts := findConflicts(subfieldMap)
+			if len(conflicts) > 0 {
+
+				conflictReasons := []conflictReason{}
+				conflictFields := []ast.Node{ast1, ast2}
+				for _, c := range conflicts {
+					conflictReasons = append(conflictReasons, c.Reason)
+					conflictFields = append(conflictFields, c.Fields...)
+				}
+
+				return &conflict{
+					Reason: conflictReason{
+						Name:    responseName,
+						Message: conflictReasons,
+					},
+					Fields: conflictFields,
+				}
+			}
+		}
+		return nil
+	}
+
+	findConflicts = func(fieldMap map[string][]*fieldDefPair) (conflicts []*conflict) {
+
+		// ensure field traversal
+		orderedName := sort.StringSlice{}
+		for responseName, _ := range fieldMap {
+			orderedName = append(orderedName, responseName)
+		}
+		orderedName.Sort()
+
+		for _, responseName := range orderedName {
+			fields, _ := fieldMap[responseName]
+			for _, fieldA := range fields {
+				for _, fieldB := range fields {
+					c := findConflict(responseName, fieldA, fieldB)
+					if c != nil {
+						conflicts = append(conflicts, c)
+					}
+				}
+			}
+		}
+		return conflicts
+	}
+
+	var reasonMessage func(message interface{}) string
+	reasonMessage = func(message interface{}) string {
+		switch reason := message.(type) {
+		case string:
+			return reason
+		case conflictReason:
+			return reasonMessage(reason.Message)
+		case []conflictReason:
+			messages := []string{}
+			for _, r := range reason {
+				messages = append(messages, fmt.Sprintf(
+					`subfields "%v" conflict because %v`,
+					r.Name,
+					reasonMessage(r.Message),
+				))
+			}
+			return strings.Join(messages, " and ")
+		}
+		return ""
+	}
+
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.SelectionSet: visitor.NamedVisitFuncs{
+				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if selectionSet, ok := p.Node.(*ast.SelectionSet); ok && selectionSet != nil {
+						parentType, _ := context.GetParentType().(Named)
+						fieldMap := collectFieldASTsAndDefs(
+							context,
+							parentType,
+							selectionSet,
+							nil,
+							nil,
+						)
+						conflicts := findConflicts(fieldMap)
+						if len(conflicts) > 0 {
+							errors := []error{}
+							for _, c := range conflicts {
+								responseName := c.Reason.Name
+								reason := c.Reason
+								_, err := newValidationRuleError(
+									fmt.Sprintf(
+										`Fields "%v" conflict because %v.`,
+										responseName,
+										reasonMessage(reason),
+									),
+									c.Fields,
+								)
+								errors = append(errors, err)
+
+							}
+							return visitor.ActionNoChange, errors
+						}
 					}
 					return visitor.ActionNoChange, nil
 				},

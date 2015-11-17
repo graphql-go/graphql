@@ -177,7 +177,7 @@ func coerceValue(ttype Input, value interface{}) interface{} {
 
 // graphql-js/src/utilities.js`
 // TODO: figure out where to organize utils
-
+// TODO: change to *Schema
 func typeFromAST(schema Schema, inputTypeAST ast.Type) (Type, error) {
 	switch inputTypeAST := inputTypeAST.(type) {
 	case *ast.List:

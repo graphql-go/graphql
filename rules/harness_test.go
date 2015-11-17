@@ -497,6 +497,14 @@ func expectFailsRule(t *testing.T, rule graphql.ValidationRuleFn, queryString st
 	expectInvalid(t, defaultSchema, []graphql.ValidationRuleFn{rule}, queryString, expectedErrors)
 }
 
+func expectFailsRuleWithSchema(t *testing.T, schema *graphql.Schema, rule graphql.ValidationRuleFn, queryString string, expectedErrors []gqlerrors.FormattedError) {
+	expectInvalid(t, schema, []graphql.ValidationRuleFn{rule}, queryString, expectedErrors)
+}
+
+func expectPassesRuleWithSchema(t *testing.T, schema *graphql.Schema, rule graphql.ValidationRuleFn, queryString string) {
+	expectValid(t, schema, []graphql.ValidationRuleFn{rule}, queryString)
+}
+
 func ruleError(message string, locs ...int) gqlerrors.FormattedError {
 	locations := []location.SourceLocation{}
 	for i := 0; i < len(locs); i = i + 2 {
