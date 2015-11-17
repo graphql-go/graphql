@@ -29,6 +29,7 @@ var SpecifiedRules = []ValidationRuleFn{
 	NoUnusedFragmentsRule,
 	NoUnusedVariablesRule,
 	OverlappingFieldsCanBeMergedRule,
+	PossibleFragmentSpreadsRule,
 }
 
 type ValidationRuleInstance struct {
@@ -1295,6 +1296,113 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 
 							}
 							return visitor.ActionNoChange, errors
+						}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+func getFragmentType(context *ValidationContext, name string) Type {
+	frag := context.GetFragment(name)
+	if frag == nil {
+		return nil
+	}
+	ttype, _ := typeFromAST(*context.GetSchema(), frag.TypeCondition)
+	return ttype
+}
+
+func doTypesOverlap(t1 Type, t2 Type) bool {
+	if t1 == t2 {
+		return true
+	}
+	if _, ok := t1.(*Object); ok {
+		if _, ok := t2.(*Object); ok {
+			return false
+		}
+		if t2, ok := t2.(Abstract); ok {
+			for _, ttype := range t2.GetPossibleTypes() {
+				if ttype == t1 {
+					return true
+				}
+			}
+			return false
+		}
+	}
+	if t1, ok := t1.(Abstract); ok {
+		if _, ok := t2.(*Object); ok {
+			for _, ttype := range t1.GetPossibleTypes() {
+				if ttype == t2 {
+					return true
+				}
+			}
+			return false
+		}
+		t1TypeNames := map[string]bool{}
+		for _, ttype := range t1.GetPossibleTypes() {
+			t1TypeNames[ttype.Name] = true
+		}
+		if t2, ok := t2.(Abstract); ok {
+			for _, ttype := range t2.GetPossibleTypes() {
+				if hasT1TypeName, _ := t1TypeNames[ttype.Name]; hasT1TypeName {
+					return true
+				}
+			}
+			return false
+		}
+	}
+	return false
+}
+
+/**
+ * PossibleFragmentSpreadsRule
+ * Possible fragment spread
+ *
+ * A fragment spread is only valid if the type condition could ever possibly
+ * be true: if there is a non-empty intersection of the possible parent types,
+ * and possible types which pass the type condition.
+ */
+func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInstance {
+
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.InlineFragment: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.InlineFragment); ok && node != nil {
+						fragType := context.GetType()
+						parentType, _ := context.GetParentType().(Type)
+
+						if fragType != nil && parentType != nil && !doTypesOverlap(fragType, parentType) {
+							return newValidationRuleError(
+								fmt.Sprintf(`Fragment cannot be spread here as objects of `+
+									`type "%v" can never be of type "%v".`, parentType, fragType),
+								[]ast.Node{node},
+							)
+						}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.FragmentSpread: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.FragmentSpread); ok && node != nil {
+						fragName := ""
+						if node.Name != nil {
+							fragName = node.Name.Value
+						}
+						fragType := getFragmentType(context, fragName)
+						parentType, _ := context.GetParentType().(Type)
+						if fragType != nil && parentType != nil && !doTypesOverlap(fragType, parentType) {
+							return newValidationRuleError(
+								fmt.Sprintf(`Fragment "%v" cannot be spread here as objects of `+
+									`type "%v" can never be of type "%v".`, fragName, parentType, fragType),
+								[]ast.Node{node},
+							)
 						}
 					}
 					return visitor.ActionNoChange, nil
