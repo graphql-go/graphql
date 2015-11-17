@@ -79,7 +79,6 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 		var fieldDef *FieldDefinition
 		if parentType != nil {
 			fieldDef = getTypeInfoFieldDef(*schema, parentType.(Type), node)
-		} else {
 		}
 		ti.fieldDefStack = append(ti.fieldDefStack, fieldDef)
 		if fieldDef != nil {

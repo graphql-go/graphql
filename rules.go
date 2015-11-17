@@ -30,6 +30,7 @@ var SpecifiedRules = []ValidationRuleFn{
 	NoUnusedVariablesRule,
 	OverlappingFieldsCanBeMergedRule,
 	PossibleFragmentSpreadsRule,
+	ProvidedNonNullArgumentsRule,
 }
 
 type ValidationRuleInstance struct {
@@ -1403,6 +1404,113 @@ func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInst
 									`type "%v" can never be of type "%v".`, fragName, parentType, fragType),
 								[]ast.Node{node},
 							)
+						}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+/**
+ * ProvidedNonNullArgumentsRule
+ * Provided required arguments
+ *
+ * A field or directive is only valid if all required (non-null) field arguments
+ * have been provided.
+ */
+func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleInstance {
+
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.Field: visitor.NamedVisitFuncs{
+				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+					// Validate on leave to allow for deeper errors to appear first.
+					if fieldAST, ok := p.Node.(*ast.Field); ok && fieldAST != nil {
+						fieldDef := context.GetFieldDef()
+						if fieldDef == nil {
+							return visitor.ActionSkip, nil
+						}
+
+						errors := []error{}
+						argASTs := fieldAST.Arguments
+
+						argASTMap := map[string]*ast.Argument{}
+						for _, arg := range argASTs {
+							name := ""
+							if arg.Name != nil {
+								name = arg.Name.Value
+							}
+							argASTMap[name] = arg
+						}
+						for _, argDef := range fieldDef.Args {
+							argAST, _ := argASTMap[argDef.Name]
+							if argAST == nil {
+								if argDefType, ok := argDef.Type.(*NonNull); ok {
+									fieldName := ""
+									if fieldAST.Name != nil {
+										fieldName = fieldAST.Name.Value
+									}
+									_, err := newValidationRuleError(
+										fmt.Sprintf(`Field "%v" argument "%v" of type "%v" `+
+											`is required but not provided.`, fieldName, argDef.Name, argDefType),
+										[]ast.Node{fieldAST},
+									)
+									errors = append(errors, err)
+								}
+							}
+						}
+						if len(errors) > 0 {
+							return visitor.ActionNoChange, errors
+						}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.Directive: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					// Validate on leave to allow for deeper errors to appear first.
+
+					if directiveAST, ok := p.Node.(*ast.Directive); ok && directiveAST != nil {
+						directiveDef := context.GetDirective()
+						if directiveDef == nil {
+							return visitor.ActionSkip, nil
+						}
+						errors := []error{}
+						argASTs := directiveAST.Arguments
+
+						argASTMap := map[string]*ast.Argument{}
+						for _, arg := range argASTs {
+							name := ""
+							if arg.Name != nil {
+								name = arg.Name.Value
+							}
+							argASTMap[name] = arg
+						}
+
+						for _, argDef := range directiveDef.Args {
+							argAST, _ := argASTMap[argDef.Name]
+							if argAST == nil {
+								if argDefType, ok := argDef.Type.(*NonNull); ok {
+									directiveName := ""
+									if directiveAST.Name != nil {
+										directiveName = directiveAST.Name.Value
+									}
+									_, err := newValidationRuleError(
+										fmt.Sprintf(`Directive "@%v" argument "%v" of type `+
+											`"%v" is required but not provided.`, directiveName, argDef.Name, argDefType),
+										[]ast.Node{directiveAST},
+									)
+									errors = append(errors, err)
+								}
+							}
+						}
+						if len(errors) > 0 {
+							return visitor.ActionNoChange, errors
 						}
 					}
 					return visitor.ActionNoChange, nil

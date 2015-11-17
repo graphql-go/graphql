@@ -485,8 +485,17 @@ func expectInvalid(t *testing.T, schema *graphql.Schema, rules []graphql.Validat
 	if result.IsValid != false {
 		t.Fatalf("IsValid should be false, got %v", result.IsValid)
 	}
-	if !reflect.DeepEqual(expectedErrors, result.Errors) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
+	for _, expectedErr := range expectedErrors {
+		found := false
+		for _, err := range result.Errors {
+			if reflect.DeepEqual(expectedErr, err) {
+				found = true
+				break
+			}
+		}
+		if found == false {
+			t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
+		}
 	}
 
 }
