@@ -31,6 +31,7 @@ var SpecifiedRules = []ValidationRuleFn{
 	OverlappingFieldsCanBeMergedRule,
 	PossibleFragmentSpreadsRule,
 	ProvidedNonNullArgumentsRule,
+	ScalarLeafsRule,
 }
 
 type ValidationRuleInstance struct {
@@ -1511,6 +1512,51 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 						}
 						if len(errors) > 0 {
 							return visitor.ActionNoChange, errors
+						}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+/**
+ * ScalarLeafsRule
+ * Scalar leafs
+ *
+ * A GraphQL document is valid only if all leaf fields (fields without
+ * sub selections) are of scalar or enum types.
+ */
+func ScalarLeafsRule(context *ValidationContext) *ValidationRuleInstance {
+
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.Field: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.Field); ok && node != nil {
+						nodeName := ""
+						if node.Name != nil {
+							nodeName = node.Name.Value
+						}
+						ttype := context.GetType()
+						if ttype != nil {
+							if IsLeafType(ttype) {
+								if node.SelectionSet != nil {
+									return newValidationRuleError(
+										fmt.Sprintf(`Field "%v" of type "%v" must not have a sub selection.`, nodeName, ttype),
+										[]ast.Node{node.SelectionSet},
+									)
+								}
+							} else if node.SelectionSet == nil {
+								return newValidationRuleError(
+									fmt.Sprintf(`Field "%v" of type "%v" must have a sub selection.`, nodeName, ttype),
+									[]ast.Node{node},
+								)
+							}
 						}
 					}
 					return visitor.ActionNoChange, nil

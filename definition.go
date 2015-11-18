@@ -42,34 +42,45 @@ var _ Input = (*List)(nil)
 var _ Input = (*NonNull)(nil)
 
 func IsInputType(ttype Type) bool {
-	Named := GetNamed(ttype)
-	if _, ok := Named.(*Scalar); ok {
+	named := GetNamed(ttype)
+	if _, ok := named.(*Scalar); ok {
 		return true
 	}
-	if _, ok := Named.(*Enum); ok {
+	if _, ok := named.(*Enum); ok {
 		return true
 	}
-	if _, ok := Named.(*InputObject); ok {
+	if _, ok := named.(*InputObject); ok {
 		return true
 	}
 	return false
 }
 
 func IsOutputType(ttype Type) bool {
-	Named := GetNamed(ttype)
-	if _, ok := Named.(*Scalar); ok {
+	name := GetNamed(ttype)
+	if _, ok := name.(*Scalar); ok {
 		return true
 	}
-	if _, ok := Named.(*Object); ok {
+	if _, ok := name.(*Object); ok {
 		return true
 	}
-	if _, ok := Named.(*Interface); ok {
+	if _, ok := name.(*Interface); ok {
 		return true
 	}
-	if _, ok := Named.(*Union); ok {
+	if _, ok := name.(*Union); ok {
 		return true
 	}
-	if _, ok := Named.(*Enum); ok {
+	if _, ok := name.(*Enum); ok {
+		return true
+	}
+	return false
+}
+
+func IsLeafType(ttype Type) bool {
+	named := GetNamed(ttype)
+	if _, ok := named.(*Scalar); ok {
+		return true
+	}
+	if _, ok := named.(*Enum); ok {
 		return true
 	}
 	return false
