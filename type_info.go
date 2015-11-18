@@ -27,38 +27,38 @@ func NewTypeInfo(schema *Schema) *TypeInfo {
 	}
 }
 
-func (ti *TypeInfo) GetType() Output {
+func (ti *TypeInfo) Type() Output {
 	if len(ti.typeStack) > 0 {
 		return ti.typeStack[len(ti.typeStack)-1]
 	}
 	return nil
 }
 
-func (ti *TypeInfo) GetParentType() Composite {
+func (ti *TypeInfo) ParentType() Composite {
 	if len(ti.parentTypeStack) > 0 {
 		return ti.parentTypeStack[len(ti.parentTypeStack)-1]
 	}
 	return nil
 }
 
-func (ti *TypeInfo) GetInputType() Input {
+func (ti *TypeInfo) InputType() Input {
 	if len(ti.inputTypeStack) > 0 {
 		return ti.inputTypeStack[len(ti.inputTypeStack)-1]
 	}
 	return nil
 }
-func (ti *TypeInfo) GetFieldDef() *FieldDefinition {
+func (ti *TypeInfo) FieldDef() *FieldDefinition {
 	if len(ti.fieldDefStack) > 0 {
 		return ti.fieldDefStack[len(ti.fieldDefStack)-1]
 	}
 	return nil
 }
 
-func (ti *TypeInfo) GetDirective() *Directive {
+func (ti *TypeInfo) Directive() *Directive {
 	return ti.directive
 }
 
-func (ti *TypeInfo) GetArgument() *Argument {
+func (ti *TypeInfo) Argument() *Argument {
 	return ti.argument
 }
 
@@ -68,17 +68,17 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 	var ttype Type
 	switch node := node.(type) {
 	case *ast.SelectionSet:
-		namedType := GetNamed(ti.GetType())
+		namedType := GetNamed(ti.Type())
 		var compositeType Composite = nil
 		if IsCompositeType(namedType) {
 			compositeType, _ = namedType.(Composite)
 		}
 		ti.parentTypeStack = append(ti.parentTypeStack, compositeType)
 	case *ast.Field:
-		parentType := ti.GetParentType()
+		parentType := ti.ParentType()
 		var fieldDef *FieldDefinition
 		if parentType != nil {
-			fieldDef = getTypeInfoFieldDef(*schema, parentType.(Type), node)
+			fieldDef = TypeInfoFieldDef(*schema, parentType.(Type), node)
 		}
 		ti.fieldDefStack = append(ti.fieldDefStack, fieldDef)
 		if fieldDef != nil {
@@ -91,12 +91,12 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 		if node.Name != nil {
 			nameVal = node.Name.Value
 		}
-		ti.directive = schema.GetDirective(nameVal)
+		ti.directive = schema.Directive(nameVal)
 	case *ast.OperationDefinition:
 		if node.Operation == "query" {
-			ttype = schema.GetQueryType()
+			ttype = schema.QueryType()
 		} else if node.Operation == "mutation" {
-			ttype = schema.GetMutationType()
+			ttype = schema.MutationType()
 		}
 		ti.typeStack = append(ti.typeStack, ttype)
 	case *ast.InlineFragment:
@@ -115,17 +115,17 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 		}
 		var argType Input
 		var argDef *Argument
-		directive := ti.GetDirective()
-		fieldDef := ti.GetFieldDef()
+		directive := ti.Directive()
+		fieldDef := ti.FieldDef()
 		if directive != nil {
 			for _, arg := range directive.Args {
-				if arg.Name == nameVal {
+				if arg.Name() == nameVal {
 					argDef = arg
 				}
 			}
 		} else if fieldDef != nil {
 			for _, arg := range fieldDef.Args {
-				if arg.Name == nameVal {
+				if arg.Name() == nameVal {
 					argDef = arg
 				}
 			}
@@ -136,7 +136,7 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 		ti.argument = argDef
 		ti.inputTypeStack = append(ti.inputTypeStack, argType)
 	case *ast.ListValue:
-		listType := GetNullable(ti.GetInputType())
+		listType := GetNullable(ti.InputType())
 		if list, ok := listType.(*List); ok {
 			ti.inputTypeStack = append(ti.inputTypeStack, list.OfType)
 		} else {
@@ -144,14 +144,14 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 		}
 	case *ast.ObjectField:
 		var fieldType Input
-		objectType := GetNamed(ti.GetInputType())
+		objectType := GetNamed(ti.InputType())
 
 		if objectType, ok := objectType.(*InputObject); ok {
 			nameVal := ""
 			if node.Name != nil {
 				nameVal = node.Name.Value
 			}
-			if inputField, ok := objectType.GetFields()[nameVal]; ok {
+			if inputField, ok := objectType.Fields()[nameVal]; ok {
 				fieldType = inputField.Type
 			}
 		}
@@ -194,21 +194,21 @@ func (ti *TypeInfo) Leave(node ast.Node) {
 }
 
 /**
- * Not exactly the same as the executor's definition of getFieldDef, in this
+ * Not exactly the same as the executor's definition of FieldDef, in this
  * statically evaluated environment we do not always have an Object type,
  * and need to handle Interface and Union types.
  */
-func getTypeInfoFieldDef(schema Schema, parentType Type, fieldAST *ast.Field) *FieldDefinition {
+func TypeInfoFieldDef(schema Schema, parentType Type, fieldAST *ast.Field) *FieldDefinition {
 	name := ""
 	if fieldAST.Name != nil {
 		name = fieldAST.Name.Value
 	}
 	if name == SchemaMetaFieldDef.Name &&
-		schema.GetQueryType() == parentType {
+		schema.QueryType() == parentType {
 		return SchemaMetaFieldDef
 	}
 	if name == TypeMetaFieldDef.Name &&
-		schema.GetQueryType() == parentType {
+		schema.QueryType() == parentType {
 		return TypeMetaFieldDef
 	}
 	if name == TypeNameMetaFieldDef.Name {
@@ -224,11 +224,11 @@ func getTypeInfoFieldDef(schema Schema, parentType Type, fieldAST *ast.Field) *F
 	}
 
 	if parentType, ok := parentType.(*Object); ok && parentType != nil {
-		field, _ := parentType.GetFields()[name]
+		field, _ := parentType.Fields()[name]
 		return field
 	}
 	if parentType, ok := parentType.(*Interface); ok && parentType != nil {
-		field, _ := parentType.GetFields()[name]
+		field, _ := parentType.Fields()[name]
 		return field
 	}
 	return nil

@@ -88,7 +88,7 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 						if name != nil {
 							nameVal = name.Value
 						}
-						fragment := context.GetFragment(nameVal)
+						fragment := context.Fragment(nameVal)
 						if fragment != nil {
 							visitInstance(fragment, instance)
 						}
@@ -163,19 +163,19 @@ func NewValidationContext(schema *Schema, astDoc *ast.Document, typeInfo *TypeIn
 	}
 }
 
-func (ctx *ValidationContext) GetSchema() *Schema {
+func (ctx *ValidationContext) Schema() *Schema {
 	return ctx.schema
 }
-func (ctx *ValidationContext) GetDocument() *ast.Document {
+func (ctx *ValidationContext) Document() *ast.Document {
 	return ctx.astDoc
 }
 
-func (ctx *ValidationContext) GetFragment(name string) *ast.FragmentDefinition {
+func (ctx *ValidationContext) Fragment(name string) *ast.FragmentDefinition {
 	if len(ctx.fragments) == 0 {
-		if ctx.GetDocument() == nil {
+		if ctx.Document() == nil {
 			return nil
 		}
-		defs := ctx.GetDocument().Definitions
+		defs := ctx.Document().Definitions
 		fragments := map[string]*ast.FragmentDefinition{}
 		for _, def := range defs {
 			if def, ok := def.(*ast.FragmentDefinition); ok {
@@ -192,21 +192,21 @@ func (ctx *ValidationContext) GetFragment(name string) *ast.FragmentDefinition {
 	return f
 }
 
-func (ctx *ValidationContext) GetType() Output {
-	return ctx.typeInfo.GetType()
+func (ctx *ValidationContext) Type() Output {
+	return ctx.typeInfo.Type()
 }
-func (ctx *ValidationContext) GetParentType() Composite {
-	return ctx.typeInfo.GetParentType()
+func (ctx *ValidationContext) ParentType() Composite {
+	return ctx.typeInfo.ParentType()
 }
-func (ctx *ValidationContext) GetInputType() Input {
-	return ctx.typeInfo.GetInputType()
+func (ctx *ValidationContext) InputType() Input {
+	return ctx.typeInfo.InputType()
 }
-func (ctx *ValidationContext) GetFieldDef() *FieldDefinition {
-	return ctx.typeInfo.GetFieldDef()
+func (ctx *ValidationContext) FieldDef() *FieldDefinition {
+	return ctx.typeInfo.FieldDef()
 }
-func (ctx *ValidationContext) GetDirective() *Directive {
-	return ctx.typeInfo.GetDirective()
+func (ctx *ValidationContext) Directive() *Directive {
+	return ctx.typeInfo.Directive()
 }
-func (ctx *ValidationContext) GetArgument() *Argument {
-	return ctx.typeInfo.GetArgument()
+func (ctx *ValidationContext) Argument() *Argument {
+	return ctx.typeInfo.Argument()
 }

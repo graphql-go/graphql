@@ -71,7 +71,7 @@ func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInsta
 					var result interface{}
 					if argAST, ok := p.Node.(*ast.Argument); ok {
 						value := argAST.Value
-						argDef := context.GetArgument()
+						argDef := context.Argument()
 						if argDef != nil && !isValidLiteralValue(argDef.Type, value) {
 							argNameValue := ""
 							if argAST.Name != nil {
@@ -114,7 +114,7 @@ func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleI
 							name = varDefAST.Variable.Name.Value
 						}
 						defaultValue := varDefAST.DefaultValue
-						ttype := context.GetInputType()
+						ttype := context.InputType()
 
 						if ttype, ok := ttype.(*NonNull); ok && defaultValue != nil {
 							return newValidationRuleError(
@@ -156,10 +156,10 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 					var action = visitor.ActionNoChange
 					var result interface{}
 					if node, ok := p.Node.(*ast.Field); ok {
-						ttype := context.GetParentType()
+						ttype := context.ParentType()
 
 						if ttype != nil {
-							fieldDef := context.GetFieldDef()
+							fieldDef := context.FieldDef()
 							if fieldDef == nil {
 								nodeName := ""
 								if node.Name != nil {
@@ -167,7 +167,7 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 								}
 								return newValidationRuleError(
 									fmt.Sprintf(`Cannot query field "%v" on "%v".`,
-										nodeName, ttype.GetName()),
+										nodeName, ttype.Name()),
 									[]ast.Node{node},
 								)
 							}
@@ -197,7 +197,7 @@ func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleIn
 			kinds.InlineFragment: visitor.NamedVisitFuncs{
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.InlineFragment); ok {
-						ttype := context.GetType()
+						ttype := context.Type()
 						if ttype != nil && !IsCompositeType(ttype) {
 							return newValidationRuleError(
 								fmt.Sprintf(`Fragment cannot condition on non composite type "%v".`, ttype),
@@ -211,7 +211,7 @@ func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleIn
 			kinds.FragmentDefinition: visitor.NamedVisitFuncs{
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.FragmentDefinition); ok {
-						ttype := context.GetType()
+						ttype := context.Type()
 						if ttype != nil && !IsCompositeType(ttype) {
 							nodeName := ""
 							if node.Name != nil {
@@ -256,7 +256,7 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 							return action, result
 						}
 						if argumentOf.GetKind() == "Field" {
-							fieldDef := context.GetFieldDef()
+							fieldDef := context.FieldDef()
 							if fieldDef == nil {
 								return action, result
 							}
@@ -266,15 +266,15 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 							}
 							var fieldArgDef *Argument
 							for _, arg := range fieldDef.Args {
-								if arg.Name == nodeName {
+								if arg.Name() == nodeName {
 									fieldArgDef = arg
 								}
 							}
 							if fieldArgDef == nil {
-								parentType := context.GetParentType()
+								parentType := context.ParentType()
 								parentTypeName := ""
 								if parentType != nil {
-									parentTypeName = parentType.GetName()
+									parentTypeName = parentType.Name()
 								}
 								return newValidationRuleError(
 									fmt.Sprintf(`Unknown argument "%v" on field "%v" of type "%v".`, nodeName, fieldDef.Name, parentTypeName),
@@ -282,7 +282,7 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 								)
 							}
 						} else if argumentOf.GetKind() == "Directive" {
-							directive := context.GetDirective()
+							directive := context.Directive()
 							if directive == nil {
 								return action, result
 							}
@@ -292,7 +292,7 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 							}
 							var directiveArgDef *Argument
 							for _, arg := range directive.Args {
-								if arg.Name == nodeName {
+								if arg.Name() == nodeName {
 									directiveArgDef = arg
 								}
 							}
@@ -336,7 +336,7 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 						}
 
 						var directiveDef *Directive
-						for _, def := range context.GetSchema().GetDirectives() {
+						for _, def := range context.Schema().Directives() {
 							if def.Name == nodeName {
 								directiveDef = def
 							}
@@ -409,7 +409,7 @@ func KnownFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 							fragmentName = node.Name.Value
 						}
 
-						fragment := context.GetFragment(fragmentName)
+						fragment := context.Fragment(fragmentName)
 						if fragment == nil {
 							return newValidationRuleError(
 								fmt.Sprintf(`Unknown fragment "%v".`, fragmentName),
@@ -445,7 +445,7 @@ func KnownTypeNamesRule(context *ValidationContext) *ValidationRuleInstance {
 						if typeName != nil {
 							typeNameValue = typeName.Value
 						}
-						ttype := context.GetSchema().GetType(typeNameValue)
+						ttype := context.Schema().Type(typeNameValue)
 						if ttype == nil {
 							return newValidationRuleError(
 								fmt.Sprintf(`Unknown type "%v".`, typeNameValue),
@@ -534,7 +534,7 @@ func (set *nodeSet) Add(node ast.Node) bool {
 func NoFragmentCyclesRule(context *ValidationContext) *ValidationRuleInstance {
 	// Gather all the fragment spreads ASTs for each fragment definition.
 	// Importantly this does not include inline fragments.
-	definitions := context.GetDocument().Definitions
+	definitions := context.Document().Definitions
 	spreadsInFragment := map[string][]*ast.FragmentSpread{}
 	for _, node := range definitions {
 		if node.GetKind() == kinds.FragmentDefinition {
@@ -931,10 +931,10 @@ func collectFieldASTsAndDefs(context *ValidationContext, parentType Named, selec
 			}
 			var fieldDef *FieldDefinition
 			if parentType, ok := parentType.(*Object); ok {
-				fieldDef, _ = parentType.GetFields()[fieldName]
+				fieldDef, _ = parentType.Fields()[fieldName]
 			}
 			if parentType, ok := parentType.(*Interface); ok {
-				fieldDef, _ = parentType.GetFields()[fieldName]
+				fieldDef, _ = parentType.Fields()[fieldName]
 			}
 
 			responseName := fieldName
@@ -950,7 +950,7 @@ func collectFieldASTsAndDefs(context *ValidationContext, parentType Named, selec
 				FieldDef: fieldDef,
 			})
 		case *ast.InlineFragment:
-			parentType, _ := typeFromAST(*context.GetSchema(), selection.TypeCondition)
+			parentType, _ := typeFromAST(*context.Schema(), selection.TypeCondition)
 			astAndDefs = collectFieldASTsAndDefs(
 				context,
 				parentType,
@@ -967,11 +967,11 @@ func collectFieldASTsAndDefs(context *ValidationContext, parentType Named, selec
 				continue
 			}
 			visitedFragmentNames[fragName] = true
-			fragment := context.GetFragment(fragName)
+			fragment := context.Fragment(fragName)
 			if fragment == nil {
 				continue
 			}
-			parentType, _ := typeFromAST(*context.GetSchema(), fragment.TypeCondition)
+			parentType, _ := typeFromAST(*context.Schema(), fragment.TypeCondition)
 			astAndDefs = collectFieldASTsAndDefs(
 				context,
 				parentType,
@@ -1277,7 +1277,7 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 			kinds.SelectionSet: visitor.NamedVisitFuncs{
 				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if selectionSet, ok := p.Node.(*ast.SelectionSet); ok && selectionSet != nil {
-						parentType, _ := context.GetParentType().(Named)
+						parentType, _ := context.ParentType().(Named)
 						fieldMap := collectFieldASTsAndDefs(
 							context,
 							parentType,
@@ -1316,11 +1316,11 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 }
 
 func getFragmentType(context *ValidationContext, name string) Type {
-	frag := context.GetFragment(name)
+	frag := context.Fragment(name)
 	if frag == nil {
 		return nil
 	}
-	ttype, _ := typeFromAST(*context.GetSchema(), frag.TypeCondition)
+	ttype, _ := typeFromAST(*context.Schema(), frag.TypeCondition)
 	return ttype
 }
 
@@ -1333,7 +1333,7 @@ func doTypesOverlap(t1 Type, t2 Type) bool {
 			return false
 		}
 		if t2, ok := t2.(Abstract); ok {
-			for _, ttype := range t2.GetPossibleTypes() {
+			for _, ttype := range t2.PossibleTypes() {
 				if ttype == t1 {
 					return true
 				}
@@ -1343,7 +1343,7 @@ func doTypesOverlap(t1 Type, t2 Type) bool {
 	}
 	if t1, ok := t1.(Abstract); ok {
 		if _, ok := t2.(*Object); ok {
-			for _, ttype := range t1.GetPossibleTypes() {
+			for _, ttype := range t1.PossibleTypes() {
 				if ttype == t2 {
 					return true
 				}
@@ -1351,12 +1351,12 @@ func doTypesOverlap(t1 Type, t2 Type) bool {
 			return false
 		}
 		t1TypeNames := map[string]bool{}
-		for _, ttype := range t1.GetPossibleTypes() {
-			t1TypeNames[ttype.Name] = true
+		for _, ttype := range t1.PossibleTypes() {
+			t1TypeNames[ttype.Name()] = true
 		}
 		if t2, ok := t2.(Abstract); ok {
-			for _, ttype := range t2.GetPossibleTypes() {
-				if hasT1TypeName, _ := t1TypeNames[ttype.Name]; hasT1TypeName {
+			for _, ttype := range t2.PossibleTypes() {
+				if hasT1TypeName, _ := t1TypeNames[ttype.Name()]; hasT1TypeName {
 					return true
 				}
 			}
@@ -1381,8 +1381,8 @@ func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInst
 			kinds.InlineFragment: visitor.NamedVisitFuncs{
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.InlineFragment); ok && node != nil {
-						fragType := context.GetType()
-						parentType, _ := context.GetParentType().(Type)
+						fragType := context.Type()
+						parentType, _ := context.ParentType().(Type)
 
 						if fragType != nil && parentType != nil && !doTypesOverlap(fragType, parentType) {
 							return newValidationRuleError(
@@ -1403,7 +1403,7 @@ func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInst
 							fragName = node.Name.Value
 						}
 						fragType := getFragmentType(context, fragName)
-						parentType, _ := context.GetParentType().(Type)
+						parentType, _ := context.ParentType().(Type)
 						if fragType != nil && parentType != nil && !doTypesOverlap(fragType, parentType) {
 							return newValidationRuleError(
 								fmt.Sprintf(`Fragment "%v" cannot be spread here as objects of `+
@@ -1437,7 +1437,7 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 					// Validate on leave to allow for deeper errors to appear first.
 					if fieldAST, ok := p.Node.(*ast.Field); ok && fieldAST != nil {
-						fieldDef := context.GetFieldDef()
+						fieldDef := context.FieldDef()
 						if fieldDef == nil {
 							return visitor.ActionSkip, nil
 						}
@@ -1454,7 +1454,7 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 							argASTMap[name] = arg
 						}
 						for _, argDef := range fieldDef.Args {
-							argAST, _ := argASTMap[argDef.Name]
+							argAST, _ := argASTMap[argDef.Name()]
 							if argAST == nil {
 								if argDefType, ok := argDef.Type.(*NonNull); ok {
 									fieldName := ""
@@ -1463,7 +1463,7 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 									}
 									_, err := newValidationRuleError(
 										fmt.Sprintf(`Field "%v" argument "%v" of type "%v" `+
-											`is required but not provided.`, fieldName, argDef.Name, argDefType),
+											`is required but not provided.`, fieldName, argDef.Name(), argDefType),
 										[]ast.Node{fieldAST},
 									)
 									errors = append(errors, err)
@@ -1482,7 +1482,7 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 					// Validate on leave to allow for deeper errors to appear first.
 
 					if directiveAST, ok := p.Node.(*ast.Directive); ok && directiveAST != nil {
-						directiveDef := context.GetDirective()
+						directiveDef := context.Directive()
 						if directiveDef == nil {
 							return visitor.ActionSkip, nil
 						}
@@ -1499,7 +1499,7 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 						}
 
 						for _, argDef := range directiveDef.Args {
-							argAST, _ := argASTMap[argDef.Name]
+							argAST, _ := argASTMap[argDef.Name()]
 							if argAST == nil {
 								if argDefType, ok := argDef.Type.(*NonNull); ok {
 									directiveName := ""
@@ -1508,7 +1508,7 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 									}
 									_, err := newValidationRuleError(
 										fmt.Sprintf(`Directive "@%v" argument "%v" of type `+
-											`"%v" is required but not provided.`, directiveName, argDef.Name, argDefType),
+											`"%v" is required but not provided.`, directiveName, argDef.Name(), argDefType),
 										[]ast.Node{directiveAST},
 									)
 									errors = append(errors, err)
@@ -1547,7 +1547,7 @@ func ScalarLeafsRule(context *ValidationContext) *ValidationRuleInstance {
 						if node.Name != nil {
 							nodeName = node.Name.Value
 						}
-						ttype := context.GetType()
+						ttype := context.Type()
 						if ttype != nil {
 							if IsLeafType(ttype) {
 								if node.SelectionSet != nil {
@@ -1709,7 +1709,7 @@ func VariablesAreInputTypesRule(context *ValidationContext) *ValidationRuleInsta
 			kinds.VariableDefinition: visitor.NamedVisitFuncs{
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.VariableDefinition); ok && node != nil {
-						ttype, _ := typeFromAST(*context.GetSchema(), node.Type)
+						ttype, _ := typeFromAST(*context.Schema(), node.Type)
 
 						// If the variable type is not an input type, return an error.
 						if ttype != nil && !IsInputType(ttype) {
@@ -1823,9 +1823,9 @@ func VariablesInAllowedPositionRule(context *ValidationContext) *ValidationRuleI
 						varDef, _ := varDefMap[varName]
 						var varType Type
 						if varDef != nil {
-							varType, _ = typeFromAST(*context.GetSchema(), varDef.Type)
+							varType, _ = typeFromAST(*context.Schema(), varDef.Type)
 						}
-						inputType := context.GetInputType()
+						inputType := context.InputType()
 						if varType != nil && inputType != nil && !varTypeAllowedForType(effectiveType(varType, varDef), inputType) {
 							return newValidationRuleError(
 								fmt.Sprintf(`Variable "$%v" of type "%v" used in position `+
@@ -1893,7 +1893,7 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) bool {
 		if !ok {
 			return false
 		}
-		fields := ttype.GetFields()
+		fields := ttype.Fields()
 
 		// Ensure every provided field is defined.
 		// Ensure every defined field is valid.

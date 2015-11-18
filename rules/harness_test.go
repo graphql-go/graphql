@@ -14,8 +14,8 @@ import (
 
 var beingInterface = graphql.NewInterface(graphql.InterfaceConfig{
 	Name: "Being",
-	Fields: graphql.FieldConfigMap{
-		"name": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"name": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"surname": &graphql.ArgumentConfig{
@@ -27,8 +27,8 @@ var beingInterface = graphql.NewInterface(graphql.InterfaceConfig{
 })
 var petInterface = graphql.NewInterface(graphql.InterfaceConfig{
 	Name: "Pet",
-	Fields: graphql.FieldConfigMap{
-		"name": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"name": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"surname": &graphql.ArgumentConfig{
@@ -57,8 +57,8 @@ var dogType = graphql.NewObject(graphql.ObjectConfig{
 	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 		return true
 	},
-	Fields: graphql.FieldConfigMap{
-		"name": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"name": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"surname": &graphql.ArgumentConfig{
@@ -66,16 +66,16 @@ var dogType = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"nickname": &graphql.FieldConfig{
+		"nickname": &graphql.Field{
 			Type: graphql.String,
 		},
-		"barkVolume": &graphql.FieldConfig{
+		"barkVolume": &graphql.Field{
 			Type: graphql.Int,
 		},
-		"barks": &graphql.FieldConfig{
+		"barks": &graphql.Field{
 			Type: graphql.Boolean,
 		},
-		"doesKnowCommand": &graphql.FieldConfig{
+		"doesKnowCommand": &graphql.Field{
 			Type: graphql.Boolean,
 			Args: graphql.FieldConfigArgument{
 				"dogCommand": &graphql.ArgumentConfig{
@@ -83,7 +83,7 @@ var dogType = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"isHousetrained": &graphql.FieldConfig{
+		"isHousetrained": &graphql.Field{
 			Type: graphql.Boolean,
 			Args: graphql.FieldConfigArgument{
 				"atOtherHomes": &graphql.ArgumentConfig{
@@ -92,7 +92,7 @@ var dogType = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"isAtLocation": &graphql.FieldConfig{
+		"isAtLocation": &graphql.Field{
 			Type: graphql.Boolean,
 			Args: graphql.FieldConfigArgument{
 				"x": &graphql.ArgumentConfig{
@@ -132,8 +132,8 @@ var catType = graphql.NewObject(graphql.ObjectConfig{
 	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 		return true
 	},
-	Fields: graphql.FieldConfigMap{
-		"name": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"name": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"surname": &graphql.ArgumentConfig{
@@ -141,16 +141,16 @@ var catType = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"nickname": &graphql.FieldConfig{
+		"nickname": &graphql.Field{
 			Type: graphql.String,
 		},
-		"meowVolume": &graphql.FieldConfig{
+		"meowVolume": &graphql.Field{
 			Type: graphql.Int,
 		},
-		"meows": &graphql.FieldConfig{
+		"meows": &graphql.Field{
 			Type: graphql.Boolean,
 		},
-		"furColor": &graphql.FieldConfig{
+		"furColor": &graphql.Field{
 			Type: furColorEnum,
 		},
 	},
@@ -172,8 +172,8 @@ var catOrDogUnion = graphql.NewUnion(graphql.UnionConfig{
 })
 var intelligentInterface = graphql.NewInterface(graphql.InterfaceConfig{
 	Name: "Intelligent",
-	Fields: graphql.FieldConfigMap{
-		"iq": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"iq": &graphql.Field{
 			Type: graphql.Int,
 		},
 	},
@@ -188,8 +188,8 @@ var humanType = graphql.NewObject(graphql.ObjectConfig{
 		beingInterface,
 		intelligentInterface,
 	},
-	Fields: graphql.FieldConfigMap{
-		"name": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"name": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"surname": &graphql.ArgumentConfig{
@@ -197,10 +197,10 @@ var humanType = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"pets": &graphql.FieldConfig{
+		"pets": &graphql.Field{
 			Type: graphql.NewList(petInterface),
 		},
-		"iq": &graphql.FieldConfig{
+		"iq": &graphql.Field{
 			Type: graphql.Int,
 		},
 		// `relatives` field added later in init()
@@ -216,8 +216,8 @@ var alienType = graphql.NewObject(graphql.ObjectConfig{
 		beingInterface,
 		intelligentInterface,
 	},
-	Fields: graphql.FieldConfigMap{
-		"name": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"name": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"surname": &graphql.ArgumentConfig{
@@ -225,10 +225,10 @@ var alienType = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"iq": &graphql.FieldConfig{
+		"iq": &graphql.Field{
 			Type: graphql.Int,
 		},
-		"numEyes": &graphql.FieldConfig{
+		"numEyes": &graphql.Field{
 			Type: graphql.Int,
 		},
 	},
@@ -281,8 +281,8 @@ var complicatedArgs = graphql.NewObject(graphql.ObjectConfig{
 	// TODO List
 	// TODO Coercion
 	// TODO NotNulls
-	Fields: graphql.FieldConfigMap{
-		"intArgField": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"intArgField": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"intArg": &graphql.ArgumentConfig{
@@ -290,7 +290,7 @@ var complicatedArgs = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"nonNullIntArgField": &graphql.FieldConfig{
+		"nonNullIntArgField": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"nonNullIntArg": &graphql.ArgumentConfig{
@@ -298,7 +298,7 @@ var complicatedArgs = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"stringArgField": &graphql.FieldConfig{
+		"stringArgField": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"stringArg": &graphql.ArgumentConfig{
@@ -306,7 +306,7 @@ var complicatedArgs = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"booleanArgField": &graphql.FieldConfig{
+		"booleanArgField": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"booleanArg": &graphql.ArgumentConfig{
@@ -314,7 +314,7 @@ var complicatedArgs = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"enumArgField": &graphql.FieldConfig{
+		"enumArgField": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"enumArg": &graphql.ArgumentConfig{
@@ -322,7 +322,7 @@ var complicatedArgs = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"floatArgField": &graphql.FieldConfig{
+		"floatArgField": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"floatArg": &graphql.ArgumentConfig{
@@ -330,7 +330,7 @@ var complicatedArgs = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"idArgField": &graphql.FieldConfig{
+		"idArgField": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"idArg": &graphql.ArgumentConfig{
@@ -338,7 +338,7 @@ var complicatedArgs = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"stringListArgField": &graphql.FieldConfig{
+		"stringListArgField": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"stringListArg": &graphql.ArgumentConfig{
@@ -346,7 +346,7 @@ var complicatedArgs = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"complexArgField": &graphql.FieldConfig{
+		"complexArgField": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"complexArg": &graphql.ArgumentConfig{
@@ -354,7 +354,7 @@ var complicatedArgs = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"multipleReqs": &graphql.FieldConfig{
+		"multipleReqs": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"req1": &graphql.ArgumentConfig{
@@ -365,7 +365,7 @@ var complicatedArgs = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"multipleOpts": &graphql.FieldConfig{
+		"multipleOpts": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"opt1": &graphql.ArgumentConfig{
@@ -378,7 +378,7 @@ var complicatedArgs = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 		},
-		"multipleOptAndReq": &graphql.FieldConfig{
+		"multipleOptAndReq": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"req1": &graphql.ArgumentConfig{
@@ -404,13 +404,13 @@ var defaultSchema *graphql.Schema
 
 func init() {
 
-	humanType.AddFieldConfig("relatives", &graphql.FieldConfig{
+	humanType.AddFieldConfig("relatives", &graphql.Field{
 		Type: graphql.NewList(humanType),
 	})
 	queryRoot = graphql.NewObject(graphql.ObjectConfig{
 		Name: "QueryRoot",
-		Fields: graphql.FieldConfigMap{
-			"human": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"human": &graphql.Field{
 				Args: graphql.FieldConfigArgument{
 					"id": &graphql.ArgumentConfig{
 						Type: graphql.ID,
@@ -418,28 +418,28 @@ func init() {
 				},
 				Type: humanType,
 			},
-			"alien": &graphql.FieldConfig{
+			"alien": &graphql.Field{
 				Type: alienType,
 			},
-			"dog": &graphql.FieldConfig{
+			"dog": &graphql.Field{
 				Type: dogType,
 			},
-			"cat": &graphql.FieldConfig{
+			"cat": &graphql.Field{
 				Type: catType,
 			},
-			"pet": &graphql.FieldConfig{
+			"pet": &graphql.Field{
 				Type: petInterface,
 			},
-			"catOrDog": &graphql.FieldConfig{
+			"catOrDog": &graphql.Field{
 				Type: catOrDogUnion,
 			},
-			"dogOrHuman": &graphql.FieldConfig{
+			"dogOrHuman": &graphql.Field{
 				Type: dogOrHumanUnion,
 			},
-			"humanOrAlien": &graphql.FieldConfig{
+			"humanOrAlien": &graphql.Field{
 				Type: humanOrAlienUnion,
 			},
-			"complicatedArgs": &graphql.FieldConfig{
+			"complicatedArgs": &graphql.Field{
 				Type: complicatedArgs,
 			},
 		},

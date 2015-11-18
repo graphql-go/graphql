@@ -11,10 +11,10 @@ import (
 
 // These are all of the possible kinds of
 type Type interface {
-	GetName() string
-	GetDescription() string
+	Name() string
+	Description() string
 	String() string
-	GetError() error
+	Error() error
 }
 
 var _ Type = (*Scalar)(nil)
@@ -29,10 +29,10 @@ var _ Type = (*Argument)(nil)
 
 // These types may be used as input types for arguments and directives.
 type Input interface {
-	GetName() string
-	GetDescription() string
+	Name() string
+	Description() string
 	String() string
-	GetError() error
+	Error() error
 }
 
 var _ Input = (*Scalar)(nil)
@@ -88,10 +88,10 @@ func IsLeafType(ttype Type) bool {
 
 // These types may be used as output types as the result of fields.
 type Output interface {
-	GetName() string
-	GetDescription() string
+	Name() string
+	Description() string
 	String() string
-	GetError() error
+	Error() error
 }
 
 var _ Output = (*Scalar)(nil)
@@ -104,7 +104,7 @@ var _ Output = (*NonNull)(nil)
 
 // These types may describe the parent context of a selection set.
 type Composite interface {
-	GetName() string
+	Name() string
 }
 
 var _ Composite = (*Object)(nil)
@@ -126,8 +126,8 @@ func IsCompositeType(ttype interface{}) bool {
 
 // These types may describe the parent context of a selection set.
 type Abstract interface {
-	GetObjectType(value interface{}, info ResolveInfo) *Object
-	GetPossibleTypes() []*Object
+	ObjectType(value interface{}, info ResolveInfo) *Object
+	PossibleTypes() []*Object
 	IsPossibleType(ttype *Object) bool
 }
 
@@ -198,8 +198,8 @@ func GetNamed(ttype Type) Named {
  *
  */
 type Scalar struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	PrivateName        string `json:"name"`
+	PrivateDescription string `json:"description"`
 
 	scalarConfig ScalarConfig
 	err          error
@@ -229,8 +229,8 @@ func NewScalar(config ScalarConfig) *Scalar {
 		return st
 	}
 
-	st.Name = config.Name
-	st.Description = config.Description
+	st.PrivateName = config.Name
+	st.PrivateDescription = config.Description
 
 	err = invariant(
 		config.Serialize != nil,
@@ -274,17 +274,17 @@ func (st *Scalar) ParseLiteral(valueAST ast.Value) interface{} {
 	}
 	return st.scalarConfig.ParseLiteral(valueAST)
 }
-func (st *Scalar) GetName() string {
-	return st.Name
+func (st *Scalar) Name() string {
+	return st.PrivateName
 }
-func (st *Scalar) GetDescription() string {
-	return st.Description
+func (st *Scalar) Description() string {
+	return st.PrivateDescription
 
 }
 func (st *Scalar) String() string {
-	return st.Name
+	return st.PrivateName
 }
-func (st *Scalar) GetError() error {
+func (st *Scalar) Error() error {
 	return st.err
 }
 
@@ -326,9 +326,9 @@ func (st *Scalar) GetError() error {
  *
  */
 type Object struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	IsTypeOf    IsTypeOfFn
+	PrivateName        string `json:"name"`
+	PrivateDescription string `json:"description"`
+	IsTypeOf           IsTypeOfFn
 
 	typeConfig ObjectConfig
 	fields     FieldDefinitionMap
@@ -342,11 +342,11 @@ type IsTypeOfFn func(value interface{}, info ResolveInfo) bool
 type InterfacesThunk func() []*Interface
 
 type ObjectConfig struct {
-	Name        string         `json:"description"`
-	Interfaces  interface{}    `json:"interfaces"`
-	Fields      FieldConfigMap `json:"fields"`
-	IsTypeOf    IsTypeOfFn     `json:"isTypeOf"`
-	Description string         `json:"description"`
+	Name        string      `json:"description"`
+	Interfaces  interface{} `json:"interfaces"`
+	Fields      Fields      `json:"fields"`
+	IsTypeOf    IsTypeOfFn  `json:"isTypeOf"`
+	Description string      `json:"description"`
 }
 
 func NewObject(config ObjectConfig) *Object {
@@ -363,8 +363,8 @@ func NewObject(config ObjectConfig) *Object {
 		return objectType
 	}
 
-	objectType.Name = config.Name
-	objectType.Description = config.Description
+	objectType.PrivateName = config.Name
+	objectType.PrivateDescription = config.Description
 	objectType.IsTypeOf = config.IsTypeOf
 	objectType.typeConfig = config
 
@@ -375,7 +375,7 @@ func NewObject(config ObjectConfig) *Object {
 		 	implementations, but avoids an expensive "getPossibleTypes"
 		 	implementation for Interface
 	*/
-	interfaces := objectType.GetInterfaces()
+	interfaces := objectType.Interfaces()
 	if interfaces == nil {
 		return objectType
 	}
@@ -385,29 +385,29 @@ func NewObject(config ObjectConfig) *Object {
 
 	return objectType
 }
-func (gt *Object) AddFieldConfig(fieldName string, fieldConfig *FieldConfig) {
+func (gt *Object) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	if fieldName == "" || fieldConfig == nil {
 		return
 	}
 	gt.typeConfig.Fields[fieldName] = fieldConfig
 
 }
-func (gt *Object) GetName() string {
-	return gt.Name
+func (gt *Object) Name() string {
+	return gt.PrivateName
 }
-func (gt *Object) GetDescription() string {
+func (gt *Object) Description() string {
 	return ""
 }
 func (gt *Object) String() string {
-	return gt.Name
+	return gt.PrivateName
 }
-func (gt *Object) GetFields() FieldDefinitionMap {
+func (gt *Object) Fields() FieldDefinitionMap {
 	fields, err := defineFieldMap(gt, gt.typeConfig.Fields)
 	gt.err = err
 	gt.fields = fields
 	return gt.fields
 }
-func (gt *Object) GetInterfaces() []*Interface {
+func (gt *Object) Interfaces() []*Interface {
 	var configInterfaces []*Interface
 	switch gt.typeConfig.Interfaces.(type) {
 	case InterfacesThunk:
@@ -424,7 +424,7 @@ func (gt *Object) GetInterfaces() []*Interface {
 	gt.interfaces = interfaces
 	return gt.interfaces
 }
-func (gt *Object) GetError() error {
+func (gt *Object) Error() error {
 	return gt.err
 }
 
@@ -460,7 +460,7 @@ func defineInterfaces(ttype *Object, interfaces []*Interface) ([]*Interface, err
 	return ifaces, nil
 }
 
-func defineFieldMap(ttype Named, fields FieldConfigMap) (FieldDefinitionMap, error) {
+func defineFieldMap(ttype Named, fields Fields) (FieldDefinitionMap, error) {
 
 	resultFieldMap := FieldDefinitionMap{}
 
@@ -483,8 +483,8 @@ func defineFieldMap(ttype Named, fields FieldConfigMap) (FieldDefinitionMap, err
 		if err != nil {
 			return resultFieldMap, err
 		}
-		if field.Type.GetError() != nil {
-			return resultFieldMap, field.Type.GetError()
+		if field.Type.Error() != nil {
+			return resultFieldMap, field.Type.Error()
 		}
 		err = assertValidName(fieldName)
 		if err != nil {
@@ -519,10 +519,10 @@ func defineFieldMap(ttype Named, fields FieldConfigMap) (FieldDefinitionMap, err
 				return resultFieldMap, err
 			}
 			fieldArg := &Argument{
-				Name:         argName,
-				Description:  arg.Description,
-				Type:         arg.Type,
-				DefaultValue: arg.DefaultValue,
+				PrivateName:        argName,
+				PrivateDescription: arg.Description,
+				Type:               arg.Type,
+				DefaultValue:       arg.DefaultValue,
 			}
 			fieldDef.Args = append(fieldDef.Args, fieldArg)
 		}
@@ -532,7 +532,7 @@ func defineFieldMap(ttype Named, fields FieldConfigMap) (FieldDefinitionMap, err
 }
 
 // TODO: clean up GQLFRParams fields
-type GQLFRParams struct {
+type ResolveParams struct {
 	Source interface{}
 	Args   map[string]interface{}
 	Info   ResolveInfo
@@ -540,7 +540,7 @@ type GQLFRParams struct {
 }
 
 // TODO: relook at FieldResolveFn params
-type FieldResolveFn func(p GQLFRParams) interface{}
+type FieldResolveFn func(p ResolveParams) interface{}
 
 type ResolveInfo struct {
 	FieldName      string
@@ -554,9 +554,9 @@ type ResolveInfo struct {
 	VariableValues map[string]interface{}
 }
 
-type FieldConfigMap map[string]*FieldConfig
+type Fields map[string]*Field
 
-type FieldConfig struct {
+type Field struct {
 	Name              string              `json:"name"` // used by graphlql-relay
 	Type              Output              `json:"type"`
 	Args              FieldConfigArgument `json:"args"`
@@ -591,23 +591,23 @@ type FieldArgument struct {
 }
 
 type Argument struct {
-	Name         string      `json:"name"`
-	Type         Input       `json:"type"`
-	DefaultValue interface{} `json:"defaultValue"`
-	Description  string      `json:"description"`
+	PrivateName        string      `json:"name"`
+	Type               Input       `json:"type"`
+	DefaultValue       interface{} `json:"defaultValue"`
+	PrivateDescription string      `json:"description"`
 }
 
-func (st *Argument) GetName() string {
-	return st.Name
+func (st *Argument) Name() string {
+	return st.PrivateName
 }
-func (st *Argument) GetDescription() string {
-	return st.Description
+func (st *Argument) Description() string {
+	return st.PrivateDescription
 
 }
 func (st *Argument) String() string {
-	return st.Name
+	return st.PrivateName
 }
-func (st *Argument) GetError() error {
+func (st *Argument) Error() error {
 	return nil
 }
 
@@ -630,9 +630,9 @@ func (st *Argument) GetError() error {
  *
  */
 type Interface struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	ResolveType ResolveTypeFn
+	PrivateName        string `json:"name"`
+	PrivateDescription string `json:"description"`
+	ResolveType        ResolveTypeFn
 
 	typeConfig      InterfaceConfig
 	fields          FieldDefinitionMap
@@ -642,8 +642,8 @@ type Interface struct {
 	err error
 }
 type InterfaceConfig struct {
-	Name        string         `json:"name"`
-	Fields      FieldConfigMap `json:"fields"`
+	Name        string `json:"name"`
+	Fields      Fields `json:"fields"`
 	ResolveType ResolveTypeFn
 	Description string `json:"description"`
 }
@@ -662,8 +662,8 @@ func NewInterface(config InterfaceConfig) *Interface {
 		it.err = err
 		return it
 	}
-	it.Name = config.Name
-	it.Description = config.Description
+	it.PrivateName = config.Name
+	it.PrivateDescription = config.Description
 	it.ResolveType = config.ResolveType
 	it.typeConfig = config
 	it.implementations = []*Object{}
@@ -671,23 +671,23 @@ func NewInterface(config InterfaceConfig) *Interface {
 	return it
 }
 
-func (it *Interface) AddFieldConfig(fieldName string, fieldConfig *FieldConfig) {
+func (it *Interface) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	if fieldName == "" || fieldConfig == nil {
 		return
 	}
 	it.typeConfig.Fields[fieldName] = fieldConfig
 }
-func (it *Interface) GetName() string {
-	return it.Name
+func (it *Interface) Name() string {
+	return it.PrivateName
 }
-func (it *Interface) GetDescription() string {
-	return it.Description
+func (it *Interface) Description() string {
+	return it.PrivateDescription
 }
-func (it *Interface) GetFields() (fields FieldDefinitionMap) {
+func (it *Interface) Fields() (fields FieldDefinitionMap) {
 	it.fields, it.err = defineFieldMap(it, it.typeConfig.Fields)
 	return it.fields
 }
-func (it *Interface) GetPossibleTypes() []*Object {
+func (it *Interface) PossibleTypes() []*Object {
 	return it.implementations
 }
 func (it *Interface) IsPossibleType(ttype *Object) bool {
@@ -696,34 +696,34 @@ func (it *Interface) IsPossibleType(ttype *Object) bool {
 	}
 	if len(it.possibleTypes) == 0 {
 		possibleTypes := map[string]bool{}
-		for _, possibleType := range it.GetPossibleTypes() {
+		for _, possibleType := range it.PossibleTypes() {
 			if possibleType == nil {
 				continue
 			}
-			possibleTypes[possibleType.Name] = true
+			possibleTypes[possibleType.PrivateName] = true
 		}
 		it.possibleTypes = possibleTypes
 	}
-	if val, ok := it.possibleTypes[ttype.Name]; ok {
+	if val, ok := it.possibleTypes[ttype.PrivateName]; ok {
 		return val
 	}
 	return false
 }
-func (it *Interface) GetObjectType(value interface{}, info ResolveInfo) *Object {
+func (it *Interface) ObjectType(value interface{}, info ResolveInfo) *Object {
 	if it.ResolveType != nil {
 		return it.ResolveType(value, info)
 	}
 	return getTypeOf(value, info, it)
 }
 func (it *Interface) String() string {
-	return it.Name
+	return it.PrivateName
 }
-func (it *Interface) GetError() error {
+func (it *Interface) Error() error {
 	return it.err
 }
 
 func getTypeOf(value interface{}, info ResolveInfo, abstractType Abstract) *Object {
-	possibleTypes := abstractType.GetPossibleTypes()
+	possibleTypes := abstractType.PossibleTypes()
 	for _, possibleType := range possibleTypes {
 		if possibleType.IsTypeOf == nil {
 			continue
@@ -759,9 +759,9 @@ func getTypeOf(value interface{}, info ResolveInfo, abstractType Abstract) *Obje
  *
  */
 type Union struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	ResolveType ResolveTypeFn
+	PrivateName        string `json:"name"`
+	PrivateDescription string `json:"description"`
+	ResolveType        ResolveTypeFn
 
 	typeConfig    UnionConfig
 	types         []*Object
@@ -789,8 +789,8 @@ func NewUnion(config UnionConfig) *Union {
 		objectType.err = err
 		return objectType
 	}
-	objectType.Name = config.Name
-	objectType.Description = config.Description
+	objectType.PrivateName = config.Name
+	objectType.PrivateDescription = config.Description
 	objectType.ResolveType = config.ResolveType
 
 	err = invariant(
@@ -829,7 +829,7 @@ func NewUnion(config UnionConfig) *Union {
 
 	return objectType
 }
-func (ut *Union) GetPossibleTypes() []*Object {
+func (ut *Union) PossibleTypes() []*Object {
 	return ut.types
 }
 func (ut *Union) IsPossibleType(ttype *Object) bool {
@@ -839,36 +839,36 @@ func (ut *Union) IsPossibleType(ttype *Object) bool {
 	}
 	if len(ut.possibleTypes) == 0 {
 		possibleTypes := map[string]bool{}
-		for _, possibleType := range ut.GetPossibleTypes() {
+		for _, possibleType := range ut.PossibleTypes() {
 			if possibleType == nil {
 				continue
 			}
-			possibleTypes[possibleType.Name] = true
+			possibleTypes[possibleType.PrivateName] = true
 		}
 		ut.possibleTypes = possibleTypes
 	}
 
-	if val, ok := ut.possibleTypes[ttype.Name]; ok {
+	if val, ok := ut.possibleTypes[ttype.PrivateName]; ok {
 		return val
 	}
 	return false
 }
-func (ut *Union) GetObjectType(value interface{}, info ResolveInfo) *Object {
+func (ut *Union) ObjectType(value interface{}, info ResolveInfo) *Object {
 	if ut.ResolveType != nil {
 		return ut.ResolveType(value, info)
 	}
 	return getTypeOf(value, info, ut)
 }
 func (ut *Union) String() string {
-	return ut.Name
+	return ut.PrivateName
 }
-func (ut *Union) GetName() string {
-	return ut.Name
+func (ut *Union) Name() string {
+	return ut.PrivateName
 }
-func (ut *Union) GetDescription() string {
-	return ut.Description
+func (ut *Union) Description() string {
+	return ut.PrivateDescription
 }
-func (ut *Union) GetError() error {
+func (ut *Union) Error() error {
 	return ut.err
 }
 
@@ -894,8 +894,8 @@ func (ut *Union) GetError() error {
  * will be used as it's internal value.
  */
 type Enum struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	PrivateName        string `json:"name"`
+	PrivateDescription string `json:"description"`
 
 	enumConfig   EnumConfig
 	values       []*EnumValueDefinition
@@ -932,8 +932,8 @@ func NewEnum(config EnumConfig) *Enum {
 		return gt
 	}
 
-	gt.Name = config.Name
-	gt.Description = config.Description
+	gt.PrivateName = config.Name
+	gt.PrivateDescription = config.Description
 	gt.values, err = gt.defineEnumValues(config.Values)
 	if err != nil {
 		gt.err = err
@@ -979,7 +979,7 @@ func (gt *Enum) defineEnumValues(valueMap EnumValueConfigMap) ([]*EnumValueDefin
 	}
 	return values, nil
 }
-func (gt *Enum) GetValues() []*EnumValueDefinition {
+func (gt *Enum) Values() []*EnumValueDefinition {
 	return gt.values
 }
 func (gt *Enum) Serialize(value interface{}) interface{} {
@@ -1006,16 +1006,16 @@ func (gt *Enum) ParseLiteral(valueAST ast.Value) interface{} {
 	}
 	return nil
 }
-func (gt *Enum) GetName() string {
-	return gt.Name
+func (gt *Enum) Name() string {
+	return gt.PrivateName
 }
-func (gt *Enum) GetDescription() string {
+func (gt *Enum) Description() string {
 	return ""
 }
 func (gt *Enum) String() string {
-	return gt.Name
+	return gt.PrivateName
 }
-func (gt *Enum) GetError() error {
+func (gt *Enum) Error() error {
 	return gt.err
 }
 func (gt *Enum) getValueLookup() map[interface{}]*EnumValueDefinition {
@@ -1023,7 +1023,7 @@ func (gt *Enum) getValueLookup() map[interface{}]*EnumValueDefinition {
 		return gt.valuesLookup
 	}
 	valuesLookup := map[interface{}]*EnumValueDefinition{}
-	for _, value := range gt.GetValues() {
+	for _, value := range gt.Values() {
 		valuesLookup[value.Value] = value
 	}
 	gt.valuesLookup = valuesLookup
@@ -1035,7 +1035,7 @@ func (gt *Enum) getNameLookup() map[string]*EnumValueDefinition {
 		return gt.nameLookup
 	}
 	nameLookup := map[string]*EnumValueDefinition{}
-	for _, value := range gt.GetValues() {
+	for _, value := range gt.Values() {
 		nameLookup[value.Name] = value
 	}
 	gt.nameLookup = nameLookup
@@ -1063,8 +1063,8 @@ func (gt *Enum) getNameLookup() map[string]*EnumValueDefinition {
  *
  */
 type InputObject struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	PrivateName        string `json:"name"`
+	PrivateDescription string `json:"description"`
 
 	typeConfig InputObjectConfig
 	fields     InputObjectFieldMap
@@ -1077,23 +1077,23 @@ type InputObjectFieldConfig struct {
 	Description  string      `json:"description"`
 }
 type InputObjectField struct {
-	Name         string      `json:"name"`
-	Type         Input       `json:"type"`
-	DefaultValue interface{} `json:"defaultValue"`
-	Description  string      `json:"description"`
+	PrivateName        string      `json:"name"`
+	Type               Input       `json:"type"`
+	DefaultValue       interface{} `json:"defaultValue"`
+	PrivateDescription string      `json:"description"`
 }
 
-func (st *InputObjectField) GetName() string {
-	return st.Name
+func (st *InputObjectField) Name() string {
+	return st.PrivateName
 }
-func (st *InputObjectField) GetDescription() string {
-	return st.Description
+func (st *InputObjectField) Description() string {
+	return st.PrivateDescription
 
 }
 func (st *InputObjectField) String() string {
-	return st.Name
+	return st.PrivateName
 }
-func (st *InputObjectField) GetError() error {
+func (st *InputObjectField) Error() error {
 	return nil
 }
 
@@ -1115,8 +1115,8 @@ func NewInputObject(config InputObjectConfig) *InputObject {
 		return gt
 	}
 
-	gt.Name = config.Name
-	gt.Description = config.Description
+	gt.PrivateName = config.Name
+	gt.PrivateDescription = config.Description
 	gt.typeConfig = config
 	gt.fields = gt.defineFieldMap()
 	return gt
@@ -1158,27 +1158,27 @@ func (gt *InputObject) defineFieldMap() InputObjectFieldMap {
 			return resultFieldMap
 		}
 		field := &InputObjectField{}
-		field.Name = fieldName
+		field.PrivateName = fieldName
 		field.Type = fieldConfig.Type
-		field.Description = fieldConfig.Description
+		field.PrivateDescription = fieldConfig.Description
 		field.DefaultValue = fieldConfig.DefaultValue
 		resultFieldMap[fieldName] = field
 	}
 	return resultFieldMap
 }
-func (gt *InputObject) GetFields() InputObjectFieldMap {
+func (gt *InputObject) Fields() InputObjectFieldMap {
 	return gt.fields
 }
-func (gt *InputObject) GetName() string {
-	return gt.Name
+func (gt *InputObject) Name() string {
+	return gt.PrivateName
 }
-func (gt *InputObject) GetDescription() string {
-	return gt.Description
+func (gt *InputObject) Description() string {
+	return gt.PrivateDescription
 }
 func (gt *InputObject) String() string {
-	return gt.Name
+	return gt.PrivateName
 }
-func (gt *InputObject) GetError() error {
+func (gt *InputObject) Error() error {
 	return gt.err
 }
 
@@ -1218,10 +1218,10 @@ func NewList(ofType Type) *List {
 	gl.OfType = ofType
 	return gl
 }
-func (gl *List) GetName() string {
+func (gl *List) Name() string {
 	return fmt.Sprintf("%v", gl.OfType)
 }
-func (gl *List) GetDescription() string {
+func (gl *List) Description() string {
 	return ""
 }
 func (gl *List) String() string {
@@ -1230,7 +1230,7 @@ func (gl *List) String() string {
 	}
 	return ""
 }
-func (gl *List) GetError() error {
+func (gl *List) Error() error {
 	return gl.err
 }
 
@@ -1255,8 +1255,8 @@ func (gl *List) GetError() error {
  * Note: the enforcement of non-nullability occurs within the executor.
  */
 type NonNull struct {
-	Name   string `json:"name"` // added to conform with introspection for NonNull.Name = nil
-	OfType Type   `json:"ofType"`
+	PrivateName string `json:"name"` // added to conform with introspection for NonNull.Name = nil
+	OfType      Type   `json:"ofType"`
 
 	err error
 }
@@ -1273,19 +1273,19 @@ func NewNonNull(ofType Type) *NonNull {
 	gl.OfType = ofType
 	return gl
 }
-func (gl *NonNull) GetName() string {
+func (gl *NonNull) Name() string {
 	return fmt.Sprintf("%v!", gl.OfType)
 }
-func (gl *NonNull) GetDescription() string {
+func (gl *NonNull) Description() string {
 	return ""
 }
 func (gl *NonNull) String() string {
 	if gl.OfType != nil {
-		return gl.GetName()
+		return gl.Name()
 	}
 	return ""
 }
-func (gl *NonNull) GetError() error {
+func (gl *NonNull) Error() error {
 	return gl.err
 }
 

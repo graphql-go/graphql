@@ -252,32 +252,32 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReportsDeepConflictToNearestCommo
 
 var stringBoxObject = graphql.NewObject(graphql.ObjectConfig{
 	Name: "StringBox",
-	Fields: graphql.FieldConfigMap{
-		"scalar": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"scalar": &graphql.Field{
 			Type: graphql.String,
 		},
 	},
 })
 var intBoxObject = graphql.NewObject(graphql.ObjectConfig{
 	Name: "IntBox",
-	Fields: graphql.FieldConfigMap{
-		"scalar": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"scalar": &graphql.Field{
 			Type: graphql.Int,
 		},
 	},
 })
 var nonNullStringBox1Object = graphql.NewObject(graphql.ObjectConfig{
 	Name: "NonNullStringBox1",
-	Fields: graphql.FieldConfigMap{
-		"scalar": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"scalar": &graphql.Field{
 			Type: graphql.NewNonNull(graphql.String),
 		},
 	},
 })
 var nonNullStringBox2Object = graphql.NewObject(graphql.ObjectConfig{
 	Name: "NonNullStringBox2",
-	Fields: graphql.FieldConfigMap{
-		"scalar": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"scalar": &graphql.Field{
 			Type: graphql.NewNonNull(graphql.String),
 		},
 	},
@@ -297,19 +297,19 @@ var boxUnionObject = graphql.NewUnion(graphql.UnionConfig{
 
 var connectionObject = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Connection",
-	Fields: graphql.FieldConfigMap{
-		"edges": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"edges": &graphql.Field{
 			Type: graphql.NewList(graphql.NewObject(graphql.ObjectConfig{
 				Name: "Edge",
-				Fields: graphql.FieldConfigMap{
-					"node": &graphql.FieldConfig{
+				Fields: graphql.Fields{
+					"node": &graphql.Field{
 						Type: graphql.NewObject(graphql.ObjectConfig{
 							Name: "Node",
-							Fields: graphql.FieldConfigMap{
-								"id": &graphql.FieldConfig{
+							Fields: graphql.Fields{
+								"id": &graphql.Field{
 									Type: graphql.ID,
 								},
-								"name": &graphql.FieldConfig{
+								"name": &graphql.Field{
 									Type: graphql.String,
 								},
 							},
@@ -323,11 +323,11 @@ var connectionObject = graphql.NewObject(graphql.ObjectConfig{
 var schema, _ = graphql.NewSchema(graphql.SchemaConfig{
 	Query: graphql.NewObject(graphql.ObjectConfig{
 		Name: "QueryRoot",
-		Fields: graphql.FieldConfigMap{
-			"boxUnion": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"boxUnion": &graphql.Field{
 				Type: boxUnionObject,
 			},
-			"connection": &graphql.FieldConfig{
+			"connection": &graphql.Field{
 				Type: connectionObject,
 			},
 		},
