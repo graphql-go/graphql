@@ -1,14 +1,15 @@
-package rules_test
+package graphql_test
 
 import (
 	"testing"
 
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
+    "github.com/graphql-go/graphql"
+    "github.com/graphql-go/graphql/gqlerrors"
+    "github.com/graphql-go/graphql/testutil"
 )
 
 func TestValidate_KnownFragmentNames_KnownFragmentNamesAreValid(t *testing.T) {
-	expectPassesRule(t, graphql.KnownFragmentNamesRule, `
+	testutil.ExpectPassesRule(t, graphql.KnownFragmentNamesRule, `
       {
         human(id: 4) {
           ...HumanFields1
@@ -30,7 +31,7 @@ func TestValidate_KnownFragmentNames_KnownFragmentNamesAreValid(t *testing.T) {
     `)
 }
 func TestValidate_KnownFragmentNames_UnknownFragmentNamesAreInvalid(t *testing.T) {
-	expectFailsRule(t, graphql.KnownFragmentNamesRule, `
+	testutil.ExpectFailsRule(t, graphql.KnownFragmentNamesRule, `
       {
         human(id: 4) {
           ...UnknownFragment1
@@ -44,8 +45,8 @@ func TestValidate_KnownFragmentNames_UnknownFragmentNamesAreInvalid(t *testing.T
         ...UnknownFragment3
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Unknown fragment "UnknownFragment1".`, 4, 14),
-		ruleError(`Unknown fragment "UnknownFragment2".`, 6, 16),
-		ruleError(`Unknown fragment "UnknownFragment3".`, 12, 12),
+		testutil.RuleError(`Unknown fragment "UnknownFragment1".`, 4, 14),
+		testutil.RuleError(`Unknown fragment "UnknownFragment2".`, 6, 16),
+		testutil.RuleError(`Unknown fragment "UnknownFragment3".`, 12, 12),
 	})
 }

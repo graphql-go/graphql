@@ -1,35 +1,36 @@
-package rules_test
+package graphql_test
 
 import (
 	"testing"
 
 	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
+    "github.com/graphql-go/graphql/gqlerrors"
+    "github.com/graphql-go/graphql/testutil"
 )
 
 func TestValidate_UniqueOperationNames_NoOperations(t *testing.T) {
-	expectPassesRule(t, graphql.UniqueOperationNamesRule, `
+	testutil.ExpectPassesRule(t, graphql.UniqueOperationNamesRule, `
       fragment fragA on Type {
         field
       }
     `)
 }
 func TestValidate_UniqueOperationNames_OneAnonOperation(t *testing.T) {
-	expectPassesRule(t, graphql.UniqueOperationNamesRule, `
+	testutil.ExpectPassesRule(t, graphql.UniqueOperationNamesRule, `
       {
         field
       }
     `)
 }
 func TestValidate_UniqueOperationNames_OneNamedOperation(t *testing.T) {
-	expectPassesRule(t, graphql.UniqueOperationNamesRule, `
+	testutil.ExpectPassesRule(t, graphql.UniqueOperationNamesRule, `
       query Foo {
         field
       }
     `)
 }
 func TestValidate_UniqueOperationNames_MultipleOperations(t *testing.T) {
-	expectPassesRule(t, graphql.UniqueOperationNamesRule, `
+	testutil.ExpectPassesRule(t, graphql.UniqueOperationNamesRule, `
       query Foo {
         field
       }
@@ -40,7 +41,7 @@ func TestValidate_UniqueOperationNames_MultipleOperations(t *testing.T) {
     `)
 }
 func TestValidate_UniqueOperationNames_MultipleOperationsOfDifferentTypes(t *testing.T) {
-	expectPassesRule(t, graphql.UniqueOperationNamesRule, `
+	testutil.ExpectPassesRule(t, graphql.UniqueOperationNamesRule, `
       query Foo {
         field
       }
@@ -51,7 +52,7 @@ func TestValidate_UniqueOperationNames_MultipleOperationsOfDifferentTypes(t *tes
     `)
 }
 func TestValidate_UniqueOperationNames_FragmentAndOperationNamedTheSame(t *testing.T) {
-	expectPassesRule(t, graphql.UniqueOperationNamesRule, `
+	testutil.ExpectPassesRule(t, graphql.UniqueOperationNamesRule, `
       query Foo {
         field
       }
@@ -62,7 +63,7 @@ func TestValidate_UniqueOperationNames_FragmentAndOperationNamedTheSame(t *testi
     `)
 }
 func TestValidate_UniqueOperationNames_MultipleOperationsOfSameName(t *testing.T) {
-	expectFailsRule(t, graphql.UniqueOperationNamesRule, `
+	testutil.ExpectFailsRule(t, graphql.UniqueOperationNamesRule, `
       query Foo {
         fieldA
       }
@@ -70,11 +71,11 @@ func TestValidate_UniqueOperationNames_MultipleOperationsOfSameName(t *testing.T
         fieldB
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`There can only be one operation named "Foo".`, 2, 13, 5, 13),
+		testutil.RuleError(`There can only be one operation named "Foo".`, 2, 13, 5, 13),
 	})
 }
 func TestValidate_UniqueOperationNames_MultipleOperationsOfSameNameOfDifferentTypes(t *testing.T) {
-	expectFailsRule(t, graphql.UniqueOperationNamesRule, `
+	testutil.ExpectFailsRule(t, graphql.UniqueOperationNamesRule, `
       query Foo {
         fieldA
       }
@@ -82,6 +83,6 @@ func TestValidate_UniqueOperationNames_MultipleOperationsOfSameNameOfDifferentTy
         fieldB
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`There can only be one operation named "Foo".`, 2, 13, 5, 16),
+		testutil.RuleError(`There can only be one operation named "Foo".`, 2, 13, 5, 16),
 	})
 }

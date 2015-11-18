@@ -1,14 +1,15 @@
-package rules_test
+package graphql_test
 
 import (
 	"testing"
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/gqlerrors"
+	"github.com/graphql-go/graphql/testutil"
 )
 
 func TestValidate_ArgValuesOfCorrectType_ValidValue_GoodIntValue(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             intArgField(intArg: 2)
@@ -17,7 +18,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidValue_GoodIntValue(t *testing.T) {
     `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidValue_GoodBooleanValue(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             booleanArgField(booleanArg: true)
@@ -26,7 +27,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidValue_GoodBooleanValue(t *testing.
     `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidValue_GoodStringValue(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             stringArgField(stringArg: "foo")
@@ -35,7 +36,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidValue_GoodStringValue(t *testing.T
     `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidValue_GoodFloatValue(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             floatArgField(floatArg: 1.1)
@@ -44,7 +45,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidValue_GoodFloatValue(t *testing.T)
     `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidValue_IntIntoFloat(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             floatArgField(floatArg: 1)
@@ -53,7 +54,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidValue_IntIntoFloat(t *testing.T) {
     `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidValue_IntIntoID(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             idArgField(idArg: 1)
@@ -62,7 +63,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidValue_IntIntoID(t *testing.T) {
     `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidValue_StringIntoID(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             idArgField(idArg: "someIdString")
@@ -71,7 +72,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidValue_StringIntoID(t *testing.T) {
     `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidValue_GoodEnumValue(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           dog {
             doesKnowCommand(dogCommand: SIT)
@@ -81,7 +82,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidValue_GoodEnumValue(t *testing.T) 
 }
 
 func TestValidate_ArgValuesOfCorrectType_InvalidStringValues_IntIntoString(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             stringArgField(stringArg: 1)
@@ -89,14 +90,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidStringValues_IntIntoString(t *te
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "stringArg" expected type "String" but got: 1.`,
 				4, 39,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidStringValues_FloatIntoString(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             stringArgField(stringArg: 1.0)
@@ -104,14 +105,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidStringValues_FloatIntoString(t *
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "stringArg" expected type "String" but got: 1.0.`,
 				4, 39,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidStringValues_BooleanIntoString(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             stringArgField(stringArg: true)
@@ -119,14 +120,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidStringValues_BooleanIntoString(t
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "stringArg" expected type "String" but got: true.`,
 				4, 39,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidStringValues_UnquotedStringIntoString(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             stringArgField(stringArg: BAR)
@@ -134,7 +135,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidStringValues_UnquotedStringIntoS
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "stringArg" expected type "String" but got: BAR.`,
 				4, 39,
 			),
@@ -142,7 +143,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidStringValues_UnquotedStringIntoS
 }
 
 func TestValidate_ArgValuesOfCorrectType_InvalidIntValues_BigIntIntoInt(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             intArgField(intArg: 829384293849283498239482938)
@@ -150,14 +151,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidIntValues_BigIntIntoInt(t *testi
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "intArg" expected type "Int" but got: 829384293849283498239482938.`,
 				4, 33,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidIntValues_UnquotedStringIntoInt(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             intArgField(intArg: FOO)
@@ -165,14 +166,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidIntValues_UnquotedStringIntoInt(
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "intArg" expected type "Int" but got: FOO.`,
 				4, 33,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidIntValues_SimpleFloatIntoInt(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             intArgField(intArg: 3.0)
@@ -180,14 +181,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidIntValues_SimpleFloatIntoInt(t *
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "intArg" expected type "Int" but got: 3.0.`,
 				4, 33,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidIntValues_FloatIntoInt(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             intArgField(intArg: 3.333)
@@ -195,7 +196,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidIntValues_FloatIntoInt(t *testin
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "intArg" expected type "Int" but got: 3.333.`,
 				4, 33,
 			),
@@ -203,7 +204,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidIntValues_FloatIntoInt(t *testin
 }
 
 func TestValidate_ArgValuesOfCorrectType_InvalidBooleanValues_IntIntoBoolean(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             booleanArgField(booleanArg: 2)
@@ -211,14 +212,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidBooleanValues_IntIntoBoolean(t *
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "booleanArg" expected type "Boolean" but got: 2.`,
 				4, 41,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidBooleanValues_FloatIntoBoolean(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             booleanArgField(booleanArg: 1.0)
@@ -226,14 +227,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidBooleanValues_FloatIntoBoolean(t
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "booleanArg" expected type "Boolean" but got: 1.0.`,
 				4, 41,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidBooleanValues_StringIntoBoolean(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             booleanArgField(booleanArg: "true")
@@ -241,14 +242,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidBooleanValues_StringIntoBoolean(
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "booleanArg" expected type "Boolean" but got: "true".`,
 				4, 41,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidBooleanValues_UnquotedStringIntoBoolean(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             booleanArgField(booleanArg: TRUE)
@@ -256,7 +257,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidBooleanValues_UnquotedStringInto
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "booleanArg" expected type "Boolean" but got: TRUE.`,
 				4, 41,
 			),
@@ -264,7 +265,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidBooleanValues_UnquotedStringInto
 }
 
 func TestValidate_ArgValuesOfCorrectType_InvalidIDValues_FloatIntoID(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             idArgField(idArg: 1.0)
@@ -272,14 +273,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidIDValues_FloatIntoID(t *testing.
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "idArg" expected type "ID" but got: 1.0.`,
 				4, 31,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidIDValues_BooleanIntoID(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             idArgField(idArg: true)
@@ -287,14 +288,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidIDValues_BooleanIntoID(t *testin
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "idArg" expected type "ID" but got: true.`,
 				4, 31,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidIDValues_UnquotedIntoID(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             idArgField(idArg: SOMETHING)
@@ -302,7 +303,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidIDValues_UnquotedIntoID(t *testi
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "idArg" expected type "ID" but got: SOMETHING.`,
 				4, 31,
 			),
@@ -310,7 +311,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidIDValues_UnquotedIntoID(t *testi
 }
 
 func TestValidate_ArgValuesOfCorrectType_InvalidEnumValue_IntIntoEnum(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           dog {
             doesKnowCommand(dogCommand: 2)
@@ -318,14 +319,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidEnumValue_IntIntoEnum(t *testing
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "dogCommand" expected type "DogCommand" but got: 2.`,
 				4, 41,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidEnumValue_FloatIntoEnum(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           dog {
             doesKnowCommand(dogCommand: 1.0)
@@ -333,14 +334,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidEnumValue_FloatIntoEnum(t *testi
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "dogCommand" expected type "DogCommand" but got: 1.0.`,
 				4, 41,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidEnumValue_StringIntoEnum(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           dog {
             doesKnowCommand(dogCommand: "SIT")
@@ -348,14 +349,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidEnumValue_StringIntoEnum(t *test
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "dogCommand" expected type "DogCommand" but got: "SIT".`,
 				4, 41,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidEnumValue_BooleanIntoEnum(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           dog {
             doesKnowCommand(dogCommand: true)
@@ -363,14 +364,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidEnumValue_BooleanIntoEnum(t *tes
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "dogCommand" expected type "DogCommand" but got: true.`,
 				4, 41,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidEnumValue_UnknownEnumValueIntoEnum(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           dog {
             doesKnowCommand(dogCommand: JUGGLE)
@@ -378,14 +379,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidEnumValue_UnknownEnumValueIntoEn
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "dogCommand" expected type "DogCommand" but got: JUGGLE.`,
 				4, 41,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidEnumValue_DifferentCaseEnumValueIntoEnum(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           dog {
             doesKnowCommand(dogCommand: sit)
@@ -393,7 +394,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidEnumValue_DifferentCaseEnumValue
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "dogCommand" expected type "DogCommand" but got: sit.`,
 				4, 41,
 			),
@@ -401,7 +402,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidEnumValue_DifferentCaseEnumValue
 }
 
 func TestValidate_ArgValuesOfCorrectType_ValidListValue_GoodListValue(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             stringListArgField(stringListArg: ["one", "two"])
@@ -410,7 +411,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidListValue_GoodListValue(t *testing
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidListValue_EmptyListValue(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             stringListArgField(stringListArg: [])
@@ -419,7 +420,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidListValue_EmptyListValue(t *testin
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidListValue_SingleValueIntoList(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             stringListArgField(stringListArg: "one")
@@ -429,7 +430,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidListValue_SingleValueIntoList(t *t
 }
 
 func TestValidate_ArgValuesOfCorrectType_InvalidListValue_IncorrectItemType(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             stringListArgField(stringListArg: ["one", 2])
@@ -437,14 +438,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidListValue_IncorrectItemType(t *t
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "stringListArg" expected type "[String]" but got: ["one", 2].`,
 				4, 47,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidListValue_SingleValueOfIncorrentType(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             stringListArgField(stringListArg: 1)
@@ -452,7 +453,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidListValue_SingleValueOfIncorrent
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "stringListArg" expected type "[String]" but got: 1.`,
 				4, 47,
 			),
@@ -460,7 +461,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidListValue_SingleValueOfIncorrent
 }
 
 func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_ArgOnOptionalArg(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           dog {
             isHousetrained(atOtherHomes: true)
@@ -469,7 +470,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_ArgOnOptionalArg(
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_NoArgOnOptionalArg(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           dog {
             isHousetrained
@@ -478,7 +479,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_NoArgOnOptionalAr
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_MultipleArgs(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             multipleReqs(req1: 1, req2: 2)
@@ -487,7 +488,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_MultipleArgs(t *t
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_MultipleArgsReverseOrder(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             multipleReqs(req2: 2, req1: 1)
@@ -496,7 +497,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_MultipleArgsRever
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_NoArgsOnMultipleOptional(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             multipleOpts
@@ -505,7 +506,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_NoArgsOnMultipleO
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_OneArgOnMultipleOptional(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             multipleOpts(opt1: 1)
@@ -514,7 +515,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_OneArgOnMultipleO
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_SecondArgOnMultipleOptional(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             multipleOpts(opt2: 1)
@@ -523,7 +524,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_SecondArgOnMultip
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_MultipleRequiredsOnMixedList(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             multipleOptAndReq(req1: 3, req2: 4)
@@ -532,7 +533,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_MultipleRequireds
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_MultipleRequiredsAndOptionalOnMixedList(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             multipleOptAndReq(req1: 3, req2: 4, opt1: 5)
@@ -541,7 +542,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_MultipleRequireds
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_AllRequiredsAndOptionalOnMixedList(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             multipleOptAndReq(req1: 3, req2: 4, opt1: 5, opt2: 6)
@@ -551,7 +552,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidNonNullableValue_AllRequiredsAndOp
 }
 
 func TestValidate_ArgValuesOfCorrectType_InvalidNonNullableValue_IncorrectValueType(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             multipleReqs(req2: "two", req1: "one")
@@ -559,18 +560,18 @@ func TestValidate_ArgValuesOfCorrectType_InvalidNonNullableValue_IncorrectValueT
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "req2" expected type "Int!" but got: "two".`,
 				4, 32,
 			),
-			ruleError(
+			testutil.RuleError(
 				`Argument "req1" expected type "Int!" but got: "one".`,
 				4, 45,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidNonNullableValue_IncorrectValueAndMissingArgument(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             multipleReqs(req1: "one")
@@ -578,7 +579,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidNonNullableValue_IncorrectValueA
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "req1" expected type "Int!" but got: "one".`,
 				4, 32,
 			),
@@ -586,7 +587,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidNonNullableValue_IncorrectValueA
 }
 
 func TestValidate_ArgValuesOfCorrectType_ValidInputObjectValue_OptionalArg_DespiteRequiredFieldInType(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             complexArgField
@@ -595,7 +596,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidInputObjectValue_OptionalArg_Despi
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidInputObjectValue_PartialObject_OnlyRequired(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             complexArgField(complexArg: { requiredField: true })
@@ -604,7 +605,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidInputObjectValue_PartialObject_Onl
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidInputObjectValue_PartialObject_RequiredFieldCanBeFalsey(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             complexArgField(complexArg: { requiredField: false })
@@ -613,7 +614,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidInputObjectValue_PartialObject_Req
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidInputObjectValue_PartialObject_IncludingRequired(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             complexArgField(complexArg: { requiredField: false })
@@ -622,7 +623,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidInputObjectValue_PartialObject_Inc
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidInputObjectValue_FullObject(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             complexArgField(complexArg: {
@@ -637,7 +638,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidInputObjectValue_FullObject(t *tes
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_ValidInputObjectValue_FullObject_WithFieldsInDifferentOrder(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             complexArgField(complexArg: {
@@ -653,7 +654,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidInputObjectValue_FullObject_WithFi
 }
 
 func TestValidate_ArgValuesOfCorrectType_InvalidInputObjectValue_PartialObject_MissingRequired(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             complexArgField(complexArg: { intField: 4 })
@@ -661,14 +662,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidInputObjectValue_PartialObject_M
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "complexArg" expected type "ComplexInput" but got: {intField: 4}.`,
 				4, 41,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidInputObjectValue_PartialObject_InvalidFieldType(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             complexArgField(complexArg: {
@@ -679,14 +680,14 @@ func TestValidate_ArgValuesOfCorrectType_InvalidInputObjectValue_PartialObject_I
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "complexArg" expected type "ComplexInput" but got: {stringListField: ["one", 2], requiredField: true}.`,
 				4, 41,
 			),
 		})
 }
 func TestValidate_ArgValuesOfCorrectType_InvalidInputObjectValue_PartialObject_UnknownFieldArg(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
             complexArgField(complexArg: {
@@ -697,7 +698,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidInputObjectValue_PartialObject_U
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "complexArg" expected type "ComplexInput" but got: {requiredField: true, unknownField: "value"}.`,
 				4, 41,
 			),
@@ -705,7 +706,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidInputObjectValue_PartialObject_U
 }
 
 func TestValidate_ArgValuesOfCorrectType_DirectiveArguments_WithDirectivesOfValidType(t *testing.T) {
-	expectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           dog @include(if: true) {
             name
@@ -717,7 +718,7 @@ func TestValidate_ArgValuesOfCorrectType_DirectiveArguments_WithDirectivesOfVali
         `)
 }
 func TestValidate_ArgValuesOfCorrectType_DirectiveArguments_WithDirectivesWithIncorrectTypes(t *testing.T) {
-	expectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           dog @include(if: "yes") {
             name @skip(if: ENUM)
@@ -725,11 +726,11 @@ func TestValidate_ArgValuesOfCorrectType_DirectiveArguments_WithDirectivesWithIn
         }
         `,
 		[]gqlerrors.FormattedError{
-			ruleError(
+			testutil.RuleError(
 				`Argument "if" expected type "Boolean!" but got: "yes".`,
 				3, 28,
 			),
-			ruleError(
+			testutil.RuleError(
 				`Argument "if" expected type "Boolean!" but got: ENUM.`,
 				4, 28,
 			),

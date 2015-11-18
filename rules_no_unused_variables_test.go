@@ -1,21 +1,22 @@
-package rules_test
+package graphql_test
 
 import (
 	"testing"
 
 	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
+    "github.com/graphql-go/graphql/gqlerrors"
+    "github.com/graphql-go/graphql/testutil"
 )
 
 func TestValidate_NoUnusedVariables_UsesAllVariables(t *testing.T) {
-	expectPassesRule(t, graphql.NoUnusedVariablesRule, `
+	testutil.ExpectPassesRule(t, graphql.NoUnusedVariablesRule, `
       query Foo($a: String, $b: String, $c: String) {
         field(a: $a, b: $b, c: $c)
       }
     `)
 }
 func TestValidate_NoUnusedVariables_UsesAllVariablesDeeply(t *testing.T) {
-	expectPassesRule(t, graphql.NoUnusedVariablesRule, `
+	testutil.ExpectPassesRule(t, graphql.NoUnusedVariablesRule, `
       query Foo($a: String, $b: String, $c: String) {
         field(a: $a) {
           field(b: $b) {
@@ -26,7 +27,7 @@ func TestValidate_NoUnusedVariables_UsesAllVariablesDeeply(t *testing.T) {
     `)
 }
 func TestValidate_NoUnusedVariables_UsesAllVariablesDeeplyInInlineFragments(t *testing.T) {
-	expectPassesRule(t, graphql.NoUnusedVariablesRule, `
+	testutil.ExpectPassesRule(t, graphql.NoUnusedVariablesRule, `
       query Foo($a: String, $b: String, $c: String) {
         ... on Type {
           field(a: $a) {
@@ -41,7 +42,7 @@ func TestValidate_NoUnusedVariables_UsesAllVariablesDeeplyInInlineFragments(t *t
     `)
 }
 func TestValidate_NoUnusedVariables_UsesAllVariablesInFragments(t *testing.T) {
-	expectPassesRule(t, graphql.NoUnusedVariablesRule, `
+	testutil.ExpectPassesRule(t, graphql.NoUnusedVariablesRule, `
       query Foo($a: String, $b: String, $c: String) {
         ...FragA
       }
@@ -61,7 +62,7 @@ func TestValidate_NoUnusedVariables_UsesAllVariablesInFragments(t *testing.T) {
     `)
 }
 func TestValidate_NoUnusedVariables_VariableUsedByFragmentInMultipleOperations(t *testing.T) {
-	expectPassesRule(t, graphql.NoUnusedVariablesRule, `
+	testutil.ExpectPassesRule(t, graphql.NoUnusedVariablesRule, `
       query Foo($a: String) {
         ...FragA
       }
@@ -77,7 +78,7 @@ func TestValidate_NoUnusedVariables_VariableUsedByFragmentInMultipleOperations(t
     `)
 }
 func TestValidate_NoUnusedVariables_VariableUsedByRecursiveFragment(t *testing.T) {
-	expectPassesRule(t, graphql.NoUnusedVariablesRule, `
+	testutil.ExpectPassesRule(t, graphql.NoUnusedVariablesRule, `
       query Foo($a: String) {
         ...FragA
       }
@@ -89,26 +90,26 @@ func TestValidate_NoUnusedVariables_VariableUsedByRecursiveFragment(t *testing.T
     `)
 }
 func TestValidate_NoUnusedVariables_VariableNotUsed(t *testing.T) {
-	expectFailsRule(t, graphql.NoUnusedVariablesRule, `
+	testutil.ExpectFailsRule(t, graphql.NoUnusedVariablesRule, `
       query Foo($a: String, $b: String, $c: String) {
         field(a: $a, b: $b)
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Variable "$c" is never used.`, 2, 41),
+		testutil.RuleError(`Variable "$c" is never used.`, 2, 41),
 	})
 }
 func TestValidate_NoUnusedVariables_MultipleVariablesNotUsed(t *testing.T) {
-	expectFailsRule(t, graphql.NoUnusedVariablesRule, `
+	testutil.ExpectFailsRule(t, graphql.NoUnusedVariablesRule, `
       query Foo($a: String, $b: String, $c: String) {
         field(b: $b)
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Variable "$a" is never used.`, 2, 17),
-		ruleError(`Variable "$c" is never used.`, 2, 41),
+		testutil.RuleError(`Variable "$a" is never used.`, 2, 17),
+		testutil.RuleError(`Variable "$c" is never used.`, 2, 41),
 	})
 }
 func TestValidate_NoUnusedVariables_VariableNotUsedInFragments(t *testing.T) {
-	expectFailsRule(t, graphql.NoUnusedVariablesRule, `
+	testutil.ExpectFailsRule(t, graphql.NoUnusedVariablesRule, `
       query Foo($a: String, $b: String, $c: String) {
         ...FragA
       }
@@ -126,11 +127,11 @@ func TestValidate_NoUnusedVariables_VariableNotUsedInFragments(t *testing.T) {
         field
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Variable "$c" is never used.`, 2, 41),
+		testutil.RuleError(`Variable "$c" is never used.`, 2, 41),
 	})
 }
 func TestValidate_NoUnusedVariables_MultipleVariablesNotUsed2(t *testing.T) {
-	expectFailsRule(t, graphql.NoUnusedVariablesRule, `
+	testutil.ExpectFailsRule(t, graphql.NoUnusedVariablesRule, `
       query Foo($a: String, $b: String, $c: String) {
         ...FragA
       }
@@ -148,12 +149,12 @@ func TestValidate_NoUnusedVariables_MultipleVariablesNotUsed2(t *testing.T) {
         field
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Variable "$a" is never used.`, 2, 17),
-		ruleError(`Variable "$c" is never used.`, 2, 41),
+		testutil.RuleError(`Variable "$a" is never used.`, 2, 17),
+		testutil.RuleError(`Variable "$c" is never used.`, 2, 41),
 	})
 }
 func TestValidate_NoUnusedVariables_VariableNotUsedByUnreferencedFragment(t *testing.T) {
-	expectFailsRule(t, graphql.NoUnusedVariablesRule, `
+	testutil.ExpectFailsRule(t, graphql.NoUnusedVariablesRule, `
       query Foo($b: String) {
         ...FragA
       }
@@ -164,11 +165,11 @@ func TestValidate_NoUnusedVariables_VariableNotUsedByUnreferencedFragment(t *tes
         field(b: $b)
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Variable "$b" is never used.`, 2, 17),
+		testutil.RuleError(`Variable "$b" is never used.`, 2, 17),
 	})
 }
 func TestValidate_NoUnusedVariables_VariableNotUsedByFragmentUsedByOtherOperation(t *testing.T) {
-	expectFailsRule(t, graphql.NoUnusedVariablesRule, `
+	testutil.ExpectFailsRule(t, graphql.NoUnusedVariablesRule, `
       query Foo($b: String) {
         ...FragA
       }
@@ -182,7 +183,7 @@ func TestValidate_NoUnusedVariables_VariableNotUsedByFragmentUsedByOtherOperatio
         field(b: $b)
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Variable "$b" is never used.`, 2, 17),
-		ruleError(`Variable "$a" is never used.`, 5, 17),
+		testutil.RuleError(`Variable "$b" is never used.`, 2, 17),
+		testutil.RuleError(`Variable "$a" is never used.`, 5, 17),
 	})
 }

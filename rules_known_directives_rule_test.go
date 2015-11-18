@@ -1,14 +1,15 @@
-package rules_test
+package graphql_test
 
 import (
 	"testing"
 
 	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
+    "github.com/graphql-go/graphql/gqlerrors"
+    "github.com/graphql-go/graphql/testutil"
 )
 
 func TestValidate_KnownDirectives_WithNoDirectives(t *testing.T) {
-	expectPassesRule(t, graphql.KnownDirectivesRule, `
+	testutil.ExpectPassesRule(t, graphql.KnownDirectivesRule, `
       query Foo {
         name
         ...Frag
@@ -20,18 +21,18 @@ func TestValidate_KnownDirectives_WithNoDirectives(t *testing.T) {
     `)
 }
 func TestValidate_KnownDirectives_WithUnknownDirective(t *testing.T) {
-	expectFailsRule(t, graphql.KnownDirectivesRule, `
+	testutil.ExpectFailsRule(t, graphql.KnownDirectivesRule, `
       {
         dog @unknown(directive: "value") {
           name
         }
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Unknown directive "unknown".`, 3, 13),
+		testutil.RuleError(`Unknown directive "unknown".`, 3, 13),
 	})
 }
 func TestValidate_KnownDirectives_WithManyUnknownDirectives(t *testing.T) {
-	expectFailsRule(t, graphql.KnownDirectivesRule, `
+	testutil.ExpectFailsRule(t, graphql.KnownDirectivesRule, `
       {
         dog @unknown(directive: "value") {
           name
@@ -44,13 +45,13 @@ func TestValidate_KnownDirectives_WithManyUnknownDirectives(t *testing.T) {
         }
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Unknown directive "unknown".`, 3, 13),
-		ruleError(`Unknown directive "unknown".`, 6, 15),
-		ruleError(`Unknown directive "unknown".`, 8, 16),
+		testutil.RuleError(`Unknown directive "unknown".`, 3, 13),
+		testutil.RuleError(`Unknown directive "unknown".`, 6, 15),
+		testutil.RuleError(`Unknown directive "unknown".`, 8, 16),
 	})
 }
 func TestValidate_KnownDirectives_WithWellPlacedDirectives(t *testing.T) {
-	expectPassesRule(t, graphql.KnownDirectivesRule, `
+	testutil.ExpectPassesRule(t, graphql.KnownDirectivesRule, `
       query Foo {
         name @include(if: true)
         ...Frag @include(if: true)
@@ -60,12 +61,12 @@ func TestValidate_KnownDirectives_WithWellPlacedDirectives(t *testing.T) {
     `)
 }
 func TestValidate_KnownDirectives_WithMisplacedDirectives(t *testing.T) {
-	expectFailsRule(t, graphql.KnownDirectivesRule, `
+	testutil.ExpectFailsRule(t, graphql.KnownDirectivesRule, `
       query Foo @include(if: true) {
         name
         ...Frag
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Directive "include" may not be used on "operation".`, 2, 17),
+		testutil.RuleError(`Directive "include" may not be used on "operation".`, 2, 17),
 	})
 }

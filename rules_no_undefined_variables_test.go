@@ -1,21 +1,22 @@
-package rules_test
+package graphql_test
 
 import (
 	"testing"
 
 	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
+    "github.com/graphql-go/graphql/gqlerrors"
+    "github.com/graphql-go/graphql/testutil"
 )
 
 func TestValidate_NoUndefinedVariables_AllVariablesDefined(t *testing.T) {
-	expectPassesRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectPassesRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($a: String, $b: String, $c: String) {
         field(a: $a, b: $b, c: $c)
       }
     `)
 }
 func TestValidate_NoUndefinedVariables_AllVariablesDeeplyDefined(t *testing.T) {
-	expectPassesRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectPassesRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($a: String, $b: String, $c: String) {
         field(a: $a) {
           field(b: $b) {
@@ -26,7 +27,7 @@ func TestValidate_NoUndefinedVariables_AllVariablesDeeplyDefined(t *testing.T) {
     `)
 }
 func TestValidate_NoUndefinedVariables_AllVariablesDeeplyDefinedInInlineFragmentsDefined(t *testing.T) {
-	expectPassesRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectPassesRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($a: String, $b: String, $c: String) {
         ... on Type {
           field(a: $a) {
@@ -41,7 +42,7 @@ func TestValidate_NoUndefinedVariables_AllVariablesDeeplyDefinedInInlineFragment
     `)
 }
 func TestValidate_NoUndefinedVariables_AllVariablesInFragmentsDeeplyDefined(t *testing.T) {
-	expectPassesRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectPassesRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($a: String, $b: String, $c: String) {
         ...FragA
       }
@@ -61,7 +62,7 @@ func TestValidate_NoUndefinedVariables_AllVariablesInFragmentsDeeplyDefined(t *t
     `)
 }
 func TestValidate_NoUndefinedVariables_VariablesWithinSingleFragmentDefinedInMultipleOperations(t *testing.T) {
-	expectPassesRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectPassesRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($a: String) {
         ...FragA
       }
@@ -74,7 +75,7 @@ func TestValidate_NoUndefinedVariables_VariablesWithinSingleFragmentDefinedInMul
     `)
 }
 func TestValidate_NoUndefinedVariables_VariableWithinFragmentsDefinedInOperations(t *testing.T) {
-	expectPassesRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectPassesRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($a: String) {
         ...FragA
       }
@@ -90,7 +91,7 @@ func TestValidate_NoUndefinedVariables_VariableWithinFragmentsDefinedInOperation
     `)
 }
 func TestValidate_NoUndefinedVariables_VariableWithinRecursiveFragmentDefined(t *testing.T) {
-	expectPassesRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectPassesRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($a: String) {
         ...FragA
       }
@@ -102,36 +103,36 @@ func TestValidate_NoUndefinedVariables_VariableWithinRecursiveFragmentDefined(t 
     `)
 }
 func TestValidate_NoUndefinedVariables_VariableNotDefined(t *testing.T) {
-	expectFailsRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectFailsRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($a: String, $b: String, $c: String) {
         field(a: $a, b: $b, c: $c, d: $d)
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Variable "$d" is not defined.`, 3, 39),
+		testutil.RuleError(`Variable "$d" is not defined.`, 3, 39),
 	})
 }
 func TestValidate_NoUndefinedVariables_VariableNotDefinedByUnnamedQuery(t *testing.T) {
-	expectFailsRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectFailsRule(t, graphql.NoUndefinedVariablesRule, `
       {
         field(a: $a)
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Variable "$a" is not defined.`, 3, 18),
+		testutil.RuleError(`Variable "$a" is not defined.`, 3, 18),
 	})
 }
 func TestValidate_NoUndefinedVariables_MultipleVariablesNotDefined(t *testing.T) {
-	expectFailsRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectFailsRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($b: String) {
         field(a: $a, b: $b, c: $c)
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Variable "$a" is not defined.`, 3, 18),
-		ruleError(`Variable "$c" is not defined.`, 3, 32),
+		testutil.RuleError(`Variable "$a" is not defined.`, 3, 18),
+		testutil.RuleError(`Variable "$c" is not defined.`, 3, 32),
 	})
 }
 
 func TestValidate_NoUndefinedVariables_VariableInFragmentNotDefinedByUnnamedQuery(t *testing.T) {
-	expectFailsRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectFailsRule(t, graphql.NoUndefinedVariablesRule, `
       {
         ...FragA
       }
@@ -139,12 +140,12 @@ func TestValidate_NoUndefinedVariables_VariableInFragmentNotDefinedByUnnamedQuer
         field(a: $a)
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Variable "$a" is not defined.`, 6, 18),
+		testutil.RuleError(`Variable "$a" is not defined.`, 6, 18),
 	})
 }
 
 func TestValidate_NoUndefinedVariables_VariableInFragmentNotDefinedByOperation(t *testing.T) {
-	expectFailsRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectFailsRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($a: String, $b: String) {
         ...FragA
       }
@@ -162,12 +163,12 @@ func TestValidate_NoUndefinedVariables_VariableInFragmentNotDefinedByOperation(t
         field(c: $c)
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Variable "$c" is not defined by operation "Foo".`, 16, 18, 2, 7),
+		testutil.RuleError(`Variable "$c" is not defined by operation "Foo".`, 16, 18, 2, 7),
 	})
 }
 
 func TestValidate_NoUndefinedVariables_MultipleVariablesInFragmentsNotDefined(t *testing.T) {
-	expectFailsRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectFailsRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($b: String) {
         ...FragA
       }
@@ -185,13 +186,13 @@ func TestValidate_NoUndefinedVariables_MultipleVariablesInFragmentsNotDefined(t 
         field(c: $c)
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Variable "$a" is not defined by operation "Foo".`, 6, 18, 2, 7),
-		ruleError(`Variable "$c" is not defined by operation "Foo".`, 16, 18, 2, 7),
+		testutil.RuleError(`Variable "$a" is not defined by operation "Foo".`, 6, 18, 2, 7),
+		testutil.RuleError(`Variable "$c" is not defined by operation "Foo".`, 16, 18, 2, 7),
 	})
 }
 
 func TestValidate_NoUndefinedVariables_SingleVariableInFragmentNotDefinedByMultipleOperations(t *testing.T) {
-	expectFailsRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectFailsRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($a: String) {
         ...FragAB
       }
@@ -202,13 +203,13 @@ func TestValidate_NoUndefinedVariables_SingleVariableInFragmentNotDefinedByMulti
         field(a: $a, b: $b)
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Variable "$b" is not defined by operation "Foo".`, 9, 25, 2, 7),
-		ruleError(`Variable "$b" is not defined by operation "Bar".`, 9, 25, 5, 7),
+		testutil.RuleError(`Variable "$b" is not defined by operation "Foo".`, 9, 25, 2, 7),
+		testutil.RuleError(`Variable "$b" is not defined by operation "Bar".`, 9, 25, 5, 7),
 	})
 }
 
 func TestValidate_NoUndefinedVariables_VariablesInFragmentNotDefinedByMultipleOperations(t *testing.T) {
-	expectFailsRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectFailsRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($b: String) {
         ...FragAB
       }
@@ -219,12 +220,12 @@ func TestValidate_NoUndefinedVariables_VariablesInFragmentNotDefinedByMultipleOp
         field(a: $a, b: $b)
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Variable "$a" is not defined by operation "Foo".`, 9, 18, 2, 7),
-		ruleError(`Variable "$b" is not defined by operation "Bar".`, 9, 25, 5, 7),
+		testutil.RuleError(`Variable "$a" is not defined by operation "Foo".`, 9, 18, 2, 7),
+		testutil.RuleError(`Variable "$b" is not defined by operation "Bar".`, 9, 25, 5, 7),
 	})
 }
 func TestValidate_NoUndefinedVariables_VariableInFragmentUsedByOtherOperation(t *testing.T) {
-	expectFailsRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectFailsRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($b: String) {
         ...FragA
       }
@@ -238,13 +239,13 @@ func TestValidate_NoUndefinedVariables_VariableInFragmentUsedByOtherOperation(t 
         field(b: $b)
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Variable "$a" is not defined by operation "Foo".`, 9, 18, 2, 7),
-		ruleError(`Variable "$b" is not defined by operation "Bar".`, 12, 18, 5, 7),
+		testutil.RuleError(`Variable "$a" is not defined by operation "Foo".`, 9, 18, 2, 7),
+		testutil.RuleError(`Variable "$b" is not defined by operation "Bar".`, 12, 18, 5, 7),
 	})
 }
 
 func TestValidate_NoUndefinedVariables_VaMultipleUndefinedVariablesProduceMultipleErrors(t *testing.T) {
-	expectFailsRule(t, graphql.NoUndefinedVariablesRule, `
+	testutil.ExpectFailsRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($b: String) {
         ...FragAB
       }
@@ -260,11 +261,11 @@ func TestValidate_NoUndefinedVariables_VaMultipleUndefinedVariablesProduceMultip
         field2(c: $c)
       }
     `, []gqlerrors.FormattedError{
-		ruleError(`Variable "$a" is not defined by operation "Foo".`, 9, 19, 2, 7),
-		ruleError(`Variable "$c" is not defined by operation "Foo".`, 14, 19, 2, 7),
-		ruleError(`Variable "$a" is not defined by operation "Foo".`, 11, 19, 2, 7),
-		ruleError(`Variable "$b" is not defined by operation "Bar".`, 9, 26, 5, 7),
-		ruleError(`Variable "$c" is not defined by operation "Bar".`, 14, 19, 5, 7),
-		ruleError(`Variable "$b" is not defined by operation "Bar".`, 11, 26, 5, 7),
+		testutil.RuleError(`Variable "$a" is not defined by operation "Foo".`, 9, 19, 2, 7),
+		testutil.RuleError(`Variable "$c" is not defined by operation "Foo".`, 14, 19, 2, 7),
+		testutil.RuleError(`Variable "$a" is not defined by operation "Foo".`, 11, 19, 2, 7),
+		testutil.RuleError(`Variable "$b" is not defined by operation "Bar".`, 9, 26, 5, 7),
+		testutil.RuleError(`Variable "$c" is not defined by operation "Bar".`, 14, 19, 5, 7),
+		testutil.RuleError(`Variable "$b" is not defined by operation "Bar".`, 11, 26, 5, 7),
 	})
 }
