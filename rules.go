@@ -35,6 +35,8 @@ var SpecifiedRules = []ValidationRuleFn{
 	UniqueArgumentNamesRule,
 	UniqueFragmentNamesRule,
 	UniqueOperationNamesRule,
+	VariablesAreInputTypesRule,
+	VariablesInAllowedPositionRule,
 }
 
 type ValidationRuleInstance struct {
@@ -1690,6 +1692,156 @@ func UniqueOperationNamesRule(context *ValidationContext) *ValidationRuleInstanc
 	}
 	return &ValidationRuleInstance{
 		VisitorOpts: visitorOpts,
+	}
+}
+
+/**
+ * VariablesAreInputTypesRule
+ * Variables are input types
+ *
+ * A GraphQL operation is only valid if all the variables it defines are of
+ * input types (scalar, enum, or input object).
+ */
+func VariablesAreInputTypesRule(context *ValidationContext) *ValidationRuleInstance {
+
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.VariableDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.VariableDefinition); ok && node != nil {
+						ttype, _ := typeFromAST(*context.GetSchema(), node.Type)
+
+						// If the variable type is not an input type, return an error.
+						if ttype != nil && !IsInputType(ttype) {
+							variableName := ""
+							if node.Variable != nil && node.Variable.Name != nil {
+								variableName = node.Variable.Name.Value
+							}
+							return newValidationRuleError(
+								fmt.Sprintf(`Variable "$%v" cannot be non-input type "%v".`,
+									variableName, printer.Print(node.Type)),
+								[]ast.Node{node.Type},
+							)
+						}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+// If a variable definition has a default value, it's effectively non-null.
+func effectiveType(varType Type, varDef *ast.VariableDefinition) Type {
+	if varDef.DefaultValue == nil {
+		return varType
+	}
+	if _, ok := varType.(*NonNull); ok {
+		return varType
+	}
+	return NewNonNull(varType)
+}
+
+// A var type is allowed if it is the same or more strict than the expected
+// type. It can be more strict if the variable type is non-null when the
+// expected type is nullable. If both are list types, the variable item type can
+// be more strict than the expected item type.
+func varTypeAllowedForType(varType Type, expectedType Type) bool {
+	if expectedType, ok := expectedType.(*NonNull); ok {
+		if varType, ok := varType.(*NonNull); ok {
+			return varTypeAllowedForType(varType.OfType, expectedType.OfType)
+		}
+		return false
+	}
+	if varType, ok := varType.(*NonNull); ok {
+		return varTypeAllowedForType(varType.OfType, expectedType)
+	}
+	if varType, ok := varType.(*List); ok {
+		if expectedType, ok := expectedType.(*List); ok {
+			return varTypeAllowedForType(varType.OfType, expectedType.OfType)
+		}
+	}
+	return varType == expectedType
+}
+
+/**
+ * VariablesInAllowedPositionRule
+ * Variables passed to field arguments conform to type
+ */
+func VariablesInAllowedPositionRule(context *ValidationContext) *ValidationRuleInstance {
+
+	varDefMap := map[string]*ast.VariableDefinition{}
+	visitedFragmentNames := map[string]bool{}
+
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					varDefMap = map[string]*ast.VariableDefinition{}
+					visitedFragmentNames = map[string]bool{}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.VariableDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if varDefAST, ok := p.Node.(*ast.VariableDefinition); ok {
+						defName := ""
+						if varDefAST.Variable != nil && varDefAST.Variable.Name != nil {
+							defName = varDefAST.Variable.Name.Value
+						}
+						varDefMap[defName] = varDefAST
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.FragmentSpread: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					// Only visit fragments of a particular name once per operation
+					if spreadAST, ok := p.Node.(*ast.FragmentSpread); ok {
+						spreadName := ""
+						if spreadAST.Name != nil {
+							spreadName = spreadAST.Name.Value
+						}
+						if hasVisited, _ := visitedFragmentNames[spreadName]; hasVisited {
+							return visitor.ActionSkip, nil
+						}
+						visitedFragmentNames[spreadName] = true
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.Variable: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if variableAST, ok := p.Node.(*ast.Variable); ok && variableAST != nil {
+						varName := ""
+						if variableAST.Name != nil {
+							varName = variableAST.Name.Value
+						}
+						varDef, _ := varDefMap[varName]
+						var varType Type
+						if varDef != nil {
+							varType, _ = typeFromAST(*context.GetSchema(), varDef.Type)
+						}
+						inputType := context.GetInputType()
+						if varType != nil && inputType != nil && !varTypeAllowedForType(effectiveType(varType, varDef), inputType) {
+							return newValidationRuleError(
+								fmt.Sprintf(`Variable "$%v" of type "%v" used in position `+
+									`expecting type "%v".`, varName, varType, inputType),
+								[]ast.Node{variableAST},
+							)
+						}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitSpreadFragments: true,
+		VisitorOpts:          visitorOpts,
 	}
 }
 
