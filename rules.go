@@ -33,6 +33,7 @@ var SpecifiedRules = []ValidationRuleFn{
 	ProvidedNonNullArgumentsRule,
 	ScalarLeafsRule,
 	UniqueArgumentNamesRule,
+	UniqueFragmentNamesRule,
 }
 
 type ValidationRuleInstance struct {
@@ -1596,7 +1597,7 @@ func UniqueArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance
 			},
 			kinds.Argument: visitor.NamedVisitFuncs{
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.Argument); ok && node != nil {
+					if node, ok := p.Node.(*ast.Argument); ok {
 						argName := ""
 						if node.Name != nil {
 							argName = node.Name.Value
@@ -1607,6 +1608,43 @@ func UniqueArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance
 								[]ast.Node{nameAST, node.Name},
 							)
 						}
+						knownArgNames[argName] = node.Name
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+/**
+ * UniqueFragmentNamesRule
+ * Unique fragment names
+ *
+ * A GraphQL document is only valid if all defined fragments have unique names.
+ */
+func UniqueFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance {
+	knownFragmentNames := map[string]*ast.Name{}
+
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.FragmentDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.FragmentDefinition); ok && node != nil {
+						fragmentName := ""
+						if node.Name != nil {
+							fragmentName = node.Name.Value
+						}
+						if nameAST, ok := knownFragmentNames[fragmentName]; ok {
+							return newValidationRuleError(
+								fmt.Sprintf(`There can only be one fragment named "%v".`, fragmentName),
+								[]ast.Node{nameAST, node.Name},
+							)
+						}
+						knownFragmentNames[fragmentName] = node.Name
 					}
 					return visitor.ActionNoChange, nil
 				},
