@@ -34,6 +34,7 @@ var SpecifiedRules = []ValidationRuleFn{
 	ScalarLeafsRule,
 	UniqueArgumentNamesRule,
 	UniqueFragmentNamesRule,
+	UniqueOperationNamesRule,
 }
 
 type ValidationRuleInstance struct {
@@ -1645,6 +1646,42 @@ func UniqueFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance
 							)
 						}
 						knownFragmentNames[fragmentName] = node.Name
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+/**
+ * UniqueOperationNamesRule
+ * Unique operation names
+ *
+ * A GraphQL document is only valid if all defined operations have unique names.
+ */
+func UniqueOperationNamesRule(context *ValidationContext) *ValidationRuleInstance {
+	knownOperationNames := map[string]*ast.Name{}
+
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.OperationDefinition); ok && node != nil {
+						operationName := ""
+						if node.Name != nil {
+							operationName = node.Name.Value
+						}
+						if nameAST, ok := knownOperationNames[operationName]; ok {
+							return newValidationRuleError(
+								fmt.Sprintf(`There can only be one operation named "%v".`, operationName),
+								[]ast.Node{nameAST, node.Name},
+							)
+						}
+						knownOperationNames[operationName] = node.Name
 					}
 					return visitor.ActionNoChange, nil
 				},

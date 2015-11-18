@@ -80,7 +80,6 @@ func TestValidate_UniqueFragmentNames_FragmentsNamedTheSame(t *testing.T) {
 		ruleError(`There can only be one fragment named "fragA".`, 5, 16, 8, 16),
 	})
 }
-
 func TestValidate_UniqueFragmentNames_FragmentsNamedTheSameWithoutBeingReferenced(t *testing.T) {
 	expectFailsRule(t, graphql.UniqueFragmentNamesRule, `
       fragment fragA on Type {
