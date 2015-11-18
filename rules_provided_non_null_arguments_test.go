@@ -17,6 +17,7 @@ func TestValidate_ProvidedNonNullArguments_IgnoresUnknownArguments(t *testing.T)
       }
     `)
 }
+
 func TestValidate_ProvidedNonNullArguments_ValidNonNullableValue_ArgOnOptionalArg(t *testing.T) {
 	testutil.ExpectPassesRule(t, graphql.ProvidedNonNullArgumentsRule, `
         {
@@ -107,6 +108,7 @@ func TestValidate_ProvidedNonNullArguments_ValidNonNullableValue_AllReqsAndOptsO
         }
     `)
 }
+
 func TestValidate_ProvidedNonNullArguments_InvalidNonNullableValue_MissingOneNonNullableArgument(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.ProvidedNonNullArgumentsRule, `
         {
@@ -118,7 +120,6 @@ func TestValidate_ProvidedNonNullArguments_InvalidNonNullableValue_MissingOneNon
 		testutil.RuleError(`Field "multipleReqs" argument "req1" of type "Int!" is required but not provided.`, 4, 13),
 	})
 }
-
 func TestValidate_ProvidedNonNullArguments_InvalidNonNullableValue_MissingMultipleNonNullableArguments(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.ProvidedNonNullArgumentsRule, `
         {
@@ -131,7 +132,6 @@ func TestValidate_ProvidedNonNullArguments_InvalidNonNullableValue_MissingMultip
 		testutil.RuleError(`Field "multipleReqs" argument "req2" of type "Int!" is required but not provided.`, 4, 13),
 	})
 }
-
 func TestValidate_ProvidedNonNullArguments_InvalidNonNullableValue_IncorrectValueAndMissingArgument(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.ProvidedNonNullArgumentsRule, `
         {
@@ -151,7 +151,7 @@ func TestValidate_ProvidedNonNullArguments_DirectiveArguments_IgnoresUnknownDire
         }
     `)
 }
-func TestValidate_ProvidedNonNullArguments_InvalidNonNullableValue_WithDirectivesOfValidTypes(t *testing.T) {
+func TestValidate_ProvidedNonNullArguments_DirectiveArguments_WithDirectivesOfValidTypes(t *testing.T) {
 	testutil.ExpectPassesRule(t, graphql.ProvidedNonNullArgumentsRule, `
         {
           dog @include(if: true) {
@@ -163,7 +163,7 @@ func TestValidate_ProvidedNonNullArguments_InvalidNonNullableValue_WithDirective
         }
     `)
 }
-func TestValidate_ProvidedNonNullArguments_InvalidNonNullableValue_WithDirectiveWithMissingTypes(t *testing.T) {
+func TestValidate_ProvidedNonNullArguments_DirectiveArguments_WithDirectiveWithMissingTypes(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.ProvidedNonNullArgumentsRule, `
         {
           dog @include {

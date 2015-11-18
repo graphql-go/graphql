@@ -43,7 +43,6 @@ func TestValidate_AnonymousOperationMustBeAlone_AnonOperationWithFragment(t *tes
       }
     `)
 }
-
 func TestValidate_AnonymousOperationMustBeAlone_MultipleAnonOperations(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.LoneAnonymousOperationRule, `
       {

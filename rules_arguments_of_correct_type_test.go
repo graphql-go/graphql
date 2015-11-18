@@ -142,6 +142,21 @@ func TestValidate_ArgValuesOfCorrectType_InvalidStringValues_UnquotedStringIntoS
 		})
 }
 
+func TestValidate_ArgValuesOfCorrectType_InvalidIntValues_StringIntoInt(t *testing.T) {
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+        {
+          complicatedArgs {
+            intArgField(intArg: "3")
+          }
+        }
+        `,
+		[]gqlerrors.FormattedError{
+			testutil.RuleError(
+				`Argument "intArg" expected type "Int" but got: "3".`,
+				4, 33,
+			),
+		})
+}
 func TestValidate_ArgValuesOfCorrectType_InvalidIntValues_BigIntIntoInt(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
@@ -199,6 +214,52 @@ func TestValidate_ArgValuesOfCorrectType_InvalidIntValues_FloatIntoInt(t *testin
 			testutil.RuleError(
 				`Argument "intArg" expected type "Int" but got: 3.333.`,
 				4, 33,
+			),
+		})
+}
+
+func TestValidate_ArgValuesOfCorrectType_InvalidFloatValues_StringIntoFloat(t *testing.T) {
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+        {
+          complicatedArgs {
+            floatArgField(floatArg: "3.333")
+          }
+        }
+        `,
+		[]gqlerrors.FormattedError{
+			testutil.RuleError(
+				`Argument "floatArg" expected type "Float" but got: "3.333".`,
+				4, 37,
+			),
+		})
+}
+func TestValidate_ArgValuesOfCorrectType_InvalidFloatValues_BooleanIntoFloat(t *testing.T) {
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+        {
+          complicatedArgs {
+            floatArgField(floatArg: true)
+          }
+        }
+        `,
+		[]gqlerrors.FormattedError{
+			testutil.RuleError(
+				`Argument "floatArg" expected type "Float" but got: true.`,
+				4, 37,
+			),
+		})
+}
+func TestValidate_ArgValuesOfCorrectType_InvalidFloatValues_UnquotedIntoFloat(t *testing.T) {
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+        {
+          complicatedArgs {
+            floatArgField(floatArg: FOO)
+          }
+        }
+        `,
+		[]gqlerrors.FormattedError{
+			testutil.RuleError(
+				`Argument "floatArg" expected type "Float" but got: FOO.`,
+				4, 37,
 			),
 		})
 }
@@ -264,7 +325,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidBooleanValues_UnquotedStringInto
 		})
 }
 
-func TestValidate_ArgValuesOfCorrectType_InvalidIDValues_FloatIntoID(t *testing.T) {
+func TestValidate_ArgValuesOfCorrectType_InvalidIDValue_FloatIntoID(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
@@ -279,7 +340,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidIDValues_FloatIntoID(t *testing.
 			),
 		})
 }
-func TestValidate_ArgValuesOfCorrectType_InvalidIDValues_BooleanIntoID(t *testing.T) {
+func TestValidate_ArgValuesOfCorrectType_InvalidIDValue_BooleanIntoID(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
@@ -294,7 +355,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidIDValues_BooleanIntoID(t *testin
 			),
 		})
 }
-func TestValidate_ArgValuesOfCorrectType_InvalidIDValues_UnquotedIntoID(t *testing.T) {
+func TestValidate_ArgValuesOfCorrectType_InvalidIDValue_UnquotedIntoID(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {

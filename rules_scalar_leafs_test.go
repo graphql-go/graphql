@@ -24,7 +24,6 @@ func TestValidate_ScalarLeafs_ObjectTypeMissingSelection(t *testing.T) {
 		testutil.RuleError(`Field "human" of type "Human" must have a sub selection.`, 3, 9),
 	})
 }
-
 func TestValidate_ScalarLeafs_InterfaceTypeMissingSelection(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.ScalarLeafsRule, `
       {
@@ -41,6 +40,7 @@ func TestValidate_ScalarLeafs_ValidScalarSelectionWithArgs(t *testing.T) {
       }
     `)
 }
+
 func TestValidate_ScalarLeafs_ScalarSelectionNotAllowedOnBoolean(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.ScalarLeafsRule, `
       fragment scalarSelectionsNotAllowedOnBoolean on Dog {

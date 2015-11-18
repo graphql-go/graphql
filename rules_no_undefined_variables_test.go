@@ -130,7 +130,6 @@ func TestValidate_NoUndefinedVariables_MultipleVariablesNotDefined(t *testing.T)
 		testutil.RuleError(`Variable "$c" is not defined.`, 3, 32),
 	})
 }
-
 func TestValidate_NoUndefinedVariables_VariableInFragmentNotDefinedByUnnamedQuery(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.NoUndefinedVariablesRule, `
       {
@@ -143,7 +142,6 @@ func TestValidate_NoUndefinedVariables_VariableInFragmentNotDefinedByUnnamedQuer
 		testutil.RuleError(`Variable "$a" is not defined.`, 6, 18),
 	})
 }
-
 func TestValidate_NoUndefinedVariables_VariableInFragmentNotDefinedByOperation(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($a: String, $b: String) {
@@ -166,7 +164,6 @@ func TestValidate_NoUndefinedVariables_VariableInFragmentNotDefinedByOperation(t
 		testutil.RuleError(`Variable "$c" is not defined by operation "Foo".`, 16, 18, 2, 7),
 	})
 }
-
 func TestValidate_NoUndefinedVariables_MultipleVariablesInFragmentsNotDefined(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($b: String) {
@@ -190,7 +187,6 @@ func TestValidate_NoUndefinedVariables_MultipleVariablesInFragmentsNotDefined(t 
 		testutil.RuleError(`Variable "$c" is not defined by operation "Foo".`, 16, 18, 2, 7),
 	})
 }
-
 func TestValidate_NoUndefinedVariables_SingleVariableInFragmentNotDefinedByMultipleOperations(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($a: String) {
@@ -207,7 +203,6 @@ func TestValidate_NoUndefinedVariables_SingleVariableInFragmentNotDefinedByMulti
 		testutil.RuleError(`Variable "$b" is not defined by operation "Bar".`, 9, 25, 5, 7),
 	})
 }
-
 func TestValidate_NoUndefinedVariables_VariablesInFragmentNotDefinedByMultipleOperations(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($b: String) {
@@ -243,7 +238,6 @@ func TestValidate_NoUndefinedVariables_VariableInFragmentUsedByOtherOperation(t 
 		testutil.RuleError(`Variable "$b" is not defined by operation "Bar".`, 12, 18, 5, 7),
 	})
 }
-
 func TestValidate_NoUndefinedVariables_VaMultipleUndefinedVariablesProduceMultipleErrors(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.NoUndefinedVariablesRule, `
       query Foo($b: String) {

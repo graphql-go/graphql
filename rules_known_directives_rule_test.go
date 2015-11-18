@@ -20,6 +20,18 @@ func TestValidate_KnownDirectives_WithNoDirectives(t *testing.T) {
       }
     `)
 }
+func TestValidate_KnownDirectives_WithKnownDirective(t *testing.T) {
+	testutil.ExpectPassesRule(t, graphql.KnownDirectivesRule, `
+      {
+        dog @include(if: true) {
+          name
+        }
+        human @skip(if: false) {
+          name
+        }
+      }
+    `)
+}
 func TestValidate_KnownDirectives_WithUnknownDirective(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.KnownDirectivesRule, `
       {

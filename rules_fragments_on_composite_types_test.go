@@ -38,7 +38,6 @@ func TestValidate_FragmentsOnCompositeTypes_UnionIsValidFragmentType(t *testing.
       }
     `)
 }
-
 func TestValidate_FragmentsOnCompositeTypes_ScalarIsInvalidFragmentType(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.FragmentsOnCompositeTypesRule, `
       fragment scalarFragment on Boolean {

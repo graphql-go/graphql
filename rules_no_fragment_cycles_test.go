@@ -47,6 +47,7 @@ func TestValidate_NoCircularFragmentSpreads_SpreadingRecursivelyWithinFieldFails
 		testutil.RuleError(`Cannot spread fragment "fragA" within itself.`, 2, 45),
 	})
 }
+
 func TestValidate_NoCircularFragmentSpreads_NoSpreadingItselfDirectly(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.NoFragmentCyclesRule, `
       fragment fragA on Dog { ...fragA }
@@ -65,7 +66,8 @@ func TestValidate_NoCircularFragmentSpreads_NoSpreadingItselfDirectlyWithinInlin
 		testutil.RuleError(`Cannot spread fragment "fragA" within itself.`, 4, 11),
 	})
 }
-func TestValidate_NoCircularFragmentSpreads_NoSpreadingItselfDirectlyMultiple(t *testing.T) {
+
+func TestValidate_NoCircularFragmentSpreads_NoSpreadingItselfIndirectly(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.NoFragmentCyclesRule, `
       fragment fragA on Dog { ...fragB }
       fragment fragB on Dog { ...fragA }
@@ -73,7 +75,15 @@ func TestValidate_NoCircularFragmentSpreads_NoSpreadingItselfDirectlyMultiple(t 
 		testutil.RuleError(`Cannot spread fragment "fragA" within itself via fragB.`, 2, 31, 3, 31),
 	})
 }
-func TestValidate_NoCircularFragmentSpreads_NoSpreadingItselfDirectlyWithinInlineFragmentMultiple(t *testing.T) {
+func TestValidate_NoCircularFragmentSpreads_NoSpreadingItselfIndirectlyReportsOppositeOrder(t *testing.T) {
+	testutil.ExpectFailsRule(t, graphql.NoFragmentCyclesRule, `
+      fragment fragB on Dog { ...fragA }
+      fragment fragA on Dog { ...fragB }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(`Cannot spread fragment "fragB" within itself via fragA.`, 2, 31, 3, 31),
+	})
+}
+func TestValidate_NoCircularFragmentSpreads_NoSpreadingItselfIndirectlyWithinInlineFragment(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.NoFragmentCyclesRule, `
       fragment fragA on Pet {
         ... on Dog {
@@ -89,6 +99,7 @@ func TestValidate_NoCircularFragmentSpreads_NoSpreadingItselfDirectlyWithinInlin
 		testutil.RuleError(`Cannot spread fragment "fragA" within itself via fragB.`, 4, 11, 9, 11),
 	})
 }
+
 func TestValidate_NoCircularFragmentSpreads_NoSpreadingItselfDeeply(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.NoFragmentCyclesRule, `
       fragment fragA on Dog { ...fragB }

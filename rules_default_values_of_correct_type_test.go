@@ -33,7 +33,6 @@ func TestValidate_VariableDefaultValuesOfCorrectType_VariablesWithValidDefaultVa
       }
     `)
 }
-
 func TestValidate_VariableDefaultValuesOfCorrectType_NoRequiredVariablesWithDefaultValues(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.DefaultValuesOfCorrectTypeRule, `
       query UnreachableDefaultValues($a: Int! = 3, $b: String! = "default") {
@@ -69,7 +68,6 @@ func TestValidate_VariableDefaultValuesOfCorrectType_VariablesWithInvalidDefault
 			testutil.RuleError(`Variable "$c" of type "ComplexInput" has invalid default value: "notverycomplex".`, 5, 28),
 		})
 }
-
 func TestValidate_VariableDefaultValuesOfCorrectType_ComplexVariablesMissingRequiredField(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.DefaultValuesOfCorrectTypeRule, `
       query MissingRequiredField($a: ComplexInput = {intField: 3}) {
@@ -80,7 +78,6 @@ func TestValidate_VariableDefaultValuesOfCorrectType_ComplexVariablesMissingRequ
 			testutil.RuleError(`Variable "$a" of type "ComplexInput" has invalid default value: {intField: 3}.`, 2, 53),
 		})
 }
-
 func TestValidate_VariableDefaultValuesOfCorrectType_ListVariablesWithInvalidItem(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.DefaultValuesOfCorrectTypeRule, `
       query InvalidItem($a: [String] = ["one", 2]) {

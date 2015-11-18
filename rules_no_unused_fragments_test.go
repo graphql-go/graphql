@@ -87,7 +87,6 @@ func TestValidate_NoUnusedFragments_ContainsUnknownFragments(t *testing.T) {
 		testutil.RuleError(`Fragment "Unused2" is never used.`, 25, 7),
 	})
 }
-
 func TestValidate_NoUnusedFragments_ContainsUnknownFragmentsWithRefCycle(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.NoUnusedFragmentsRule, `
       query Foo {
@@ -123,7 +122,6 @@ func TestValidate_NoUnusedFragments_ContainsUnknownFragmentsWithRefCycle(t *test
 		testutil.RuleError(`Fragment "Unused2" is never used.`, 26, 7),
 	})
 }
-
 func TestValidate_NoUnusedFragments_ContainsUnknownAndUndefFragments(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.NoUnusedFragmentsRule, `
       query Foo {
