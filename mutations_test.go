@@ -40,8 +40,8 @@ func (r *testRoot) PromiseAndFailToChangeTheNumber(newNumber int) *testNumberHol
 // numberHolderType creates a mapping to testNumberHolder
 var numberHolderType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "NumberHolder",
-	Fields: graphql.FieldConfigMap{
-		"theNumber": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"theNumber": &graphql.Field{
 			Type: graphql.Int,
 		},
 	},
@@ -50,65 +50,65 @@ var numberHolderType = graphql.NewObject(graphql.ObjectConfig{
 var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 	Query: graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
-		Fields: graphql.FieldConfigMap{
-			"numberHolder": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"numberHolder": &graphql.Field{
 				Type: numberHolderType,
 			},
 		},
 	}),
 	Mutation: graphql.NewObject(graphql.ObjectConfig{
 		Name: "Mutation",
-		Fields: graphql.FieldConfigMap{
-			"immediatelyChangeTheNumber": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"immediatelyChangeTheNumber": &graphql.Field{
 				Type: numberHolderType,
 				Args: graphql.FieldConfigArgument{
 					"newNumber": &graphql.ArgumentConfig{
 						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p graphql.GQLFRParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) interface{} {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
 					return obj.ImmediatelyChangeTheNumber(newNumber)
 				},
 			},
-			"promiseToChangeTheNumber": &graphql.FieldConfig{
+			"promiseToChangeTheNumber": &graphql.Field{
 				Type: numberHolderType,
 				Args: graphql.FieldConfigArgument{
 					"newNumber": &graphql.ArgumentConfig{
 						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p graphql.GQLFRParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) interface{} {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
 					return obj.PromiseToChangeTheNumber(newNumber)
 				},
 			},
-			"failToChangeTheNumber": &graphql.FieldConfig{
+			"failToChangeTheNumber": &graphql.Field{
 				Type: numberHolderType,
 				Args: graphql.FieldConfigArgument{
 					"newNumber": &graphql.ArgumentConfig{
 						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p graphql.GQLFRParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) interface{} {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
 					return obj.FailToChangeTheNumber(newNumber)
 				},
 			},
-			"promiseAndFailToChangeTheNumber": &graphql.FieldConfig{
+			"promiseAndFailToChangeTheNumber": &graphql.Field{
 				Type: numberHolderType,
 				Args: graphql.FieldConfigArgument{
 					"newNumber": &graphql.ArgumentConfig{
 						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p graphql.GQLFRParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) interface{} {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)

@@ -48,17 +48,17 @@ var nullingData = map[string]interface{}{
 
 var dataType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "DataType",
-	Fields: graphql.FieldConfigMap{
-		"sync": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"sync": &graphql.Field{
 			Type: graphql.String,
 		},
-		"nonNullSync": &graphql.FieldConfig{
+		"nonNullSync": &graphql.Field{
 			Type: graphql.NewNonNull(graphql.String),
 		},
-		"promise": &graphql.FieldConfig{
+		"promise": &graphql.Field{
 			Type: graphql.String,
 		},
-		"nonNullPromise": &graphql.FieldConfig{
+		"nonNullPromise": &graphql.Field{
 			Type: graphql.NewNonNull(graphql.String),
 		},
 	},
@@ -95,16 +95,16 @@ func init() {
 		return nullingData
 	}
 
-	dataType.AddFieldConfig("nest", &graphql.FieldConfig{
+	dataType.AddFieldConfig("nest", &graphql.Field{
 		Type: dataType,
 	})
-	dataType.AddFieldConfig("nonNullNest", &graphql.FieldConfig{
+	dataType.AddFieldConfig("nonNullNest", &graphql.Field{
 		Type: graphql.NewNonNull(dataType),
 	})
-	dataType.AddFieldConfig("promiseNest", &graphql.FieldConfig{
+	dataType.AddFieldConfig("promiseNest", &graphql.Field{
 		Type: dataType,
 	})
-	dataType.AddFieldConfig("nonNullPromiseNest", &graphql.FieldConfig{
+	dataType.AddFieldConfig("nonNullPromiseNest", &graphql.Field{
 		Type: graphql.NewNonNull(dataType),
 	})
 }
@@ -494,8 +494,8 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
-	sort.Sort(gqlerrors.GQLFormattedErrorSlice(expected.Errors))
-	sort.Sort(gqlerrors.GQLFormattedErrorSlice(result.Errors))
+	sort.Sort(gqlerrors.FormattedErrors(expected.Errors))
+	sort.Sort(gqlerrors.FormattedErrors(result.Errors))
 	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -599,8 +599,8 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
-	sort.Sort(gqlerrors.GQLFormattedErrorSlice(expected.Errors))
-	sort.Sort(gqlerrors.GQLFormattedErrorSlice(result.Errors))
+	sort.Sort(gqlerrors.FormattedErrors(expected.Errors))
+	sort.Sort(gqlerrors.FormattedErrors(result.Errors))
 	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
@@ -997,8 +997,8 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldReturnsNullInALongChainOf
 	if !reflect.DeepEqual(expected.Data, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
-	sort.Sort(gqlerrors.GQLFormattedErrorSlice(expected.Errors))
-	sort.Sort(gqlerrors.GQLFormattedErrorSlice(result.Errors))
+	sort.Sort(gqlerrors.FormattedErrors(expected.Errors))
+	sort.Sort(gqlerrors.FormattedErrors(result.Errors))
 	if !reflect.DeepEqual(expected.Errors, result.Errors) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}

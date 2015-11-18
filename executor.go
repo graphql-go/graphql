@@ -167,10 +167,10 @@ func getOperationRootType(schema Schema, operation ast.Definition) (*Object, err
 
 	switch operation.GetOperation() {
 	case "query":
-		return schema.GetQueryType(), nil
+		return schema.QueryType(), nil
 	case "mutation":
-		mutationType := schema.GetMutationType()
-		if mutationType.Name == "" {
+		mutationType := schema.MutationType()
+		if mutationType.PrivateName == "" {
 			return nil, errors.New("Schema is not configured for mutations")
 		}
 		return mutationType, nil
@@ -498,7 +498,7 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	// it is wrapped as a Error with locations. Log this error and return
 	// null if allowed, otherwise throw the error so the parent field can handle
 	// it.
-	result = resolveFn(GQLFRParams{
+	result = resolveFn(ResolveParams{
 		Source: source,
 		Args:   args,
 		Info:   info,
@@ -614,7 +614,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	case *Object:
 		objectType = returnType
 	case Abstract:
-		objectType = returnType.GetObjectType(result, info)
+		objectType = returnType.ObjectType(result, info)
 		if objectType != nil && !returnType.IsPossibleType(objectType) {
 			panic(gqlerrors.NewFormattedError(
 				fmt.Sprintf(`Runtime Object type "%v" is not a possible type `+
@@ -666,7 +666,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 
 }
 
-func defaultResolveFn(p GQLFRParams) interface{} {
+func defaultResolveFn(p ResolveParams) interface{} {
 	// try to resolve p.Source as a struct first
 	sourceVal := reflect.ValueOf(p.Source)
 	if sourceVal.IsValid() && sourceVal.Type().Kind() == reflect.Ptr {
@@ -735,15 +735,15 @@ func getFieldDef(schema Schema, parentType *Object, fieldName string) *FieldDefi
 	}
 
 	if fieldName == SchemaMetaFieldDef.Name &&
-		schema.GetQueryType() == parentType {
+		schema.QueryType() == parentType {
 		return SchemaMetaFieldDef
 	}
 	if fieldName == TypeMetaFieldDef.Name &&
-		schema.GetQueryType() == parentType {
+		schema.QueryType() == parentType {
 		return TypeMetaFieldDef
 	}
 	if fieldName == TypeNameMetaFieldDef.Name {
 		return TypeNameMetaFieldDef
 	}
-	return parentType.GetFields()[fieldName]
+	return parentType.Fields()[fieldName]
 }

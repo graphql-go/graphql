@@ -25,11 +25,11 @@ var data map[string]user
 var userType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "User",
-		Fields: graphql.FieldConfigMap{
-			"id": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"id": &graphql.Field{
 				Type: graphql.String,
 			},
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -48,15 +48,15 @@ var userType = graphql.NewObject(
 var queryType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Query",
-		Fields: graphql.FieldConfigMap{
-			"user": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"user": &graphql.Field{
 				Type: userType,
 				Args: graphql.FieldConfigArgument{
 					"id": &graphql.ArgumentConfig{
 						Type: graphql.String,
 					},
 				},
-				Resolve: func(p graphql.GQLFRParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) interface{} {
 					idQuery, isOK := p.Args["id"].(string)
 					if isOK {
 						return data[idQuery]
@@ -74,7 +74,7 @@ var schema, _ = graphql.NewSchema(
 )
 
 func executeQuery(query string, schema graphql.Schema) *graphql.Result {
-	result := graphql.Graphql(graphql.Params{
+	result := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})

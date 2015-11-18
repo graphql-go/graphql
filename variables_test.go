@@ -53,7 +53,7 @@ var testInputObject *graphql.InputObject = graphql.NewInputObject(graphql.InputO
 	},
 })
 
-func inputResolved(p graphql.GQLFRParams) interface{} {
+func inputResolved(p graphql.ResolveParams) interface{} {
 	input, ok := p.Args["input"]
 	if !ok {
 		return nil
@@ -67,8 +67,8 @@ func inputResolved(p graphql.GQLFRParams) interface{} {
 
 var testType *graphql.Object = graphql.NewObject(graphql.ObjectConfig{
 	Name: "TestType",
-	Fields: graphql.FieldConfigMap{
-		"fieldWithObjectInput": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"fieldWithObjectInput": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"input": &graphql.ArgumentConfig{
@@ -77,7 +77,7 @@ var testType *graphql.Object = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: inputResolved,
 		},
-		"fieldWithNullableStringInput": &graphql.FieldConfig{
+		"fieldWithNullableStringInput": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"input": &graphql.ArgumentConfig{
@@ -86,7 +86,7 @@ var testType *graphql.Object = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: inputResolved,
 		},
-		"fieldWithNonNullableStringInput": &graphql.FieldConfig{
+		"fieldWithNonNullableStringInput": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"input": &graphql.ArgumentConfig{
@@ -95,7 +95,7 @@ var testType *graphql.Object = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: inputResolved,
 		},
-		"fieldWithDefaultArgumentValue": &graphql.FieldConfig{
+		"fieldWithDefaultArgumentValue": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"input": &graphql.ArgumentConfig{
@@ -105,7 +105,7 @@ var testType *graphql.Object = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: inputResolved,
 		},
-		"list": &graphql.FieldConfig{
+		"list": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"input": &graphql.ArgumentConfig{
@@ -114,7 +114,7 @@ var testType *graphql.Object = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: inputResolved,
 		},
-		"nnList": &graphql.FieldConfig{
+		"nnList": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"input": &graphql.ArgumentConfig{
@@ -123,7 +123,7 @@ var testType *graphql.Object = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: inputResolved,
 		},
-		"listNN": &graphql.FieldConfig{
+		"listNN": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"input": &graphql.ArgumentConfig{
@@ -132,7 +132,7 @@ var testType *graphql.Object = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: inputResolved,
 		},
-		"nnListNN": &graphql.FieldConfig{
+		"nnListNN": &graphql.Field{
 			Type: graphql.String,
 			Args: graphql.FieldConfigArgument{
 				"input": &graphql.ArgumentConfig{
