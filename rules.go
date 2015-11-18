@@ -32,6 +32,7 @@ var SpecifiedRules = []ValidationRuleFn{
 	PossibleFragmentSpreadsRule,
 	ProvidedNonNullArgumentsRule,
 	ScalarLeafsRule,
+	UniqueArgumentNamesRule,
 }
 
 type ValidationRuleInstance struct {
@@ -1557,6 +1558,54 @@ func ScalarLeafsRule(context *ValidationContext) *ValidationRuleInstance {
 									[]ast.Node{node},
 								)
 							}
+						}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+/**
+ * UniqueArgumentNamesRule
+ * Unique argument names
+ *
+ * A GraphQL field or directive is only valid if all supplied arguments are
+ * uniquely named.
+ */
+func UniqueArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance {
+	knownArgNames := map[string]*ast.Name{}
+
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.Field: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					knownArgNames = map[string]*ast.Name{}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.Directive: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					knownArgNames = map[string]*ast.Name{}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.Argument: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.Argument); ok && node != nil {
+						argName := ""
+						if node.Name != nil {
+							argName = node.Name.Value
+						}
+						if nameAST, ok := knownArgNames[argName]; ok {
+							return newValidationRuleError(
+								fmt.Sprintf(`There can be only one argument named "%v".`, argName),
+								[]ast.Node{nameAST, node.Name},
+							)
 						}
 					}
 					return visitor.ActionNoChange, nil
