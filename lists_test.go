@@ -17,15 +17,15 @@ func checkList(t *testing.T, testType graphql.Type, testData interface{}, expect
 
 	dataType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "DataType",
-		Fields: graphql.FieldConfigMap{
-			"test": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"test": &graphql.Field{
 				Type: testType,
 			},
 		},
 	})
-	dataType.AddFieldConfig("nest", &graphql.FieldConfig{
+	dataType.AddFieldConfig("nest", &graphql.Field{
 		Type: dataType,
-		Resolve: func(p graphql.GQLFRParams) interface{} {
+		Resolve: func(p graphql.ResolveParams) interface{} {
 			return data
 		},
 	})

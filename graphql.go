@@ -14,7 +14,7 @@ type Params struct {
 	OperationName  string
 }
 
-func Graphql(p Params) *Result {
+func Do(p Params) *Result {
 	source := source.NewSource(&source.Source{
 		Body: p.RequestString,
 		Name: "GraphQL request",
