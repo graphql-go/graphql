@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/graphql-go/graphql"
-    "github.com/graphql-go/graphql/gqlerrors"
-    "github.com/graphql-go/graphql/testutil"
+	"github.com/graphql-go/graphql/gqlerrors"
+	"github.com/graphql-go/graphql/testutil"
 )
 
 func TestValidate_UniqueFragmentNames_NoFragments(t *testing.T) {
