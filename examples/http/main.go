@@ -19,7 +19,7 @@ var data map[string]user
 /*
    Create User object type with fields "id" and "name" by using GraphQLObjectTypeConfig:
        - Name: name of object type
-       - Fields: a map of fields by using GraphQLFieldConfigMap
+       - Fields: a map of fields by using GraphQLFields
    Setup type of field use GraphQLFieldConfig
 */
 var userType = graphql.NewObject(
@@ -39,7 +39,7 @@ var userType = graphql.NewObject(
 /*
    Create Query object type with fields "user" has type [userType] by using GraphQLObjectTypeConfig:
        - Name: name of object type
-       - Fields: a map of fields by using GraphQLFieldConfigMap
+       - Fields: a map of fields by using GraphQLFields
    Setup type of field use GraphQLFieldConfig to define:
        - Type: type of field
        - Args: arguments to query with current field
