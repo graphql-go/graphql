@@ -678,7 +678,7 @@ func TestValidate_ArgValuesOfCorrectType_ValidInputObjectValue_PartialObject_Inc
 	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {
           complicatedArgs {
-            complexArgField(complexArg: { requiredField: false })
+			  complexArgField(complexArg: { requiredField: false, intField: 4 })
           }
         }
         `)

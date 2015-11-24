@@ -54,10 +54,9 @@ func TestValidate_UniqueOperationNames_MultipleOperationsOfDifferentTypes(t *tes
 func TestValidate_UniqueOperationNames_FragmentAndOperationNamedTheSame(t *testing.T) {
 	testutil.ExpectPassesRule(t, graphql.UniqueOperationNamesRule, `
       query Foo {
-        field
+        ...Foo
       }
-
-      mutation Bar {
+      fragment Foo on Type {
         field
       }
     `)
