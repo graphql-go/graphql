@@ -768,8 +768,8 @@ func TestIntrospection_ExecutesAnInputObject(t *testing.T) {
 						Type: testInputObject,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) interface{} {
-					return p.Args["complex"]
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return p.Args["complex"], nil
 				},
 			},
 		},

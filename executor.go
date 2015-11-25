@@ -498,7 +498,7 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	// it is wrapped as a Error with locations. Log this error and return
 	// null if allowed, otherwise throw the error so the parent field can handle
 	// it.
-	result = resolveFn(ResolveParams{
+	result, _ = resolveFn(ResolveParams{
 		Source: source,
 		Args:   args,
 		Info:   info,
@@ -666,14 +666,14 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 
 }
 
-func defaultResolveFn(p ResolveParams) interface{} {
+func defaultResolveFn(p ResolveParams) (interface{}, error) {
 	// try to resolve p.Source as a struct first
 	sourceVal := reflect.ValueOf(p.Source)
 	if sourceVal.IsValid() && sourceVal.Type().Kind() == reflect.Ptr {
 		sourceVal = sourceVal.Elem()
 	}
 	if !sourceVal.IsValid() {
-		return nil
+		return nil, nil
 	}
 	if sourceVal.Type().Kind() == reflect.Struct {
 		// find field based on struct's json tag
@@ -685,7 +685,7 @@ func defaultResolveFn(p ResolveParams) interface{} {
 			typeField := sourceVal.Type().Field(i)
 			// try matching the field name first
 			if typeField.Name == p.Info.FieldName {
-				return valueField.Interface()
+				return valueField.Interface(), nil
 			}
 			tag := typeField.Tag
 			jsonTag := tag.Get("json")
@@ -696,9 +696,9 @@ func defaultResolveFn(p ResolveParams) interface{} {
 			if jsonOptions[0] != p.Info.FieldName {
 				continue
 			}
-			return valueField.Interface()
+			return valueField.Interface(), nil
 		}
-		return nil
+		return nil, nil
 	}
 
 	// try p.Source as a map[string]interface
@@ -709,14 +709,14 @@ func defaultResolveFn(p ResolveParams) interface{} {
 			// try type casting the func to the most basic func signature
 			// for more complex signatures, user have to define ResolveFn
 			if propertyFn, ok := property.(func() interface{}); ok {
-				return propertyFn()
+				return propertyFn(), nil
 			}
 		}
-		return property
+		return property, nil
 	}
 
 	// last resort, return nil
-	return nil
+	return nil, nil
 }
 
 /**

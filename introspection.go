@@ -86,24 +86,24 @@ func init() {
 		Fields: Fields{
 			"kind": &Field{
 				Type: NewNonNull(__TypeKind),
-				Resolve: func(p ResolveParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					switch p.Source.(type) {
 					case *Scalar:
-						return TypeKindScalar
+						return TypeKindScalar, nil
 					case *Object:
-						return TypeKindObject
+						return TypeKindObject, nil
 					case *Interface:
-						return TypeKindInterface
+						return TypeKindInterface, nil
 					case *Union:
-						return TypeKindUnion
+						return TypeKindUnion, nil
 					case *Enum:
-						return TypeKindEnum
+						return TypeKindEnum, nil
 					case *InputObject:
-						return TypeKindInputObject
+						return TypeKindInputObject, nil
 					case *List:
-						return TypeKindList
+						return TypeKindList, nil
 					case *NonNull:
-						return TypeKindNonNull
+						return TypeKindNonNull, nil
 					}
 					panic(fmt.Sprintf("Unknown kind of type: %v", p.Source))
 				},
@@ -137,22 +137,22 @@ func init() {
 			},
 			"defaultValue": &Field{
 				Type: String,
-				Resolve: func(p ResolveParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					if inputVal, ok := p.Source.(*Argument); ok {
 						if inputVal.DefaultValue == nil {
-							return nil
+							return nil, nil
 						}
 						astVal := astFromValue(inputVal.DefaultValue, inputVal)
-						return printer.Print(astVal)
+						return printer.Print(astVal), nil
 					}
 					if inputVal, ok := p.Source.(*InputObjectField); ok {
 						if inputVal.DefaultValue == nil {
-							return nil
+							return nil, nil
 						}
 						astVal := astFromValue(inputVal.DefaultValue, inputVal)
-						return printer.Print(astVal)
+						return printer.Print(astVal), nil
 					}
-					return nil
+					return nil, nil
 				},
 			},
 		},
@@ -169,11 +169,11 @@ func init() {
 			},
 			"args": &Field{
 				Type: NewNonNull(NewList(NewNonNull(__InputValue))),
-				Resolve: func(p ResolveParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					if field, ok := p.Source.(*FieldDefinition); ok {
-						return field.Args
+						return field.Args, nil
 					}
-					return []interface{}{}
+					return []interface{}{}, nil
 				},
 			},
 			"type": &Field{
@@ -181,11 +181,11 @@ func init() {
 			},
 			"isDeprecated": &Field{
 				Type: NewNonNull(Boolean),
-				Resolve: func(p ResolveParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					if field, ok := p.Source.(*FieldDefinition); ok {
-						return (field.DeprecationReason != "")
+						return (field.DeprecationReason != ""), nil
 					}
-					return false
+					return false, nil
 				},
 			},
 			"deprecationReason": &Field{
@@ -232,38 +232,38 @@ mutation operations.`,
 				Type: NewNonNull(NewList(
 					NewNonNull(__Type),
 				)),
-				Resolve: func(p ResolveParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
 						results := []Type{}
 						for _, ttype := range schema.TypeMap() {
 							results = append(results, ttype)
 						}
-						return results
+						return results, nil
 					}
-					return []Type{}
+					return []Type{}, nil
 				},
 			},
 			"queryType": &Field{
 				Description: "The type that query operations will be rooted at.",
 				Type:        NewNonNull(__Type),
-				Resolve: func(p ResolveParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
-						return schema.QueryType()
+						return schema.QueryType(), nil
 					}
-					return nil
+					return nil, nil
 				},
 			},
 			"mutationType": &Field{
 				Description: `If this server supports mutation, the type that ` +
 					`mutation operations will be rooted at.`,
 				Type: __Type,
-				Resolve: func(p ResolveParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
 						if schema.MutationType() != nil {
-							return schema.MutationType()
+							return schema.MutationType(), nil
 						}
 					}
-					return nil
+					return nil, nil
 				},
 			},
 			"directives": &Field{
@@ -271,11 +271,11 @@ mutation operations.`,
 				Type: NewNonNull(NewList(
 					NewNonNull(__Directive),
 				)),
-				Resolve: func(p ResolveParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
-						return schema.Directives()
+						return schema.Directives(), nil
 					}
-					return nil
+					return nil, nil
 				},
 			},
 		},
@@ -292,11 +292,11 @@ mutation operations.`,
 			},
 			"isDeprecated": &Field{
 				Type: NewNonNull(Boolean),
-				Resolve: func(p ResolveParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					if field, ok := p.Source.(*EnumValueDefinition); ok {
-						return (field.DeprecationReason != "")
+						return (field.DeprecationReason != ""), nil
 					}
-					return false
+					return false, nil
 				},
 			},
 			"deprecationReason": &Field{
@@ -315,12 +315,12 @@ mutation operations.`,
 				DefaultValue: false,
 			},
 		},
-		Resolve: func(p ResolveParams) interface{} {
+		Resolve: func(p ResolveParams) (interface{}, error) {
 			includeDeprecated, _ := p.Args["includeDeprecated"].(bool)
 			switch ttype := p.Source.(type) {
 			case *Object:
 				if ttype == nil {
-					return nil
+					return nil, nil
 				}
 				fields := []*FieldDefinition{}
 				for _, field := range ttype.Fields() {
@@ -329,10 +329,10 @@ mutation operations.`,
 					}
 					fields = append(fields, field)
 				}
-				return fields
+				return fields, nil
 			case *Interface:
 				if ttype == nil {
-					return nil
+					return nil, nil
 				}
 				fields := []*FieldDefinition{}
 				for _, field := range ttype.Fields() {
@@ -341,31 +341,31 @@ mutation operations.`,
 					}
 					fields = append(fields, field)
 				}
-				return fields
+				return fields, nil
 			}
-			return nil
+			return nil, nil
 		},
 	})
 	__Type.AddFieldConfig("interfaces", &Field{
 		Type: NewList(NewNonNull(__Type)),
-		Resolve: func(p ResolveParams) interface{} {
+		Resolve: func(p ResolveParams) (interface{}, error) {
 			switch ttype := p.Source.(type) {
 			case *Object:
-				return ttype.Interfaces()
+				return ttype.Interfaces(), nil
 			}
-			return nil
+			return nil, nil
 		},
 	})
 	__Type.AddFieldConfig("possibleTypes", &Field{
 		Type: NewList(NewNonNull(__Type)),
-		Resolve: func(p ResolveParams) interface{} {
+		Resolve: func(p ResolveParams) (interface{}, error) {
 			switch ttype := p.Source.(type) {
 			case *Interface:
-				return ttype.PossibleTypes()
+				return ttype.PossibleTypes(), nil
 			case *Union:
-				return ttype.PossibleTypes()
+				return ttype.PossibleTypes(), nil
 			}
-			return nil
+			return nil, nil
 		},
 	})
 	__Type.AddFieldConfig("enumValues", &Field{
@@ -376,12 +376,12 @@ mutation operations.`,
 				DefaultValue: false,
 			},
 		},
-		Resolve: func(p ResolveParams) interface{} {
+		Resolve: func(p ResolveParams) (interface{}, error) {
 			includeDeprecated, _ := p.Args["includeDeprecated"].(bool)
 			switch ttype := p.Source.(type) {
 			case *Enum:
 				if includeDeprecated {
-					return ttype.Values()
+					return ttype.Values(), nil
 				}
 				values := []*EnumValueDefinition{}
 				for _, value := range ttype.Values() {
@@ -390,23 +390,23 @@ mutation operations.`,
 					}
 					values = append(values, value)
 				}
-				return values
+				return values, nil
 			}
-			return nil
+			return nil, nil
 		},
 	})
 	__Type.AddFieldConfig("inputFields", &Field{
 		Type: NewList(NewNonNull(__InputValue)),
-		Resolve: func(p ResolveParams) interface{} {
+		Resolve: func(p ResolveParams) (interface{}, error) {
 			switch ttype := p.Source.(type) {
 			case *InputObject:
 				fields := []*InputObjectField{}
 				for _, field := range ttype.Fields() {
 					fields = append(fields, field)
 				}
-				return fields
+				return fields, nil
 			}
-			return nil
+			return nil, nil
 		},
 	})
 	__Type.AddFieldConfig("ofType", &Field{
@@ -423,8 +423,8 @@ mutation operations.`,
 		Type:        NewNonNull(__Schema),
 		Description: "Access the current type schema of this server.",
 		Args:        []*Argument{},
-		Resolve: func(p ResolveParams) interface{} {
-			return p.Info.Schema
+		Resolve: func(p ResolveParams) (interface{}, error) {
+			return p.Info.Schema, nil
 		},
 	}
 	TypeMetaFieldDef = &FieldDefinition{
@@ -437,12 +437,12 @@ mutation operations.`,
 				Type:        NewNonNull(String),
 			},
 		},
-		Resolve: func(p ResolveParams) interface{} {
+		Resolve: func(p ResolveParams) (interface{}, error) {
 			name, ok := p.Args["name"].(string)
 			if !ok {
-				return nil
+				return nil, nil
 			}
-			return p.Info.Schema.Type(name)
+			return p.Info.Schema.Type(name), nil
 		},
 	}
 
@@ -451,8 +451,8 @@ mutation operations.`,
 		Type:        NewNonNull(String),
 		Description: "The name of the current Object type at runtime.",
 		Args:        []*Argument{},
-		Resolve: func(p ResolveParams) interface{} {
-			return p.Info.ParentType.Name()
+		Resolve: func(p ResolveParams) (interface{}, error) {
+			return p.Info.ParentType.Name(), nil
 		},
 	}
 
