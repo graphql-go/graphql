@@ -540,7 +540,7 @@ type ResolveParams struct {
 }
 
 // TODO: relook at FieldResolveFn params
-type FieldResolveFn func(p ResolveParams) interface{}
+type FieldResolveFn func(p ResolveParams) (interface{}, error)
 
 type ResolveInfo struct {
 	FieldName      string
