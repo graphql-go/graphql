@@ -30,8 +30,8 @@ type testPerson struct {
 
 var namedType = graphql.NewInterface(graphql.InterfaceConfig{
 	Name: "Named",
-	Fields: graphql.FieldConfigMap{
-		"name": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"name": &graphql.Field{
 			Type: graphql.String,
 		},
 	},
@@ -41,11 +41,11 @@ var dogType = graphql.NewObject(graphql.ObjectConfig{
 	Interfaces: []*graphql.Interface{
 		namedType,
 	},
-	Fields: graphql.FieldConfigMap{
-		"name": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"name": &graphql.Field{
 			Type: graphql.String,
 		},
-		"barks": &graphql.FieldConfig{
+		"barks": &graphql.Field{
 			Type: graphql.Boolean,
 		},
 	},
@@ -59,11 +59,11 @@ var catType = graphql.NewObject(graphql.ObjectConfig{
 	Interfaces: []*graphql.Interface{
 		namedType,
 	},
-	Fields: graphql.FieldConfigMap{
-		"name": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"name": &graphql.Field{
 			Type: graphql.String,
 		},
-		"meows": &graphql.FieldConfig{
+		"meows": &graphql.Field{
 			Type: graphql.Boolean,
 		},
 	},
@@ -92,14 +92,14 @@ var personType = graphql.NewObject(graphql.ObjectConfig{
 	Interfaces: []*graphql.Interface{
 		namedType,
 	},
-	Fields: graphql.FieldConfigMap{
-		"name": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"name": &graphql.Field{
 			Type: graphql.String,
 		},
-		"pets": &graphql.FieldConfig{
+		"pets": &graphql.Field{
 			Type: graphql.NewList(petType),
 		},
-		"friends": &graphql.FieldConfig{
+		"friends": &graphql.Field{
 			Type: graphql.NewList(namedType),
 		},
 	},
@@ -504,8 +504,8 @@ func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 
 	namedType2 := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "Named",
-		Fields: graphql.FieldConfigMap{
-			"name": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"name": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -521,19 +521,22 @@ func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 		Interfaces: []*graphql.Interface{
 			namedType2,
 		},
-		Fields: graphql.FieldConfigMap{
-			"name": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"name": &graphql.Field{
 				Type: graphql.String,
 			},
-			"friends": &graphql.FieldConfig{
+			"friends": &graphql.Field{
 				Type: graphql.NewList(namedType2),
 			},
 		},
 	})
 
-	schema2, _ := graphql.NewSchema(graphql.SchemaConfig{
+	schema2, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: personType2,
 	})
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
 
 	john2 := &testPerson{
 		Name: "John",
@@ -568,5 +571,11 @@ func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 	}
 	if !reflect.DeepEqual(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+	if !reflect.DeepEqual(encounteredSchema, &schema2) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(encounteredSchema, &schema2))
+	}
+	if !reflect.DeepEqual(encounteredRootValue, john2) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(encounteredRootValue, john2))
 	}
 }

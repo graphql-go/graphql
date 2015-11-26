@@ -167,10 +167,10 @@ func getOperationRootType(schema Schema, operation ast.Definition) (*Object, err
 
 	switch operation.GetOperation() {
 	case "query":
-		return schema.GetQueryType(), nil
+		return schema.QueryType(), nil
 	case "mutation":
-		mutationType := schema.GetMutationType()
-		if mutationType.Name == "" {
+		mutationType := schema.MutationType()
+		if mutationType.PrivateName == "" {
 			return nil, errors.New("Schema is not configured for mutations")
 		}
 		return mutationType, nil
@@ -478,7 +478,10 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	// Build a map of arguments from the field.arguments AST, using the
 	// variables scope to fulfill any variable references.
 	// TODO: find a way to memoize, in case this field is within a List type.
-	args, _ := getArgumentValues(fieldDef.Args, fieldAST.Arguments, eCtx.VariableValues)
+	args, err := getArgumentValues(fieldDef.Args, fieldAST.Arguments, eCtx.VariableValues)
+	if err != nil {
+		panic(err) // TODO: Don't panic
+	}
 
 	// The resolve function's optional third argument is a collection of
 	// information about the current execution state.
@@ -498,7 +501,7 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	// it is wrapped as a Error with locations. Log this error and return
 	// null if allowed, otherwise throw the error so the parent field can handle
 	// it.
-	result = resolveFn(GQLFRParams{
+	result = resolveFn(ResolveParams{
 		Source: source,
 		Args:   args,
 		Info:   info,
@@ -594,10 +597,6 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	// If field type is Scalar or Enum, serialize to a valid value, returning
 	// null if serialization is not possible.
 	if returnType, ok := returnType.(*Scalar); ok {
-		err := invariant(returnType.Serialize != nil, "Missing serialize method on type")
-		if err != nil {
-			panic(gqlerrors.FormatError(err))
-		}
 		serializedResult := returnType.Serialize(result)
 		if isNullish(serializedResult) {
 			return nil
@@ -605,10 +604,6 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		return serializedResult
 	}
 	if returnType, ok := returnType.(*Enum); ok {
-		err := invariant(returnType.Serialize != nil, "Missing serialize method on type")
-		if err != nil {
-			panic(gqlerrors.FormatError(err))
-		}
 		serializedResult := returnType.Serialize(result)
 		if isNullish(serializedResult) {
 			return nil
@@ -622,7 +617,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	case *Object:
 		objectType = returnType
 	case Abstract:
-		objectType = returnType.GetObjectType(result, info)
+		objectType = returnType.ObjectType(result, info)
 		if objectType != nil && !returnType.IsPossibleType(objectType) {
 			panic(gqlerrors.NewFormattedError(
 				fmt.Sprintf(`Runtime Object type "%v" is not a possible type `+
@@ -674,7 +669,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 
 }
 
-func defaultResolveFn(p GQLFRParams) interface{} {
+func defaultResolveFn(p ResolveParams) interface{} {
 	// try to resolve p.Source as a struct first
 	sourceVal := reflect.ValueOf(p.Source)
 	if sourceVal.IsValid() && sourceVal.Type().Kind() == reflect.Ptr {
@@ -743,15 +738,15 @@ func getFieldDef(schema Schema, parentType *Object, fieldName string) *FieldDefi
 	}
 
 	if fieldName == SchemaMetaFieldDef.Name &&
-		schema.GetQueryType() == parentType {
+		schema.QueryType() == parentType {
 		return SchemaMetaFieldDef
 	}
 	if fieldName == TypeMetaFieldDef.Name &&
-		schema.GetQueryType() == parentType {
+		schema.QueryType() == parentType {
 		return TypeMetaFieldDef
 	}
 	if fieldName == TypeNameMetaFieldDef.Name {
 		return TypeNameMetaFieldDef
 	}
-	return parentType.GetFields()[fieldName]
+	return parentType.Fields()[fieldName]
 }
