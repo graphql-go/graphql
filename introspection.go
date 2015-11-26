@@ -105,7 +105,7 @@ func init() {
 					case *NonNull:
 						return TypeKindNonNull, nil
 					}
-					panic(fmt.Sprintf("Unknown kind of type: %v", p.Source))
+					return nil, fmt.Errorf("Unknown kind of type: %v", p.Source)
 				},
 			},
 			"name": &Field{
