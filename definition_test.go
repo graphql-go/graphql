@@ -1,6 +1,7 @@
 package graphql_test
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"testing"
@@ -66,6 +67,10 @@ var blogArticle = graphql.NewObject(graphql.ObjectConfig{
 		},
 	},
 })
+
+var ErrArticleQuery = errors.New("ErrArticleQuery")
+var ErrArticleMutation = errors.New("ErrArticleMutation")
+
 var blogQuery = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Query",
 	Fields: graphql.Fields{
@@ -75,6 +80,9 @@ var blogQuery = graphql.NewObject(graphql.ObjectConfig{
 				"id": &graphql.ArgumentConfig{
 					Type: graphql.String,
 				},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				return nil, ErrArticleQuery
 			},
 		},
 		"feed": &graphql.Field{
@@ -88,6 +96,14 @@ var blogMutation = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"writeArticle": &graphql.Field{
 			Type: blogArticle,
+			Args: graphql.FieldConfigArgument{
+				"title": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				return nil, ErrArticleMutation
+			},
 		},
 	},
 })
@@ -532,4 +548,46 @@ func TestTypeSystem_DefinitionExample_DoesNotMutatePassedFieldDefinitions(t *tes
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedInputFields, fields))
 	}
 
+}
+
+func TestQuery_FieldResolveFn_AddsErrorsToGraphQLResult(t *testing.T) {
+	blogSchema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query:    blogQuery,
+		Mutation: blogMutation,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error, got: %v", err)
+	}
+	query := "{ article(id:\"1\") { id } }"
+	result := graphql.Do(graphql.Params{
+		Schema:        blogSchema,
+		RequestString: query,
+	})
+	if len(result.Errors) == 0 {
+		t.Fatal("wrong result, expected errors, got no errors")
+	}
+	if result.Errors[0].Error() != ErrArticleQuery.Error() {
+		t.Fatalf("wrong result, unexpected error, got: %v, expected: %v", result.Errors[0], ErrArticleQuery)
+	}
+}
+
+func TestMutation_FieldResolveFn_AddsErrorsToGraphQLResult(t *testing.T) {
+	blogSchema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query:    blogQuery,
+		Mutation: blogMutation,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error, got: %v", err)
+	}
+	query := "mutation _ { newArticle: writeArticle(title:\"article title\") { id  }  }"
+	result := graphql.Do(graphql.Params{
+		Schema:        blogSchema,
+		RequestString: query,
+	})
+	if len(result.Errors) == 0 {
+		t.Fatal("wrong result, expected errors, got no errors")
+	}
+	if result.Errors[0].Error() != ErrArticleMutation.Error() {
+		t.Fatalf("wrong result, unexpected error, got: %v, expected: %v", result.Errors[0], ErrArticleMutation)
+	}
 }
