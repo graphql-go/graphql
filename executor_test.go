@@ -1178,7 +1178,7 @@ func TestQuery_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 		RequestString: query,
 	})
 	if len(result.Errors) != 0 {
-		t.Fatal("wrong result, unexpected errors: %+v", result.Errors)
+		t.Fatalf("wrong result, unexpected errors: %+v", result.Errors)
 	}
 }
 
@@ -1289,6 +1289,6 @@ func TestMutation_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 		RequestString: query,
 	})
 	if len(result.Errors) != 0 {
-		t.Fatal("wrong result, expected errors, got no errors")
+		t.Fatalf("wrong result, unexpected errors: %+v", result.Errors)
 	}
 }
