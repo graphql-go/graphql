@@ -498,16 +498,16 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	// it is wrapped as a Error with locations. Log this error and return
 	// null if allowed, otherwise throw the error so the parent field can handle
 	// it.
-	var resultError error
+	var resolveFnError error
 
-	result, resultError = resolveFn(ResolveParams{
+	result, resolveFnError = resolveFn(ResolveParams{
 		Source: source,
 		Args:   args,
 		Info:   info,
 	})
 
-	if resultError != nil {
-		panic(gqlerrors.FormatError(resultError))
+	if resolveFnError != nil {
+		panic(gqlerrors.FormatError(resolveFnError))
 	}
 
 	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
