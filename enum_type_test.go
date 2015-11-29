@@ -39,17 +39,17 @@ var enumTypeTestQueryType = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.String,
 				},
 			},
-			Resolve: func(p graphql.ResolveParams) interface{} {
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				if fromInt, ok := p.Args["fromInt"]; ok {
-					return fromInt
+					return fromInt, nil
 				}
 				if fromString, ok := p.Args["fromString"]; ok {
-					return fromString
+					return fromString, nil
 				}
 				if fromEnum, ok := p.Args["fromEnum"]; ok {
-					return fromEnum
+					return fromEnum, nil
 				}
-				return nil
+				return nil, nil
 			},
 		},
 		"colorInt": &graphql.Field{
@@ -62,14 +62,14 @@ var enumTypeTestQueryType = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.Int,
 				},
 			},
-			Resolve: func(p graphql.ResolveParams) interface{} {
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				if fromInt, ok := p.Args["fromInt"]; ok {
-					return fromInt
+					return fromInt, nil
 				}
 				if fromEnum, ok := p.Args["fromEnum"]; ok {
-					return fromEnum
+					return fromEnum, nil
 				}
-				return nil
+				return nil, nil
 			},
 		},
 	},
@@ -84,11 +84,11 @@ var enumTypeTestMutationType = graphql.NewObject(graphql.ObjectConfig{
 					Type: enumTypeTestColorType,
 				},
 			},
-			Resolve: func(p graphql.ResolveParams) interface{} {
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				if color, ok := p.Args["color"]; ok {
-					return color
+					return color, nil
 				}
-				return nil
+				return nil, nil
 			},
 		},
 	},

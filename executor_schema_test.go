@@ -106,13 +106,13 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					if author, ok := p.Source.(*testAuthor); ok {
 						width := fmt.Sprintf("%v", p.Args["width"])
 						height := fmt.Sprintf("%v", p.Args["height"])
-						return author.Pic(width, height)
+						return author.Pic(width, height), nil
 					}
-					return nil
+					return nil, nil
 				},
 			},
 			"recentArticle": &graphql.Field{},
@@ -156,14 +156,14 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 						Type: graphql.ID,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					id := p.Args["id"]
-					return article(id)
+					return article(id), nil
 				},
 			},
 			"feed": &graphql.Field{
 				Type: graphql.NewList(blogArticle),
-				Resolve: func(p graphql.ResolveParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					return []*testArticle{
 						article(1),
 						article(2),
@@ -175,7 +175,7 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 						article(8),
 						article(9),
 						article(10),
-					}
+					}, nil
 				},
 			},
 		},
