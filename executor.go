@@ -167,10 +167,10 @@ func getOperationRootType(schema Schema, operation ast.Definition) (*Object, err
 
 	switch operation.GetOperation() {
 	case "query":
-		return schema.GetQueryType(), nil
+		return schema.QueryType(), nil
 	case "mutation":
-		mutationType := schema.GetMutationType()
-		if mutationType.Name == "" {
+		mutationType := schema.MutationType()
+		if mutationType.PrivateName == "" {
 			return nil, errors.New("Schema is not configured for mutations")
 		}
 		return mutationType, nil
@@ -498,11 +498,17 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	// it is wrapped as a Error with locations. Log this error and return
 	// null if allowed, otherwise throw the error so the parent field can handle
 	// it.
-	result = resolveFn(GQLFRParams{
+	var resolveFnError error
+
+	result, resolveFnError = resolveFn(ResolveParams{
 		Source: source,
 		Args:   args,
 		Info:   info,
 	})
+
+	if resolveFnError != nil {
+		panic(gqlerrors.FormatError(resolveFnError))
+	}
 
 	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
 	return completed, resultState
@@ -594,10 +600,6 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	// If field type is Scalar or Enum, serialize to a valid value, returning
 	// null if serialization is not possible.
 	if returnType, ok := returnType.(*Scalar); ok {
-		err := invariant(returnType.Serialize != nil, "Missing serialize method on type")
-		if err != nil {
-			panic(gqlerrors.FormatError(err))
-		}
 		serializedResult := returnType.Serialize(result)
 		if isNullish(serializedResult) {
 			return nil
@@ -605,10 +607,6 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		return serializedResult
 	}
 	if returnType, ok := returnType.(*Enum); ok {
-		err := invariant(returnType.Serialize != nil, "Missing serialize method on type")
-		if err != nil {
-			panic(gqlerrors.FormatError(err))
-		}
 		serializedResult := returnType.Serialize(result)
 		if isNullish(serializedResult) {
 			return nil
@@ -622,7 +620,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	case *Object:
 		objectType = returnType
 	case Abstract:
-		objectType = returnType.GetObjectType(result, info)
+		objectType = returnType.ObjectType(result, info)
 		if objectType != nil && !returnType.IsPossibleType(objectType) {
 			panic(gqlerrors.NewFormattedError(
 				fmt.Sprintf(`Runtime Object type "%v" is not a possible type `+
@@ -674,14 +672,14 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 
 }
 
-func defaultResolveFn(p GQLFRParams) interface{} {
+func defaultResolveFn(p ResolveParams) (interface{}, error) {
 	// try to resolve p.Source as a struct first
 	sourceVal := reflect.ValueOf(p.Source)
 	if sourceVal.IsValid() && sourceVal.Type().Kind() == reflect.Ptr {
 		sourceVal = sourceVal.Elem()
 	}
 	if !sourceVal.IsValid() {
-		return nil
+		return nil, nil
 	}
 	if sourceVal.Type().Kind() == reflect.Struct {
 		// find field based on struct's json tag
@@ -693,7 +691,7 @@ func defaultResolveFn(p GQLFRParams) interface{} {
 			typeField := sourceVal.Type().Field(i)
 			// try matching the field name first
 			if typeField.Name == p.Info.FieldName {
-				return valueField.Interface()
+				return valueField.Interface(), nil
 			}
 			tag := typeField.Tag
 			jsonTag := tag.Get("json")
@@ -704,9 +702,9 @@ func defaultResolveFn(p GQLFRParams) interface{} {
 			if jsonOptions[0] != p.Info.FieldName {
 				continue
 			}
-			return valueField.Interface()
+			return valueField.Interface(), nil
 		}
-		return nil
+		return nil, nil
 	}
 
 	// try p.Source as a map[string]interface
@@ -717,14 +715,14 @@ func defaultResolveFn(p GQLFRParams) interface{} {
 			// try type casting the func to the most basic func signature
 			// for more complex signatures, user have to define ResolveFn
 			if propertyFn, ok := property.(func() interface{}); ok {
-				return propertyFn()
+				return propertyFn(), nil
 			}
 		}
-		return property
+		return property, nil
 	}
 
 	// last resort, return nil
-	return nil
+	return nil, nil
 }
 
 /**
@@ -743,15 +741,15 @@ func getFieldDef(schema Schema, parentType *Object, fieldName string) *FieldDefi
 	}
 
 	if fieldName == SchemaMetaFieldDef.Name &&
-		schema.GetQueryType() == parentType {
+		schema.QueryType() == parentType {
 		return SchemaMetaFieldDef
 	}
 	if fieldName == TypeMetaFieldDef.Name &&
-		schema.GetQueryType() == parentType {
+		schema.QueryType() == parentType {
 		return TypeMetaFieldDef
 	}
 	if fieldName == TypeNameMetaFieldDef.Name {
 		return TypeNameMetaFieldDef
 	}
-	return parentType.GetFields()[fieldName]
+	return parentType.Fields()[fieldName]
 }

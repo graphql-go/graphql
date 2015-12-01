@@ -25,8 +25,8 @@ var enumTypeTestColorType = graphql.NewEnum(graphql.EnumConfig{
 })
 var enumTypeTestQueryType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Query",
-	Fields: graphql.FieldConfigMap{
-		"colorEnum": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"colorEnum": &graphql.Field{
 			Type: enumTypeTestColorType,
 			Args: graphql.FieldConfigArgument{
 				"fromEnum": &graphql.ArgumentConfig{
@@ -39,20 +39,20 @@ var enumTypeTestQueryType = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.String,
 				},
 			},
-			Resolve: func(p graphql.GQLFRParams) interface{} {
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				if fromInt, ok := p.Args["fromInt"]; ok {
-					return fromInt
+					return fromInt, nil
 				}
 				if fromString, ok := p.Args["fromString"]; ok {
-					return fromString
+					return fromString, nil
 				}
 				if fromEnum, ok := p.Args["fromEnum"]; ok {
-					return fromEnum
+					return fromEnum, nil
 				}
-				return nil
+				return nil, nil
 			},
 		},
-		"colorInt": &graphql.FieldConfig{
+		"colorInt": &graphql.Field{
 			Type: graphql.Int,
 			Args: graphql.FieldConfigArgument{
 				"fromEnum": &graphql.ArgumentConfig{
@@ -62,33 +62,33 @@ var enumTypeTestQueryType = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.Int,
 				},
 			},
-			Resolve: func(p graphql.GQLFRParams) interface{} {
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				if fromInt, ok := p.Args["fromInt"]; ok {
-					return fromInt
+					return fromInt, nil
 				}
 				if fromEnum, ok := p.Args["fromEnum"]; ok {
-					return fromEnum
+					return fromEnum, nil
 				}
-				return nil
+				return nil, nil
 			},
 		},
 	},
 })
 var enumTypeTestMutationType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
-	Fields: graphql.FieldConfigMap{
-		"favoriteEnum": &graphql.FieldConfig{
+	Fields: graphql.Fields{
+		"favoriteEnum": &graphql.Field{
 			Type: enumTypeTestColorType,
 			Args: graphql.FieldConfigArgument{
 				"color": &graphql.ArgumentConfig{
 					Type: enumTypeTestColorType,
 				},
 			},
-			Resolve: func(p graphql.GQLFRParams) interface{} {
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				if color, ok := p.Args["color"]; ok {
-					return color
+					return color, nil
 				}
-				return nil
+				return nil, nil
 			},
 		},
 	},

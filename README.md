@@ -24,8 +24,8 @@ import (
 
 func main() {
 	// Schema
-	fields := graphql.FieldConfigMap{
-		"hello": &graphql.FieldConfig{
+	fields := graphql.Fields{
+		"hello": &graphql.Field{
 			Type: graphql.String,
 			Resolve: func(p graphql.GQLFRParams) interface{} {
 				return "world"

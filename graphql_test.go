@@ -82,7 +82,7 @@ func TestQuery(t *testing.T) {
 }
 
 func testGraphql(test T, p graphql.Params, t *testing.T) {
-	result := graphql.Graphql(p)
+	result := graphql.Do(p)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -94,15 +94,15 @@ func testGraphql(test T, p graphql.Params, t *testing.T) {
 func TestBasicGraphQLExample(t *testing.T) {
 	// taken from `graphql-js` README
 
-	helloFieldResolved := func(p graphql.GQLFRParams) interface{} {
-		return "world"
+	helloFieldResolved := func(p graphql.ResolveParams) (interface{}, error) {
+		return "world", nil
 	}
 
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "RootQueryType",
-			Fields: graphql.FieldConfigMap{
-				"hello": &graphql.FieldConfig{
+			Fields: graphql.Fields{
+				"hello": &graphql.Field{
 					Description: "Returns `world`",
 					Type:        graphql.String,
 					Resolve:     helloFieldResolved,
@@ -119,7 +119,7 @@ func TestBasicGraphQLExample(t *testing.T) {
 		"hello": "world",
 	}
 
-	result := graphql.Graphql(graphql.Params{
+	result := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})

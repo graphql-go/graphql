@@ -122,7 +122,7 @@ var Float *Scalar = NewScalar(ScalarConfig{
 				return floatValue
 			}
 		}
-		return float32(0)
+		return nil
 	},
 })
 
@@ -139,7 +139,7 @@ var String *Scalar = NewScalar(ScalarConfig{
 		case *ast.StringValue:
 			return valueAST.Value
 		}
-		return ""
+		return nil
 	},
 })
 
@@ -181,7 +181,7 @@ var Boolean *Scalar = NewScalar(ScalarConfig{
 		case *ast.BooleanValue:
 			return valueAST.Value
 		}
-		return false
+		return nil
 	},
 })
 
@@ -196,6 +196,6 @@ var ID *Scalar = NewScalar(ScalarConfig{
 		case *ast.StringValue:
 			return valueAST.Value
 		}
-		return ""
+		return nil
 	},
 })

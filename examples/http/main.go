@@ -19,17 +19,17 @@ var data map[string]user
 /*
    Create User object type with fields "id" and "name" by using GraphQLObjectTypeConfig:
        - Name: name of object type
-       - Fields: a map of fields by using GraphQLFieldConfigMap
+       - Fields: a map of fields by using GraphQLFields
    Setup type of field use GraphQLFieldConfig
 */
 var userType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "User",
-		Fields: graphql.FieldConfigMap{
-			"id": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"id": &graphql.Field{
 				Type: graphql.String,
 			},
-			"name": &graphql.FieldConfig{
+			"name": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -39,7 +39,7 @@ var userType = graphql.NewObject(
 /*
    Create Query object type with fields "user" has type [userType] by using GraphQLObjectTypeConfig:
        - Name: name of object type
-       - Fields: a map of fields by using GraphQLFieldConfigMap
+       - Fields: a map of fields by using GraphQLFields
    Setup type of field use GraphQLFieldConfig to define:
        - Type: type of field
        - Args: arguments to query with current field
@@ -48,20 +48,20 @@ var userType = graphql.NewObject(
 var queryType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Query",
-		Fields: graphql.FieldConfigMap{
-			"user": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"user": &graphql.Field{
 				Type: userType,
 				Args: graphql.FieldConfigArgument{
 					"id": &graphql.ArgumentConfig{
 						Type: graphql.String,
 					},
 				},
-				Resolve: func(p graphql.GQLFRParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					idQuery, isOK := p.Args["id"].(string)
 					if isOK {
-						return data[idQuery]
+						return data[idQuery], nil
 					}
-					return nil
+					return nil, nil
 				},
 			},
 		},
@@ -74,12 +74,12 @@ var schema, _ = graphql.NewSchema(
 )
 
 func executeQuery(query string, schema graphql.Schema) *graphql.Result {
-	result := graphql.Graphql(graphql.Params{
+	result := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
 	if len(result.Errors) > 0 {
-		fmt.Println("wrong result, unexpected errors: %v", result.Errors)
+		fmt.Printf("wrong result, unexpected errors: %v", result.Errors)
 	}
 	return result
 }
@@ -93,7 +93,7 @@ func main() {
 	})
 
 	fmt.Println("Now server is running on port 8080")
-	fmt.Println("Test with Get      : curl -g \"http://localhost:8080/graphql?query={user(id:%221%22){name}}\"")
+	fmt.Println("Test with Get      : curl -g 'http://localhost:8080/graphql?query={user(id:\"1\"){name}}'")
 	http.ListenAndServe(":8080", nil)
 }
 

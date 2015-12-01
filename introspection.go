@@ -83,76 +83,76 @@ func init() {
 	// Note: some fields (for e.g "fields", "interfaces") are defined later due to cyclic reference
 	__Type = NewObject(ObjectConfig{
 		Name: "__Type",
-		Fields: FieldConfigMap{
-			"kind": &FieldConfig{
+		Fields: Fields{
+			"kind": &Field{
 				Type: NewNonNull(__TypeKind),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					switch p.Source.(type) {
 					case *Scalar:
-						return TypeKindScalar
+						return TypeKindScalar, nil
 					case *Object:
-						return TypeKindObject
+						return TypeKindObject, nil
 					case *Interface:
-						return TypeKindInterface
+						return TypeKindInterface, nil
 					case *Union:
-						return TypeKindUnion
+						return TypeKindUnion, nil
 					case *Enum:
-						return TypeKindEnum
+						return TypeKindEnum, nil
 					case *InputObject:
-						return TypeKindInputObject
+						return TypeKindInputObject, nil
 					case *List:
-						return TypeKindList
+						return TypeKindList, nil
 					case *NonNull:
-						return TypeKindNonNull
+						return TypeKindNonNull, nil
 					}
-					panic(fmt.Sprintf("Unknown kind of type: %v", p.Source))
+					return nil, fmt.Errorf("Unknown kind of type: %v", p.Source)
 				},
 			},
-			"name": &FieldConfig{
+			"name": &Field{
 				Type: String,
 			},
-			"description": &FieldConfig{
+			"description": &Field{
 				Type: String,
 			},
-			"fields":        &FieldConfig{},
-			"interfaces":    &FieldConfig{},
-			"possibleTypes": &FieldConfig{},
-			"enumValues":    &FieldConfig{},
-			"inputFields":   &FieldConfig{},
-			"ofType":        &FieldConfig{},
+			"fields":        &Field{},
+			"interfaces":    &Field{},
+			"possibleTypes": &Field{},
+			"enumValues":    &Field{},
+			"inputFields":   &Field{},
+			"ofType":        &Field{},
 		},
 	})
 
 	__InputValue = NewObject(ObjectConfig{
 		Name: "__InputValue",
-		Fields: FieldConfigMap{
-			"name": &FieldConfig{
+		Fields: Fields{
+			"name": &Field{
 				Type: NewNonNull(String),
 			},
-			"description": &FieldConfig{
+			"description": &Field{
 				Type: String,
 			},
-			"type": &FieldConfig{
+			"type": &Field{
 				Type: NewNonNull(__Type),
 			},
-			"defaultValue": &FieldConfig{
+			"defaultValue": &Field{
 				Type: String,
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					if inputVal, ok := p.Source.(*Argument); ok {
 						if inputVal.DefaultValue == nil {
-							return nil
+							return nil, nil
 						}
 						astVal := astFromValue(inputVal.DefaultValue, inputVal)
-						return printer.Print(astVal)
+						return printer.Print(astVal), nil
 					}
 					if inputVal, ok := p.Source.(*InputObjectField); ok {
 						if inputVal.DefaultValue == nil {
-							return nil
+							return nil, nil
 						}
 						astVal := astFromValue(inputVal.DefaultValue, inputVal)
-						return printer.Print(astVal)
+						return printer.Print(astVal), nil
 					}
-					return nil
+					return nil, nil
 				},
 			},
 		},
@@ -160,35 +160,35 @@ func init() {
 
 	__Field = NewObject(ObjectConfig{
 		Name: "__Field",
-		Fields: FieldConfigMap{
-			"name": &FieldConfig{
+		Fields: Fields{
+			"name": &Field{
 				Type: NewNonNull(String),
 			},
-			"description": &FieldConfig{
+			"description": &Field{
 				Type: String,
 			},
-			"args": &FieldConfig{
+			"args": &Field{
 				Type: NewNonNull(NewList(NewNonNull(__InputValue))),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					if field, ok := p.Source.(*FieldDefinition); ok {
-						return field.Args
+						return field.Args, nil
 					}
-					return []interface{}{}
+					return []interface{}{}, nil
 				},
 			},
-			"type": &FieldConfig{
+			"type": &Field{
 				Type: NewNonNull(__Type),
 			},
-			"isDeprecated": &FieldConfig{
+			"isDeprecated": &Field{
 				Type: NewNonNull(Boolean),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					if field, ok := p.Source.(*FieldDefinition); ok {
-						return (field.DeprecationReason != "")
+						return (field.DeprecationReason != ""), nil
 					}
-					return false
+					return false, nil
 				},
 			},
-			"deprecationReason": &FieldConfig{
+			"deprecationReason": &Field{
 				Type: String,
 			},
 		},
@@ -196,25 +196,25 @@ func init() {
 
 	__Directive = NewObject(ObjectConfig{
 		Name: "__Directive",
-		Fields: FieldConfigMap{
-			"name": &FieldConfig{
+		Fields: Fields{
+			"name": &Field{
 				Type: NewNonNull(String),
 			},
-			"description": &FieldConfig{
+			"description": &Field{
 				Type: String,
 			},
-			"args": &FieldConfig{
+			"args": &Field{
 				Type: NewNonNull(NewList(
 					NewNonNull(__InputValue),
 				)),
 			},
-			"onOperation": &FieldConfig{
+			"onOperation": &Field{
 				Type: NewNonNull(Boolean),
 			},
-			"onFragment": &FieldConfig{
+			"onFragment": &Field{
 				Type: NewNonNull(Boolean),
 			},
-			"onField": &FieldConfig{
+			"onField": &Field{
 				Type: NewNonNull(Boolean),
 			},
 		},
@@ -226,56 +226,56 @@ func init() {
 server. It exposes all available types and directives on
 the server, as well as the entry points for query and
 mutation operations.`,
-		Fields: FieldConfigMap{
-			"types": &FieldConfig{
+		Fields: Fields{
+			"types": &Field{
 				Description: "A list of all types supported by this server.",
 				Type: NewNonNull(NewList(
 					NewNonNull(__Type),
 				)),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
 						results := []Type{}
-						for _, ttype := range schema.GetTypeMap() {
+						for _, ttype := range schema.TypeMap() {
 							results = append(results, ttype)
 						}
-						return results
+						return results, nil
 					}
-					return []Type{}
+					return []Type{}, nil
 				},
 			},
-			"queryType": &FieldConfig{
+			"queryType": &Field{
 				Description: "The type that query operations will be rooted at.",
 				Type:        NewNonNull(__Type),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
-						return schema.GetQueryType()
+						return schema.QueryType(), nil
 					}
-					return nil
+					return nil, nil
 				},
 			},
-			"mutationType": &FieldConfig{
+			"mutationType": &Field{
 				Description: `If this server supports mutation, the type that ` +
 					`mutation operations will be rooted at.`,
 				Type: __Type,
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
-						if schema.GetMutationType() != nil {
-							return schema.GetMutationType()
+						if schema.MutationType() != nil {
+							return schema.MutationType(), nil
 						}
 					}
-					return nil
+					return nil, nil
 				},
 			},
-			"directives": &FieldConfig{
+			"directives": &Field{
 				Description: `A list of all directives supported by this server.`,
 				Type: NewNonNull(NewList(
 					NewNonNull(__Directive),
 				)),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
-						return schema.GetDirectives()
+						return schema.Directives(), nil
 					}
-					return nil
+					return nil, nil
 				},
 			},
 		},
@@ -283,23 +283,23 @@ mutation operations.`,
 
 	__EnumValue = NewObject(ObjectConfig{
 		Name: "__EnumValue",
-		Fields: FieldConfigMap{
-			"name": &FieldConfig{
+		Fields: Fields{
+			"name": &Field{
 				Type: NewNonNull(String),
 			},
-			"description": &FieldConfig{
+			"description": &Field{
 				Type: String,
 			},
-			"isDeprecated": &FieldConfig{
+			"isDeprecated": &Field{
 				Type: NewNonNull(Boolean),
-				Resolve: func(p GQLFRParams) interface{} {
+				Resolve: func(p ResolveParams) (interface{}, error) {
 					if field, ok := p.Source.(*EnumValueDefinition); ok {
-						return (field.DeprecationReason != "")
+						return (field.DeprecationReason != ""), nil
 					}
-					return false
+					return false, nil
 				},
 			},
-			"deprecationReason": &FieldConfig{
+			"deprecationReason": &Field{
 				Type: String,
 			},
 		},
@@ -307,7 +307,7 @@ mutation operations.`,
 
 	// Again, adding field configs to __Type that have cyclic reference here
 	// because golang don't like them too much during init/compile-time
-	__Type.AddFieldConfig("fields", &FieldConfig{
+	__Type.AddFieldConfig("fields", &Field{
 		Type: NewList(NewNonNull(__Field)),
 		Args: FieldConfigArgument{
 			"includeDeprecated": &ArgumentConfig{
@@ -315,60 +315,60 @@ mutation operations.`,
 				DefaultValue: false,
 			},
 		},
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(p ResolveParams) (interface{}, error) {
 			includeDeprecated, _ := p.Args["includeDeprecated"].(bool)
 			switch ttype := p.Source.(type) {
 			case *Object:
 				if ttype == nil {
-					return nil
+					return nil, nil
 				}
 				fields := []*FieldDefinition{}
-				for _, field := range ttype.GetFields() {
+				for _, field := range ttype.Fields() {
 					if !includeDeprecated && field.DeprecationReason != "" {
 						continue
 					}
 					fields = append(fields, field)
 				}
-				return fields
+				return fields, nil
 			case *Interface:
 				if ttype == nil {
-					return nil
+					return nil, nil
 				}
 				fields := []*FieldDefinition{}
-				for _, field := range ttype.GetFields() {
+				for _, field := range ttype.Fields() {
 					if !includeDeprecated && field.DeprecationReason != "" {
 						continue
 					}
 					fields = append(fields, field)
 				}
-				return fields
+				return fields, nil
 			}
-			return nil
+			return nil, nil
 		},
 	})
-	__Type.AddFieldConfig("interfaces", &FieldConfig{
+	__Type.AddFieldConfig("interfaces", &Field{
 		Type: NewList(NewNonNull(__Type)),
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(p ResolveParams) (interface{}, error) {
 			switch ttype := p.Source.(type) {
 			case *Object:
-				return ttype.GetInterfaces()
+				return ttype.Interfaces(), nil
 			}
-			return nil
+			return nil, nil
 		},
 	})
-	__Type.AddFieldConfig("possibleTypes", &FieldConfig{
+	__Type.AddFieldConfig("possibleTypes", &Field{
 		Type: NewList(NewNonNull(__Type)),
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(p ResolveParams) (interface{}, error) {
 			switch ttype := p.Source.(type) {
 			case *Interface:
-				return ttype.GetPossibleTypes()
+				return ttype.PossibleTypes(), nil
 			case *Union:
-				return ttype.GetPossibleTypes()
+				return ttype.PossibleTypes(), nil
 			}
-			return nil
+			return nil, nil
 		},
 	})
-	__Type.AddFieldConfig("enumValues", &FieldConfig{
+	__Type.AddFieldConfig("enumValues", &Field{
 		Type: NewList(NewNonNull(__EnumValue)),
 		Args: FieldConfigArgument{
 			"includeDeprecated": &ArgumentConfig{
@@ -376,40 +376,40 @@ mutation operations.`,
 				DefaultValue: false,
 			},
 		},
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(p ResolveParams) (interface{}, error) {
 			includeDeprecated, _ := p.Args["includeDeprecated"].(bool)
 			switch ttype := p.Source.(type) {
 			case *Enum:
 				if includeDeprecated {
-					return ttype.GetValues()
+					return ttype.Values(), nil
 				}
 				values := []*EnumValueDefinition{}
-				for _, value := range ttype.GetValues() {
+				for _, value := range ttype.Values() {
 					if value.DeprecationReason != "" {
 						continue
 					}
 					values = append(values, value)
 				}
-				return values
+				return values, nil
 			}
-			return nil
+			return nil, nil
 		},
 	})
-	__Type.AddFieldConfig("inputFields", &FieldConfig{
+	__Type.AddFieldConfig("inputFields", &Field{
 		Type: NewList(NewNonNull(__InputValue)),
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(p ResolveParams) (interface{}, error) {
 			switch ttype := p.Source.(type) {
 			case *InputObject:
 				fields := []*InputObjectField{}
-				for _, field := range ttype.GetFields() {
+				for _, field := range ttype.Fields() {
 					fields = append(fields, field)
 				}
-				return fields
+				return fields, nil
 			}
-			return nil
+			return nil, nil
 		},
 	})
-	__Type.AddFieldConfig("ofType", &FieldConfig{
+	__Type.AddFieldConfig("ofType", &Field{
 		Type: __Type,
 	})
 
@@ -423,8 +423,8 @@ mutation operations.`,
 		Type:        NewNonNull(__Schema),
 		Description: "Access the current type schema of this server.",
 		Args:        []*Argument{},
-		Resolve: func(p GQLFRParams) interface{} {
-			return p.Info.Schema
+		Resolve: func(p ResolveParams) (interface{}, error) {
+			return p.Info.Schema, nil
 		},
 	}
 	TypeMetaFieldDef = &FieldDefinition{
@@ -433,16 +433,16 @@ mutation operations.`,
 		Description: "Request the type information of a single type.",
 		Args: []*Argument{
 			&Argument{
-				Name: "name",
-				Type: NewNonNull(String),
+				PrivateName: "name",
+				Type:        NewNonNull(String),
 			},
 		},
-		Resolve: func(p GQLFRParams) interface{} {
+		Resolve: func(p ResolveParams) (interface{}, error) {
 			name, ok := p.Args["name"].(string)
 			if !ok {
-				return nil
+				return nil, nil
 			}
-			return p.Info.Schema.GetType(name)
+			return p.Info.Schema.Type(name), nil
 		},
 	}
 
@@ -451,8 +451,8 @@ mutation operations.`,
 		Type:        NewNonNull(String),
 		Description: "The name of the current Object type at runtime.",
 		Args:        []*Argument{},
-		Resolve: func(p GQLFRParams) interface{} {
-			return p.Info.ParentType.GetName()
+		Resolve: func(p ResolveParams) (interface{}, error) {
+			return p.Info.ParentType.Name(), nil
 		},
 	}
 

@@ -14,7 +14,7 @@ type Params struct {
 	OperationName  string
 }
 
-func Graphql(p Params) *Result {
+func Do(p Params) *Result {
 	source := source.NewSource(&source.Source{
 		Body: p.RequestString,
 		Name: "GraphQL request",
@@ -25,7 +25,7 @@ func Graphql(p Params) *Result {
 			Errors: gqlerrors.FormatErrors(err),
 		}
 	}
-	validationResult := ValidateDocument(p.Schema, AST)
+	validationResult := ValidateDocument(&p.Schema, AST, nil)
 
 	if !validationResult.IsValid {
 		return &Result{

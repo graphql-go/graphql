@@ -11,15 +11,15 @@ import (
 )
 
 func g(t *testing.T, p graphql.Params) *graphql.Result {
-	return graphql.Graphql(p)
+	return graphql.Do(p)
 }
 
 func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 	emptySchema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "QueryRoot",
-			Fields: graphql.FieldConfigMap{
-				"onlyField": &graphql.FieldConfig{
+			Fields: graphql.Fields{
+				"onlyField": &graphql.Field{
 					Type: graphql.String,
 				},
 			},
@@ -760,16 +760,16 @@ func TestIntrospection_ExecutesAnInputObject(t *testing.T) {
 	})
 	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: graphql.FieldConfigMap{
-			"field": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
 					"complex": &graphql.ArgumentConfig{
 						Type: testInputObject,
 					},
 				},
-				Resolve: func(p graphql.GQLFRParams) interface{} {
-					return p.Args["complex"]
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return p.Args["complex"], nil
 				},
 			},
 		},
@@ -860,8 +860,8 @@ func TestIntrospection_SupportsThe__TypeRootField(t *testing.T) {
 
 	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: graphql.FieldConfigMap{
-			"testField": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"testField": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -898,11 +898,11 @@ func TestIntrospection_IdentifiesDeprecatedFields(t *testing.T) {
 
 	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: graphql.FieldConfigMap{
-			"nonDeprecated": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"nonDeprecated": &graphql.Field{
 				Type: graphql.String,
 			},
-			"deprecated": &graphql.FieldConfig{
+			"deprecated": &graphql.Field{
 				Type:              graphql.String,
 				DeprecationReason: "Removed in 1.0",
 			},
@@ -957,11 +957,11 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForFields(t *testing
 
 	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: graphql.FieldConfigMap{
-			"nonDeprecated": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"nonDeprecated": &graphql.Field{
 				Type: graphql.String,
 			},
-			"deprecated": &graphql.FieldConfig{
+			"deprecated": &graphql.Field{
 				Type:              graphql.String,
 				DeprecationReason: "Removed in 1.0",
 			},
@@ -1041,8 +1041,8 @@ func TestIntrospection_IdentifiesDeprecatedEnumValues(t *testing.T) {
 	})
 	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: graphql.FieldConfigMap{
-			"testEnum": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"testEnum": &graphql.Field{
 				Type: testEnum,
 			},
 		},
@@ -1116,8 +1116,8 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForEnumValues(t *tes
 	})
 	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: graphql.FieldConfigMap{
-			"testEnum": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"testEnum": &graphql.Field{
 				Type: testEnum,
 			},
 		},
@@ -1190,8 +1190,8 @@ func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testin
 
 	testType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "TestType",
-		Fields: graphql.FieldConfigMap{
-			"testField": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"testField": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -1234,8 +1234,8 @@ func TestIntrospection_ExposesDescriptionsOnTypesAndFields(t *testing.T) {
 
 	queryRoot := graphql.NewObject(graphql.ObjectConfig{
 		Name: "QueryRoot",
-		Fields: graphql.FieldConfigMap{
-			"onlyField": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"onlyField": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
@@ -1300,8 +1300,8 @@ func TestIntrospection_ExposesDescriptionsOnEnums(t *testing.T) {
 
 	queryRoot := graphql.NewObject(graphql.ObjectConfig{
 		Name: "QueryRoot",
-		Fields: graphql.FieldConfigMap{
-			"onlyField": &graphql.FieldConfig{
+		Fields: graphql.Fields{
+			"onlyField": &graphql.Field{
 				Type: graphql.String,
 			},
 		},

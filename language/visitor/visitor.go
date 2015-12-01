@@ -3,6 +3,7 @@ package visitor
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/graphql-go/graphql/language/ast"
 	"reflect"
 )
 
@@ -121,7 +122,7 @@ type stack struct {
 	Index   int
 	Keys    []interface{}
 	Edits   []*edit
-	InArray bool
+	inSlice bool
 	Prev    *stack
 }
 type edit struct {
@@ -132,10 +133,11 @@ type edit struct {
 type VisitFuncParams struct {
 	Node      interface{}
 	Key       interface{}
-	Parent    interface{}
+	Parent    ast.Node
 	Path      []interface{}
-	Ancestors []interface{}
+	Ancestors []ast.Node
 }
+
 type VisitFunc func(p VisitFuncParams) (string, interface{})
 
 type NamedVisitFuncs struct {
@@ -153,81 +155,126 @@ type VisitorOptions struct {
 	LeaveKindMap map[string]VisitFunc // 4) Parallel visitors for entering and leaving nodes of a specific kind
 }
 
-func Visit(root interface{}, visitorOpts *VisitorOptions, keyMap KeyMap) interface{} {
+func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) interface{} {
 	visitorKeys := keyMap
 	if visitorKeys == nil {
 		visitorKeys = QueryDocumentKeys
 	}
 
-	var newRoot interface{}
-	// convert any interface{} into map[string]interface{}
-	b, err := json.Marshal(root)
-	if err != nil {
-		panic(fmt.Sprintf("Invalid root AST Node: %v", root))
-	}
-	err = json.Unmarshal(b, &newRoot)
-	if err != nil || newRoot == nil {
-		panic(fmt.Sprintf("Invalid root AST Node (2): %v", root))
-	}
-
+	var result interface{}
+	var newRoot = root
 	var sstack *stack
 	var parent interface{}
-	inArray := isSlice(newRoot)
+	var parentSlice []interface{}
+	inSlice := false
+	prevInSlice := false
 	keys := []interface{}{newRoot}
 	index := -1
 	edits := []*edit{}
 	path := []interface{}{}
 	ancestors := []interface{}{}
+	ancestorsSlice := [][]interface{}{}
 Loop:
 	for {
 		index = index + 1
 
 		isLeaving := (len(keys) == index)
-		var key interface{}
-		var node interface{}
+		var key interface{}  // string for structs or int for slices
+		var node interface{} // ast.Node or can be anything
+		var nodeSlice []interface{}
 		isEdited := (isLeaving && len(edits) != 0)
 
 		if isLeaving {
-			if len(ancestors) == 0 {
-				key = nil
+			if !inSlice {
+				if len(ancestors) == 0 {
+					key = nil
+				} else {
+					key, path = pop(path)
+				}
 			} else {
-				key, path = pop(path)
+				if len(ancestorsSlice) == 0 {
+					key = nil
+				} else {
+					key, path = pop(path)
+				}
 			}
 
 			node = parent
 			parent, ancestors = pop(ancestors)
+			nodeSlice = parentSlice
+			parentSlice, ancestorsSlice = popNodeSlice(ancestorsSlice)
+
 			if isEdited {
+				prevInSlice = inSlice
 				editOffset := 0
 				for _, edit := range edits {
 					arrayEditKey := 0
-					if inArray {
+					if inSlice {
 						keyInt := edit.Key.(int)
 						edit.Key = keyInt - editOffset
 						arrayEditKey = edit.Key.(int)
 					}
-					if inArray && isNilNode(edit.Value) {
-						if n, ok := node.([]interface{}); ok {
-							node = splice(n, arrayEditKey)
-						} else {
-							panic(fmt.Sprintf("Invalid AST Node (1): %v", node))
-						}
+					if inSlice && isNilNode(edit.Value) {
+						nodeSlice = spliceNode(nodeSlice, arrayEditKey)
 						editOffset = editOffset + 1
 					} else {
-						if inArray {
-							if n, ok := node.([]interface{}); ok {
-								n[arrayEditKey] = edit.Value
-								node = n
-							} else {
-								panic(fmt.Sprintf("Invalid AST Node (2): %v", node))
-							}
+						if inSlice {
+							nodeSlice[arrayEditKey] = edit.Value
 						} else {
-							if n, ok := node.(map[string]interface{}); ok {
-								key := edit.Key.(string)
-								n[key] = edit.Value
-								node = n
+							key, _ := edit.Key.(string)
+
+							var updatedNode interface{}
+							if !isSlice(edit.Value) {
+								if isStructNode(edit.Value) {
+									updatedNode = updateNodeField(node, key, edit.Value)
+								} else {
+									var todoNode map[string]interface{}
+									b, err := json.Marshal(node)
+									if err != nil {
+										panic(fmt.Sprintf("Invalid root AST Node: %v", root))
+									}
+									err = json.Unmarshal(b, &todoNode)
+									if err != nil {
+										panic(fmt.Sprintf("Invalid root AST Node (2): %v", root))
+									}
+									todoNode[key] = edit.Value
+									updatedNode = todoNode
+								}
 							} else {
-								panic(fmt.Sprintf("Invalid AST Node (3): %v", node))
+								isSliceOfNodes := true
+
+								// check if edit.value slice is ast.nodes
+								switch reflect.TypeOf(edit.Value).Kind() {
+								case reflect.Slice:
+									s := reflect.ValueOf(edit.Value)
+									for i := 0; i < s.Len(); i++ {
+										elem := s.Index(i)
+										if !isStructNode(elem.Interface()) {
+											isSliceOfNodes = false
+										}
+									}
+								}
+
+								// is a slice of real nodes
+								if isSliceOfNodes {
+									// the node we are writing to is an ast.Node
+									updatedNode = updateNodeField(node, key, edit.Value)
+								} else {
+									var todoNode map[string]interface{}
+									b, err := json.Marshal(node)
+									if err != nil {
+										panic(fmt.Sprintf("Invalid root AST Node: %v", root))
+									}
+									err = json.Unmarshal(b, &todoNode)
+									if err != nil {
+										panic(fmt.Sprintf("Invalid root AST Node (2): %v", root))
+									}
+									todoNode[key] = edit.Value
+									updatedNode = todoNode
+								}
+
 							}
+							node = updatedNode
 						}
 					}
 				}
@@ -235,59 +282,112 @@ Loop:
 			index = sstack.Index
 			keys = sstack.Keys
 			edits = sstack.Edits
-			inArray = sstack.InArray
+			inSlice = sstack.inSlice
 			sstack = sstack.Prev
 		} else {
 			// get key
-			if !isNilNode(parent) {
-				if inArray {
-					key = index
+			if !inSlice {
+				if !isNilNode(parent) {
+					key = getFieldValue(keys, index)
 				} else {
-					key = getField(keys, index)
+					// initial conditions
+					key = nil
 				}
 			} else {
-				// initial conditions
-				key = nil
+				key = index
 			}
 			// get node
-			if !isNilNode(parent) {
-				node = getField(parent, key)
+			if !inSlice {
+				if !isNilNode(parent) {
+					fieldValue := getFieldValue(parent, key)
+					if isNode(fieldValue) {
+						node = fieldValue.(ast.Node)
+					}
+					if isSlice(fieldValue) {
+						nodeSlice = toSliceInterfaces(fieldValue)
+					}
+				} else {
+					// initial conditions
+					node = newRoot
+				}
 			} else {
-				// initial conditions
-				node = newRoot
+				if len(parentSlice) != 0 {
+					fieldValue := getFieldValue(parentSlice, key)
+					if isNode(fieldValue) {
+						node = fieldValue.(ast.Node)
+					}
+					if isSlice(fieldValue) {
+						nodeSlice = toSliceInterfaces(fieldValue)
+					}
+				} else {
+					// initial conditions
+					nodeSlice = []interface{}{}
+				}
 			}
 
-			if isNilNode(node) {
+			if isNilNode(node) && len(nodeSlice) == 0 {
 				continue
 			}
-			if !isNilNode(parent) {
-				path = append(path, key)
+
+			if !inSlice {
+				if !isNilNode(parent) {
+					path = append(path, key)
+				}
+			} else {
+				if len(parentSlice) != 0 {
+					path = append(path, key)
+				}
 			}
 		}
 
 		// get result from visitFn for a node if set
 		var result interface{}
 		resultIsUndefined := true
-		if !isSlice(node) && !isNilNode(node) {
-			if !isNode(node) {
+		if !isNilNode(node) {
+			if !isNode(node) { // is node-ish.
 				panic(fmt.Sprintf("Invalid AST Node (4): %v", node))
 			}
-			n, ok := node.(map[string]interface{})
-			if !ok {
-				panic(fmt.Sprintf("Invalid AST Node (5): %v", node))
+
+			// Try to pass in current node as ast.Node
+			// Note that since user can potentially return a non-ast.Node from visit functions.
+			// In that case, we try to unmarshal map[string]interface{} into ast.Node
+			var nodeIn interface{}
+			if _, ok := node.(map[string]interface{}); ok {
+				b, err := json.Marshal(node)
+				if err != nil {
+					panic(fmt.Sprintf("Invalid root AST Node: %v", root))
+				}
+				err = json.Unmarshal(b, &nodeIn)
+				if err != nil {
+					panic(fmt.Sprintf("Invalid root AST Node (2a): %v", root))
+				}
+			} else {
+				nodeIn = node
 			}
-			kind, ok := n["Kind"].(string)
-			if !ok {
-				kind = ""
+			parentConcrete, _ := parent.(ast.Node)
+			ancestorsConcrete := []ast.Node{}
+			for _, ancestor := range ancestors {
+				if ancestorConcrete, ok := ancestor.(ast.Node); ok {
+					ancestorsConcrete = append(ancestorsConcrete, ancestorConcrete)
+				}
 			}
-			visitFn := getVisitFn(visitorOpts, isLeaving, kind)
+
+			kind := ""
+			if node, ok := node.(map[string]interface{}); ok {
+				kind, _ = node["Kind"].(string)
+			}
+			if node, ok := node.(ast.Node); ok {
+				kind = node.GetKind()
+			}
+
+			visitFn := GetVisitFn(visitorOpts, isLeaving, kind)
 			if visitFn != nil {
 				p := VisitFuncParams{
-					Node:      node,
+					Node:      nodeIn,
 					Key:       key,
-					Parent:    parent,
+					Parent:    parentConcrete,
 					Path:      path,
-					Ancestors: ancestors,
+					Ancestors: ancestorsConcrete,
 				}
 				action := ActionUpdate
 				action, result = visitFn(p)
@@ -295,7 +395,7 @@ Loop:
 					break Loop
 				}
 				if action == ActionSkip {
-					if isLeaving {
+					if !isLeaving {
 						_, path = pop(path)
 						continue
 					}
@@ -320,19 +420,27 @@ Loop:
 			}
 
 		}
-		if resultIsUndefined && isEdited {
-			edits = append(edits, &edit{
-				Key:   key,
-				Value: node,
-			})
-		}
 
+		// collect back edits on the way out
+		if resultIsUndefined && isEdited {
+			if !prevInSlice {
+				edits = append(edits, &edit{
+					Key:   key,
+					Value: node,
+				})
+			} else {
+				edits = append(edits, &edit{
+					Key:   key,
+					Value: nodeSlice,
+				})
+			}
+		}
 		if !isLeaving {
 
 			// add to stack
 			prevStack := sstack
 			sstack = &stack{
-				InArray: inArray,
+				inSlice: inSlice,
 				Index:   index,
 				Keys:    keys,
 				Edits:   edits,
@@ -340,42 +448,39 @@ Loop:
 			}
 
 			// replace keys
-			inArray = isSlice(node)
+			inSlice = false
+			if len(nodeSlice) > 0 {
+				inSlice = true
+			}
 			keys = []interface{}{}
-			if !isNilNode(node) {
-				if inArray {
-					// get keys
-					if n, ok := node.([]interface{}); ok {
-						for _, m := range n {
-							keys = append(keys, m)
-						}
-					} else {
-						panic(fmt.Sprintf("Invalid AST Node (6): %v", node))
-					}
 
-				} else {
-					if n, ok := node.(map[string]interface{}); ok {
-						kind, ok := n["Kind"].(string)
-						if !ok {
-							kind = ""
-						}
+			if inSlice {
+				// get keys
+				for _, m := range nodeSlice {
+					keys = append(keys, m)
+				}
+			} else {
+				if !isNilNode(node) {
+					if node, ok := node.(ast.Node); ok {
+						kind := node.GetKind()
 						if n, ok := visitorKeys[kind]; ok {
 							for _, m := range n {
 								keys = append(keys, m)
 							}
 						}
-					} else {
-						panic(fmt.Sprintf("Invalid AST Node (7): %v", node))
 					}
-				}
-			}
 
+				}
+
+			}
 			index = -1
 			edits = []*edit{}
-			if !isNilNode(parent) {
-				ancestors = append(ancestors, parent)
-			}
+
+			ancestors = append(ancestors, parent)
 			parent = node
+			ancestorsSlice = append(ancestorsSlice, parentSlice)
+			parentSlice = nodeSlice
+
 		}
 
 		// loop guard
@@ -384,9 +489,9 @@ Loop:
 		}
 	}
 	if len(edits) != 0 {
-		newRoot = edits[0].Value
+		result = edits[0].Value
 	}
-	return newRoot
+	return result
 }
 
 func pop(a []interface{}) (x interface{}, aa []interface{}) {
@@ -396,17 +501,39 @@ func pop(a []interface{}) (x interface{}, aa []interface{}) {
 	x, aa = a[len(a)-1], a[:len(a)-1]
 	return x, aa
 }
-func splice(a []interface{}, i int) []interface{} {
-	if i >= len(a) {
-		return a
+func popNodeSlice(a [][]interface{}) (x []interface{}, aa [][]interface{}) {
+	if len(a) == 0 {
+		return x, aa
 	}
+	x, aa = a[len(a)-1], a[:len(a)-1]
+	return x, aa
+}
+func spliceNode(a interface{}, i int) (result []interface{}) {
 	if i < 0 {
-		return []interface{}{}
+		return result
 	}
-	return append(a[:i], a[i+1:]...)
+	typeOf := reflect.TypeOf(a)
+	if typeOf == nil {
+		return result
+	}
+	switch typeOf.Kind() {
+	case reflect.Slice:
+		s := reflect.ValueOf(a)
+		for i := 0; i < s.Len(); i++ {
+			elem := s.Index(i)
+			elemInterface := elem.Interface()
+			result = append(result, elemInterface)
+		}
+		if i >= s.Len() {
+			return result
+		}
+		return append(result[:i], result[i+1:]...)
+	default:
+		return result
+	}
 }
 
-func getField(obj interface{}, key interface{}) interface{} {
+func getFieldValue(obj interface{}, key interface{}) interface{} {
 	val := reflect.ValueOf(obj)
 	if val.Type().Kind() == reflect.Ptr {
 		val = val.Elem()
@@ -447,8 +574,82 @@ func getField(obj interface{}, key interface{}) interface{} {
 	return nil
 }
 
-func isSlice(Value interface{}) bool {
-	val := reflect.ValueOf(Value)
+func updateNodeField(value interface{}, fieldName string, fieldValue interface{}) (retVal interface{}) {
+	retVal = value
+	val := reflect.ValueOf(value)
+
+	isPtr := false
+	if val.IsValid() && val.Type().Kind() == reflect.Ptr {
+		val = val.Elem()
+		isPtr = true
+	}
+	if !val.IsValid() {
+		return retVal
+	}
+	if val.Type().Kind() == reflect.Struct {
+		for i := 0; i < val.NumField(); i++ {
+			valueField := val.Field(i)
+			typeField := val.Type().Field(i)
+
+			// try matching the field name
+			if typeField.Name == fieldName {
+				fieldValueVal := reflect.ValueOf(fieldValue)
+				if valueField.CanSet() {
+
+					if fieldValueVal.IsValid() {
+						if valueField.Type().Kind() == fieldValueVal.Type().Kind() {
+							if fieldValueVal.Type().Kind() == reflect.Slice {
+								newSliceValue := reflect.MakeSlice(reflect.TypeOf(valueField.Interface()), fieldValueVal.Len(), fieldValueVal.Len())
+								for i := 0; i < newSliceValue.Len(); i++ {
+									dst := newSliceValue.Index(i)
+									src := fieldValueVal.Index(i)
+									srcValue := reflect.ValueOf(src.Interface())
+									if dst.CanSet() {
+										dst.Set(srcValue)
+									}
+								}
+								valueField.Set(newSliceValue)
+
+							} else {
+								valueField.Set(fieldValueVal)
+							}
+						}
+					} else {
+						valueField.Set(reflect.New(valueField.Type()).Elem())
+					}
+					if isPtr == true {
+						retVal = val.Addr().Interface()
+						return retVal
+					} else {
+						retVal = val.Interface()
+						return retVal
+					}
+
+				}
+			}
+		}
+	}
+	return retVal
+}
+func toSliceInterfaces(slice interface{}) (result []interface{}) {
+	switch reflect.TypeOf(slice).Kind() {
+	case reflect.Slice:
+		s := reflect.ValueOf(slice)
+		for i := 0; i < s.Len(); i++ {
+			elem := s.Index(i)
+			elemInterface := elem.Interface()
+			if elem, ok := elemInterface.(ast.Node); ok {
+				result = append(result, elem)
+			}
+		}
+		return result
+	default:
+		return result
+	}
+}
+
+func isSlice(value interface{}) bool {
+	val := reflect.ValueOf(value)
 	if val.IsValid() && val.Type().Kind() == reflect.Slice {
 		return true
 	}
@@ -456,19 +657,38 @@ func isSlice(Value interface{}) bool {
 }
 func isNode(node interface{}) bool {
 	val := reflect.ValueOf(node)
+	if val.IsValid() && val.Type().Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
 	if !val.IsValid() {
 		return false
-	}
-	if val.Type().Kind() == reflect.Ptr {
-		val = val.Elem()
 	}
 	if val.Type().Kind() == reflect.Map {
 		keyVal := reflect.ValueOf("Kind")
 		valField := val.MapIndex(keyVal)
 		return valField.IsValid()
 	}
+	if val.Type().Kind() == reflect.Struct {
+		valField := val.FieldByName("Kind")
+		return valField.IsValid()
+	}
 	return false
 }
+func isStructNode(node interface{}) bool {
+	val := reflect.ValueOf(node)
+	if val.IsValid() && val.Type().Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+	if !val.IsValid() {
+		return false
+	}
+	if val.Type().Kind() == reflect.Struct {
+		valField := val.FieldByName("Kind")
+		return valField.IsValid()
+	}
+	return false
+}
+
 func isNilNode(node interface{}) bool {
 	val := reflect.ValueOf(node)
 	if !val.IsValid() {
@@ -489,7 +709,7 @@ func isNilNode(node interface{}) bool {
 	return val.Interface() == nil
 }
 
-func getVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitFunc {
+func GetVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitFunc {
 	if visitorOpts == nil {
 		return nil
 	}
@@ -506,7 +726,6 @@ func getVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitF
 			// { Kind: { enter() {} } }
 			return kindVisitor.Enter
 		}
-		return nil
 	}
 
 	if isLeaving {
@@ -519,7 +738,6 @@ func getVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitF
 			// { leave: { Kind() {} } }
 			return specificKindVisitor
 		}
-		return nil
 
 	} else {
 		// { leave() {} }
@@ -531,7 +749,7 @@ func getVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitF
 			// { enter: { Kind() {} } }
 			return specificKindVisitor
 		}
-		return nil
 	}
+
 	return nil
 }
