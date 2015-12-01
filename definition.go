@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	"github.com/graphql-go/graphql/language/ast"
+	"golang.org/x/net/context"
 )
 
 // These are all of the possible kinds of
@@ -552,6 +553,11 @@ type ResolveInfo struct {
 	RootValue      interface{}
 	Operation      ast.Definition
 	VariableValues map[string]interface{}
+
+	// Context is passed through to resolve functions from either Params.Context
+	// or ExecuteParams.Context.  This can be used to provide per-request state
+	// from the application.
+	Context context.Context
 }
 
 type Fields map[string]*Field
