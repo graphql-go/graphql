@@ -1,6 +1,7 @@
 package graphql_test
 
 import (
+	"math"
 	"reflect"
 	"testing"
 
@@ -44,6 +45,20 @@ func TestTypeSystem_Scalar_SerializesOutputInt(t *testing.T) {
 		{"one", nil},
 		{false, int64(0)},
 		{true, int64(1)},
+		{int8(1), int64(1)},
+		{int16(1), int64(1)},
+		{int32(1), int64(1)},
+		{uint(1), int64(1)},
+		{uint8(1), int64(1)},
+		{uint16(1), int64(1)},
+		{uint32(1), int64(1)},
+		{uint64(1), int64(1)},
+		{uint64(graphql.MaxInt), graphql.MaxInt},
+		{graphql.MaxInt + int64(1), nil},
+		{graphql.MinInt - int64(1), nil},
+		{uint64(math.MaxInt64) + uint64(1), nil},
+		{byte(127), int64(127)},
+		{'世', int64('世')},
 	}
 
 	for _, test := range tests {

@@ -111,11 +111,11 @@ func TestExecutesArbitraryCode(t *testing.T) {
 			return nil, nil
 		}
 		// get and type assert argument
-		sizeArg, ok := p.Args["size"].(int)
+		sizeArg, ok := p.Args["size"].(int64)
 		if !ok {
 			return nil, nil
 		}
-		return picResolver(sizeArg), nil
+		return picResolver(int(sizeArg)), nil
 	}
 	dataType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "DataType",
@@ -394,7 +394,7 @@ func TestCorrectlyThreadsArguments(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 
-	expectedNum := 123
+	expectedNum := int64(123)
 	expectedString := "foo"
 	if resolvedArgs["numArg"] != expectedNum {
 		t.Fatalf("Expected args.numArg to equal `%v`, got `%v`", expectedNum, resolvedArgs["numArg"])
