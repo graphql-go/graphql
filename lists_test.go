@@ -66,7 +66,7 @@ func TestLists_ListOfNullableObjects_ContainsValues(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"test": []interface{}{
-					int64(1), int64(2),
+					1, 2,
 				},
 			},
 		},
@@ -82,7 +82,7 @@ func TestLists_ListOfNullableObjects_ContainsNull(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"test": []interface{}{
-					int64(1), nil, int64(2),
+					1, nil, 2,
 				},
 			},
 		},
@@ -116,7 +116,7 @@ func TestLists_ListOfNullableFunc_ContainsValues(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"test": []interface{}{
-					int64(1), int64(2),
+					1, 2,
 				},
 			},
 		},
@@ -130,14 +130,14 @@ func TestLists_ListOfNullableFunc_ContainsNull(t *testing.T) {
 	// Note that its uses the expected signature `func() interface{} {...}`
 	data := func() interface{} {
 		return []interface{}{
-			int64(1), nil, int64(2),
+			1, nil, 2,
 		}
 	}
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"test": []interface{}{
-					int64(1), nil, int64(2),
+					1, nil, 2,
 				},
 			},
 		},
@@ -225,7 +225,7 @@ func TestLists_NonNullListOfNullableObjectsContainsValues(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"test": []interface{}{
-					int64(1), int64(2),
+					1, 2,
 				},
 			},
 		},
@@ -241,7 +241,7 @@ func TestLists_NonNullListOfNullableObjectsContainsNull(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"test": []interface{}{
-					int64(1), nil, int64(2),
+					1, nil, 2,
 				},
 			},
 		},
@@ -284,7 +284,7 @@ func TestLists_NonNullListOfNullableFunc_ContainsValues(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"test": []interface{}{
-					int64(1), int64(2),
+					1, 2,
 				},
 			},
 		},
@@ -305,7 +305,7 @@ func TestLists_NonNullListOfNullableFunc_ContainsNull(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"test": []interface{}{
-					int64(1), nil, int64(2),
+					1, nil, 2,
 				},
 			},
 		},
@@ -402,7 +402,7 @@ func TestLists_NullableListOfNonNullObjects_ContainsValues(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"test": []interface{}{
-					int64(1), int64(2),
+					1, 2,
 				},
 			},
 		},
@@ -462,7 +462,7 @@ func TestLists_NullableListOfNonNullFunc_ContainsValues(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"test": []interface{}{
-					int64(1), int64(2),
+					1, 2,
 				},
 			},
 		},
@@ -580,7 +580,7 @@ func TestLists_NonNullListOfNonNullObjects_ContainsValues(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"test": []interface{}{
-					int64(1), int64(2),
+					1, 2,
 				},
 			},
 		},
@@ -647,7 +647,7 @@ func TestLists_NonNullListOfNonNullFunc_ContainsValues(t *testing.T) {
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
 				"test": []interface{}{
-					int64(1), int64(2),
+					1, 2,
 				},
 			},
 		},

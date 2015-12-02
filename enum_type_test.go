@@ -13,13 +13,13 @@ var enumTypeTestColorType = graphql.NewEnum(graphql.EnumConfig{
 	Name: "Color",
 	Values: graphql.EnumValueConfigMap{
 		"RED": &graphql.EnumValueConfig{
-			Value: int64(0),
+			Value: 0,
 		},
 		"GREEN": &graphql.EnumValueConfig{
-			Value: int64(1),
+			Value: 1,
 		},
 		"BLUE": &graphql.EnumValueConfig{
-			Value: int64(2),
+			Value: 2,
 		},
 	},
 })
@@ -117,7 +117,7 @@ func TestTypeSystem_EnumValues_AcceptsEnumLiteralsAsInput(t *testing.T) {
 	query := "{ colorInt(fromEnum: GREEN) }"
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
-			"colorInt": int64(1),
+			"colorInt": 1,
 		},
 	}
 	result := executeEnumTypeTest(t, query)
@@ -308,7 +308,7 @@ func TestTypeSystem_EnumValues_EnumValueMayHaveAnInternalValueOfZero(t *testing.
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"colorEnum": "RED",
-			"colorInt":  int64(0),
+			"colorInt":  0,
 		},
 	}
 	result := executeEnumTypeTest(t, query)

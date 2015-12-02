@@ -1010,7 +1010,7 @@ func (gt *Enum) Name() string {
 	return gt.PrivateName
 }
 func (gt *Enum) Description() string {
-	return ""
+	return gt.PrivateDescription
 }
 func (gt *Enum) String() string {
 	return gt.PrivateName

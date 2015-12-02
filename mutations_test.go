@@ -12,28 +12,28 @@ import (
 
 // testNumberHolder maps to numberHolderType
 type testNumberHolder struct {
-	TheNumber int64 `json:"theNumber"` // map field to `theNumber` so it can be resolve by the default ResolveFn
+	TheNumber int `json:"theNumber"` // map field to `theNumber` so it can be resolve by the default ResolveFn
 }
 type testRoot struct {
 	NumberHolder *testNumberHolder
 }
 
-func newTestRoot(originalNumber int64) *testRoot {
+func newTestRoot(originalNumber int) *testRoot {
 	return &testRoot{
 		NumberHolder: &testNumberHolder{originalNumber},
 	}
 }
-func (r *testRoot) ImmediatelyChangeTheNumber(newNumber int64) *testNumberHolder {
+func (r *testRoot) ImmediatelyChangeTheNumber(newNumber int) *testNumberHolder {
 	r.NumberHolder.TheNumber = newNumber
 	return r.NumberHolder
 }
-func (r *testRoot) PromiseToChangeTheNumber(newNumber int64) *testNumberHolder {
+func (r *testRoot) PromiseToChangeTheNumber(newNumber int) *testNumberHolder {
 	return r.ImmediatelyChangeTheNumber(newNumber)
 }
-func (r *testRoot) FailToChangeTheNumber(newNumber int64) *testNumberHolder {
+func (r *testRoot) FailToChangeTheNumber(newNumber int) *testNumberHolder {
 	panic("Cannot change the number")
 }
-func (r *testRoot) PromiseAndFailToChangeTheNumber(newNumber int64) *testNumberHolder {
+func (r *testRoot) PromiseAndFailToChangeTheNumber(newNumber int) *testNumberHolder {
 	panic("Cannot change the number")
 }
 
@@ -67,9 +67,9 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
-					var newNumber int64
-					newNumber, _ = p.Args["newNumber"].(int64)
+					newNumber, _ = p.Args["newNumber"].(int)
 					return obj.ImmediatelyChangeTheNumber(newNumber), nil
 				},
 			},
@@ -81,9 +81,9 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
-					var newNumber int64
-					newNumber, _ = p.Args["newNumber"].(int64)
+					newNumber, _ = p.Args["newNumber"].(int)
 					return obj.PromiseToChangeTheNumber(newNumber), nil
 				},
 			},
@@ -95,9 +95,9 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
-					var newNumber int64
-					newNumber, _ = p.Args["newNumber"].(int64)
+					newNumber, _ = p.Args["newNumber"].(int)
 					return obj.FailToChangeTheNumber(newNumber), nil
 				},
 			},
@@ -109,9 +109,9 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
-					var newNumber int64
-					newNumber, _ = p.Args["newNumber"].(int64)
+					newNumber, _ = p.Args["newNumber"].(int)
 					return obj.PromiseAndFailToChangeTheNumber(newNumber), nil
 				},
 			},
@@ -143,19 +143,19 @@ func TestMutations_ExecutionOrdering_EvaluatesMutationsSerially(t *testing.T) {
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"first": map[string]interface{}{
-				"theNumber": int64(1),
+				"theNumber": 1,
 			},
 			"second": map[string]interface{}{
-				"theNumber": int64(2),
+				"theNumber": 2,
 			},
 			"third": map[string]interface{}{
-				"theNumber": int64(3),
+				"theNumber": 3,
 			},
 			"fourth": map[string]interface{}{
-				"theNumber": int64(4),
+				"theNumber": 4,
 			},
 			"fifth": map[string]interface{}{
-				"theNumber": int64(5),
+				"theNumber": 5,
 			},
 		},
 	}
