@@ -75,8 +75,8 @@ var Int *Scalar = NewScalar(ScalarConfig{
 	ParseLiteral: func(valueAST ast.Value) interface{} {
 		switch valueAST := valueAST.(type) {
 		case *ast.IntValue:
-			if intValue, err := strconv.ParseInt(valueAST.Value, 10, 64); err == nil {
-				return int(intValue)
+			if intValue, err := strconv.Atoi(valueAST.Value); err == nil {
+				return intValue
 			}
 		}
 		return nil
