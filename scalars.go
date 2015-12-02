@@ -62,6 +62,8 @@ func coerceInt(value interface{}) interface{} {
 		return coerceInt(val)
 	}
 
+	// If the value cannot be transformed into an int, return nil instead of '0'
+	// to denote 'no integer found'
 	return nil
 }
 
