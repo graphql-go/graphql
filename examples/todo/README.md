@@ -1,6 +1,6 @@
 # Go GraphQL ToDo example
 
-Currently work in progress example that consists of basic core GraphQL queries and mutations. I'd prefer to avoid using Relay here, using plain React is just enough.
+An example that consists of basic core GraphQL queries and mutations.
 
 To run the example navigate to the example directory by using your shell of choice.
 
@@ -26,5 +26,3 @@ curl -g 'http://localhost:8080/graphql?query=mutation+_{createTodo(text:"My+new+
 // To get a list of ToDo items
 curl -g 'http://localhost:8080/graphql?query={todoList{id,text,done}}'
 ```
-
-To be continued soon...
