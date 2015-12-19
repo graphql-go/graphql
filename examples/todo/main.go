@@ -69,7 +69,7 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.NewNonNull(graphql.String),
 				},
 			},
-			Resolve: func(params graphql.ResolveParams) interface{} {
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 
 				// marshall and cast the argument value
 				text, _ := params.Args["text"].(string)
@@ -92,7 +92,7 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 				// - we are returning a `Todo` struct instance here
 				// - we previously specified the return Type to be `todoType`
 				// - `Todo` struct maps to `todoType`, as defined in `todoType` ObjectConfig`
-				return newTodo
+				return newTodo, nil
 			},
 		},
 	},
@@ -116,27 +116,27 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.String,
 				},
 			},
-			Resolve: func(params graphql.ResolveParams) interface{} {
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 
 				idQuery, isOK := params.Args["id"].(string)
 				if isOK {
 					// Search for el with id
 					for _, todo := range TodoList {
 						if todo.ID == idQuery {
-							return todo
+							return todo, nil
 						}
 					}
 				}
 
-				return Todo{}
+				return Todo{}, nil
 			},
 		},
 
 		"lastTodo": &graphql.Field{
 			Type:        todoType,
 			Description: "Last todo added",
-			Resolve: func(params graphql.ResolveParams) interface{} {
-				return TodoList[len(TodoList)-1]
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				return TodoList[len(TodoList)-1], nil
 			},
 		},
 
@@ -146,8 +146,8 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 		"todoList": &graphql.Field{
 			Type:        graphql.NewList(todoType),
 			Description: "List of todos",
-			Resolve: func(p graphql.ResolveParams) interface{} {
-				return TodoList
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				return TodoList, nil
 			},
 		},
 	},
