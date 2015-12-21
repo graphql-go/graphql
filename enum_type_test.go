@@ -9,10 +9,6 @@ import (
 	"github.com/graphql-go/graphql/testutil"
 )
 
-func equalErrorMessage(expected, result *graphql.Result, i int) bool {
-	return expected.Errors[i].Message == result.Errors[i].Message
-}
-
 var enumTypeTestColorType = graphql.NewEnum(graphql.EnumConfig{
 	Name: "Color",
 	Values: graphql.EnumValueConfigMap{
@@ -165,7 +161,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptStringLiterals(t *testing.T) {
 		},
 	}
 	result := executeEnumTypeTest(t, query)
-	if !equalErrorMessage(expected, result, 0) {
+	if !testutil.EqualErrorMessage(expected, result, 0) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -192,7 +188,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueInPlaceOfEnumLiteral(t 
 		},
 	}
 	result := executeEnumTypeTest(t, query)
-	if !equalErrorMessage(expected, result, 0) {
+	if !testutil.EqualErrorMessage(expected, result, 0) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -208,7 +204,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptEnumLiteralInPlaceOfInt(t *testing.T
 		},
 	}
 	result := executeEnumTypeTest(t, query)
-	if !equalErrorMessage(expected, result, 0) {
+	if !testutil.EqualErrorMessage(expected, result, 0) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -258,7 +254,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueAsEnumVariable(t *testi
 		},
 	}
 	result := executeEnumTypeTestWithParams(t, query, params)
-	if !equalErrorMessage(expected, result, 0) {
+	if !testutil.EqualErrorMessage(expected, result, 0) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -276,7 +272,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptStringVariablesAsEnumInput(t *testin
 		},
 	}
 	result := executeEnumTypeTestWithParams(t, query, params)
-	if !equalErrorMessage(expected, result, 0) {
+	if !testutil.EqualErrorMessage(expected, result, 0) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -294,7 +290,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueVariableAsEnumInput(t *
 		},
 	}
 	result := executeEnumTypeTestWithParams(t, query, params)
-	if !equalErrorMessage(expected, result, 0) {
+	if !testutil.EqualErrorMessage(expected, result, 0) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
