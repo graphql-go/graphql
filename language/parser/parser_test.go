@@ -13,6 +13,18 @@ import (
 	"github.com/graphql-go/graphql/language/source"
 )
 
+func TestBadToken(t *testing.T) {
+	_, err := Parse(ParseParams{
+		Source: &source.Source{
+			Body: "query _ {\n  me {\n    id`\n  }\n}",
+			Name: "GraphQL",
+		},
+	})
+	if err == nil {
+		t.Fatal("expected a parse error")
+	}
+}
+
 func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
 	opts := ParseOptions{
 		NoSource: true,
