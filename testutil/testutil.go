@@ -459,3 +459,7 @@ func ContainSubset(super map[string]interface{}, sub map[string]interface{}) boo
 	}
 	return true
 }
+
+func EqualErrorMessage(expected, result *graphql.Result, i int) bool {
+	return expected.Errors[i].Message == result.Errors[i].Message
+}

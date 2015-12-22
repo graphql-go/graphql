@@ -1224,7 +1224,6 @@ func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testin
 		Schema:        schema,
 		RequestString: query,
 	})
-	t.Skipf("Pending `validator` implementation")
 	if !reflect.DeepEqual(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}

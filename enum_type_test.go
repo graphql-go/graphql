@@ -161,8 +161,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptStringLiterals(t *testing.T) {
 		},
 	}
 	result := executeEnumTypeTest(t, query)
-	t.Skipf("Pending `validator` implementation")
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualErrorMessage(expected, result, 0) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -189,8 +188,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueInPlaceOfEnumLiteral(t 
 		},
 	}
 	result := executeEnumTypeTest(t, query)
-	t.Skipf("Pending `validator` implementation")
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualErrorMessage(expected, result, 0) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -206,8 +204,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptEnumLiteralInPlaceOfInt(t *testing.T
 		},
 	}
 	result := executeEnumTypeTest(t, query)
-	t.Skipf("Pending `validator` implementation")
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualErrorMessage(expected, result, 0) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -257,8 +254,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueAsEnumVariable(t *testi
 		},
 	}
 	result := executeEnumTypeTestWithParams(t, query, params)
-	t.Skipf("Pending `validator` implementation")
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualErrorMessage(expected, result, 0) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -276,8 +272,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptStringVariablesAsEnumInput(t *testin
 		},
 	}
 	result := executeEnumTypeTestWithParams(t, query, params)
-	t.Skipf("Pending `validator` implementation")
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualErrorMessage(expected, result, 0) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -295,8 +290,7 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueVariableAsEnumInput(t *
 		},
 	}
 	result := executeEnumTypeTestWithParams(t, query, params)
-	t.Skipf("Pending `validator` implementation")
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualErrorMessage(expected, result, 0) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
