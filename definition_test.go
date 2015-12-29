@@ -537,5 +537,25 @@ func TestTypeSystem_DefinitionExample_DoesNotMutatePassedFieldDefinitions(t *tes
 	if !reflect.DeepEqual(inputFields, expectedInputFields) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedInputFields, fields))
 	}
+}
 
+func TestTypeSystem_DefinitionExample_IncludesFieldsThunk(t *testing.T) {
+	var someObject *graphql.Object
+	someObject = graphql.NewObject(graphql.ObjectConfig{
+		Name: "SomeObject",
+		Fields: (graphql.FieldsThunk)(func() graphql.Fields {
+			return graphql.Fields{
+				"f": &graphql.Field{
+					Type: graphql.Int,
+				},
+				"s": &graphql.Field{
+					Type: someObject,
+				},
+			}
+		}),
+	})
+	fieldMap := someObject.Fields()
+	if !reflect.DeepEqual(fieldMap["s"].Type, someObject) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(fieldMap["s"].Type, someObject))
+	}
 }
