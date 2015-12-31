@@ -540,7 +540,7 @@ type ResolveParams struct {
 }
 
 // TODO: relook at FieldResolveFn params
-type FieldResolveFn func(p ResolveParams) interface{}
+type FieldResolveFn func(p ResolveParams) (interface{}, error)
 
 type ResolveInfo struct {
 	FieldName      string
@@ -1010,7 +1010,7 @@ func (gt *Enum) Name() string {
 	return gt.PrivateName
 }
 func (gt *Enum) Description() string {
-	return ""
+	return gt.PrivateDescription
 }
 func (gt *Enum) String() string {
 	return gt.PrivateName

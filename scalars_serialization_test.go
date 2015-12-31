@@ -1,6 +1,7 @@
 package graphql_test
 
 import (
+	"math"
 	"reflect"
 	"testing"
 
@@ -34,7 +35,9 @@ func TestTypeSystem_Scalar_SerializesOutputInt(t *testing.T) {
 		{float32(0.1), 0},
 		{float32(1.1), 1},
 		{float32(-1.1), -1},
-		{float32(1e5), 100000}, // Bigger than 2^32, but still representable as an Int
+		// Bigger than 2^32, but still representable as an Int
+		{float32(1e5), 100000},
+		{float32(math.MaxFloat32), nil},
 		{9876504321, 9876504321},
 		{-9876504321, -9876504321},
 		{float64(1e100), nil},
@@ -43,6 +46,24 @@ func TestTypeSystem_Scalar_SerializesOutputInt(t *testing.T) {
 		{"one", nil},
 		{false, 0},
 		{true, 1},
+		{int8(1), 1},
+		{int16(1), 1},
+		{int32(1), 1},
+		{int64(1), 1},
+		{uint(1), 1},
+		{uint8(1), 1},
+		{uint16(1), 1},
+		{uint32(1), 1},
+		{uint32(math.MaxUint32), nil},
+		{uint64(1), 1},
+		{uint64(math.MaxInt32), math.MaxInt32},
+		{int64(math.MaxInt32) + int64(1), nil},
+		{int64(math.MinInt32) - int64(1), nil},
+		{uint64(math.MaxInt64) + uint64(1), nil},
+		{byte(127), 127},
+		{'世', int('世')},
+		// testing types that don't match a value in the array.
+		{[]int{}, nil},
 	}
 
 	for _, test := range tests {

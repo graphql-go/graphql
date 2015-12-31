@@ -66,11 +66,11 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
-					return obj.ImmediatelyChangeTheNumber(newNumber)
+					return obj.ImmediatelyChangeTheNumber(newNumber), nil
 				},
 			},
 			"promiseToChangeTheNumber": &graphql.Field{
@@ -80,11 +80,11 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
-					return obj.PromiseToChangeTheNumber(newNumber)
+					return obj.PromiseToChangeTheNumber(newNumber), nil
 				},
 			},
 			"failToChangeTheNumber": &graphql.Field{
@@ -94,11 +94,11 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
-					return obj.FailToChangeTheNumber(newNumber)
+					return obj.FailToChangeTheNumber(newNumber), nil
 				},
 			},
 			"promiseAndFailToChangeTheNumber": &graphql.Field{
@@ -108,11 +108,11 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					newNumber := 0
 					obj, _ := p.Source.(*testRoot)
 					newNumber, _ = p.Args["newNumber"].(int)
-					return obj.PromiseAndFailToChangeTheNumber(newNumber)
+					return obj.PromiseAndFailToChangeTheNumber(newNumber), nil
 				},
 			},
 		},

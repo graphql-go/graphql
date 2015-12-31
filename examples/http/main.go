@@ -56,12 +56,12 @@ var queryType = graphql.NewObject(
 						Type: graphql.String,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					idQuery, isOK := p.Args["id"].(string)
 					if isOK {
-						return data[idQuery]
+						return data[idQuery], nil
 					}
-					return nil
+					return nil, nil
 				},
 			},
 		},

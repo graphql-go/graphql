@@ -66,6 +66,7 @@ var blogArticle = graphql.NewObject(graphql.ObjectConfig{
 		},
 	},
 })
+
 var blogQuery = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Query",
 	Fields: graphql.Fields{
@@ -88,6 +89,11 @@ var blogMutation = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"writeArticle": &graphql.Field{
 			Type: blogArticle,
+			Args: graphql.FieldConfigArgument{
+				"title": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+			},
 		},
 	},
 })

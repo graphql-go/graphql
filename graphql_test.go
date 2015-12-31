@@ -94,8 +94,8 @@ func testGraphql(test T, p graphql.Params, t *testing.T) {
 func TestBasicGraphQLExample(t *testing.T) {
 	// taken from `graphql-js` README
 
-	helloFieldResolved := func(p graphql.ResolveParams) interface{} {
-		return "world"
+	helloFieldResolved := func(p graphql.ResolveParams) (interface{}, error) {
+		return "world", nil
 	}
 
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
