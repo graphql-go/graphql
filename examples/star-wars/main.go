@@ -16,9 +16,15 @@ func main() {
 			Schema:        testutil.StarWarsSchema,
 			RequestString: query,
 		})
-		json.NewEncoder(w).Encode(result)
+		err := json.NewEncoder(w).Encode(result)
+		if err != nil {
+			fmt.Printf("Error encoding result: %v", err)
+		}
 	})
 	fmt.Println("Now server is running on port 8080")
 	fmt.Println("Test with Get      : curl -g 'http://localhost:8080/graphql?query={hero{name}}'")
-	http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		fmt.Printf("Error opening HTTP server: %v", err)
+	}
 }
