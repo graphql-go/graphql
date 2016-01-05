@@ -135,7 +135,7 @@ func TestBasicGraphQLExample(t *testing.T) {
 
 func TestThreadsContextFromParamsThrough(t *testing.T) {
 	extractFieldFromContextFn := func(p graphql.ResolveParams) (interface{}, error) {
-		return p.Info.Context.Value(p.Args["key"]), nil
+		return p.Context.Value(p.Args["key"]), nil
 	}
 
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{

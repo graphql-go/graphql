@@ -418,7 +418,7 @@ func TestThreadsContextCorrectly(t *testing.T) {
 				"a": &graphql.Field{
 					Type: graphql.String,
 					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-						return p.Info.Context.Value("foo"), nil
+						return p.Context.Value("foo"), nil
 					},
 				},
 			},

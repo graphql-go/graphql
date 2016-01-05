@@ -501,7 +501,6 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 		RootValue:      eCtx.Root,
 		Operation:      eCtx.Operation,
 		VariableValues: eCtx.VariableValues,
-		Context:        eCtx.Context,
 	}
 
 	// TODO: If an error occurs while calling the field `resolve` function, ensure that
@@ -511,9 +510,10 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	var resolveFnError error
 
 	result, resolveFnError = resolveFn(ResolveParams{
-		Source: source,
-		Args:   args,
-		Info:   info,
+		Source:  source,
+		Args:    args,
+		Info:    info,
+		Context: eCtx.Context,
 	})
 
 	if resolveFnError != nil {

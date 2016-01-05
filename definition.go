@@ -538,6 +538,9 @@ type ResolveParams struct {
 	Args   map[string]interface{}
 	Info   ResolveInfo
 	Schema Schema
+	//This can be used to provide per-request state
+	//from the application.
+	Context context.Context
 }
 
 // TODO: relook at FieldResolveFn params
@@ -553,11 +556,6 @@ type ResolveInfo struct {
 	RootValue      interface{}
 	Operation      ast.Definition
 	VariableValues map[string]interface{}
-
-	// Context is passed through to resolve functions from either Params.Context
-	// or ExecuteParams.Context.  This can be used to provide per-request state
-	// from the application.
-	Context context.Context
 }
 
 type Fields map[string]*Field
