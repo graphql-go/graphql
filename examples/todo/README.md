@@ -29,3 +29,7 @@ curl -g 'http://localhost:8080/graphql?query={todoList{id,text,done}}'
 // To update a ToDo
 curl -g 'http://localhost:8080/graphql?query=mutation+_{updateTodo(id:"b",text:"My+new+todo+updated",done:true){id,text,done}}'
 ```
+
+## Web App
+
+Access the web app at `http://localhost:8080/`. It is work in progress and currently is simply loading todos by using jQuery ajax call.
