@@ -1,18 +1,13 @@
 var loadTodos = function() {
   $.ajax({
-    url: "/graphql?query={todoList{id,text,done}}",
-    context: document.body
+    url: "/graphql?query={todoList{id,text,done}}"
   }).done(function(data) {
     console.log(data);
     var dataParsed = JSON.parse(data);
     var todos = dataParsed.data.todoList;
-    
-    if (!$('.todo-list').length) {
-      $(this).append('<div class="todo-list"></div>');
-    }
 
     if (!todos.length) {
-      $(this).append('<p>There are no tasks for you today</p>');
+      $('.todo-list-container').append('<p>There are no tasks for you today</p>');
     }
 
     $.each(todos, function(i, v) {
@@ -20,7 +15,7 @@ var loadTodos = function() {
       var labelHtml = '<label for="' + v.id + '">' + doneHtml + v.text + '</label>';
       var itemHtml = '<div class="todo-item">' + labelHtml + '</div>';
       
-      $('.todo-list').append(itemHtml);
+      $('.todo-list-container').append(itemHtml);
     });
   });
 };
