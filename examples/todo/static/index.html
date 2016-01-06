@@ -2,12 +2,29 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Go GraphQL ToDo Example</title>
+  <title>ToDo</title>
   <link rel="stylesheet" type="text/css" media="all" href="/assets/css/style.css">
 </head>
 <body>
 
-<h1>Your Tasks</h1>
+<div class="wrapper">
+
+  <h1>ToDo</h1>
+
+  <div class="todo-list">
+    <h2>Tasks</h2>
+    <div class="todo-list-container"></div>
+  </div>
+  <div class="todo-add">
+    <h2>Add task</h2>
+    <div>
+      <label for="task">Task</label>
+      <input type="text" name="task" id="task" placeholder="Enter your task here">
+      <button>Add</button>
+    </div>
+  </div>
+
+</div>
 
 <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
 <script src="/assets/js/app.js"></script>
