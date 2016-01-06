@@ -388,7 +388,7 @@ func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment ast.Node, ttype
 		if conditionalType == ttype {
 			return true
 		}
-                if conditionalType.GetName() == ttype.GetName() {
+                if conditionalType.Name() == ttype.Name() {
 			return true
 		}
 		
