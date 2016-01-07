@@ -144,7 +144,8 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 		   curl -g 'http://localhost:8080/graphql?query={todo(id:"b"){id,text,done}}'
 		*/
 		"todo": &graphql.Field{
-			Type: todoType,
+			Type:        todoType,
+			Description: "Get single todo",
 			Args: graphql.FieldConfigArgument{
 				"id": &graphql.ArgumentConfig{
 					Type: graphql.String,
