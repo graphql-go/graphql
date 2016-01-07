@@ -3,3 +3,7 @@ body {
     color: #333333;
     font-family: sans-serif;
 }
+
+.todo-done {
+    opacity: 0.5;
+}
