@@ -23,7 +23,7 @@ var handleTodoList = function(object) {
   $.each(todos, function(i, v) {
     var doneHtml = '<input id="' + v.id + '" type="checkbox"' + (v.done ? ' checked="checked"' : '') + '>';      
     var labelHtml = '<label for="' + v.id + '">' + doneHtml + ' ' + v.text + '</label>';
-    var itemHtml = '<div class="todo-item">' + labelHtml + '</div>';
+    var itemHtml = '<div class="todo-item' + (v.done ? ' todo-done' : '') + '"' + '>' + labelHtml + '</div>';
     
     $('.todo-list-container').append(itemHtml);
     $('#' + v.id).click(function(){
