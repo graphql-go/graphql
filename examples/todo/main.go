@@ -99,7 +99,8 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 			curl -g 'http://localhost:8080/graphql?query=mutation+_{updateTodo(id:"a",done:true){id,text,done}}'
 		*/
 		"updateTodo": &graphql.Field{
-			Type: todoType, // the return type for this field
+			Type:        todoType, // the return type for this field
+			Description: "Update existing todo, mark it done or not done",
 			Args: graphql.FieldConfigArgument{
 				"done": &graphql.ArgumentConfig{
 					Type: graphql.Boolean,
