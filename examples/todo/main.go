@@ -95,6 +95,41 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 				return newTodo, nil
 			},
 		},
+
+		/*
+			curl -g 'http://localhost:8080/graphql?query=mutation+_{updateTodo(id:"a",done:true){id,text,done}}'
+		*/
+		"updateTodo": &graphql.Field{
+			Type: todoType, // the return type for this field
+			Args: graphql.FieldConfigArgument{
+				"done": &graphql.ArgumentConfig{
+					Type: graphql.Boolean,
+				},
+				"id": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+			},
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+
+				// marshall and cast the argument value
+				done, _ := params.Args["done"].(bool)
+				id, _ := params.Args["id"].(string)
+				affectedTodo := Todo{}
+
+				// Search list for todo with id and change the done variable
+				for i := 0; i < len(TodoList); i++ {
+					if TodoList[i].ID == id {
+						TodoList[i].Done = done
+						// Assign updated todo so we can return it
+						affectedTodo = TodoList[i]
+						break
+					}
+				}
+
+				// Return affected todo
+				return affectedTodo, nil
+			},
+		},
 	},
 })
 
