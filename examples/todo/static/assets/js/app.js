@@ -1,3 +1,18 @@
+var updateTodo = function(id, isDone){
+  $.ajax({
+    url: '/graphql?query=mutation+_{updateTodo(id:"' + id + '",done:' + isDone + '){id,text,done}}'
+  }).done(function(data) {
+    console.log(data);
+    var dataParsed = JSON.parse(data);
+    var updatedTodo = dataParsed.data.updateTodo;
+    if (updatedTodo.done) {
+      $('#' + updatedTodo.id).parent().parent().addClass('todo-done');
+    } else {
+      $('#' + updatedTodo.id).parent().parent().removeClass('todo-done');
+    } 
+  });
+};
+
 var handleTodoList = function(object) {
   var todos = object;
 
@@ -12,7 +27,9 @@ var handleTodoList = function(object) {
     
     $('.todo-list-container').append(itemHtml);
     $('#' + v.id).click(function(){
-      console.log($(this).prop('checked'));
+      var id = $(this).prop('id');
+      var isDone = $(this).prop('checked');
+      updateTodo(id, isDone);
     });
   });
 };
