@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	"github.com/graphql-go/graphql/language/ast"
+	"golang.org/x/net/context"
 )
 
 // These are all of the possible kinds of
@@ -537,6 +538,9 @@ type ResolveParams struct {
 	Args   map[string]interface{}
 	Info   ResolveInfo
 	Schema Schema
+	//This can be used to provide per-request state
+	//from the application.
+	Context context.Context
 }
 
 // TODO: relook at FieldResolveFn params

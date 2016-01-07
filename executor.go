@@ -8,6 +8,7 @@ import (
 
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
+	"golang.org/x/net/context"
 )
 
 type ExecuteParams struct {
@@ -16,6 +17,10 @@ type ExecuteParams struct {
 	AST           *ast.Document
 	OperationName string
 	Args          map[string]interface{}
+
+	// Context may be provided to pass application-specific per-request
+	// information to resolve functions.
+	Context context.Context
 }
 
 func Execute(p ExecuteParams) (result *Result) {
@@ -29,6 +34,7 @@ func Execute(p ExecuteParams) (result *Result) {
 		Args:          p.Args,
 		Errors:        nil,
 		Result:        result,
+		Context:       p.Context,
 	})
 
 	if err != nil {
@@ -62,6 +68,7 @@ type BuildExecutionCtxParams struct {
 	Args          map[string]interface{}
 	Errors        []gqlerrors.FormattedError
 	Result        *Result
+	Context       context.Context
 }
 type ExecutionContext struct {
 	Schema         Schema
@@ -70,6 +77,7 @@ type ExecutionContext struct {
 	Operation      ast.Definition
 	VariableValues map[string]interface{}
 	Errors         []gqlerrors.FormattedError
+	Context        context.Context
 }
 
 func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error) {
@@ -124,6 +132,7 @@ func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error)
 	eCtx.Operation = operation
 	eCtx.VariableValues = variableValues
 	eCtx.Errors = p.Errors
+	eCtx.Context = p.Context
 	return eCtx, nil
 }
 
@@ -501,9 +510,10 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	var resolveFnError error
 
 	result, resolveFnError = resolveFn(ResolveParams{
-		Source: source,
-		Args:   args,
-		Info:   info,
+		Source:  source,
+		Args:    args,
+		Info:    info,
+		Context: eCtx.Context,
 	})
 
 	if resolveFnError != nil {

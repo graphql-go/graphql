@@ -11,6 +11,7 @@ import (
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/location"
 	"github.com/graphql-go/graphql/testutil"
+	"golang.org/x/net/context"
 )
 
 func TestExecutesArbitraryCode(t *testing.T) {
@@ -295,17 +296,17 @@ func TestMergesParallelFragments(t *testing.T) {
 	}
 }
 
-func TestThreadsContextCorrectly(t *testing.T) {
+func TestThreadsSourceCorrectly(t *testing.T) {
 
 	query := `
       query Example { a }
     `
 
 	data := map[string]interface{}{
-		"contextThing": "thing",
+		"key": "value",
 	}
 
-	var resolvedContext map[string]interface{}
+	var resolvedSource map[string]interface{}
 
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
@@ -314,8 +315,8 @@ func TestThreadsContextCorrectly(t *testing.T) {
 				"a": &graphql.Field{
 					Type: graphql.String,
 					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-						resolvedContext = p.Source.(map[string]interface{})
-						return resolvedContext, nil
+						resolvedSource = p.Source.(map[string]interface{})
+						return resolvedSource, nil
 					},
 				},
 			},
@@ -339,9 +340,9 @@ func TestThreadsContextCorrectly(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 
-	expected := "thing"
-	if resolvedContext["contextThing"] != expected {
-		t.Fatalf("Expected context.contextThing to equal %v, got %v", expected, resolvedContext["contextThing"])
+	expected := "value"
+	if resolvedSource["key"] != expected {
+		t.Fatalf("Expected context.key to equal %v, got %v", expected, resolvedSource["key"])
 	}
 }
 
@@ -401,6 +402,53 @@ func TestCorrectlyThreadsArguments(t *testing.T) {
 	}
 	if resolvedArgs["stringArg"] != expectedString {
 		t.Fatalf("Expected args.stringArg to equal `%v`, got `%v`", expectedNum, resolvedArgs["stringArg"])
+	}
+}
+
+func TestThreadsContextCorrectly(t *testing.T) {
+
+	query := `
+      query Example { a }
+    `
+
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Type",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{
+					Type: graphql.String,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return p.Context.Value("foo"), nil
+					},
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	// parse query
+	ast := testutil.TestParse(t, query)
+
+	// execute
+	ep := graphql.ExecuteParams{
+		Schema:  schema,
+		AST:     ast,
+		Context: context.WithValue(context.Background(), "foo", "bar"),
+	}
+	result := testutil.TestExecute(t, ep)
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"a": "bar",
+		},
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
