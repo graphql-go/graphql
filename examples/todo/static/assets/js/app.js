@@ -41,7 +41,8 @@ var addTodo = function(todoText) {
 };
 
 $(document).ready(function() {
-  $('.todo-add-form button').click(function(){
+  $('.todo-add-form').submit(function(e){
+    e.preventDefault();
     addTodo($('.todo-add-form #task').val());
     $('.todo-add-form #task').val('');
   });
