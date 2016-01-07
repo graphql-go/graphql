@@ -11,6 +11,9 @@ var handleTodoList = function(object) {
     var itemHtml = '<div class="todo-item">' + labelHtml + '</div>';
     
     $('.todo-list-container').append(itemHtml);
+    $('#' + v.id).click(function(){
+      console.log($(this).prop('checked'));
+    });
   });
 };
 
