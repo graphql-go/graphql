@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -61,7 +60,7 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 	Name: "RootMutation",
 	Fields: graphql.Fields{
 		/*
-		   curl -g 'http://localhost:8080/graphql?query=mutation+_{createTodo(text:"My+new+todo"){id,text,done}}'
+			curl -g 'http://localhost:8080/graphql?query=mutation+_{createTodo(text:"My+new+todo"){id,text,done}}'
 		*/
 		"createTodo": &graphql.Field{
 			Type: todoType, // the return type for this field
@@ -97,35 +96,35 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 			},
 		},
 		/*
-		   curl -g 'http://localhost:8080/graphql?query=mutation+_{updateTodo(text:"My+new+todo+updated"){id,text,done}}'
+			curl -g 'http://localhost:8080/graphql?query=mutation+_{updateTodo(id:"a",done:true){id,text,done}}'
 		*/
 		"updateTodo": &graphql.Field{
-			Type: todoType,
+			Type: todoType, // the return type for this field
 			Args: graphql.FieldConfigArgument{
-				"id": &graphql.ArgumentConfig{
-					Type: graphql.NewNonNull(graphql.String),
-				},
-				"text": &graphql.ArgumentConfig{
-					Type: graphql.String,
-				},
 				"done": &graphql.ArgumentConfig{
 					Type: graphql.Boolean,
 				},
+				"id": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
 			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if idQuery, ok := p.Args["id"].(string); ok {
-					for _, todo := range TodoList {
-						if todo.ID == idQuery {
-							text, _ := p.Args["text"].(string)
-							done, _ := p.Args["done"].(bool)
-							todo.Text = text
-							todo.Done = done
-							return todo, nil
-						}
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				// marshall and cast the argument value
+				done, _ := params.Args["done"].(bool)
+				id, _ := params.Args["id"].(string)
+				affectedTodo := Todo{}
+
+				// Search list for todo with id and change the done variable
+				for i := 0; i < len(TodoList); i++ {
+					if TodoList[i].ID == id {
+						TodoList[i].Done = done
+						// Assign updated todo so we can return it
+						affectedTodo = TodoList[i]
+						break
 					}
-					return nil, errors.New("could not find todo with that ID")
 				}
-				return nil, errors.New("could not get id from params")
+				// Return affected todo
+				return affectedTodo, nil
 			},
 		},
 	},
