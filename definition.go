@@ -412,10 +412,6 @@ func (gt *Object) Fields() FieldDefinitionMap {
 		configureFields = gt.typeConfig.Fields.(Fields)
 	case FieldsThunk:
 		configureFields = gt.typeConfig.Fields.(FieldsThunk)()
-	case nil:
-	default:
-		gt.err = errors.New(fmt.Sprintf("Unknown Object.Fields type: %v", reflect.TypeOf(gt.typeConfig.Fields)))
-		return nil
 	}
 	fields, err := defineFieldMap(gt, configureFields)
 	gt.err = err
