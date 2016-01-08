@@ -10,22 +10,36 @@
 
 <div class="wrapper">
 
-  <h1>ToDo</h1>
+  <div class="container">
 
-  <div class="todo-list">
-    <h2>Tasks</h2>
-    <div class="todo-list-container"></div>
-  </div>
-  <div class="todo-add">
-    <h2>Add task</h2>
-    <form class="todo-add-form">
-      <label for="task">Task</label>
-      <input type="text" name="task" id="task" placeholder="Enter your task here">
-      <button>Add</button>
-    </form>
-  </div>
+    <h1>ToDo</h1>
 
-</div>
+    <div class="todo-list">
+      <h2>Tasks</h2>
+      <div class="todo-list-container"></div>
+    </div><!-- /.todo-list -->
+
+    <div class="todo-add">
+      
+      <h2>Add task</h2>
+
+      <form class="todo-add-form">
+        <div class="form-group">
+          <input 
+            type="text" 
+            name="task" 
+            id="task" 
+            placeholder="Your task"
+            class="form-control">
+        </div>
+        <button class="btn btn-primary">Add</button>
+      </form>
+
+    </div><!-- /.todo-add -->
+
+  </div><!-- /.container -->
+
+</div><!-- /.wrapper -->
 
 <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
 <script src="/assets/js/app.js"></script>
