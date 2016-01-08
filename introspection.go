@@ -266,6 +266,14 @@ mutation operations.`,
 					return nil, nil
 				},
 			},
+			"subscriptionType": &Field{
+				Description: `If this server support subscription, the type that ' +
+                   'subscription operations will be rooted at.`,
+				Type: __Type,
+				Resolve: func(p ResolveParams) (interface{}, error) {
+					return nil, nil
+				},
+			},
 			"directives": &Field{
 				Description: `A list of all directives supported by this server.`,
 				Type: NewNonNull(NewList(
