@@ -20,7 +20,7 @@ var handleTodoList = function(object) {
     $('.todo-list-container').append('<p>There are no tasks for you today</p>');
     return
   } else {
-    $('.todo-list-container').empty();
+    $('.todo-list-container p').remove();
   }
 
   $.each(todos, function(i, v) {
