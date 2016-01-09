@@ -16,7 +16,11 @@
 
     <div class="todo-list">
       <h2>Tasks</h2>
-      <div class="todo-list-container"></div>
+      <div class="todo-list-container">
+        
+        <div class=""></div>
+
+      </div>
     </div><!-- /.todo-list -->
 
     <div class="todo-add">
@@ -40,6 +44,16 @@
   </div><!-- /.container -->
 
 </div><!-- /.wrapper -->
+
+<template id="todoItemTemplate">
+  <div class="todo-item{{todo-done}}">
+    <div class="checkbox">
+      <label>
+        <input id="{{todo-id}}" type="checkbox"{{todo-checked}}> {{todo-text}}
+      </label>
+    </div>
+  </div>
+</template>
 
 <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
 <script src="/assets/js/app.js"></script>
