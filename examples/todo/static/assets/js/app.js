@@ -6,9 +6,9 @@ var updateTodo = function(id, isDone){
     var dataParsed = JSON.parse(data);
     var updatedTodo = dataParsed.data.updateTodo;
     if (updatedTodo.done) {
-      $('#' + updatedTodo.id).parent().parent().addClass('todo-done');
+      $('#' + updatedTodo.id).parent().parent().parent().addClass('todo-done');
     } else {
-      $('#' + updatedTodo.id).parent().parent().removeClass('todo-done');
+      $('#' + updatedTodo.id).parent().parent().parent().removeClass('todo-done');
     } 
   });
 };
@@ -18,14 +18,19 @@ var handleTodoList = function(object) {
 
   if (!todos.length) {
     $('.todo-list-container').append('<p>There are no tasks for you today</p>');
+    return
+  } else {
+    $('.todo-list-container').empty();
   }
 
   $.each(todos, function(i, v) {
-    var doneHtml = '<input id="' + v.id + '" type="checkbox"' + (v.done ? ' checked="checked"' : '') + '>';      
-    var labelHtml = '<label for="' + v.id + '">' + doneHtml + ' ' + v.text + '</label>';
-    var itemHtml = '<div class="todo-item' + (v.done ? ' todo-done' : '') + '"' + '>' + labelHtml + '</div>';
-    
-    $('.todo-list-container').append(itemHtml);
+    var todoTemplate = $('#todoItemTemplate').html();
+    var todo = todoTemplate.replace('{{todo-id}}', v.id);
+    todo = todo.replace('{{todo-text}}', v.text);
+    todo = todo.replace('{{todo-checked}}', (v.done ? ' checked="checked"' : ''));
+    todo = todo.replace('{{todo-done}}', (v.done ? ' todo-done' : ''));
+
+    $('.todo-list-container').append(todo);
     $('#' + v.id).click(function(){
       var id = $(this).prop('id');
       var isDone = $(this).prop('checked');
