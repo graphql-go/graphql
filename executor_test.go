@@ -994,7 +994,10 @@ func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
 						},
 					},
 					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-						args, _ := json.Marshal(p.Args)
+						args, err := json.Marshal(p.Args)
+						if err != nil {
+							return nil, err
+						}
 						return string(args), nil
 					},
 				},

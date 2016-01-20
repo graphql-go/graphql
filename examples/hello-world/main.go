@@ -36,6 +36,9 @@ func main() {
 	if len(r.Errors) > 0 {
 		log.Fatalf("failed to execute graphql operation, errors: %+v", r.Errors)
 	}
-	rJSON, _ := json.Marshal(r)
+	rJSON, err := json.Marshal(r)
+	if err != nil {
+		log.Fatalf("unexpected error: %v", err)
+	}
 	fmt.Printf("%s \n", rJSON) // {“data”:{“hello”:”world”}}
 }
