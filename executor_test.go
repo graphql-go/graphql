@@ -1340,3 +1340,56 @@ func TestMutation_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %+v", result.Errors)
 	}
 }
+
+func TestMutation_NonNullSubField(t *testing.T) {
+	queryType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Query",
+		Fields: graphql.Fields{
+			"a": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+	accountType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Account",
+		Fields: graphql.Fields{
+			"id": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		},
+	})
+	authenticatePayloadType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "AuthenticatePayload",
+		Fields: graphql.Fields{
+			"account": &graphql.Field{Type: accountType},
+		},
+	})
+	mutationType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Mutation",
+		Fields: graphql.Fields{
+			"authenticate": &graphql.Field{
+				Type: graphql.NewNonNull(authenticatePayloadType),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return struct {
+						Account *struct{} `json:"account"`
+					}{
+						Account: nil,
+					}, nil
+				},
+			},
+		},
+	})
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query:    queryType,
+		Mutation: mutationType,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error, got: %v", err)
+	}
+	query := "mutation _ { authenticate { account { id } } }"
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+	})
+	if len(result.Errors) != 0 {
+		t.Fatalf("wrong result, unexpected errors: %+v", result.Errors)
+	}
+}

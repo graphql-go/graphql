@@ -274,19 +274,21 @@ func isValidInputValue(value interface{}, ttype Input) bool {
 
 // Returns true if a value is null, undefined, or NaN.
 func isNullish(value interface{}) bool {
-	if value, ok := value.(string); ok {
-		return value == ""
+	switch v := value.(type) {
+	case nil:
+		return true
+	case string:
+		return v == ""
+	case float32:
+		return math.IsNaN(float64(v))
+	case float64:
+		return math.IsNaN(v)
 	}
-	if value, ok := value.(int); ok {
-		return math.IsNaN(float64(value))
+	// The interface{} can hide an underlying nil ptr
+	if v := reflect.ValueOf(value); v.Kind() == reflect.Ptr {
+		return v.IsNil()
 	}
-	if value, ok := value.(float32); ok {
-		return math.IsNaN(float64(value))
-	}
-	if value, ok := value.(float64); ok {
-		return math.IsNaN(value)
-	}
-	return value == nil
+	return false
 }
 
 /**
