@@ -274,9 +274,6 @@ func isValidInputValue(value interface{}, ttype Input) bool {
 
 // Returns true if a value is null, undefined, or NaN.
 func isNullish(value interface{}) bool {
-	if value, ok := value.(string); ok {
-		return value == ""
-	}
 	if value, ok := value.(int); ok {
 		return math.IsNaN(float64(value))
 	}
