@@ -547,7 +547,7 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	returnType = fieldDef.Type
 	resolveFn := fieldDef.Resolve
 	if resolveFn == nil {
-		resolveFn = defaultResolveFn
+		resolveFn = DefaultResolveFn
 	}
 
 	// Build a map of arguments from the field.arguments AST, using the
@@ -824,7 +824,7 @@ func defaultResolveTypeFn(p ResolveTypeParams, abstractType Abstract) *Object {
 // which takes the property of the source object of the same name as the field
 // and returns it as the result, or if it's a function, returns the result
 // of calling that function.
-func defaultResolveFn(p ResolveParams) (interface{}, error) {
+func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 	// try to resolve p.Source as a struct first
 	sourceVal := reflect.ValueOf(p.Source)
 	if sourceVal.IsValid() && sourceVal.Type().Kind() == reflect.Ptr {
