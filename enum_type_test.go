@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/testutil"
+	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
+	"github.com/sprucehealth/graphql/testutil"
 )
 
 var enumTypeTestColorType = graphql.NewEnum(graphql.EnumConfig{

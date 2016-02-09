@@ -3,8 +3,8 @@ package printer
 import (
 	"fmt"
 
-	"github.com/graphql-go/graphql/language/ast"
-	"github.com/graphql-go/graphql/language/visitor"
+	"github.com/sprucehealth/graphql/language/ast"
+	"github.com/sprucehealth/graphql/language/visitor"
 	//	"log"
 )
 

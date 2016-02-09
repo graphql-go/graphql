@@ -3,7 +3,7 @@ package visitor
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/graphql-go/graphql/language/ast"
+	"github.com/sprucehealth/graphql/language/ast"
 	"reflect"
 )
 

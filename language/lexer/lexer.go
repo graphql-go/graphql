@@ -3,8 +3,8 @@ package lexer
 import (
 	"fmt"
 
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/source"
+	"github.com/sprucehealth/graphql/gqlerrors"
+	"github.com/sprucehealth/graphql/language/source"
 )
 
 const (

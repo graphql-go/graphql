@@ -1,9 +1,9 @@
 package graphql
 
 import (
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/parser"
-	"github.com/graphql-go/graphql/language/source"
+	"github.com/sprucehealth/graphql/gqlerrors"
+	"github.com/sprucehealth/graphql/language/parser"
+	"github.com/sprucehealth/graphql/language/source"
 	"golang.org/x/net/context"
 )
 
