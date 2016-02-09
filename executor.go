@@ -44,10 +44,7 @@ func Execute(p ExecuteParams) (result *Result) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			var err error
-			if r, ok := r.(error); ok {
-				err = gqlerrors.FormatError(r)
-			}
+			err := gqlerrors.FormatPanic(r)
 			exeContext.Errors = append(exeContext.Errors, gqlerrors.FormatError(err))
 			result.Errors = exeContext.Errors
 		}
@@ -449,16 +446,11 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	var returnType Output
 	defer func() (interface{}, resolveFieldResultState) {
 		if r := recover(); r != nil {
-
 			var err error
-			if r, ok := r.(string); ok {
-				err = NewLocatedError(
-					fmt.Sprintf("%v", r),
-					FieldASTsToNodeASTs(fieldASTs),
-				)
-			}
-			if r, ok := r.(error); ok {
-				err = gqlerrors.FormatError(r)
+			if s, ok := r.(string); ok {
+				err = NewLocatedError(s, FieldASTsToNodeASTs(fieldASTs))
+			} else {
+				err = gqlerrors.FormatPanic(r)
 			}
 			// send panic upstream
 			if _, ok := returnType.(*NonNull); ok {
