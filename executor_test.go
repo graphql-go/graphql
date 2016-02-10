@@ -346,6 +346,62 @@ func TestThreadsSourceCorrectly(t *testing.T) {
 	}
 }
 
+func TestOmitEmpty(t *testing.T) {
+	query := `query Example { a {
+		b
+		c
+	} }`
+
+	aType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "A",
+		Fields: graphql.Fields{
+			"b": &graphql.Field{Type: graphql.String},
+			"c": &graphql.Field{Type: graphql.String},
+		},
+	})
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Type",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{
+					Type: aType,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return &struct {
+							B string `json:"b"`
+							C string `json:"c,omitempty"`
+						}{}, nil
+					},
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	ast := testutil.TestParse(t, query)
+	ep := graphql.ExecuteParams{
+		Schema: schema,
+		AST:    ast,
+	}
+	result := testutil.TestExecute(t, ep)
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"a": map[string]interface{}{
+				"b": "",
+				"c": nil,
+			},
+		},
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
 func TestCorrectlyThreadsArguments(t *testing.T) {
 
 	query := `

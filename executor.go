@@ -707,6 +707,9 @@ func defaultResolveFn(p ResolveParams) (interface{}, error) {
 			if jsonOptions[0] != p.Info.FieldName {
 				continue
 			}
+			if len(jsonOptions) > 1 && jsonOptions[1] == "omitempty" && isEmptyValue(valueField) {
+				return nil, nil
+			}
 			return valueField.Interface(), nil
 		}
 		return nil, nil
