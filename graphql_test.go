@@ -171,3 +171,51 @@ func TestThreadsContextFromParamsThrough(t *testing.T) {
 	}
 
 }
+
+func TestEmptyStringIsNotNull(t *testing.T) {
+	checkForEmptyString := func(p graphql.ResolveParams) (interface{}, error) {
+		arg := p.Args["arg"]
+		if arg == nil || arg.(string) != "" {
+			t.Errorf("Expected empty string for input arg, got %#v", arg)
+		}
+		return "yay", nil
+	}
+	returnEmptyString := func(p graphql.ResolveParams) (interface{}, error) {
+		return "", nil
+	}
+
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"checkEmptyArg": &graphql.Field{
+					Type: graphql.String,
+					Args: graphql.FieldConfigArgument{
+						"arg": &graphql.ArgumentConfig{Type: graphql.String},
+					},
+					Resolve: checkForEmptyString,
+				},
+				"checkEmptyResult": &graphql.Field{
+					Type:    graphql.String,
+					Resolve: returnEmptyString,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("wrong result, unexpected errors: %v", err.Error())
+	}
+	query := `{ checkEmptyArg(arg:"") checkEmptyResult }`
+
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+	})
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	expected := map[string]interface{}{"checkEmptyArg": "yay", "checkEmptyResult": ""}
+	if !reflect.DeepEqual(result.Data, expected) {
+		t.Errorf("wrong result, query: %v, graphql result diff: %v", query, testutil.Diff(expected, result))
+	}
+}
