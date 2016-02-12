@@ -77,7 +77,7 @@ func FormatErrors(errs ...error) []FormattedError {
 }
 
 func stackTrace() string {
-	buf := make([]byte, 1024)
+	buf := make([]byte, 4096)
 	n := runtime.Stack(buf, false)
 	return string(buf[:n])
 }

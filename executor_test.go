@@ -350,6 +350,7 @@ func TestOmitEmpty(t *testing.T) {
 	query := `query Example { a {
 		b
 		c
+		d
 	} }`
 
 	aType := graphql.NewObject(graphql.ObjectConfig{
@@ -357,6 +358,7 @@ func TestOmitEmpty(t *testing.T) {
 		Fields: graphql.Fields{
 			"b": &graphql.Field{Type: graphql.String},
 			"c": &graphql.Field{Type: graphql.String},
+			"d": &graphql.Field{Type: graphql.String},
 		},
 	})
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
@@ -394,6 +396,7 @@ func TestOmitEmpty(t *testing.T) {
 			"a": map[string]interface{}{
 				"b": "",
 				"c": nil,
+				"d": nil,
 			},
 		},
 	}
