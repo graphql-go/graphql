@@ -177,24 +177,6 @@ func TestLexReportsUsefulStringErrors(t *testing.T) {
 `,
 		},
 		Test{
-			Body: "\"multi\u2028line\"",
-			Expected: `Syntax Error GraphQL (1:7) Unterminated string.
-
-1: "multi
-         ^
-2: line"
-`,
-		},
-		Test{
-			Body: "\"multi\u2029line\"",
-			Expected: `Syntax Error GraphQL (1:7) Unterminated string.
-
-1: "multi
-         ^
-2: line"
-`,
-		},
-		Test{
 			Body: "\"bad \\z esc\"",
 			Expected: `Syntax Error GraphQL (1:7) Bad character escape sequence.
 

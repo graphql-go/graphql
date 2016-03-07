@@ -52,6 +52,7 @@ func newValidationRuleError(message string, nodes []ast.Node) (string, error) {
 		"",
 		nil,
 		[]int{},
+		nil, // TODO: this is interim, until we port "better-error-messages-for-inputs"
 	)
 }
 

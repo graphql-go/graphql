@@ -77,6 +77,7 @@ func getVariableValue(schema Schema, definitionAST *ast.VariableDefinition, inpu
 			"",
 			nil,
 			[]int{},
+			nil,
 		)
 	}
 
@@ -99,6 +100,7 @@ func getVariableValue(schema Schema, definitionAST *ast.VariableDefinition, inpu
 			"",
 			nil,
 			[]int{},
+			nil,
 		)
 	}
 	inputStr := ""
@@ -113,6 +115,7 @@ func getVariableValue(schema Schema, definitionAST *ast.VariableDefinition, inpu
 		"",
 		nil,
 		[]int{},
+		nil,
 	)
 }
 
