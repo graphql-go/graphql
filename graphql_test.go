@@ -6,6 +6,7 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/testutil"
+	"golang.org/x/net/context"
 )
 
 type T struct {
@@ -94,8 +95,8 @@ func testGraphql(test T, p graphql.Params, t *testing.T) {
 func TestBasicGraphQLExample(t *testing.T) {
 	// taken from `graphql-js` README
 
-	helloFieldResolved := func(p graphql.ResolveParams) interface{} {
-		return "world"
+	helloFieldResolved := func(p graphql.ResolveParams) (interface{}, error) {
+		return "world", nil
 	}
 
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
@@ -126,6 +127,45 @@ func TestBasicGraphQLExample(t *testing.T) {
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
+	if !reflect.DeepEqual(result.Data, expected) {
+		t.Fatalf("wrong result, query: %v, graphql result diff: %v", query, testutil.Diff(expected, result))
+	}
+
+}
+
+func TestThreadsContextFromParamsThrough(t *testing.T) {
+	extractFieldFromContextFn := func(p graphql.ResolveParams) (interface{}, error) {
+		return p.Context.Value(p.Args["key"]), nil
+	}
+
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"value": &graphql.Field{
+					Type: graphql.String,
+					Args: graphql.FieldConfigArgument{
+						"key": &graphql.ArgumentConfig{Type: graphql.String},
+					},
+					Resolve: extractFieldFromContextFn,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("wrong result, unexpected errors: %v", err.Error())
+	}
+	query := `{ value(key:"a") }`
+
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+		Context:       context.WithValue(context.TODO(), "a", "xyz"),
+	})
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	expected := map[string]interface{}{"value": "xyz"}
 	if !reflect.DeepEqual(result.Data, expected) {
 		t.Fatalf("wrong result, query: %v, graphql result diff: %v", query, testutil.Diff(expected, result))
 	}

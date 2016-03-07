@@ -2,29 +2,58 @@ package graphql
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/graphql-go/graphql/language/ast"
-)
-
-var (
-	MaxInt = 9007199254740991
-	MinInt = -9007199254740991
 )
 
 func coerceInt(value interface{}) interface{} {
 	switch value := value.(type) {
 	case bool:
 		if value == true {
-			return int(1)
+			return 1
 		}
-		return int(0)
+		return 0
 	case int:
 		return value
+	case int8:
+		return int(value)
+	case int16:
+		return int(value)
+	case int32:
+		return int(value)
+	case int64:
+		if value < int64(math.MinInt32) || value > int64(math.MaxInt32) {
+			return nil
+		}
+		return int(value)
+	case uint:
+		return int(value)
+	case uint8:
+		return int(value)
+	case uint16:
+		return int(value)
+	case uint32:
+		if value > uint32(math.MaxInt32) {
+			return nil
+		}
+		return int(value)
+	case uint64:
+		if value > uint64(math.MaxInt32) {
+			return nil
+		}
+		return int(value)
 	case float32:
-		return intOrNil(int(value))
+		if value < float32(math.MinInt32) || value > float32(math.MaxInt32) {
+			return nil
+		}
+		return int(value)
 	case float64:
-		return intOrNil(int(value))
+		if value < float64(math.MinInt32) || value > float64(math.MaxInt32) {
+			return nil
+		}
+		return int(value)
 	case string:
 		val, err := strconv.ParseFloat(value, 0)
 		if err != nil {
@@ -32,19 +61,13 @@ func coerceInt(value interface{}) interface{} {
 		}
 		return coerceInt(val)
 	}
-	return int(0)
-}
 
-// Integers are only safe when between -(2^53 - 1) and 2^53 - 1 due to being
-// encoded in JavaScript and represented in JSON as double-precision floating
-// point numbers, as specified by IEEE 754.
-func intOrNil(value int) interface{} {
-	if value <= MaxInt && value >= MinInt {
-		return value
-	}
+	// If the value cannot be transformed into an int, return nil instead of '0'
+	// to denote 'no integer found'
 	return nil
 }
 
+// Int is the GraphQL Integer type definition.
 var Int *Scalar = NewScalar(ScalarConfig{
 	Name:       "Int",
 	Serialize:  coerceInt,
@@ -83,6 +106,7 @@ func coerceFloat32(value interface{}) interface{} {
 	return float32(0)
 }
 
+// Float is the GraphQL float type definition.
 var Float *Scalar = NewScalar(ScalarConfig{
 	Name:       "Float",
 	Serialize:  coerceFloat32,
@@ -98,7 +122,7 @@ var Float *Scalar = NewScalar(ScalarConfig{
 				return floatValue
 			}
 		}
-		return float32(0)
+		return nil
 	},
 })
 
@@ -106,6 +130,7 @@ func coerceString(value interface{}) interface{} {
 	return fmt.Sprintf("%v", value)
 }
 
+// String is the GraphQL string type definition
 var String *Scalar = NewScalar(ScalarConfig{
 	Name:       "String",
 	Serialize:  coerceString,
@@ -115,7 +140,7 @@ var String *Scalar = NewScalar(ScalarConfig{
 		case *ast.StringValue:
 			return valueAST.Value
 		}
-		return ""
+		return nil
 	},
 })
 
@@ -148,6 +173,7 @@ func coerceBool(value interface{}) interface{} {
 	return false
 }
 
+// Boolean is the GraphQL boolean type definition
 var Boolean *Scalar = NewScalar(ScalarConfig{
 	Name:       "Boolean",
 	Serialize:  coerceBool,
@@ -157,10 +183,11 @@ var Boolean *Scalar = NewScalar(ScalarConfig{
 		case *ast.BooleanValue:
 			return valueAST.Value
 		}
-		return false
+		return nil
 	},
 })
 
+// ID is the GraphQL id type definition
 var ID *Scalar = NewScalar(ScalarConfig{
 	Name:       "ID",
 	Serialize:  coerceString,
@@ -172,6 +199,6 @@ var ID *Scalar = NewScalar(ScalarConfig{
 		case *ast.StringValue:
 			return valueAST.Value
 		}
-		return ""
+		return nil
 	},
 })

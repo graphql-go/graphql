@@ -53,16 +53,16 @@ var testInputObject *graphql.InputObject = graphql.NewInputObject(graphql.InputO
 	},
 })
 
-func inputResolved(p graphql.ResolveParams) interface{} {
+func inputResolved(p graphql.ResolveParams) (interface{}, error) {
 	input, ok := p.Args["input"]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	b, err := json.Marshal(input)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
-	return string(b)
+	return string(b), nil
 }
 
 var testType *graphql.Object = graphql.NewObject(graphql.ObjectConfig{

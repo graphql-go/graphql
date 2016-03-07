@@ -25,8 +25,8 @@ func checkList(t *testing.T, testType graphql.Type, testData interface{}, expect
 	})
 	dataType.AddFieldConfig("nest", &graphql.Field{
 		Type: dataType,
-		Resolve: func(p graphql.ResolveParams) interface{} {
-			return data
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			return data, nil
 		},
 	})
 

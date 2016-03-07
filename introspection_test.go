@@ -768,8 +768,8 @@ func TestIntrospection_ExecutesAnInputObject(t *testing.T) {
 						Type: testInputObject,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) interface{} {
-					return p.Args["complex"]
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return p.Args["complex"], nil
 				},
 			},
 		},
@@ -1224,7 +1224,6 @@ func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testin
 		Schema:        schema,
 		RequestString: query,
 	})
-	t.Skipf("Pending `validator` implementation")
 	if !reflect.DeepEqual(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}

@@ -66,6 +66,7 @@ var blogArticle = graphql.NewObject(graphql.ObjectConfig{
 		},
 	},
 })
+
 var blogQuery = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Query",
 	Fields: graphql.Fields{
@@ -88,6 +89,11 @@ var blogMutation = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"writeArticle": &graphql.Field{
 			Type: blogArticle,
+			Args: graphql.FieldConfigArgument{
+				"title": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+			},
 		},
 	},
 })
@@ -531,5 +537,25 @@ func TestTypeSystem_DefinitionExample_DoesNotMutatePassedFieldDefinitions(t *tes
 	if !reflect.DeepEqual(inputFields, expectedInputFields) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedInputFields, fields))
 	}
+}
 
+func TestTypeSystem_DefinitionExample_IncludesFieldsThunk(t *testing.T) {
+	var someObject *graphql.Object
+	someObject = graphql.NewObject(graphql.ObjectConfig{
+		Name: "SomeObject",
+		Fields: (graphql.FieldsThunk)(func() graphql.Fields {
+			return graphql.Fields{
+				"f": &graphql.Field{
+					Type: graphql.Int,
+				},
+				"s": &graphql.Field{
+					Type: someObject,
+				},
+			}
+		}),
+	})
+	fieldMap := someObject.Fields()
+	if !reflect.DeepEqual(fieldMap["s"].Type, someObject) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(fieldMap["s"].Type, someObject))
+	}
 }

@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	"github.com/graphql-go/graphql/language/ast"
+	"golang.org/x/net/context"
 )
 
 // These are all of the possible kinds of
@@ -42,34 +43,45 @@ var _ Input = (*List)(nil)
 var _ Input = (*NonNull)(nil)
 
 func IsInputType(ttype Type) bool {
-	Named := GetNamed(ttype)
-	if _, ok := Named.(*Scalar); ok {
+	named := GetNamed(ttype)
+	if _, ok := named.(*Scalar); ok {
 		return true
 	}
-	if _, ok := Named.(*Enum); ok {
+	if _, ok := named.(*Enum); ok {
 		return true
 	}
-	if _, ok := Named.(*InputObject); ok {
+	if _, ok := named.(*InputObject); ok {
 		return true
 	}
 	return false
 }
 
 func IsOutputType(ttype Type) bool {
-	Named := GetNamed(ttype)
-	if _, ok := Named.(*Scalar); ok {
+	name := GetNamed(ttype)
+	if _, ok := name.(*Scalar); ok {
 		return true
 	}
-	if _, ok := Named.(*Object); ok {
+	if _, ok := name.(*Object); ok {
 		return true
 	}
-	if _, ok := Named.(*Interface); ok {
+	if _, ok := name.(*Interface); ok {
 		return true
 	}
-	if _, ok := Named.(*Union); ok {
+	if _, ok := name.(*Union); ok {
 		return true
 	}
-	if _, ok := Named.(*Enum); ok {
+	if _, ok := name.(*Enum); ok {
+		return true
+	}
+	return false
+}
+
+func IsLeafType(ttype Type) bool {
+	named := GetNamed(ttype)
+	if _, ok := named.(*Scalar); ok {
+		return true
+	}
+	if _, ok := named.(*Enum); ok {
 		return true
 	}
 	return false
@@ -100,6 +112,19 @@ var _ Composite = (*Object)(nil)
 var _ Composite = (*Interface)(nil)
 var _ Composite = (*Union)(nil)
 
+func IsCompositeType(ttype interface{}) bool {
+	if _, ok := ttype.(*Object); ok {
+		return true
+	}
+	if _, ok := ttype.(*Interface); ok {
+		return true
+	}
+	if _, ok := ttype.(*Union); ok {
+		return true
+	}
+	return false
+}
+
 // These types may describe the parent context of a selection set.
 type Abstract interface {
 	ObjectType(value interface{}, info ResolveInfo) *Object
@@ -109,6 +134,24 @@ type Abstract interface {
 
 var _ Abstract = (*Interface)(nil)
 var _ Abstract = (*Union)(nil)
+
+type Nullable interface {
+}
+
+var _ Nullable = (*Scalar)(nil)
+var _ Nullable = (*Object)(nil)
+var _ Nullable = (*Interface)(nil)
+var _ Nullable = (*Union)(nil)
+var _ Nullable = (*Enum)(nil)
+var _ Nullable = (*InputObject)(nil)
+var _ Nullable = (*List)(nil)
+
+func GetNullable(ttype Type) Nullable {
+	if ttype, ok := ttype.(*NonNull); ok {
+		return ttype.OfType
+	}
+	return ttype
+}
 
 // These named types do not include modifiers like List or NonNull.
 type Named interface {
@@ -302,10 +345,11 @@ type InterfacesThunk func() []*Interface
 type ObjectConfig struct {
 	Name        string      `json:"description"`
 	Interfaces  interface{} `json:"interfaces"`
-	Fields      Fields      `json:"fields"`
+	Fields      interface{} `json:"fields"`
 	IsTypeOf    IsTypeOfFn  `json:"isTypeOf"`
 	Description string      `json:"description"`
 }
+type FieldsThunk func() Fields
 
 func NewObject(config ObjectConfig) *Object {
 	objectType := &Object{}
@@ -347,8 +391,10 @@ func (gt *Object) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	if fieldName == "" || fieldConfig == nil {
 		return
 	}
-	gt.typeConfig.Fields[fieldName] = fieldConfig
-
+	switch gt.typeConfig.Fields.(type) {
+	case Fields:
+		gt.typeConfig.Fields.(Fields)[fieldName] = fieldConfig
+	}
 }
 func (gt *Object) Name() string {
 	return gt.PrivateName
@@ -360,11 +406,19 @@ func (gt *Object) String() string {
 	return gt.PrivateName
 }
 func (gt *Object) Fields() FieldDefinitionMap {
-	fields, err := defineFieldMap(gt, gt.typeConfig.Fields)
+	var configureFields Fields
+	switch gt.typeConfig.Fields.(type) {
+	case Fields:
+		configureFields = gt.typeConfig.Fields.(Fields)
+	case FieldsThunk:
+		configureFields = gt.typeConfig.Fields.(FieldsThunk)()
+	}
+	fields, err := defineFieldMap(gt, configureFields)
 	gt.err = err
 	gt.fields = fields
 	return gt.fields
 }
+
 func (gt *Object) Interfaces() []*Interface {
 	var configInterfaces []*Interface
 	switch gt.typeConfig.Interfaces.(type) {
@@ -495,10 +549,13 @@ type ResolveParams struct {
 	Args   map[string]interface{}
 	Info   ResolveInfo
 	Schema Schema
+	//This can be used to provide per-request state
+	//from the application.
+	Context context.Context
 }
 
 // TODO: relook at FieldResolveFn params
-type FieldResolveFn func(p ResolveParams) interface{}
+type FieldResolveFn func(p ResolveParams) (interface{}, error)
 
 type ResolveInfo struct {
 	FieldName      string
@@ -968,7 +1025,7 @@ func (gt *Enum) Name() string {
 	return gt.PrivateName
 }
 func (gt *Enum) Description() string {
-	return ""
+	return gt.PrivateDescription
 }
 func (gt *Enum) String() string {
 	return gt.PrivateName

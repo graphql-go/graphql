@@ -1,10 +1,8 @@
 package visitor_test
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/graphql-go/graphql/language/ast"
@@ -26,47 +24,6 @@ func parse(t *testing.T, query string) *ast.Document {
 	return astDoc
 }
 
-// Helper functions to get map value by key
-// Allow keys to specify dot paths (e.g `Name.Value`)
-func getMapValue(m map[string]interface{}, key string) interface{} {
-	tokens := strings.Split(key, ".")
-	valMap := m
-	for _, token := range tokens {
-		v, ok := valMap[token]
-		if !ok {
-			return nil
-		}
-		switch v := v.(type) {
-		case []interface{}:
-			return v
-		case map[string]interface{}:
-			valMap = v
-			continue
-		case string:
-			return v
-		}
-	}
-	return valMap
-}
-func getMapValueString(m map[string]interface{}, key string) string {
-	tokens := strings.Split(key, ".")
-	valMap := m
-	for _, token := range tokens {
-		v, ok := valMap[token]
-		if !ok {
-			return ""
-		}
-		switch v := v.(type) {
-		case map[string]interface{}:
-			valMap = v
-			continue
-		case string:
-			return v
-		}
-	}
-	return ""
-}
-
 func TestVisitor_AllowsForEditingOnEnter(t *testing.T) {
 
 	query := `{ a, b, c { a, b, c } }`
@@ -77,8 +34,8 @@ func TestVisitor_AllowsForEditingOnEnter(t *testing.T) {
 	v := &visitor.VisitorOptions{
 		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
-			case map[string]interface{}:
-				if getMapValueString(node, "Kind") == "Field" && getMapValueString(node, "Name.Value") == "b" {
+			case *ast.Field:
+				if node.Name != nil && node.Name.Value == "b" {
 					return visitor.ActionUpdate, nil
 				}
 			}
@@ -87,7 +44,7 @@ func TestVisitor_AllowsForEditingOnEnter(t *testing.T) {
 	}
 
 	editedAst := visitor.Visit(astDoc, v, nil)
-	if !reflect.DeepEqual(ASTToJSON(t, expectedAST), editedAst) {
+	if !reflect.DeepEqual(expectedAST, editedAst) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedAST, editedAst))
 	}
 
@@ -102,8 +59,8 @@ func TestVisitor_AllowsForEditingOnLeave(t *testing.T) {
 	v := &visitor.VisitorOptions{
 		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
-			case map[string]interface{}:
-				if getMapValueString(node, "Kind") == "Field" && getMapValueString(node, "Name.Value") == "b" {
+			case *ast.Field:
+				if node.Name != nil && node.Name.Value == "b" {
 					return visitor.ActionUpdate, nil
 				}
 			}
@@ -112,7 +69,7 @@ func TestVisitor_AllowsForEditingOnLeave(t *testing.T) {
 	}
 
 	editedAst := visitor.Visit(astDoc, v, nil)
-	if !reflect.DeepEqual(ASTToJSON(t, expectedAST), editedAst) {
+	if !reflect.DeepEqual(expectedAST, editedAst) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedAST, editedAst))
 	}
 }
@@ -122,11 +79,11 @@ func TestVisitor_VisitsEditedNode(t *testing.T) {
 	query := `{ a { x } }`
 	astDoc := parse(t, query)
 
-	addedField := map[string]interface{}{
-		"Kind": "Field",
-		"Name": map[string]interface{}{
-			"Kind":  "Name",
-			"Value": "__typename",
+	addedField := &ast.Field{
+		Kind: "Field",
+		Name: &ast.Name{
+			Kind:  "Name",
+			Value: "__typename",
 		},
 	}
 
@@ -134,13 +91,15 @@ func TestVisitor_VisitsEditedNode(t *testing.T) {
 	v := &visitor.VisitorOptions{
 		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
-			case map[string]interface{}:
-				if getMapValueString(node, "Kind") == "Field" && getMapValueString(node, "Name.Value") == "a" {
-					s := getMapValue(node, "SelectionSet.Selections").([]interface{})
+			case *ast.Field:
+				if node.Name != nil && node.Name.Value == "a" {
+					s := node.SelectionSet.Selections
 					s = append(s, addedField)
-					return visitor.ActionUpdate, map[string]interface{}{
-						"Kind":         "Field",
-						"SelectionSet": s,
+					ss := node.SelectionSet
+					ss.Selections = s
+					return visitor.ActionUpdate, &ast.Field{
+						Kind:         "Field",
+						SelectionSet: ss,
 					}
 				}
 				if reflect.DeepEqual(node, addedField) {
@@ -183,18 +142,28 @@ func TestVisitor_AllowsSkippingASubTree(t *testing.T) {
 	v := &visitor.VisitorOptions{
 		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
-			case map[string]interface{}:
-				visited = append(visited, []interface{}{"enter", getMapValue(node, "Kind"), getMapValue(node, "Value")})
-				if getMapValueString(node, "Kind") == "Field" && getMapValueString(node, "Name.Value") == "b" {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"enter", node.Kind, node.Value})
+			case *ast.Field:
+				visited = append(visited, []interface{}{"enter", node.Kind, nil})
+				if node.Name != nil && node.Name.Value == "b" {
 					return visitor.ActionSkip, nil
 				}
+			case ast.Node:
+				visited = append(visited, []interface{}{"enter", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"enter", nil, nil})
 			}
 			return visitor.ActionNoChange, nil
 		},
 		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
-			case map[string]interface{}:
-				visited = append(visited, []interface{}{"leave", getMapValue(node, "Kind"), getMapValue(node, "Value")})
+			case *ast.Name:
+				visited = append(visited, []interface{}{"leave", node.Kind, node.Value})
+			case ast.Node:
+				visited = append(visited, []interface{}{"leave", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"leave", nil, nil})
 			}
 			return visitor.ActionNoChange, nil
 		},
@@ -233,18 +202,26 @@ func TestVisitor_AllowsEarlyExitWhileVisiting(t *testing.T) {
 	v := &visitor.VisitorOptions{
 		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
-			case map[string]interface{}:
-				visited = append(visited, []interface{}{"enter", getMapValue(node, "Kind"), getMapValue(node, "Value")})
-				if getMapValue(node, "Kind") == "Name" && getMapValue(node, "Value") == "x" {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"enter", node.Kind, node.Value})
+				if node.Value == "x" {
 					return visitor.ActionBreak, nil
 				}
+			case ast.Node:
+				visited = append(visited, []interface{}{"enter", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"enter", nil, nil})
 			}
 			return visitor.ActionNoChange, nil
 		},
 		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
-			case map[string]interface{}:
-				visited = append(visited, []interface{}{"leave", getMapValue(node, "Kind"), getMapValue(node, "Value")})
+			case *ast.Name:
+				visited = append(visited, []interface{}{"leave", node.Kind, node.Value})
+			case ast.Node:
+				visited = append(visited, []interface{}{"leave", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"leave", nil, nil})
 			}
 			return visitor.ActionNoChange, nil
 		},
@@ -279,8 +256,8 @@ func TestVisitor_AllowsANamedFunctionsVisitorAPI(t *testing.T) {
 			"Name": visitor.NamedVisitFuncs{
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					switch node := p.Node.(type) {
-					case map[string]interface{}:
-						visited = append(visited, []interface{}{"enter", getMapValue(node, "Kind"), getMapValue(node, "Value")})
+					case *ast.Name:
+						visited = append(visited, []interface{}{"enter", node.Kind, node.Value})
 					}
 					return visitor.ActionNoChange, nil
 				},
@@ -288,15 +265,15 @@ func TestVisitor_AllowsANamedFunctionsVisitorAPI(t *testing.T) {
 			"SelectionSet": visitor.NamedVisitFuncs{
 				Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 					switch node := p.Node.(type) {
-					case map[string]interface{}:
-						visited = append(visited, []interface{}{"enter", getMapValue(node, "Kind"), getMapValue(node, "Value")})
+					case *ast.SelectionSet:
+						visited = append(visited, []interface{}{"enter", node.Kind, nil})
 					}
 					return visitor.ActionNoChange, nil
 				},
 				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 					switch node := p.Node.(type) {
-					case map[string]interface{}:
-						visited = append(visited, []interface{}{"leave", getMapValue(node, "Kind"), getMapValue(node, "Value")})
+					case *ast.SelectionSet:
+						visited = append(visited, []interface{}{"leave", node.Kind, nil})
 					}
 					return visitor.ActionNoChange, nil
 				},
@@ -540,27 +517,23 @@ func TestVisitor_VisitsKitchenSink(t *testing.T) {
 	v := &visitor.VisitorOptions{
 		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
-			case map[string]interface{}:
-
-				parent, ok := p.Parent.(map[string]interface{})
-				if !ok {
-					parent = map[string]interface{}{}
+			case ast.Node:
+				if p.Parent != nil {
+					visited = append(visited, []interface{}{"enter", node.GetKind(), p.Key, p.Parent.GetKind()})
+				} else {
+					visited = append(visited, []interface{}{"enter", node.GetKind(), p.Key, nil})
 				}
-
-				visited = append(visited, []interface{}{"enter", getMapValue(node, "Kind"), p.Key, getMapValue(parent, "Kind")})
 			}
 			return visitor.ActionNoChange, nil
 		},
 		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 			switch node := p.Node.(type) {
-			case map[string]interface{}:
-
-				parent, ok := p.Parent.(map[string]interface{})
-				if !ok {
-					parent = map[string]interface{}{}
+			case ast.Node:
+				if p.Parent != nil {
+					visited = append(visited, []interface{}{"leave", node.GetKind(), p.Key, p.Parent.GetKind()})
+				} else {
+					visited = append(visited, []interface{}{"leave", node.GetKind(), p.Key, nil})
 				}
-
-				visited = append(visited, []interface{}{"leave", getMapValue(node, "Kind"), p.Key, getMapValue(parent, "Kind")})
 			}
 			return visitor.ActionNoChange, nil
 		},
@@ -571,35 +544,4 @@ func TestVisitor_VisitsKitchenSink(t *testing.T) {
 	if !reflect.DeepEqual(visited, expectedVisited) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
 	}
-}
-
-func TestVisitor_ProducesHelpfulErrorMessages(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			err := r.(string)
-			expectedErr := `Invalid AST Node (4): map[random:Data]`
-			if err != expectedErr {
-				t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(err, expectedErr))
-			}
-			return
-		}
-		t.Fatalf("expected to panic")
-	}()
-	astDoc := map[string]interface{}{
-		"random": "Data",
-	}
-	_ = visitor.Visit(astDoc, nil, nil)
-}
-
-func ASTToJSON(t *testing.T, a ast.Node) interface{} {
-	b, err := json.Marshal(a)
-	if err != nil {
-		t.Fatalf("Failed to marshal Node %v", err)
-	}
-	var f interface{}
-	err = json.Unmarshal(b, &f)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal Node %v", err)
-	}
-	return f
 }
