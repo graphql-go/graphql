@@ -75,6 +75,8 @@ func init() {
 	tokenDescription[TokenKind[STRING]] = "String"
 }
 
+// Token is a representation of a lexed Token. Value only appears for non-punctuation
+// tokens: NAME, INT, FLOAT, and STRING.
 type Token struct {
 	Kind  int
 	Start int
