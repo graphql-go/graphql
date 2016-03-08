@@ -161,15 +161,6 @@ func TestParsesConstantDefaultValues(t *testing.T) {
 	testErrorMessage(t, test)
 }
 
-func TestDuplicatedKeysInInputObject(t *testing.T) {
-	test := errorMessageTest{
-		`{ field(arg: { a: 1, a: 2 }) }'`,
-		`Syntax Error GraphQL (1:22) Duplicate input object field a.`,
-		false,
-	}
-	testErrorMessage(t, test)
-}
-
 func TestDoesNotAcceptFragmentsNameOn(t *testing.T) {
 	test := errorMessageTest{
 		`fragment on on on { on }`,

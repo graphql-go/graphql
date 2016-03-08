@@ -34,6 +34,7 @@ var SpecifiedRules = []ValidationRuleFn{
 	ScalarLeafsRule,
 	UniqueArgumentNamesRule,
 	UniqueFragmentNamesRule,
+	UniqueInputFieldNamesRule,
 	UniqueOperationNamesRule,
 	VariablesAreInputTypesRule,
 	VariablesInAllowedPositionRule,
@@ -1651,6 +1652,59 @@ func UniqueFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance
 						knownFragmentNames[fragmentName] = node.Name
 					}
 					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+/**
+ * UniqueInputFieldNamesRule
+ *
+ * A GraphQL input object value is only valid if all supplied fields are
+ * uniquely named.
+ */
+func UniqueInputFieldNamesRule(context *ValidationContext) *ValidationRuleInstance {
+	knownNameStack := []map[string]*ast.Name{}
+	knownNames := map[string]*ast.Name{}
+
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.ObjectValue: visitor.NamedVisitFuncs{
+				Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+					knownNameStack = append(knownNameStack, knownNames)
+					knownNames = map[string]*ast.Name{}
+					return visitor.ActionNoChange, nil
+				},
+				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+					// pop
+					knownNames, knownNameStack = knownNameStack[len(knownNameStack)-1], knownNameStack[:len(knownNameStack)-1]
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.ObjectField: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					var action = visitor.ActionNoChange
+					var result interface{}
+					if node, ok := p.Node.(*ast.ObjectField); ok {
+						fieldName := ""
+						if node.Name != nil {
+							fieldName = node.Name.Value
+						}
+						if knownNameAST, ok := knownNames[fieldName]; ok {
+							return newValidationRuleError(
+								fmt.Sprintf(`There can be only one input field named "%v".`, fieldName),
+								[]ast.Node{knownNameAST, node.Name},
+							)
+						} else {
+							knownNames[fieldName] = node.Name
+						}
+
+					}
+					return action, result
 				},
 			},
 		},

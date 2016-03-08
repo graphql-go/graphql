@@ -706,18 +706,16 @@ func parseObject(parser *Parser, isConst bool) (*ast.ObjectValue, error) {
 		return nil, err
 	}
 	fields := []*ast.ObjectField{}
-	fieldNames := map[string]bool{}
 	for {
 		if skp, err := skip(parser, lexer.TokenKind[lexer.BRACE_R]); err != nil {
 			return nil, err
 		} else if skp {
 			break
 		}
-		field, fieldName, err := parseObjectField(parser, isConst, fieldNames)
+		field, err := parseObjectField(parser, isConst)
 		if err != nil {
 			return nil, err
 		}
-		fieldNames[fieldName] = true
 		fields = append(fields, field)
 	}
 	return ast.NewObjectValue(&ast.ObjectValue{
@@ -729,30 +727,25 @@ func parseObject(parser *Parser, isConst bool) (*ast.ObjectValue, error) {
 /**
  * ObjectField[Const] : Name : Value[?Const]
  */
-func parseObjectField(parser *Parser, isConst bool, fieldNames map[string]bool) (*ast.ObjectField, string, error) {
+func parseObjectField(parser *Parser, isConst bool) (*ast.ObjectField, error) {
 	start := parser.Token.Start
 	name, err := parseName(parser)
 	if err != nil {
-		return nil, "", err
-	}
-	fieldName := name.Value
-	if _, ok := fieldNames[fieldName]; ok {
-		descp := fmt.Sprintf("Duplicate input object field %v.", fieldName)
-		return nil, "", gqlerrors.NewSyntaxError(parser.Source, start, descp)
+		return nil, err
 	}
 	_, err = expect(parser, lexer.TokenKind[lexer.COLON])
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	value, err := parseValueLiteral(parser, isConst)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	return ast.NewObjectField(&ast.ObjectField{
 		Name:  name,
 		Value: value,
 		Loc:   loc(parser, start),
-	}), fieldName, nil
+	}), nil
 }
 
 /* Implements the parsing rules in the Directives section. */
