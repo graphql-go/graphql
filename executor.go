@@ -82,43 +82,36 @@ type ExecutionContext struct {
 
 func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error) {
 	eCtx := &ExecutionContext{}
-	operations := map[string]ast.Definition{}
+	//	operations := map[string]ast.Definition{}
+	var operation *ast.OperationDefinition
 	fragments := map[string]ast.Definition{}
-	for _, statement := range p.AST.Definitions {
-		switch stm := statement.(type) {
+
+	for _, definition := range p.AST.Definitions {
+		switch definition := definition.(type) {
 		case *ast.OperationDefinition:
-			key := ""
-			if stm.GetName() != nil && stm.GetName().Value != "" {
-				key = stm.GetName().Value
+			if (p.OperationName == "") && operation != nil {
+				return nil, errors.New("Must provide operation name if query contains multiple operations.")
 			}
-			operations[key] = stm
+			if p.OperationName == "" || definition.GetName() != nil && definition.GetName().Value == p.OperationName {
+				operation = definition
+			}
 		case *ast.FragmentDefinition:
 			key := ""
-			if stm.GetName() != nil && stm.GetName().Value != "" {
-				key = stm.GetName().Value
+			if definition.GetName() != nil && definition.GetName().Value != "" {
+				key = definition.GetName().Value
 			}
-			fragments[key] = stm
+			fragments[key] = definition
 		default:
-			return nil, fmt.Errorf("GraphQL cannot execute a request containing a %v", statement.GetKind())
+			return nil, fmt.Errorf("GraphQL cannot execute a request containing a %v", definition.GetKind())
 		}
 	}
 
-	if (p.OperationName == "") && (len(operations) != 1) {
-		return nil, errors.New("Must provide operation name if query contains multiple operations.")
-	}
-
-	opName := p.OperationName
-	if opName == "" {
-		// get first opName
-		for k, _ := range operations {
-			opName = k
-			break
+	if operation == nil {
+		if p.OperationName == "" {
+			return nil, fmt.Errorf(`Unknown operation named "%v".`, p.OperationName)
+		} else {
+			return nil, fmt.Errorf(`Must provide an operation`)
 		}
-	}
-
-	operation, found := operations[opName]
-	if !found {
-		return nil, fmt.Errorf(`Unknown operation named "%v".`, opName)
 	}
 
 	variableValues, err := getVariableValues(p.Schema, operation.GetVariableDefinitions(), p.Args)

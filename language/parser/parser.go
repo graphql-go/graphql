@@ -230,9 +230,9 @@ func parseOperationDefinition(parser *Parser) (*ast.OperationDefinition, error) 
 	default:
 		return nil, unexpected(parser, operationToken)
 	}
-	name, err := parseName(parser)
-	if err != nil {
-		return nil, err
+	var name *ast.Name
+	if peek(parser, lexer.TokenKind[lexer.NAME]) {
+		name, err = parseName(parser)
 	}
 	variableDefinitions, err := parseVariableDefinitions(parser)
 	if err != nil {

@@ -137,7 +137,7 @@ fragment MissingOn Type
 func TestParseProvidesUsefulErrorsWhenUsingSource(t *testing.T) {
 	test := errorMessageTest{
 		source.NewSource(&source.Source{Body: "query", Name: "MyQuery.graphql"}),
-		`Syntax Error MyQuery.graphql (1:6) Expected Name, found EOF`,
+		`Syntax Error MyQuery.graphql (1:6) Expected {, found EOF`,
 		false,
 	}
 	testErrorMessage(t, test)
@@ -243,6 +243,18 @@ func TestParsesExperimentalSubscriptionFeature(t *testing.T) {
 	source := `
       subscription Foo {
         subscriptionField
+      }
+    `
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestParsesAnonymousOperations(t *testing.T) {
+	source := `
+	  mutation {
+        mutationField
       }
     `
 	_, err := Parse(ParseParams{Source: source})
