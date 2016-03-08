@@ -275,7 +275,13 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 			typeCondition := getMapValueString(node, "TypeCondition")
 			directives := toSliceString(getMapValue(node, "Directives"))
 			selectionSet := getMapValueString(node, "SelectionSet")
-			return visitor.ActionUpdate, "... on " + typeCondition + " " + wrap("", join(directives, " "), " ") + selectionSet
+			return visitor.ActionUpdate,
+				join([]string{
+					"...",
+					wrap("on ", typeCondition, ""),
+					join(directives, " "),
+					selectionSet,
+				}, " ")
 		}
 		return visitor.ActionNoChange, nil
 	},

@@ -79,6 +79,12 @@ func TestPrinter_PrintsKitchenSink(t *testing.T) {
         }
       }
     }
+    ... @skip(unless: $foo) {
+      id
+    }
+    ... {
+      id
+    }
   }
 }
 

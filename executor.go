@@ -390,7 +390,11 @@ func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment ast.Node, ttype
 
 	switch fragment := fragment.(type) {
 	case *ast.FragmentDefinition:
-		conditionalType, err := typeFromAST(eCtx.Schema, fragment.TypeCondition)
+		typeConditionAST := fragment.TypeCondition
+		if typeConditionAST == nil {
+			return true
+		}
+		conditionalType, err := typeFromAST(eCtx.Schema, typeConditionAST)
 		if err != nil {
 			return false
 		}
@@ -400,19 +404,24 @@ func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment ast.Node, ttype
 		if conditionalType.Name() == ttype.Name() {
 			return true
 		}
-
 		if conditionalType, ok := conditionalType.(Abstract); ok {
 			return conditionalType.IsPossibleType(ttype)
 		}
 	case *ast.InlineFragment:
-		conditionalType, err := typeFromAST(eCtx.Schema, fragment.TypeCondition)
+		typeConditionAST := fragment.TypeCondition
+		if typeConditionAST == nil {
+			return true
+		}
+		conditionalType, err := typeFromAST(eCtx.Schema, typeConditionAST)
 		if err != nil {
 			return false
 		}
 		if conditionalType == ttype {
 			return true
 		}
-
+		if conditionalType.Name() == ttype.Name() {
+			return true
+		}
 		if conditionalType, ok := conditionalType.(Abstract); ok {
 			return conditionalType.IsPossibleType(ttype)
 		}

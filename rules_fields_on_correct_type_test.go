@@ -162,6 +162,9 @@ func TestValidate_FieldsOnCorrectType_ValidFieldInInlineFragment(t *testing.T) {
         ... on Dog {
           name
         }
+        ... {
+          name
+        }
       }
     `)
 }
