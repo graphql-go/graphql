@@ -53,6 +53,20 @@ func TestValidate_FieldsOnCorrectType_IgnoresFieldsOnUnknownType(t *testing.T) {
       }
     `)
 }
+func TestValidate_FieldsOnCorrectType_ReportErrosWhenTheTypeIsKnownAgain(t *testing.T) {
+	testutil.ExpectFailsRule(t, graphql.FieldsOnCorrectTypeRule, `
+      fragment typeKnownAgain on Pet {
+        unknown_pet_field {
+          ... on Cat {
+            unknown_cat_field
+          }
+        }
+      }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(`Cannot query field "unknown_pet_field" on "Pet".`, 3, 9),
+		testutil.RuleError(`Cannot query field "unknown_cat_field" on "Cat".`, 5, 13),
+	})
+}
 func TestValidate_FieldsOnCorrectType_FieldNotDefinedOnFragment(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.FieldsOnCorrectTypeRule, `
       fragment fieldNotDefined on Dog {
@@ -62,7 +76,7 @@ func TestValidate_FieldsOnCorrectType_FieldNotDefinedOnFragment(t *testing.T) {
 		testutil.RuleError(`Cannot query field "meowVolume" on "Dog".`, 3, 9),
 	})
 }
-func TestValidate_FieldsOnCorrectType_FieldNotDefinedDeeplyOnlyReportsFirst(t *testing.T) {
+func TestValidate_FieldsOnCorrectType_IgnoreDeeplyUnknownField(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.FieldsOnCorrectTypeRule, `
       fragment deepFieldNotDefined on Dog {
         unknown_field {

@@ -33,7 +33,7 @@ func ValidateDocument(schema *Schema, astDoc *ast.Document, rules []ValidationRu
 	return vr
 }
 
-func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRuleFn) (errors []gqlerrors.FormattedError) {
+func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRuleFn) []gqlerrors.FormattedError {
 	typeInfo := NewTypeInfo(schema)
 	context := NewValidationContext(schema, astDoc, typeInfo)
 
@@ -64,17 +64,6 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 					enterFn := visitor.GetVisitFn(instance.VisitorOpts, false, kind)
 					if enterFn != nil {
 						action, result = enterFn(p)
-					}
-
-					// If the visitor returned an error, log it and do not visit any
-					// deeper nodes.
-					if err, ok := result.(error); ok && err != nil {
-						errors = append(errors, gqlerrors.FormatError(err))
-						action = visitor.ActionSkip
-					}
-					if err, ok := result.([]error); ok && err != nil {
-						errors = append(errors, gqlerrors.FormatErrors(err...)...)
-						action = visitor.ActionSkip
 					}
 
 					// If any validation instances provide the flag `visitSpreadFragments`
@@ -118,17 +107,6 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 						action, result = leaveFn(p)
 					}
 
-					// If the visitor returned an error, log it and do not visit any
-					// deeper nodes.
-					if err, ok := result.(error); ok && err != nil {
-						errors = append(errors, gqlerrors.FormatError(err))
-						action = visitor.ActionSkip
-					}
-					if err, ok := result.([]error); ok && err != nil {
-						errors = append(errors, gqlerrors.FormatErrors(err...)...)
-						action = visitor.ActionSkip
-					}
-
 					// Update typeInfo.
 					typeInfo.Leave(node)
 				}
@@ -145,7 +123,7 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 	for _, instance := range instances {
 		visitInstance(astDoc, instance)
 	}
-	return errors
+	return context.Errors()
 }
 
 type ValidationContext struct {
@@ -153,6 +131,7 @@ type ValidationContext struct {
 	astDoc    *ast.Document
 	typeInfo  *TypeInfo
 	fragments map[string]*ast.FragmentDefinition
+	errors    []gqlerrors.FormattedError
 }
 
 func NewValidationContext(schema *Schema, astDoc *ast.Document, typeInfo *TypeInfo) *ValidationContext {
@@ -163,13 +142,20 @@ func NewValidationContext(schema *Schema, astDoc *ast.Document, typeInfo *TypeIn
 	}
 }
 
+func (ctx *ValidationContext) ReportError(err error) {
+	formattedErr := gqlerrors.FormatError(err)
+	ctx.errors = append(ctx.errors, formattedErr)
+}
+func (ctx *ValidationContext) Errors() []gqlerrors.FormattedError {
+	return ctx.errors
+}
+
 func (ctx *ValidationContext) Schema() *Schema {
 	return ctx.schema
 }
 func (ctx *ValidationContext) Document() *ast.Document {
 	return ctx.astDoc
 }
-
 func (ctx *ValidationContext) Fragment(name string) *ast.FragmentDefinition {
 	if len(ctx.fragments) == 0 {
 		if ctx.Document() == nil {

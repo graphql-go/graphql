@@ -46,8 +46,8 @@ type ValidationRuleInstance struct {
 }
 type ValidationRuleFn func(context *ValidationContext) *ValidationRuleInstance
 
-func newValidationRuleError(message string, nodes []ast.Node) (string, error) {
-	return visitor.ActionNoChange, gqlerrors.NewError(
+func newValidationError(message string, nodes []ast.Node) *gqlerrors.Error {
+	return gqlerrors.NewError(
 		message,
 		nodes,
 		"",
@@ -55,6 +55,11 @@ func newValidationRuleError(message string, nodes []ast.Node) (string, error) {
 		[]int{},
 		nil, // TODO: this is interim, until we port "better-error-messages-for-inputs"
 	)
+}
+
+func reportErrorAndReturn(context *ValidationContext, message string, nodes []ast.Node) (string, interface{}) {
+	context.ReportError(newValidationError(message, nodes))
+	return visitor.ActionNoChange, nil
 }
 
 /**
@@ -79,7 +84,8 @@ func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInsta
 							if argAST.Name != nil {
 								argNameValue = argAST.Name.Value
 							}
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`Argument "%v" expected type "%v" but got: %v.`,
 									argNameValue, argDef.Type, printer.Print(value)),
 								[]ast.Node{value},
@@ -119,14 +125,16 @@ func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleI
 						ttype := context.InputType()
 
 						if ttype, ok := ttype.(*NonNull); ok && defaultValue != nil {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`Variable "$%v" of type "%v" is required and will not use the default value. Perhaps you meant to use type "%v".`,
 									name, ttype, ttype.OfType),
 								[]ast.Node{defaultValue},
 							)
 						}
 						if ttype != nil && defaultValue != nil && !isValidLiteralValue(ttype, defaultValue) {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`Variable "$%v" of type "%v" has invalid default value: %v.`,
 									name, ttype, printer.Print(defaultValue)),
 								[]ast.Node{defaultValue},
@@ -167,7 +175,8 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 								if node.Name != nil {
 									nodeName = node.Name.Value
 								}
-								return newValidationRuleError(
+								return reportErrorAndReturn(
+									context,
 									fmt.Sprintf(`Cannot query field "%v" on "%v".`,
 										nodeName, ttype.Name()),
 									[]ast.Node{node},
@@ -201,7 +210,8 @@ func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleIn
 					if node, ok := p.Node.(*ast.InlineFragment); ok {
 						ttype := context.Type()
 						if ttype != nil && !IsCompositeType(ttype) {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`Fragment cannot condition on non composite type "%v".`, ttype),
 								[]ast.Node{node.TypeCondition},
 							)
@@ -219,7 +229,8 @@ func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleIn
 							if node.Name != nil {
 								nodeName = node.Name.Value
 							}
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`Fragment "%v" cannot condition on non composite type "%v".`, nodeName, printer.Print(node.TypeCondition)),
 								[]ast.Node{node.TypeCondition},
 							)
@@ -278,7 +289,8 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 								if parentType != nil {
 									parentTypeName = parentType.Name()
 								}
-								return newValidationRuleError(
+								return reportErrorAndReturn(
+									context,
 									fmt.Sprintf(`Unknown argument "%v" on field "%v" of type "%v".`, nodeName, fieldDef.Name, parentTypeName),
 									[]ast.Node{node},
 								)
@@ -299,7 +311,8 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 								}
 							}
 							if directiveArgDef == nil {
-								return newValidationRuleError(
+								return reportErrorAndReturn(
+									context,
 									fmt.Sprintf(`Unknown argument "%v" on directive "@%v".`, nodeName, directive.Name),
 									[]ast.Node{node},
 								)
@@ -344,7 +357,8 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 							}
 						}
 						if directiveDef == nil {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`Unknown directive "%v".`, nodeName),
 								[]ast.Node{node},
 							)
@@ -359,13 +373,15 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 						}
 
 						if appliedTo.GetKind() == kinds.OperationDefinition && directiveDef.OnOperation == false {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "operation"),
 								[]ast.Node{node},
 							)
 						}
 						if appliedTo.GetKind() == kinds.Field && directiveDef.OnField == false {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "field"),
 								[]ast.Node{node},
 							)
@@ -373,7 +389,8 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 						if (appliedTo.GetKind() == kinds.FragmentSpread ||
 							appliedTo.GetKind() == kinds.InlineFragment ||
 							appliedTo.GetKind() == kinds.FragmentDefinition) && directiveDef.OnFragment == false {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "fragment"),
 								[]ast.Node{node},
 							)
@@ -413,7 +430,8 @@ func KnownFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 
 						fragment := context.Fragment(fragmentName)
 						if fragment == nil {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`Unknown fragment "%v".`, fragmentName),
 								[]ast.Node{node.Name},
 							)
@@ -449,7 +467,8 @@ func KnownTypeNamesRule(context *ValidationContext) *ValidationRuleInstance {
 						}
 						ttype := context.Schema().Type(typeNameValue)
 						if ttype == nil {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`Unknown type "%v".`, typeNameValue),
 								[]ast.Node{node},
 							)
@@ -493,7 +512,8 @@ func LoneAnonymousOperationRule(context *ValidationContext) *ValidationRuleInsta
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.OperationDefinition); ok {
 						if node.Name == nil && operationCount > 1 {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								`This anonymous operation must be the only defined operation.`,
 								[]ast.Node{node},
 							)
@@ -558,7 +578,6 @@ func NoFragmentCyclesRule(context *ValidationContext) *ValidationRuleInstance {
 			kinds.FragmentDefinition: visitor.NamedVisitFuncs{
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.FragmentDefinition); ok && node != nil {
-						errors := []error{}
 						spreadPath := []*ast.FragmentSpread{}
 						initialName := ""
 						if node.Name != nil {
@@ -594,11 +613,11 @@ func NoFragmentCyclesRule(context *ValidationContext) *ValidationRuleInstance {
 									if len(spreadNames) > 0 {
 										via = " via " + strings.Join(spreadNames, ", ")
 									}
-									_, err := newValidationRuleError(
+									err := newValidationError(
 										fmt.Sprintf(`Cannot spread fragment "%v" within itself%v.`, initialName, via),
 										cyclePath,
 									)
-									errors = append(errors, err)
+									context.ReportError(err)
 									continue
 								}
 								spreadPathHasCurrentNode := false
@@ -616,9 +635,6 @@ func NoFragmentCyclesRule(context *ValidationContext) *ValidationRuleInstance {
 							}
 						}
 						detectCycleRecursive(initialName)
-						if len(errors) > 0 {
-							return visitor.ActionNoChange, errors
-						}
 					}
 					return visitor.ActionNoChange, nil
 				},
@@ -681,12 +697,14 @@ func NoUndefinedVariablesRule(context *ValidationContext) *ValidationRuleInstanc
 								}
 							}
 							if withinFragment == true && operation != nil && operation.Name != nil {
-								return newValidationRuleError(
+								return reportErrorAndReturn(
+									context,
 									fmt.Sprintf(`Variable "$%v" is not defined by operation "%v".`, variableName, operation.Name.Value),
 									[]ast.Node{variable, operation},
 								)
 							}
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`Variable "$%v" is not defined.`, variableName),
 								[]ast.Node{variable},
 							)
@@ -791,7 +809,6 @@ func NoUnusedFragmentsRule(context *ValidationContext) *ValidationRuleInstance {
 					for _, spreadWithinOperation := range spreadsWithinOperation {
 						reduceSpreadFragments(spreadWithinOperation)
 					}
-					errors := []error{}
 					for _, def := range fragmentDefs {
 						defName := ""
 						if def.Name != nil {
@@ -800,16 +817,12 @@ func NoUnusedFragmentsRule(context *ValidationContext) *ValidationRuleInstance {
 
 						isFragNameUsed, ok := fragmentNameUsed[defName]
 						if !ok || isFragNameUsed != true {
-							_, err := newValidationRuleError(
+							err := newValidationError(
 								fmt.Sprintf(`Fragment "%v" is never used.`, defName),
 								[]ast.Node{def},
 							)
-
-							errors = append(errors, err)
+							context.ReportError(err)
 						}
-					}
-					if len(errors) > 0 {
-						return visitor.ActionNoChange, errors
 					}
 					return visitor.ActionNoChange, nil
 				},
@@ -844,22 +857,18 @@ func NoUnusedVariablesRule(context *ValidationContext) *ValidationRuleInstance {
 					return visitor.ActionNoChange, nil
 				},
 				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
-					errors := []error{}
 					for _, def := range variableDefs {
 						variableName := ""
 						if def.Variable != nil && def.Variable.Name != nil {
 							variableName = def.Variable.Name.Value
 						}
 						if isVariableNameUsed, _ := variableNameUsed[variableName]; isVariableNameUsed != true {
-							_, err := newValidationRuleError(
+							err := newValidationError(
 								fmt.Sprintf(`Variable "$%v" is never used.`, variableName),
 								[]ast.Node{def},
 							)
-							errors = append(errors, err)
+							context.ReportError(err)
 						}
-					}
-					if len(errors) > 0 {
-						return visitor.ActionNoChange, errors
 					}
 					return visitor.ActionNoChange, nil
 				},
@@ -1289,11 +1298,10 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 						)
 						conflicts := findConflicts(fieldMap)
 						if len(conflicts) > 0 {
-							errors := []error{}
 							for _, c := range conflicts {
 								responseName := c.Reason.Name
 								reason := c.Reason
-								_, err := newValidationRuleError(
+								err := newValidationError(
 									fmt.Sprintf(
 										`Fields "%v" conflict because %v.`,
 										responseName,
@@ -1301,10 +1309,9 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 									),
 									c.Fields,
 								)
-								errors = append(errors, err)
-
+								context.ReportError(err)
 							}
-							return visitor.ActionNoChange, errors
+							return visitor.ActionNoChange, nil
 						}
 					}
 					return visitor.ActionNoChange, nil
@@ -1387,7 +1394,8 @@ func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInst
 						parentType, _ := context.ParentType().(Type)
 
 						if fragType != nil && parentType != nil && !doTypesOverlap(fragType, parentType) {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`Fragment cannot be spread here as objects of `+
 									`type "%v" can never be of type "%v".`, parentType, fragType),
 								[]ast.Node{node},
@@ -1407,7 +1415,8 @@ func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInst
 						fragType := getFragmentType(context, fragName)
 						parentType, _ := context.ParentType().(Type)
 						if fragType != nil && parentType != nil && !doTypesOverlap(fragType, parentType) {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`Fragment "%v" cannot be spread here as objects of `+
 									`type "%v" can never be of type "%v".`, fragName, parentType, fragType),
 								[]ast.Node{node},
@@ -1444,7 +1453,6 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 							return visitor.ActionSkip, nil
 						}
 
-						errors := []error{}
 						argASTs := fieldAST.Arguments
 
 						argASTMap := map[string]*ast.Argument{}
@@ -1463,17 +1471,14 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 									if fieldAST.Name != nil {
 										fieldName = fieldAST.Name.Value
 									}
-									_, err := newValidationRuleError(
+									err := newValidationError(
 										fmt.Sprintf(`Field "%v" argument "%v" of type "%v" `+
 											`is required but not provided.`, fieldName, argDef.Name(), argDefType),
 										[]ast.Node{fieldAST},
 									)
-									errors = append(errors, err)
+									context.ReportError(err)
 								}
 							}
-						}
-						if len(errors) > 0 {
-							return visitor.ActionNoChange, errors
 						}
 					}
 					return visitor.ActionNoChange, nil
@@ -1488,7 +1493,6 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 						if directiveDef == nil {
 							return visitor.ActionSkip, nil
 						}
-						errors := []error{}
 						argASTs := directiveAST.Arguments
 
 						argASTMap := map[string]*ast.Argument{}
@@ -1508,17 +1512,14 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 									if directiveAST.Name != nil {
 										directiveName = directiveAST.Name.Value
 									}
-									_, err := newValidationRuleError(
+									err := newValidationError(
 										fmt.Sprintf(`Directive "@%v" argument "%v" of type `+
 											`"%v" is required but not provided.`, directiveName, argDef.Name(), argDefType),
 										[]ast.Node{directiveAST},
 									)
-									errors = append(errors, err)
+									context.ReportError(err)
 								}
 							}
-						}
-						if len(errors) > 0 {
-							return visitor.ActionNoChange, errors
 						}
 					}
 					return visitor.ActionNoChange, nil
@@ -1553,13 +1554,15 @@ func ScalarLeafsRule(context *ValidationContext) *ValidationRuleInstance {
 						if ttype != nil {
 							if IsLeafType(ttype) {
 								if node.SelectionSet != nil {
-									return newValidationRuleError(
+									return reportErrorAndReturn(
+										context,
 										fmt.Sprintf(`Field "%v" of type "%v" must not have a sub selection.`, nodeName, ttype),
 										[]ast.Node{node.SelectionSet},
 									)
 								}
 							} else if node.SelectionSet == nil {
-								return newValidationRuleError(
+								return reportErrorAndReturn(
+									context,
 									fmt.Sprintf(`Field "%v" of type "%v" must have a sub selection.`, nodeName, ttype),
 									[]ast.Node{node},
 								)
@@ -1608,7 +1611,8 @@ func UniqueArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance
 							argName = node.Name.Value
 						}
 						if nameAST, ok := knownArgNames[argName]; ok {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`There can be only one argument named "%v".`, argName),
 								[]ast.Node{nameAST, node.Name},
 							)
@@ -1644,7 +1648,8 @@ func UniqueFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance
 							fragmentName = node.Name.Value
 						}
 						if nameAST, ok := knownFragmentNames[fragmentName]; ok {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`There can only be one fragment named "%v".`, fragmentName),
 								[]ast.Node{nameAST, node.Name},
 							)
@@ -1695,7 +1700,8 @@ func UniqueInputFieldNamesRule(context *ValidationContext) *ValidationRuleInstan
 							fieldName = node.Name.Value
 						}
 						if knownNameAST, ok := knownNames[fieldName]; ok {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`There can be only one input field named "%v".`, fieldName),
 								[]ast.Node{knownNameAST, node.Name},
 							)
@@ -1733,7 +1739,8 @@ func UniqueOperationNamesRule(context *ValidationContext) *ValidationRuleInstanc
 							operationName = node.Name.Value
 						}
 						if nameAST, ok := knownOperationNames[operationName]; ok {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`There can only be one operation named "%v".`, operationName),
 								[]ast.Node{nameAST, node.Name},
 							)
@@ -1772,7 +1779,8 @@ func VariablesAreInputTypesRule(context *ValidationContext) *ValidationRuleInsta
 							if node.Variable != nil && node.Variable.Name != nil {
 								variableName = node.Variable.Name.Value
 							}
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`Variable "$%v" cannot be non-input type "%v".`,
 									variableName, printer.Print(node.Type)),
 								[]ast.Node{node.Type},
@@ -1882,7 +1890,8 @@ func VariablesInAllowedPositionRule(context *ValidationContext) *ValidationRuleI
 						}
 						inputType := context.InputType()
 						if varType != nil && inputType != nil && !varTypeAllowedForType(effectiveType(varType, varDef), inputType) {
-							return newValidationRuleError(
+							return reportErrorAndReturn(
+								context,
 								fmt.Sprintf(`Variable "$%v" of type "%v" used in position `+
 									`expecting type "%v".`, varName, varType, inputType),
 								[]ast.Node{variableAST},
