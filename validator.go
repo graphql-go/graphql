@@ -34,6 +34,22 @@ func ValidateDocument(schema *Schema, astDoc *ast.Document, rules []ValidationRu
 }
 
 func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRuleFn) []gqlerrors.FormattedError {
+
+	typeInfo := NewTypeInfo(schema)
+	context := NewValidationContext(schema, astDoc, typeInfo)
+	visitors := []*visitor.VisitorOptions{}
+
+	for _, rule := range rules {
+		instance := rule(context)
+		visitors = append(visitors, instance.VisitorOpts)
+	}
+
+	// Visit the whole document with each instance of all provided rules.
+	visitor.Visit(astDoc, visitor.VisitWithTypeInfo(typeInfo, visitor.VisitInParallel(visitors)), nil)
+	return context.Errors()
+}
+
+func visitUsingRulesOld(schema *Schema, astDoc *ast.Document, rules []ValidationRuleFn) []gqlerrors.FormattedError {
 	typeInfo := NewTypeInfo(schema)
 	context := NewValidationContext(schema, astDoc, typeInfo)
 
@@ -61,7 +77,7 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 
 					// Get the visitor function from the validation instance, and if it
 					// exists, call it with the visitor arguments.
-					enterFn := visitor.GetVisitFn(instance.VisitorOpts, false, kind)
+					enterFn := visitor.GetVisitFn(instance.VisitorOpts, kind, false)
 					if enterFn != nil {
 						action, result = enterFn(p)
 					}
@@ -102,7 +118,7 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 
 					// Get the visitor function from the validation instance, and if it
 					// exists, call it with the visitor arguments.
-					leaveFn := visitor.GetVisitFn(instance.VisitorOpts, true, kind)
+					leaveFn := visitor.GetVisitFn(instance.VisitorOpts, kind, true)
 					if leaveFn != nil {
 						action, result = leaveFn(p)
 					}
@@ -126,19 +142,42 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 	return context.Errors()
 }
 
+type HasSelectionSet interface {
+	GetKind() string
+	GetLoc() *ast.Location
+	GetSelectionSet() *ast.SelectionSet
+}
+
+var _ HasSelectionSet = (*ast.OperationDefinition)(nil)
+var _ HasSelectionSet = (*ast.FragmentDefinition)(nil)
+
+type VariableUsage struct {
+	Node *ast.Variable
+	Type Input
+}
+
 type ValidationContext struct {
-	schema    *Schema
-	astDoc    *ast.Document
-	typeInfo  *TypeInfo
-	fragments map[string]*ast.FragmentDefinition
-	errors    []gqlerrors.FormattedError
+	schema                         *Schema
+	astDoc                         *ast.Document
+	typeInfo                       *TypeInfo
+	errors                         []gqlerrors.FormattedError
+	fragments                      map[string]*ast.FragmentDefinition
+	variableUsages                 map[HasSelectionSet][]*VariableUsage
+	recursiveVariableUsages        map[*ast.OperationDefinition][]*VariableUsage
+	recursivelyReferencedFragments map[*ast.OperationDefinition][]*ast.FragmentDefinition
+	fragmentSpreads                map[HasSelectionSet][]*ast.FragmentSpread
 }
 
 func NewValidationContext(schema *Schema, astDoc *ast.Document, typeInfo *TypeInfo) *ValidationContext {
 	return &ValidationContext{
-		schema:   schema,
-		astDoc:   astDoc,
-		typeInfo: typeInfo,
+		schema:                         schema,
+		astDoc:                         astDoc,
+		typeInfo:                       typeInfo,
+		fragments:                      map[string]*ast.FragmentDefinition{},
+		variableUsages:                 map[HasSelectionSet][]*VariableUsage{},
+		recursiveVariableUsages:        map[*ast.OperationDefinition][]*VariableUsage{},
+		recursivelyReferencedFragments: map[*ast.OperationDefinition][]*ast.FragmentDefinition{},
+		fragmentSpreads:                map[HasSelectionSet][]*ast.FragmentSpread{},
 	}
 }
 
@@ -177,7 +216,126 @@ func (ctx *ValidationContext) Fragment(name string) *ast.FragmentDefinition {
 	f, _ := ctx.fragments[name]
 	return f
 }
+func (ctx *ValidationContext) FragmentSpreads(node HasSelectionSet) []*ast.FragmentSpread {
+	if spreads, ok := ctx.fragmentSpreads[node]; ok && spreads != nil {
+		return spreads
+	}
 
+	spreads := []*ast.FragmentSpread{}
+	setsToVisit := []*ast.SelectionSet{node.GetSelectionSet()}
+
+	for {
+		if len(setsToVisit) == 0 {
+			break
+		}
+		var set *ast.SelectionSet
+		// pop
+		set, setsToVisit = setsToVisit[len(setsToVisit)-1], setsToVisit[:len(setsToVisit)-1]
+		if set.Selections != nil {
+			for _, selection := range set.Selections {
+				switch selection := selection.(type) {
+				case *ast.FragmentSpread:
+					spreads = append(spreads, selection)
+				case *ast.Field:
+					if selection.SelectionSet != nil {
+						setsToVisit = append(setsToVisit, selection.SelectionSet)
+					}
+				case *ast.InlineFragment:
+					if selection.SelectionSet != nil {
+						setsToVisit = append(setsToVisit, selection.SelectionSet)
+					}
+				}
+			}
+		}
+		ctx.fragmentSpreads[node] = spreads
+	}
+	return spreads
+}
+
+func (ctx *ValidationContext) RecursivelyReferencedFragments(operation *ast.OperationDefinition) []*ast.FragmentDefinition {
+	if fragments, ok := ctx.recursivelyReferencedFragments[operation]; ok && fragments != nil {
+		return fragments
+	}
+
+	fragments := []*ast.FragmentDefinition{}
+	collectedNames := map[string]bool{}
+	nodesToVisit := []HasSelectionSet{operation}
+
+	for {
+		if len(nodesToVisit) == 0 {
+			break
+		}
+
+		var node HasSelectionSet
+
+		node, nodesToVisit = nodesToVisit[len(nodesToVisit)-1], nodesToVisit[:len(nodesToVisit)-1]
+		spreads := ctx.FragmentSpreads(node)
+		for _, spread := range spreads {
+			fragName := ""
+			if spread.Name != nil {
+				fragName = spread.Name.Value
+			}
+			if res, ok := collectedNames[fragName]; !ok || !res {
+				collectedNames[fragName] = true
+				fragment := ctx.Fragment(fragName)
+				if fragment != nil {
+					fragments = append(fragments, fragment)
+					nodesToVisit = append(nodesToVisit, fragment)
+				}
+			}
+
+		}
+	}
+
+	ctx.recursivelyReferencedFragments[operation] = fragments
+	return fragments
+}
+func (ctx *ValidationContext) VariableUsages(node HasSelectionSet) []*VariableUsage {
+	if usages, ok := ctx.variableUsages[node]; ok && usages != nil {
+		return usages
+	}
+	usages := []*VariableUsage{}
+	typeInfo := NewTypeInfo(ctx.schema)
+
+	visitor.Visit(node, visitor.VisitWithTypeInfo(typeInfo, &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.VariableDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					return visitor.ActionSkip, nil
+				},
+			},
+			kinds.Variable: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.Variable); ok && node != nil {
+						usages = append(usages, &VariableUsage{
+							Node: node,
+							Type: typeInfo.InputType(),
+						})
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}), nil)
+
+	ctx.variableUsages[node] = usages
+	return usages
+}
+func (ctx *ValidationContext) RecursiveVariableUsages(operation *ast.OperationDefinition) []*VariableUsage {
+	if usages, ok := ctx.recursiveVariableUsages[operation]; ok && usages != nil {
+		return usages
+	}
+	usages := ctx.VariableUsages(operation)
+
+	fragments := ctx.RecursivelyReferencedFragments(operation)
+	for _, fragment := range fragments {
+		fragmentUsages := ctx.VariableUsages(fragment)
+		usages = append(usages, fragmentUsages...)
+	}
+
+	ctx.recursiveVariableUsages[operation] = usages
+	return usages
+}
 func (ctx *ValidationContext) Type() Output {
 	return ctx.typeInfo.Type()
 }

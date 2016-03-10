@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/graphql-go/graphql/language/ast"
+	"github.com/graphql-go/graphql/language/type_info"
 	"reflect"
 )
 
@@ -380,7 +381,7 @@ Loop:
 				kind = node.GetKind()
 			}
 
-			visitFn := GetVisitFn(visitorOpts, isLeaving, kind)
+			visitFn := GetVisitFn(visitorOpts, kind, isLeaving)
 			if visitFn != nil {
 				p := VisitFuncParams{
 					Node:      nodeIn,
@@ -709,7 +710,144 @@ func isNilNode(node interface{}) bool {
 	return val.Interface() == nil
 }
 
-func GetVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitFunc {
+/**
+ * Creates a new visitor instance which delegates to many visitors to run in
+ * parallel. Each visitor will be visited for each node before moving on.
+ *
+ * Visitors must not directly modify the AST nodes and only returning false to
+ * skip sub-branches is supported.
+ */
+func VisitInParallel(visitorOptsSlice []*VisitorOptions) *VisitorOptions {
+	skipping := map[int]interface{}{}
+
+	return &VisitorOptions{
+		Enter: func(p VisitFuncParams) (string, interface{}) {
+			for i, visitorOpts := range visitorOptsSlice {
+				if _, ok := skipping[i]; !ok {
+					switch node := p.Node.(type) {
+					case ast.Node:
+						kind := node.GetKind()
+						fn := GetVisitFn(visitorOpts, kind, false)
+						if fn != nil {
+							action, _ := fn(p)
+							if action == ActionSkip {
+								skipping[i] = node
+							}
+						}
+					}
+				}
+			}
+			return ActionNoChange, nil
+		},
+		Leave: func(p VisitFuncParams) (string, interface{}) {
+			for i, visitorOpts := range visitorOptsSlice {
+				if _, ok := skipping[i]; !ok {
+					switch node := p.Node.(type) {
+					case ast.Node:
+						kind := node.GetKind()
+						fn := GetVisitFn(visitorOpts, kind, true)
+						if fn != nil {
+							fn(p)
+						}
+					}
+				} else {
+					delete(skipping, i)
+				}
+			}
+			return ActionNoChange, nil
+		},
+	}
+}
+
+/**
+ * Creates a new visitor instance which maintains a provided TypeInfo instance
+ * along with visiting visitor.
+ *
+ * Visitors must not directly modify the AST nodes and only returning false to
+ * skip sub-branches is supported.
+ */
+func VisitWithTypeInfo(typeInfo type_info.TypeInfoI, visitorOpts *VisitorOptions) *VisitorOptions {
+	return &VisitorOptions{
+		Enter: func(p VisitFuncParams) (string, interface{}) {
+			if node, ok := p.Node.(ast.Node); ok {
+				typeInfo.Enter(node)
+				fn := GetVisitFn(visitorOpts, node.GetKind(), false)
+				if fn != nil {
+					action, _ := fn(p)
+					if action == ActionSkip {
+						typeInfo.Leave(node)
+						return ActionSkip, nil
+					}
+				}
+			}
+			return ActionNoChange, nil
+		},
+		Leave: func(p VisitFuncParams) (string, interface{}) {
+			if node, ok := p.Node.(ast.Node); ok {
+				fn := GetVisitFn(visitorOpts, node.GetKind(), true)
+				if fn != nil {
+					fn(p)
+				}
+				typeInfo.Leave(node)
+			}
+			return ActionNoChange, nil
+		},
+	}
+}
+
+/**
+ * Given a visitor instance, if it is leaving or not, and a node kind, return
+ * the function the visitor runtime should call.
+ */
+func GetVisitFn(visitorOpts *VisitorOptions, kind string, isLeaving bool) VisitFunc {
+	if visitorOpts == nil {
+		return nil
+	}
+	kindVisitor, ok := visitorOpts.KindFuncMap[kind]
+	if ok {
+		if !isLeaving && kindVisitor.Kind != nil {
+			// { Kind() {} }
+			return kindVisitor.Kind
+		}
+		if isLeaving {
+			// { Kind: { leave() {} } }
+			return kindVisitor.Leave
+		} else {
+			// { Kind: { enter() {} } }
+			return kindVisitor.Enter
+		}
+	} else {
+
+		if isLeaving {
+			// { enter() {} }
+			specificVisitor := visitorOpts.Leave
+			if specificVisitor != nil {
+				return specificVisitor
+			}
+			if specificKindVisitor, ok := visitorOpts.LeaveKindMap[kind]; ok {
+				// { leave: { Kind() {} } }
+				return specificKindVisitor
+			}
+
+		} else {
+			// { leave() {} }
+			specificVisitor := visitorOpts.Enter
+			if specificVisitor != nil {
+				return specificVisitor
+			}
+			if specificKindVisitor, ok := visitorOpts.EnterKindMap[kind]; ok {
+				// { enter: { Kind() {} } }
+				return specificKindVisitor
+			}
+		}
+	}
+
+	return nil
+}
+
+///// DELETE ////
+
+func GetVisitFnOld(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitFunc {
 	if visitorOpts == nil {
 		return nil
 	}
@@ -753,3 +891,38 @@ func GetVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitF
 
 	return nil
 }
+
+/*
+
+
+export function getVisitFn(visitor, isLeaving, kind) {
+  var kindVisitor = visitor[kind];
+  if (kindVisitor) {
+    if (!isLeaving && typeof kindVisitor === 'function') {
+      // { Kind() {} }
+      return kindVisitor;
+    }
+    var kindSpecificVisitor = isLeaving ? kindVisitor.leave : kindVisitor.enter;
+    if (typeof kindSpecificVisitor === 'function') {
+      // { Kind: { enter() {}, leave() {} } }
+      return kindSpecificVisitor;
+    }
+    return;
+  }
+  var specificVisitor = isLeaving ? visitor.leave : visitor.enter;
+  if (specificVisitor) {
+    if (typeof specificVisitor === 'function') {
+      // { enter() {}, leave() {} }
+      return specificVisitor;
+    }
+    var specificKindVisitor = specificVisitor[kind];
+    if (typeof specificKindVisitor === 'function') {
+      // { enter: { Kind() {} }, leave: { Kind() {} } }
+      return specificKindVisitor;
+    }
+  }
+}
+
+
+
+*/
