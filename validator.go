@@ -45,7 +45,7 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 	}
 
 	// Visit the whole document with each instance of all provided rules.
-	visitor.Visit(astDoc, visitor.VisitWithTypeInfo(typeInfo, visitor.VisitInParallel(visitors)), nil)
+	visitor.Visit(astDoc, visitor.VisitWithTypeInfo(typeInfo, visitor.VisitInParallel(visitors...)), nil)
 	return context.Errors()
 }
 

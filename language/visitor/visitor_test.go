@@ -234,6 +234,65 @@ func TestVisitor_AllowsEarlyExitWhileVisiting(t *testing.T) {
 	}
 }
 
+func TestVisitor_AllowsEarlyExitWhileLeaving(t *testing.T) {
+
+	visited := []interface{}{}
+
+	query := `{ a, b { x }, c }`
+	astDoc := parse(t, query)
+
+	expectedVisited := []interface{}{
+		[]interface{}{"enter", "Document", nil},
+		[]interface{}{"enter", "OperationDefinition", nil},
+		[]interface{}{"enter", "SelectionSet", nil},
+		[]interface{}{"enter", "Field", nil},
+		[]interface{}{"enter", "Name", "a"},
+		[]interface{}{"leave", "Name", "a"},
+		[]interface{}{"leave", "Field", nil},
+		[]interface{}{"enter", "Field", nil},
+		[]interface{}{"enter", "Name", "b"},
+		[]interface{}{"leave", "Name", "b"},
+		[]interface{}{"enter", "SelectionSet", nil},
+		[]interface{}{"enter", "Field", nil},
+		[]interface{}{"enter", "Name", "x"},
+		[]interface{}{"leave", "Name", "x"},
+	}
+
+	v := &visitor.VisitorOptions{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"enter", node.Kind, node.Value})
+			case ast.Node:
+				visited = append(visited, []interface{}{"enter", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"enter", nil, nil})
+			}
+			return visitor.ActionNoChange, nil
+		},
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"leave", node.Kind, node.Value})
+				if node.Value == "x" {
+					return visitor.ActionBreak, nil
+				}
+			case ast.Node:
+				visited = append(visited, []interface{}{"leave", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"leave", nil, nil})
+			}
+			return visitor.ActionNoChange, nil
+		},
+	}
+
+	_ = visitor.Visit(astDoc, v, nil)
+
+	if !reflect.DeepEqual(visited, expectedVisited) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
+	}
+}
+
 func TestVisitor_AllowsANamedFunctionsVisitorAPI(t *testing.T) {
 
 	query := `{ a, b { x }, c }`
@@ -601,35 +660,33 @@ func TestVisitor_VisitInParallel_AllowsSkippingASubTree(t *testing.T) {
 		[]interface{}{"leave", "Document", nil},
 	}
 
-	v := []*visitor.VisitorOptions{
-		&visitor.VisitorOptions{
-			Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
-				switch node := p.Node.(type) {
-				case *ast.Name:
-					visited = append(visited, []interface{}{"enter", node.Kind, node.Value})
-				case *ast.Field:
-					visited = append(visited, []interface{}{"enter", node.Kind, nil})
-					if node.Name != nil && node.Name.Value == "b" {
-						return visitor.ActionSkip, nil
-					}
-				case ast.Node:
-					visited = append(visited, []interface{}{"enter", node.GetKind(), nil})
-				default:
-					visited = append(visited, []interface{}{"enter", nil, nil})
+	v := &visitor.VisitorOptions{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"enter", node.Kind, node.Value})
+			case *ast.Field:
+				visited = append(visited, []interface{}{"enter", node.Kind, nil})
+				if node.Name != nil && node.Name.Value == "b" {
+					return visitor.ActionSkip, nil
 				}
-				return visitor.ActionNoChange, nil
-			},
-			Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
-				switch node := p.Node.(type) {
-				case *ast.Name:
-					visited = append(visited, []interface{}{"leave", node.Kind, node.Value})
-				case ast.Node:
-					visited = append(visited, []interface{}{"leave", node.GetKind(), nil})
-				default:
-					visited = append(visited, []interface{}{"leave", nil, nil})
-				}
-				return visitor.ActionNoChange, nil
-			},
+			case ast.Node:
+				visited = append(visited, []interface{}{"enter", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"enter", nil, nil})
+			}
+			return visitor.ActionNoChange, nil
+		},
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"leave", node.Kind, node.Value})
+			case ast.Node:
+				visited = append(visited, []interface{}{"leave", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"leave", nil, nil})
+			}
+			return visitor.ActionNoChange, nil
 		},
 	}
 
@@ -744,7 +801,333 @@ func TestVisitor_VisitInParallel_AllowsSkippingDifferentSubTrees(t *testing.T) {
 		},
 	}
 
+	_ = visitor.Visit(astDoc, visitor.VisitInParallel(v...), nil)
+
+	if !reflect.DeepEqual(visited, expectedVisited) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
+	}
+}
+
+func TestVisitor_VisitInParallel_AllowsEarlyExitWhileVisiting(t *testing.T) {
+
+	// Note: nearly identical to the above test of the same test but
+	// using visitInParallel.
+
+	visited := []interface{}{}
+
+	query := `{ a, b { x }, c }`
+	astDoc := parse(t, query)
+
+	expectedVisited := []interface{}{
+		[]interface{}{"enter", "Document", nil},
+		[]interface{}{"enter", "OperationDefinition", nil},
+		[]interface{}{"enter", "SelectionSet", nil},
+		[]interface{}{"enter", "Field", nil},
+		[]interface{}{"enter", "Name", "a"},
+		[]interface{}{"leave", "Name", "a"},
+		[]interface{}{"leave", "Field", nil},
+		[]interface{}{"enter", "Field", nil},
+		[]interface{}{"enter", "Name", "b"},
+		[]interface{}{"leave", "Name", "b"},
+		[]interface{}{"enter", "SelectionSet", nil},
+		[]interface{}{"enter", "Field", nil},
+		[]interface{}{"enter", "Name", "x"},
+	}
+
+	v := &visitor.VisitorOptions{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"enter", node.Kind, node.Value})
+				if node.Value == "x" {
+					return visitor.ActionBreak, nil
+				}
+			case ast.Node:
+				visited = append(visited, []interface{}{"enter", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"enter", nil, nil})
+			}
+			return visitor.ActionNoChange, nil
+		},
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"leave", node.Kind, node.Value})
+			case ast.Node:
+				visited = append(visited, []interface{}{"leave", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"leave", nil, nil})
+			}
+			return visitor.ActionNoChange, nil
+		},
+	}
+
 	_ = visitor.Visit(astDoc, visitor.VisitInParallel(v), nil)
+
+	if !reflect.DeepEqual(visited, expectedVisited) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
+	}
+}
+
+func TestVisitor_VisitInParallel_AllowsEarlyExitFromDifferentPoints(t *testing.T) {
+
+	visited := []interface{}{}
+
+	query := `{ a { y }, b { x } }`
+	astDoc := parse(t, query)
+
+	expectedVisited := []interface{}{
+		[]interface{}{"break-a", "enter", "Document", nil},
+		[]interface{}{"break-b", "enter", "Document", nil},
+		[]interface{}{"break-a", "enter", "OperationDefinition", nil},
+		[]interface{}{"break-b", "enter", "OperationDefinition", nil},
+		[]interface{}{"break-a", "enter", "SelectionSet", nil},
+		[]interface{}{"break-b", "enter", "SelectionSet", nil},
+		[]interface{}{"break-a", "enter", "Field", nil},
+		[]interface{}{"break-b", "enter", "Field", nil},
+		[]interface{}{"break-a", "enter", "Name", "a"},
+		[]interface{}{"break-b", "enter", "Name", "a"},
+		[]interface{}{"break-b", "leave", "Name", "a"},
+		[]interface{}{"break-b", "enter", "SelectionSet", nil},
+		[]interface{}{"break-b", "enter", "Field", nil},
+		[]interface{}{"break-b", "enter", "Name", "y"},
+		[]interface{}{"break-b", "leave", "Name", "y"},
+		[]interface{}{"break-b", "leave", "Field", nil},
+		[]interface{}{"break-b", "leave", "SelectionSet", nil},
+		[]interface{}{"break-b", "leave", "Field", nil},
+		[]interface{}{"break-b", "enter", "Field", nil},
+		[]interface{}{"break-b", "enter", "Name", "b"},
+	}
+
+	v := &visitor.VisitorOptions{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"break-a", "enter", node.Kind, node.Value})
+				if node != nil && node.Value == "a" {
+					return visitor.ActionBreak, nil
+				}
+			case ast.Node:
+				visited = append(visited, []interface{}{"break-a", "enter", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"break-a", "enter", nil, nil})
+			}
+			return visitor.ActionNoChange, nil
+		},
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"break-a", "leave", node.Kind, node.Value})
+			case ast.Node:
+				visited = append(visited, []interface{}{"break-a", "leave", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"break-a", "leave", nil, nil})
+			}
+			return visitor.ActionNoChange, nil
+		},
+	}
+
+	v2 := &visitor.VisitorOptions{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"break-b", "enter", node.Kind, node.Value})
+				if node != nil && node.Value == "b" {
+					return visitor.ActionBreak, nil
+				}
+			case ast.Node:
+				visited = append(visited, []interface{}{"break-b", "enter", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"break-b", "enter", nil, nil})
+			}
+			return visitor.ActionNoChange, nil
+		},
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"break-b", "leave", node.Kind, node.Value})
+			case ast.Node:
+				visited = append(visited, []interface{}{"break-b", "leave", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"break-b", "leave", nil, nil})
+			}
+			return visitor.ActionNoChange, nil
+		},
+	}
+
+	_ = visitor.Visit(astDoc, visitor.VisitInParallel(v, v2), nil)
+
+	if !reflect.DeepEqual(visited, expectedVisited) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
+	}
+}
+
+func TestVisitor_VisitInParallel_AllowsEarlyExitWhileLeaving(t *testing.T) {
+
+	visited := []interface{}{}
+
+	query := `{ a, b { x }, c }`
+	astDoc := parse(t, query)
+
+	expectedVisited := []interface{}{
+		[]interface{}{"enter", "Document", nil},
+		[]interface{}{"enter", "OperationDefinition", nil},
+		[]interface{}{"enter", "SelectionSet", nil},
+		[]interface{}{"enter", "Field", nil},
+		[]interface{}{"enter", "Name", "a"},
+		[]interface{}{"leave", "Name", "a"},
+		[]interface{}{"leave", "Field", nil},
+		[]interface{}{"enter", "Field", nil},
+		[]interface{}{"enter", "Name", "b"},
+		[]interface{}{"leave", "Name", "b"},
+		[]interface{}{"enter", "SelectionSet", nil},
+		[]interface{}{"enter", "Field", nil},
+		[]interface{}{"enter", "Name", "x"},
+		[]interface{}{"leave", "Name", "x"},
+	}
+
+	v := &visitor.VisitorOptions{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"enter", node.Kind, node.Value})
+			case ast.Node:
+				visited = append(visited, []interface{}{"enter", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"enter", nil, nil})
+			}
+			return visitor.ActionNoChange, nil
+		},
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"leave", node.Kind, node.Value})
+				if node.Value == "x" {
+					return visitor.ActionBreak, nil
+				}
+			case ast.Node:
+				visited = append(visited, []interface{}{"leave", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"leave", nil, nil})
+			}
+			return visitor.ActionNoChange, nil
+		},
+	}
+
+	_ = visitor.Visit(astDoc, visitor.VisitInParallel(v), nil)
+
+	if !reflect.DeepEqual(visited, expectedVisited) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
+	}
+}
+
+func TestVisitor_VisitInParallel_AllowsEarlyExitFromLeavingDifferentPoints(t *testing.T) {
+
+	visited := []interface{}{}
+
+	query := `{ a { y }, b { x } }`
+	astDoc := parse(t, query)
+
+	expectedVisited := []interface{}{
+		[]interface{}{"break-a", "enter", "Document", nil},
+		[]interface{}{"break-b", "enter", "Document", nil},
+		[]interface{}{"break-a", "enter", "OperationDefinition", nil},
+		[]interface{}{"break-b", "enter", "OperationDefinition", nil},
+		[]interface{}{"break-a", "enter", "SelectionSet", nil},
+		[]interface{}{"break-b", "enter", "SelectionSet", nil},
+		[]interface{}{"break-a", "enter", "Field", nil},
+		[]interface{}{"break-b", "enter", "Field", nil},
+		[]interface{}{"break-a", "enter", "Name", "a"},
+		[]interface{}{"break-b", "enter", "Name", "a"},
+		[]interface{}{"break-a", "leave", "Name", "a"},
+		[]interface{}{"break-b", "leave", "Name", "a"},
+		[]interface{}{"break-a", "enter", "SelectionSet", nil},
+		[]interface{}{"break-b", "enter", "SelectionSet", nil},
+		[]interface{}{"break-a", "enter", "Field", nil},
+		[]interface{}{"break-b", "enter", "Field", nil},
+		[]interface{}{"break-a", "enter", "Name", "y"},
+		[]interface{}{"break-b", "enter", "Name", "y"},
+		[]interface{}{"break-a", "leave", "Name", "y"},
+		[]interface{}{"break-b", "leave", "Name", "y"},
+		[]interface{}{"break-a", "leave", "Field", nil},
+		[]interface{}{"break-b", "leave", "Field", nil},
+		[]interface{}{"break-a", "leave", "SelectionSet", nil},
+		[]interface{}{"break-b", "leave", "SelectionSet", nil},
+		[]interface{}{"break-a", "leave", "Field", nil},
+		[]interface{}{"break-b", "leave", "Field", nil},
+		[]interface{}{"break-b", "enter", "Field", nil},
+		[]interface{}{"break-b", "enter", "Name", "b"},
+		[]interface{}{"break-b", "leave", "Name", "b"},
+		[]interface{}{"break-b", "enter", "SelectionSet", nil},
+		[]interface{}{"break-b", "enter", "Field", nil},
+		[]interface{}{"break-b", "enter", "Name", "x"},
+		[]interface{}{"break-b", "leave", "Name", "x"},
+		[]interface{}{"break-b", "leave", "Field", nil},
+		[]interface{}{"break-b", "leave", "SelectionSet", nil},
+		[]interface{}{"break-b", "leave", "Field", nil},
+	}
+
+	v := &visitor.VisitorOptions{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"break-a", "enter", node.Kind, node.Value})
+			case ast.Node:
+				visited = append(visited, []interface{}{"break-a", "enter", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"break-a", "enter", nil, nil})
+			}
+			return visitor.ActionNoChange, nil
+		},
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Field:
+				visited = append(visited, []interface{}{"break-a", "leave", node.GetKind(), nil})
+				if node.Name != nil && node.Name.Value == "a" {
+					return visitor.ActionBreak, nil
+				}
+			case *ast.Name:
+				visited = append(visited, []interface{}{"break-a", "leave", node.Kind, node.Value})
+			case ast.Node:
+				visited = append(visited, []interface{}{"break-a", "leave", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"break-a", "leave", nil, nil})
+			}
+			return visitor.ActionNoChange, nil
+		},
+	}
+
+	v2 := &visitor.VisitorOptions{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"break-b", "enter", node.Kind, node.Value})
+			case ast.Node:
+				visited = append(visited, []interface{}{"break-b", "enter", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"break-b", "enter", nil, nil})
+			}
+			return visitor.ActionNoChange, nil
+		},
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Field:
+				visited = append(visited, []interface{}{"break-b", "leave", node.GetKind(), nil})
+				if node.Name != nil && node.Name.Value == "b" {
+					return visitor.ActionBreak, nil
+				}
+			case *ast.Name:
+				visited = append(visited, []interface{}{"break-b", "leave", node.Kind, node.Value})
+			case ast.Node:
+				visited = append(visited, []interface{}{"break-b", "leave", node.GetKind(), nil})
+			default:
+				visited = append(visited, []interface{}{"break-b", "leave", nil, nil})
+			}
+			return visitor.ActionNoChange, nil
+		},
+	}
+
+	_ = visitor.Visit(astDoc, visitor.VisitInParallel(v, v2), nil)
 
 	if !reflect.DeepEqual(visited, expectedVisited) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
