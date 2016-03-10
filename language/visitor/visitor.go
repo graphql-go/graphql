@@ -741,7 +741,8 @@ func VisitInParallel(visitorOptsSlice []*VisitorOptions) *VisitorOptions {
 		},
 		Leave: func(p VisitFuncParams) (string, interface{}) {
 			for i, visitorOpts := range visitorOptsSlice {
-				if _, ok := skipping[i]; !ok {
+				skippedNode, ok := skipping[i]
+				if !ok {
 					switch node := p.Node.(type) {
 					case ast.Node:
 						kind := node.GetKind()
@@ -750,7 +751,7 @@ func VisitInParallel(visitorOptsSlice []*VisitorOptions) *VisitorOptions {
 							fn(p)
 						}
 					}
-				} else {
+				} else if skippedNode == p.Node {
 					delete(skipping, i)
 				}
 			}
