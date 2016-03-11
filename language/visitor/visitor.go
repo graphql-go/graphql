@@ -714,8 +714,7 @@ func isNilNode(node interface{}) bool {
  * Creates a new visitor instance which delegates to many visitors to run in
  * parallel. Each visitor will be visited for each node before moving on.
  *
- * Visitors must not directly modify the AST nodes and only returning false to
- * skip sub-branches or BREAK to exit early is supported.
+ * If a prior visitor edits a node, no following visitors will see that node.
  */
 func VisitInParallel(visitorOptsSlice ...*VisitorOptions) *VisitorOptions {
 	skipping := map[int]interface{}{}
@@ -729,11 +728,13 @@ func VisitInParallel(visitorOptsSlice ...*VisitorOptions) *VisitorOptions {
 						kind := node.GetKind()
 						fn := GetVisitFn(visitorOpts, kind, false)
 						if fn != nil {
-							action, _ := fn(p)
+							action, result := fn(p)
 							if action == ActionSkip {
 								skipping[i] = node
 							} else if action == ActionBreak {
 								skipping[i] = ActionBreak
+							} else if action == ActionUpdate {
+								return ActionUpdate, result
 							}
 						}
 					}
@@ -750,9 +751,11 @@ func VisitInParallel(visitorOptsSlice ...*VisitorOptions) *VisitorOptions {
 						kind := node.GetKind()
 						fn := GetVisitFn(visitorOpts, kind, true)
 						if fn != nil {
-							action, _ := fn(p)
+							action, result := fn(p)
 							if action == ActionBreak {
 								skipping[i] = ActionBreak
+							} else if action == ActionUpdate {
+								return ActionUpdate, result
 							}
 						}
 					}
