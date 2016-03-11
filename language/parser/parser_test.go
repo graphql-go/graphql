@@ -10,6 +10,7 @@ import (
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/location"
+	"github.com/graphql-go/graphql/language/printer"
 	"github.com/graphql-go/graphql/language/source"
 )
 
@@ -186,6 +187,83 @@ func TestDoesNotAllowNullAsValue(t *testing.T) {
 		false,
 	}
 	testErrorMessage(t, test)
+}
+
+func TestParsesMultiByteCharacters(t *testing.T) {
+
+	doc := `
+        # This comment has a \u0A0A multi-byte character.
+        { field(arg: "Has a \u0A0A multi-byte character.") }
+	`
+	astDoc := parse(t, doc)
+
+	expectedASTDoc := ast.NewDocument(&ast.Document{
+		Loc: ast.NewLocation(&ast.Location{
+			Start: 67,
+			End:   121,
+		}),
+		Definitions: []ast.Node{
+			ast.NewOperationDefinition(&ast.OperationDefinition{
+				Loc: ast.NewLocation(&ast.Location{
+					Start: 67,
+					End:   119,
+				}),
+				Operation: "query",
+				SelectionSet: ast.NewSelectionSet(&ast.SelectionSet{
+					Loc: ast.NewLocation(&ast.Location{
+						Start: 67,
+						End:   119,
+					}),
+					Selections: []ast.Selection{
+						ast.NewField(&ast.Field{
+							Loc: ast.NewLocation(&ast.Location{
+								Start: 67,
+								End:   117,
+							}),
+							Name: ast.NewName(&ast.Name{
+								Loc: ast.NewLocation(&ast.Location{
+									Start: 69,
+									End:   74,
+								}),
+								Value: "field",
+							}),
+							Arguments: []*ast.Argument{
+								ast.NewArgument(&ast.Argument{
+									Loc: ast.NewLocation(&ast.Location{
+										Start: 75,
+										End:   116,
+									}),
+									Name: ast.NewName(&ast.Name{
+
+										Loc: ast.NewLocation(&ast.Location{
+											Start: 75,
+											End:   78,
+										}),
+										Value: "arg",
+									}),
+									Value: ast.NewStringValue(&ast.StringValue{
+
+										Loc: ast.NewLocation(&ast.Location{
+											Start: 80,
+											End:   116,
+										}),
+										Value: "Has a \u0A0A multi-byte character.",
+									}),
+								}),
+							},
+						}),
+					},
+				}),
+			}),
+		},
+	})
+
+	astDocQuery := printer.Print(astDoc)
+	expectedASTDocQuery := printer.Print(expectedASTDoc)
+
+	if !reflect.DeepEqual(astDocQuery, expectedASTDocQuery) {
+		t.Fatalf("unexpected document, expected: %v, got: %v", astDocQuery, expectedASTDocQuery)
+	}
 }
 
 func TestParsesKitchenSink(t *testing.T) {
