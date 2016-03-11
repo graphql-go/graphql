@@ -38,6 +38,16 @@ func TestVisitor_AllowsEditingANodeBothOnEnterAndOnLeave(t *testing.T) {
 	expectedQuery := `{ a, b, c { a, b, c } }`
 	expectedAST := parse(t, expectedQuery)
 
+	visited := map[string]bool{
+		"didEnter": false,
+		"didLeave": false,
+	}
+
+	expectedVisited := map[string]bool{
+		"didEnter": true,
+		"didLeave": true,
+	}
+
 	v := &visitor.VisitorOptions{
 
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
@@ -45,6 +55,7 @@ func TestVisitor_AllowsEditingANodeBothOnEnterAndOnLeave(t *testing.T) {
 				Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.OperationDefinition); ok {
 						selectionSet = node.SelectionSet
+						visited["didEnter"] = true
 						return visitor.ActionUpdate, ast.NewOperationDefinition(&ast.OperationDefinition{
 							Loc:                 node.Loc,
 							Operation:           node.Operation,
@@ -60,6 +71,7 @@ func TestVisitor_AllowsEditingANodeBothOnEnterAndOnLeave(t *testing.T) {
 				},
 				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.OperationDefinition); ok {
+						visited["didLeave"] = true
 						return visitor.ActionUpdate, ast.NewOperationDefinition(&ast.OperationDefinition{
 							Loc:                 node.Loc,
 							Operation:           node.Operation,
@@ -80,6 +92,10 @@ func TestVisitor_AllowsEditingANodeBothOnEnterAndOnLeave(t *testing.T) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedAST, editedAst))
 	}
 
+	if !reflect.DeepEqual(visited, expectedVisited) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(visited, expectedVisited))
+	}
+
 }
 func TestVisitor_AllowsEditingTheRootNodeOnEnterAndOnLeave(t *testing.T) {
 
@@ -91,12 +107,23 @@ func TestVisitor_AllowsEditingTheRootNodeOnEnterAndOnLeave(t *testing.T) {
 	expectedQuery := `{ a, b, c { a, b, c } }`
 	expectedAST := parse(t, expectedQuery)
 
+	visited := map[string]bool{
+		"didEnter": false,
+		"didLeave": false,
+	}
+
+	expectedVisited := map[string]bool{
+		"didEnter": true,
+		"didLeave": true,
+	}
+
 	v := &visitor.VisitorOptions{
 
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
 			kinds.Document: visitor.NamedVisitFuncs{
 				Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.Document); ok {
+						visited["didEnter"] = true
 						return visitor.ActionUpdate, ast.NewDocument(&ast.Document{
 							Loc:         node.Loc,
 							Definitions: []ast.Node{},
@@ -106,6 +133,7 @@ func TestVisitor_AllowsEditingTheRootNodeOnEnterAndOnLeave(t *testing.T) {
 				},
 				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.Document); ok {
+						visited["didLeave"] = true
 						return visitor.ActionUpdate, ast.NewDocument(&ast.Document{
 							Loc:         node.Loc,
 							Definitions: definitions,
@@ -122,6 +150,9 @@ func TestVisitor_AllowsEditingTheRootNodeOnEnterAndOnLeave(t *testing.T) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedAST, editedAst))
 	}
 
+	if !reflect.DeepEqual(visited, expectedVisited) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(visited, expectedVisited))
+	}
 }
 func TestVisitor_AllowsForEditingOnEnter(t *testing.T) {
 
