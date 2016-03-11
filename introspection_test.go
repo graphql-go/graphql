@@ -1257,6 +1257,20 @@ func TestIntrospection_ExposesDescriptionsOnTypesAndFields(t *testing.T) {
         }
       }
     `
+
+	/*
+
+		[Data["schemaType"]["fields"][0]["name"]: "types" != "queryType" Data["schemaType"]["fields"][0]["description"]: "A list of all types supported by this server." != "The type that query operations will be rooted at."
+		Data["schemaType"]["fields"][1]["name"]: "queryType" != "mutationType"
+		Data["schemaType"]["fields"][1]["description"]: "The type that query operations will be rooted at." != "If this server supports mutation, the type that mutation operations will be rooted at."
+		Data["schemaType"]["fields"][2]["name"]: "mutationType" != "subscriptionType"
+		Data["schemaType"]["fields"][2]["description"]: "If this server supports mutation, the type that mutation
+		operations will be rooted at." != "If this server support subscription, the type that subscription operations will be rooted at." Data["schemaType"]["fields"][3]["name"]: "subscriptionType" != "directives"
+		Data["schemaType"]["fields"][3]["description"]: "If this server supports subscription, the type that subscription operations will be rooted at." != "A list of all directives supported by this server."
+		Data["schemaType"]["fields"][4]["description"]: "A list of all directives supported by this server." != "A list of all types supported by this server."
+		Data["schemaType"]["fields"][4]["name"]: "directives" != "types"]
+
+	*/
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"schemaType": map[string]interface{}{
@@ -1278,6 +1292,11 @@ mutation operations.`,
 						"name": "mutationType",
 						"description": "If this server supports mutation, the type that " +
 							"mutation operations will be rooted at.",
+					},
+					map[string]interface{}{
+						"name": "subscriptionType",
+						"description": "If this server supports subscription, the type that " +
+							"subscription operations will be rooted at.",
 					},
 					map[string]interface{}{
 						"name":        "directives",

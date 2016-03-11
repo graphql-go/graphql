@@ -173,11 +173,38 @@ func getOperationRootType(schema Schema, operation ast.Definition) (*Object, err
 	case "mutation":
 		mutationType := schema.MutationType()
 		if mutationType.PrivateName == "" {
-			return nil, errors.New("Schema is not configured for mutations")
+			return nil, gqlerrors.NewError(
+				"Schema is not configured for mutations",
+				[]ast.Node{operation},
+				"",
+				nil,
+				[]int{},
+				nil,
+			)
 		}
 		return mutationType, nil
+	case "subscription":
+		subscriptionType := schema.SubscriptionType()
+		if subscriptionType.PrivateName == "" {
+			return nil, gqlerrors.NewError(
+				"Schema is not configured for subscriptions",
+				[]ast.Node{operation},
+				"",
+				nil,
+				[]int{},
+				nil,
+			)
+		}
+		return subscriptionType, nil
 	default:
-		return nil, errors.New("Can only execute queries and mutations")
+		return nil, gqlerrors.NewError(
+			"Can only execute queries, mutations and subscription",
+			[]ast.Node{operation},
+			"",
+			nil,
+			[]int{},
+			nil,
+		)
 	}
 }
 

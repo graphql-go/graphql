@@ -5,6 +5,7 @@ var IntrospectionQuery = `
     __schema {
       queryType { name }
       mutationType { name }
+      subscriptionType { name }
       types {
         ...FullType
       }

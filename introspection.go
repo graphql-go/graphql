@@ -267,10 +267,15 @@ mutation operations.`,
 				},
 			},
 			"subscriptionType": &Field{
-				Description: `If this server support subscription, the type that ' +
-                   'subscription operations will be rooted at.`,
+				Description: `If this server supports subscription, the type that ` +
+					`subscription operations will be rooted at.`,
 				Type: __Type,
 				Resolve: func(p ResolveParams) (interface{}, error) {
+					if schema, ok := p.Source.(Schema); ok {
+						if schema.SubscriptionType() != nil {
+							return schema.SubscriptionType(), nil
+						}
+					}
 					return nil, nil
 				},
 			},

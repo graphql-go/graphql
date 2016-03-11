@@ -9,6 +9,8 @@ type Definition interface {
 	GetOperation() string
 	GetVariableDefinitions() []*VariableDefinition
 	GetSelectionSet() *SelectionSet
+	GetKind() string
+	GetLoc() *Location
 }
 
 // Ensure that all definition types implements Definition interface

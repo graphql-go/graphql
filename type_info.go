@@ -97,6 +97,8 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 			ttype = schema.QueryType()
 		} else if node.Operation == "mutation" {
 			ttype = schema.MutationType()
+		} else if node.Operation == "subscription" {
+			ttype = schema.SubscriptionType()
 		}
 		ti.typeStack = append(ti.typeStack, ttype)
 	case *ast.InlineFragment:

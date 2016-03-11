@@ -7,17 +7,19 @@ import (
 /**
 Schema Definition
 A Schema is created by supplying the root types of each type of operation,
-query and mutation (optional). A schema definition is then supplied to the
+query, mutation (optional) and subscription (optional). A schema definition is then supplied to the
 validator and executor.
 Example:
     myAppSchema, err := NewSchema(SchemaConfig({
-      Query: MyAppQueryRootType
-      Mutation: MyAppMutationRootType
+      Query: MyAppQueryRootType,
+      Mutation: MyAppMutationRootType,
+      Subscription: MyAppSubscriptionRootType,
     });
 */
 type SchemaConfig struct {
-	Query    *Object
-	Mutation *Object
+	Query        *Object
+	Mutation     *Object
+	Subscription *Object
 }
 
 // chose to name as TypeMap instead of TypeMap
@@ -54,6 +56,7 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 	objectTypes := []*Object{
 		schema.QueryType(),
 		schema.MutationType(),
+		schema.SubscriptionType(),
 		__Type,
 		__Schema,
 	}
@@ -92,6 +95,10 @@ func (gq *Schema) QueryType() *Object {
 
 func (gq *Schema) MutationType() *Object {
 	return gq.schemaConfig.Mutation
+}
+
+func (gq *Schema) SubscriptionType() *Object {
+	return gq.schemaConfig.Subscription
 }
 
 func (gq *Schema) Directives() []*Directive {
