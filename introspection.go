@@ -222,10 +222,9 @@ func init() {
 
 	__Schema = NewObject(ObjectConfig{
 		Name: "__Schema",
-		Description: `A GraphQL Schema defines the capabilities of a GraphQL
-server. It exposes all available types and directives on
-the server, as well as the entry points for query and
-mutation operations.`,
+		Description: `A GraphQL Schema defines the capabilities of a GraphQL server. ` +
+			`It exposes all available types and directives on the server, as well as ` +
+			`the entry points for query, mutation, and subscription operations.`,
 		Fields: Fields{
 			"types": &Field{
 				Description: "A list of all types supported by this server.",

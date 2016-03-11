@@ -294,6 +294,23 @@ func TestTypeSystem_SchemaMustHaveObjectRootTypes_AcceptsASchemaWhoseQueryAndMut
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+func TestTypeSystem_SchemaMustHaveObjectRootTypes_AcceptsASchemaWhoseQueryAndSubscriptionTypesAreObjectType(t *testing.T) {
+	subscriptionType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Subscription",
+		Fields: graphql.Fields{
+			"subscribe": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+	_, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query:    someObjectType,
+		Mutation: subscriptionType,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
 func TestTypeSystem_SchemaMustHaveObjectRootTypes_RejectsASchemaWithoutAQueryType(t *testing.T) {
 	_, err := graphql.NewSchema(graphql.SchemaConfig{})
 	expectedError := "Schema query must be Object Type but got: nil."

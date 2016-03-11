@@ -93,9 +93,31 @@ var enumTypeTestMutationType = graphql.NewObject(graphql.ObjectConfig{
 		},
 	},
 })
+
+var enumTypeTestSubscriptionType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Subscription",
+	Fields: graphql.Fields{
+		"subscribeToEnum": &graphql.Field{
+			Type: enumTypeTestColorType,
+			Args: graphql.FieldConfigArgument{
+				"color": &graphql.ArgumentConfig{
+					Type: enumTypeTestColorType,
+				},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				if color, ok := p.Args["color"]; ok {
+					return color, nil
+				}
+				return nil, nil
+			},
+		},
+	},
+})
+
 var enumTypeTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
-	Query:    enumTypeTestQueryType,
-	Mutation: enumTypeTestMutationType,
+	Query:        enumTypeTestQueryType,
+	Mutation:     enumTypeTestMutationType,
+	Subscription: enumTypeTestSubscriptionType,
 })
 
 func executeEnumTypeTest(t *testing.T, query string) *graphql.Result {
@@ -233,6 +255,22 @@ func TestTypeSystem_EnumValues_AcceptsEnumLiteralsAsInputArgumentsToMutations(t 
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"favoriteEnum": "GREEN",
+		},
+	}
+	result := executeEnumTypeTestWithParams(t, query, params)
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
+func TestTypeSystem_EnumValues_AcceptsEnumLiteralsAsInputArgumentsToSubscriptions(t *testing.T) {
+	query := `subscription x($color: Color!) { subscribeToEnum(color: $color) }`
+	params := map[string]interface{}{
+		"color": "GREEN",
+	}
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"subscribeToEnum": "GREEN",
 		},
 	}
 	result := executeEnumTypeTestWithParams(t, query, params)

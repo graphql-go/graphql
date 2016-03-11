@@ -158,6 +158,19 @@ mutation favPost {
   }
 }
 
+subscription PostFavSubscription($input: StoryLikeSubscribeInput) {
+  postFavSubscribe(input: $input) {
+    post {
+      favers {
+        count
+      }
+      favSentence {
+        text
+      }
+    }
+  }
+}
+
 fragment frag on Follower {
   foo(size: $size, bar: $b, obj: {key: "value"})
 }
