@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
+	"github.com/graphql-go/graphql/language/kinds"
 	"github.com/graphql-go/graphql/language/parser"
 	"github.com/graphql-go/graphql/language/printer"
 	"github.com/graphql-go/graphql/language/visitor"
@@ -27,6 +28,101 @@ func parse(t *testing.T, query string) *ast.Document {
 	return astDoc
 }
 
+func TestVisitor_AllowsEditingANodeBothOnEnterAndOnLeave(t *testing.T) {
+
+	query := `{ a, b, c { a, b, c } }`
+	astDoc := parse(t, query)
+
+	var selectionSet *ast.SelectionSet
+
+	expectedQuery := `{ a, b, c { a, b, c } }`
+	expectedAST := parse(t, expectedQuery)
+
+	v := &visitor.VisitorOptions{
+
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+				Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.OperationDefinition); ok {
+						selectionSet = node.SelectionSet
+						return visitor.ActionUpdate, ast.NewOperationDefinition(&ast.OperationDefinition{
+							Loc:                 node.Loc,
+							Operation:           node.Operation,
+							Name:                node.Name,
+							VariableDefinitions: node.VariableDefinitions,
+							Directives:          node.Directives,
+							SelectionSet: ast.NewSelectionSet(&ast.SelectionSet{
+								Selections: []ast.Selection{},
+							}),
+						})
+					}
+					return visitor.ActionNoChange, nil
+				},
+				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.OperationDefinition); ok {
+						return visitor.ActionUpdate, ast.NewOperationDefinition(&ast.OperationDefinition{
+							Loc:                 node.Loc,
+							Operation:           node.Operation,
+							Name:                node.Name,
+							VariableDefinitions: node.VariableDefinitions,
+							Directives:          node.Directives,
+							SelectionSet:        selectionSet,
+						})
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+
+	editedAst := visitor.Visit(astDoc, v, nil)
+	if !reflect.DeepEqual(expectedAST, editedAst) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedAST, editedAst))
+	}
+
+}
+func TestVisitor_AllowsEditingTheRootNodeOnEnterAndOnLeave(t *testing.T) {
+
+	query := `{ a, b, c { a, b, c } }`
+	astDoc := parse(t, query)
+
+	definitions := astDoc.Definitions
+
+	expectedQuery := `{ a, b, c { a, b, c } }`
+	expectedAST := parse(t, expectedQuery)
+
+	v := &visitor.VisitorOptions{
+
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.Document: visitor.NamedVisitFuncs{
+				Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.Document); ok {
+						return visitor.ActionUpdate, ast.NewDocument(&ast.Document{
+							Loc:         node.Loc,
+							Definitions: []ast.Node{},
+						})
+					}
+					return visitor.ActionNoChange, nil
+				},
+				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.Document); ok {
+						return visitor.ActionUpdate, ast.NewDocument(&ast.Document{
+							Loc:         node.Loc,
+							Definitions: definitions,
+						})
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+
+	editedAst := visitor.Visit(astDoc, v, nil)
+	if !reflect.DeepEqual(expectedAST, editedAst) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedAST, editedAst))
+	}
+
+}
 func TestVisitor_AllowsForEditingOnEnter(t *testing.T) {
 
 	query := `{ a, b, c { a, b, c } }`

@@ -490,7 +490,7 @@ Loop:
 		}
 	}
 	if len(edits) != 0 {
-		result = edits[0].Value
+		result = edits[len(edits)-1].Value
 	}
 	return result
 }
