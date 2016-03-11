@@ -771,9 +771,6 @@ func VisitInParallel(visitorOptsSlice ...*VisitorOptions) *VisitorOptions {
 /**
  * Creates a new visitor instance which maintains a provided TypeInfo instance
  * along with visiting visitor.
- *
- * Visitors must not directly modify the AST nodes and only returning false to
- * skip sub-branches is supported.
  */
 func VisitWithTypeInfo(typeInfo type_info.TypeInfoI, visitorOpts *VisitorOptions) *VisitorOptions {
 	return &VisitorOptions{
@@ -782,24 +779,31 @@ func VisitWithTypeInfo(typeInfo type_info.TypeInfoI, visitorOpts *VisitorOptions
 				typeInfo.Enter(node)
 				fn := GetVisitFn(visitorOpts, node.GetKind(), false)
 				if fn != nil {
-					action, _ := fn(p)
-					if action == ActionSkip {
+					action, result := fn(p)
+					if action == ActionUpdate {
 						typeInfo.Leave(node)
-						return ActionSkip, nil
+						if isNode(result) {
+							if result, ok := result.(ast.Node); ok {
+								typeInfo.Enter(result)
+							}
+						}
 					}
+					return action, result
 				}
 			}
 			return ActionNoChange, nil
 		},
 		Leave: func(p VisitFuncParams) (string, interface{}) {
+			action := ActionNoChange
+			var result interface{}
 			if node, ok := p.Node.(ast.Node); ok {
 				fn := GetVisitFn(visitorOpts, node.GetKind(), true)
 				if fn != nil {
-					fn(p)
+					action, result = fn(p)
 				}
 				typeInfo.Leave(node)
 			}
-			return ActionNoChange, nil
+			return action, result
 		},
 	}
 }

@@ -5,8 +5,11 @@ import (
 	"reflect"
 	"testing"
 
+	"fmt"
+	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
+	"github.com/graphql-go/graphql/language/printer"
 	"github.com/graphql-go/graphql/language/visitor"
 	"github.com/graphql-go/graphql/testutil"
 )
@@ -97,10 +100,10 @@ func TestVisitor_VisitsEditedNode(t *testing.T) {
 					s = append(s, addedField)
 					ss := node.SelectionSet
 					ss.Selections = s
-					return visitor.ActionUpdate, &ast.Field{
+					return visitor.ActionUpdate, ast.NewField(&ast.Field{
 						Kind:         "Field",
 						SelectionSet: ss,
-					}
+					})
 				}
 				if reflect.DeepEqual(node, addedField) {
 					didVisitAddedField = true
@@ -1299,4 +1302,255 @@ func TestVisitor_VisitInParallel_AllowsForEditingOnLeave(t *testing.T) {
 	if !reflect.DeepEqual(editedAST, expectedEditedAST) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(editedAST, expectedEditedAST))
 	}
+}
+
+func TestVisitor_VisitWithTypeInfo_MaintainsTypeInfoDuringVisit(t *testing.T) {
+
+	visited := []interface{}{}
+
+	typeInfo := graphql.NewTypeInfo(testutil.DefaultRulesTestSchema)
+
+	query := `{ human(id: 4) { name, pets { name }, unknown } }`
+	astDoc := parse(t, query)
+
+	expectedVisited := []interface{}{
+		[]interface{}{"enter", "Document", nil, nil, nil, nil},
+		[]interface{}{"enter", "OperationDefinition", nil, nil, "QueryRoot", nil},
+		[]interface{}{"enter", "SelectionSet", nil, "QueryRoot", "QueryRoot", nil},
+		[]interface{}{"enter", "Field", nil, "QueryRoot", "Human", nil},
+		[]interface{}{"enter", "Name", "human", "QueryRoot", "Human", nil},
+		[]interface{}{"leave", "Name", "human", "QueryRoot", "Human", nil},
+		[]interface{}{"enter", "Argument", nil, "QueryRoot", "Human", "ID"},
+		[]interface{}{"enter", "Name", "id", "QueryRoot", "Human", "ID"},
+		[]interface{}{"leave", "Name", "id", "QueryRoot", "Human", "ID"},
+		[]interface{}{"enter", "IntValue", nil, "QueryRoot", "Human", "ID"},
+		[]interface{}{"leave", "IntValue", nil, "QueryRoot", "Human", "ID"},
+		[]interface{}{"leave", "Argument", nil, "QueryRoot", "Human", "ID"},
+		[]interface{}{"enter", "SelectionSet", nil, "Human", "Human", nil},
+		[]interface{}{"enter", "Field", nil, "Human", "String", nil},
+		[]interface{}{"enter", "Name", "name", "Human", "String", nil},
+		[]interface{}{"leave", "Name", "name", "Human", "String", nil},
+		[]interface{}{"leave", "Field", nil, "Human", "String", nil},
+		[]interface{}{"enter", "Field", nil, "Human", "[Pet]", nil},
+		[]interface{}{"enter", "Name", "pets", "Human", "[Pet]", nil},
+		[]interface{}{"leave", "Name", "pets", "Human", "[Pet]", nil},
+		[]interface{}{"enter", "SelectionSet", nil, "Pet", "[Pet]", nil},
+		[]interface{}{"enter", "Field", nil, "Pet", "String", nil},
+		[]interface{}{"enter", "Name", "name", "Pet", "String", nil},
+		[]interface{}{"leave", "Name", "name", "Pet", "String", nil},
+		[]interface{}{"leave", "Field", nil, "Pet", "String", nil},
+		[]interface{}{"leave", "SelectionSet", nil, "Pet", "[Pet]", nil},
+		[]interface{}{"leave", "Field", nil, "Human", "[Pet]", nil},
+		[]interface{}{"enter", "Field", nil, "Human", nil, nil},
+		[]interface{}{"enter", "Name", "unknown", "Human", nil, nil},
+		[]interface{}{"leave", "Name", "unknown", "Human", nil, nil},
+		[]interface{}{"leave", "Field", nil, "Human", nil, nil},
+		[]interface{}{"leave", "SelectionSet", nil, "Human", "Human", nil},
+		[]interface{}{"leave", "Field", nil, "QueryRoot", "Human", nil},
+		[]interface{}{"leave", "SelectionSet", nil, "QueryRoot", "QueryRoot", nil},
+		[]interface{}{"leave", "OperationDefinition", nil, nil, "QueryRoot", nil},
+		[]interface{}{"leave", "Document", nil, nil, nil, nil},
+	}
+
+	v := &visitor.VisitorOptions{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			var parentType interface{}
+			var ttype interface{}
+			var inputType interface{}
+
+			if typeInfo.ParentType() != nil {
+				parentType = fmt.Sprintf("%v", typeInfo.ParentType())
+			}
+			if typeInfo.Type() != nil {
+				ttype = fmt.Sprintf("%v", typeInfo.Type())
+			}
+			if typeInfo.InputType() != nil {
+				inputType = fmt.Sprintf("%v", typeInfo.InputType())
+			}
+
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"enter", node.Kind, node.Value, parentType, ttype, inputType})
+			case ast.Node:
+				visited = append(visited, []interface{}{"enter", node.GetKind(), nil, parentType, ttype, inputType})
+			default:
+				visited = append(visited, []interface{}{"enter", nil, nil, parentType, ttype, inputType})
+			}
+			return visitor.ActionNoChange, nil
+		},
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+			var parentType interface{}
+			var ttype interface{}
+			var inputType interface{}
+
+			if typeInfo.ParentType() != nil {
+				parentType = fmt.Sprintf("%v", typeInfo.ParentType())
+			}
+			if typeInfo.Type() != nil {
+				ttype = fmt.Sprintf("%v", typeInfo.Type())
+			}
+			if typeInfo.InputType() != nil {
+				inputType = fmt.Sprintf("%v", typeInfo.InputType())
+			}
+
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"leave", node.Kind, node.Value, parentType, ttype, inputType})
+			case ast.Node:
+				visited = append(visited, []interface{}{"leave", node.GetKind(), nil, parentType, ttype, inputType})
+			default:
+				visited = append(visited, []interface{}{"leave", nil, nil, parentType, ttype, inputType})
+			}
+			return visitor.ActionNoChange, nil
+		},
+	}
+
+	_ = visitor.Visit(astDoc, visitor.VisitWithTypeInfo(typeInfo, v), nil)
+
+	if !reflect.DeepEqual(visited, expectedVisited) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
+	}
+
+}
+
+func TestVisitor_VisitWithTypeInfo_MaintainsTypeInfoDuringEdit(t *testing.T) {
+
+	visited := []interface{}{}
+
+	typeInfo := graphql.NewTypeInfo(testutil.DefaultRulesTestSchema)
+
+	astDoc := parse(t, `{ human(id: 4) { name, pets }, alien }`)
+
+	expectedVisited := []interface{}{
+		[]interface{}{"enter", "Document", nil, nil, nil, nil},
+		[]interface{}{"enter", "OperationDefinition", nil, nil, "QueryRoot", nil},
+		[]interface{}{"enter", "SelectionSet", nil, "QueryRoot", "QueryRoot", nil},
+		[]interface{}{"enter", "Field", nil, "QueryRoot", "Human", nil},
+		[]interface{}{"enter", "Name", "human", "QueryRoot", "Human", nil},
+		[]interface{}{"leave", "Name", "human", "QueryRoot", "Human", nil},
+		[]interface{}{"enter", "Argument", nil, "QueryRoot", "Human", "ID"},
+		[]interface{}{"enter", "Name", "id", "QueryRoot", "Human", "ID"},
+		[]interface{}{"leave", "Name", "id", "QueryRoot", "Human", "ID"},
+		[]interface{}{"enter", "IntValue", nil, "QueryRoot", "Human", "ID"},
+		[]interface{}{"leave", "IntValue", nil, "QueryRoot", "Human", "ID"},
+		[]interface{}{"leave", "Argument", nil, "QueryRoot", "Human", "ID"},
+		[]interface{}{"enter", "SelectionSet", nil, "Human", "Human", nil},
+		[]interface{}{"enter", "Field", nil, "Human", "String", nil},
+		[]interface{}{"enter", "Name", "name", "Human", "String", nil},
+		[]interface{}{"leave", "Name", "name", "Human", "String", nil},
+		[]interface{}{"leave", "Field", nil, "Human", "String", nil},
+		[]interface{}{"enter", "Field", nil, "Human", "[Pet]", nil},
+		[]interface{}{"enter", "Name", "pets", "Human", "[Pet]", nil},
+		[]interface{}{"leave", "Name", "pets", "Human", "[Pet]", nil},
+		[]interface{}{"enter", "SelectionSet", nil, "Pet", "[Pet]", nil},
+		[]interface{}{"enter", "Field", nil, "Pet", "String!", nil},
+		[]interface{}{"enter", "Name", "__typename", "Pet", "String!", nil},
+		[]interface{}{"leave", "Name", "__typename", "Pet", "String!", nil},
+		[]interface{}{"leave", "Field", nil, "Pet", "String!", nil},
+		[]interface{}{"leave", "SelectionSet", nil, "Pet", "[Pet]", nil},
+		[]interface{}{"leave", "Field", nil, "Human", "[Pet]", nil},
+		[]interface{}{"leave", "SelectionSet", nil, "Human", "Human", nil},
+		[]interface{}{"leave", "Field", nil, "QueryRoot", "Human", nil},
+		[]interface{}{"enter", "Field", nil, "QueryRoot", "Alien", nil},
+		[]interface{}{"enter", "Name", "alien", "QueryRoot", "Alien", nil},
+		[]interface{}{"leave", "Name", "alien", "QueryRoot", "Alien", nil},
+		[]interface{}{"enter", "SelectionSet", nil, "Alien", "Alien", nil},
+		[]interface{}{"enter", "Field", nil, "Alien", "String!", nil},
+		[]interface{}{"enter", "Name", "__typename", "Alien", "String!", nil},
+		[]interface{}{"leave", "Name", "__typename", "Alien", "String!", nil},
+		[]interface{}{"leave", "Field", nil, "Alien", "String!", nil},
+		[]interface{}{"leave", "SelectionSet", nil, "Alien", "Alien", nil},
+		[]interface{}{"leave", "Field", nil, "QueryRoot", "Alien", nil},
+		[]interface{}{"leave", "SelectionSet", nil, "QueryRoot", "QueryRoot", nil},
+		[]interface{}{"leave", "OperationDefinition", nil, nil, "QueryRoot", nil},
+		[]interface{}{"leave", "Document", nil, nil, nil, nil},
+	}
+
+	v := &visitor.VisitorOptions{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			var parentType interface{}
+			var ttype interface{}
+			var inputType interface{}
+
+			if typeInfo.ParentType() != nil {
+				parentType = fmt.Sprintf("%v", typeInfo.ParentType())
+			}
+			if typeInfo.Type() != nil {
+				ttype = fmt.Sprintf("%v", typeInfo.Type())
+			}
+			if typeInfo.InputType() != nil {
+				inputType = fmt.Sprintf("%v", typeInfo.InputType())
+			}
+
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"enter", node.Kind, node.Value, parentType, ttype, inputType})
+			case *ast.Field:
+				visited = append(visited, []interface{}{"enter", node.GetKind(), nil, parentType, ttype, inputType})
+
+				// Make a query valid by adding missing selection sets.
+				if node.SelectionSet == nil && graphql.IsCompositeType(graphql.GetNamed(typeInfo.Type())) {
+					return visitor.ActionUpdate, ast.NewField(&ast.Field{
+						Alias:      node.Alias,
+						Name:       node.Name,
+						Arguments:  node.Arguments,
+						Directives: node.Directives,
+						SelectionSet: ast.NewSelectionSet(&ast.SelectionSet{
+							Selections: []ast.Selection{
+								ast.NewField(&ast.Field{
+									Name: ast.NewName(&ast.Name{
+										Value: "__typename",
+									}),
+								}),
+							},
+						}),
+					})
+				}
+			case ast.Node:
+				visited = append(visited, []interface{}{"enter", node.GetKind(), nil, parentType, ttype, inputType})
+			default:
+				visited = append(visited, []interface{}{"enter", nil, nil, parentType, ttype, inputType})
+			}
+
+			return visitor.ActionNoChange, nil
+		},
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+			var parentType interface{}
+			var ttype interface{}
+			var inputType interface{}
+
+			if typeInfo.ParentType() != nil {
+				parentType = fmt.Sprintf("%v", typeInfo.ParentType())
+			}
+			if typeInfo.Type() != nil {
+				ttype = fmt.Sprintf("%v", typeInfo.Type())
+			}
+			if typeInfo.InputType() != nil {
+				inputType = fmt.Sprintf("%v", typeInfo.InputType())
+			}
+
+			switch node := p.Node.(type) {
+			case *ast.Name:
+				visited = append(visited, []interface{}{"leave", node.Kind, node.Value, parentType, ttype, inputType})
+			case ast.Node:
+				visited = append(visited, []interface{}{"leave", node.GetKind(), nil, parentType, ttype, inputType})
+			default:
+				visited = append(visited, []interface{}{"leave", nil, nil, parentType, ttype, inputType})
+			}
+			return visitor.ActionNoChange, nil
+		},
+	}
+
+	editedAST := visitor.Visit(astDoc, visitor.VisitWithTypeInfo(typeInfo, v), nil)
+
+	editedASTQuery := printer.Print(editedAST.(ast.Node))
+	expectedEditedASTQuery := printer.Print(parse(t, `{ human(id: 4) { name, pets { __typename } }, alien { __typename } }`))
+
+	if !reflect.DeepEqual(editedASTQuery, expectedEditedASTQuery) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(editedASTQuery, expectedEditedASTQuery))
+	}
+	if !reflect.DeepEqual(visited, expectedVisited) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
+	}
+
 }
