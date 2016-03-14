@@ -156,6 +156,9 @@ func init() {
 						if inputVal.DefaultValue == nil {
 							return nil, nil
 						}
+						if isNullish(inputVal.DefaultValue) {
+							return nil, nil
+						}
 						astVal := astFromValue(inputVal.DefaultValue, inputVal)
 						return printer.Print(astVal), nil
 					}
