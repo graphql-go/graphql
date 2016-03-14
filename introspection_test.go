@@ -1344,7 +1344,7 @@ func TestIntrospection_ExposesDescriptionsOnEnums(t *testing.T) {
 		Data: map[string]interface{}{
 			"typeKindType": map[string]interface{}{
 				"name":        "__TypeKind",
-				"description": `An enum describing what kind of type a given __Type is`,
+				"description": "An enum describing what kind of type a given `__Type` is",
 				"enumValues": []interface{}{
 					map[string]interface{}{
 						"name":        "SCALAR",

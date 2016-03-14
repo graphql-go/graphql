@@ -36,7 +36,7 @@ func init() {
 
 	__TypeKind = NewEnum(EnumConfig{
 		Name:        "__TypeKind",
-		Description: "An enum describing what kind of type a given __Type is",
+		Description: "An enum describing what kind of type a given `__Type` is",
 		Values: EnumValueConfigMap{
 			"SCALAR": &EnumValueConfig{
 				Value:       TypeKindScalar,
@@ -83,6 +83,15 @@ func init() {
 	// Note: some fields (for e.g "fields", "interfaces") are defined later due to cyclic reference
 	__Type = NewObject(ObjectConfig{
 		Name: "__Type",
+		Description: "The fundamental unit of any GraphQL Schema is the type. There are " +
+			"many kinds of types in GraphQL as represented by the `__TypeKind` enum." +
+			"\n\nDepending on the kind of a type, certain fields describe " +
+			"information about that type. Scalar types provide no information " +
+			"beyond a name and description, while Enum types provide their values. " +
+			"Object and Interface types provide the fields they describe. Abstract " +
+			"types, Union and Interface, provide the Object types possible " +
+			"at runtime. List and NonNull types compose other types.",
+
 		Fields: Fields{
 			"kind": &Field{
 				Type: NewNonNull(__TypeKind),
@@ -125,6 +134,9 @@ func init() {
 
 	__InputValue = NewObject(ObjectConfig{
 		Name: "__InputValue",
+		Description: "Arguments provided to Fields or Directives and the input fields of an " +
+			"InputObject are represented as Input Values which describe their type " +
+			"and optionally a default value.",
 		Fields: Fields{
 			"name": &Field{
 				Type: NewNonNull(String),
@@ -137,6 +149,8 @@ func init() {
 			},
 			"defaultValue": &Field{
 				Type: String,
+				Description: "A GraphQL-formatted string representing the default value for this " +
+					"input value.",
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					if inputVal, ok := p.Source.(*Argument); ok {
 						if inputVal.DefaultValue == nil {
@@ -160,6 +174,8 @@ func init() {
 
 	__Field = NewObject(ObjectConfig{
 		Name: "__Field",
+		Description: "Object and Interface types are described by a list of Fields, each of " +
+			"which has a name, potentially a list of arguments, and a return type.",
 		Fields: Fields{
 			"name": &Field{
 				Type: NewNonNull(String),
@@ -196,6 +212,12 @@ func init() {
 
 	__Directive = NewObject(ObjectConfig{
 		Name: "__Directive",
+		Description: "A Directives provides a way to describe alternate runtime execution and " +
+			"type validation behavior in a GraphQL document. " +
+			"\n\nIn some cases, you need to provide options to alter GraphQL's " +
+			"execution behavior in ways field arguments will not suffice, such as " +
+			"conditionally including or skipping a field. Directives provide this by " +
+			"describing additional information to the executor.",
 		Fields: Fields{
 			"name": &Field{
 				Type: NewNonNull(String),
@@ -295,6 +317,9 @@ func init() {
 
 	__EnumValue = NewObject(ObjectConfig{
 		Name: "__EnumValue",
+		Description: "One possible value for a given Enum. Enum values are unique values, not " +
+			"a placeholder for a string or numeric value. However an Enum value is " +
+			"returned in a JSON response as a string.",
 		Fields: Fields{
 			"name": &Field{
 				Type: NewNonNull(String),
