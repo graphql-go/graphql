@@ -20,15 +20,19 @@ type SchemaConfig struct {
 	Query        *Object
 	Mutation     *Object
 	Subscription *Object
+	Directives   []*Directive
 }
 
 // chose to name as TypeMap instead of TypeMap
 type TypeMap map[string]Type
 
 type Schema struct {
-	schemaConfig SchemaConfig
-	typeMap      TypeMap
-	directives   []*Directive
+	typeMap    TypeMap
+	directives []*Directive
+
+	queryType        *Object
+	mutationType     *Object
+	subscriptionType *Object
 }
 
 func NewSchema(config SchemaConfig) (Schema, error) {
@@ -49,7 +53,18 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 		return schema, config.Mutation.err
 	}
 
-	schema.schemaConfig = config
+	schema.queryType = config.Query
+	schema.mutationType = config.Mutation
+	schema.subscriptionType = config.Subscription
+
+	// Provide `@include() and `@skip()` directives by default.
+	schema.directives = config.Directives
+	if len(schema.directives) == 0 {
+		schema.directives = []*Directive{
+			IncludeDirective,
+			SkipDirective,
+		}
+	}
 
 	// Build type map now to detect any errors within this schema.
 	typeMap := TypeMap{}
@@ -90,24 +105,18 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 }
 
 func (gq *Schema) QueryType() *Object {
-	return gq.schemaConfig.Query
+	return gq.queryType
 }
 
 func (gq *Schema) MutationType() *Object {
-	return gq.schemaConfig.Mutation
+	return gq.mutationType
 }
 
 func (gq *Schema) SubscriptionType() *Object {
-	return gq.schemaConfig.Subscription
+	return gq.subscriptionType
 }
 
 func (gq *Schema) Directives() []*Directive {
-	if len(gq.directives) == 0 {
-		gq.directives = []*Directive{
-			IncludeDirective,
-			SkipDirective,
-		}
-	}
 	return gq.directives
 }
 
