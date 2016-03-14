@@ -82,9 +82,7 @@ func coerceInt(value interface{}) interface{} {
 var Int *Scalar = NewScalar(ScalarConfig{
 	Name: "Int",
 	Description: "The `Int` scalar type represents non-fractional signed whole numeric " +
-		"values. Int can represent values between -(2^53 - 1) and 2^53 - 1 since " +
-		"represented in JSON as double-precision floating point numbers specified" +
-		"by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point).",
+		"values. Int can represent values between -(2^31) and 2^31 - 1. ",
 	Serialize:  coerceInt,
 	ParseValue: coerceInt,
 	ParseLiteral: func(valueAST ast.Value) interface{} {
