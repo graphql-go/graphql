@@ -8,6 +8,11 @@ import (
 	"github.com/graphql-go/graphql/language/ast"
 )
 
+// As per the GraphQL Spec, Integers are only treated as valid when a valid
+// 32-bit signed integer, providing the broadest support across platforms.
+//
+// n.b. JavaScript's integers are safe between -(2^53 - 1) and 2^53 - 1 because
+// they are internally represented as IEEE 754 doubles.
 func coerceInt(value interface{}) interface{} {
 	switch value := value.(type) {
 	case bool:
@@ -16,6 +21,9 @@ func coerceInt(value interface{}) interface{} {
 		}
 		return 0
 	case int:
+		if value < int(math.MinInt32) || value > int(math.MaxInt32) {
+			return nil
+		}
 		return value
 	case int8:
 		return int(value)
@@ -29,6 +37,9 @@ func coerceInt(value interface{}) interface{} {
 		}
 		return int(value)
 	case uint:
+		if value > math.MaxInt32 {
+			return nil
+		}
 		return int(value)
 	case uint8:
 		return int(value)
