@@ -490,7 +490,10 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	// Build a map of arguments from the field.arguments AST, using the
 	// variables scope to fulfill any variable references.
 	// TODO: find a way to memoize, in case this field is within a List type.
-	args, _ := getArgumentValues(fieldDef.Args, fieldAST.Arguments, eCtx.VariableValues)
+	args, err := getArgumentValues(fieldDef.Args, fieldAST.Arguments, eCtx.VariableValues)
+	if err != nil {
+		panic(err) // TODO: Don't panic
+	}
 
 	// The resolve function's optional third argument is a collection of
 	// information about the current execution state.

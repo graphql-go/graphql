@@ -497,8 +497,8 @@ func TestUnionIntersectionTypes_AllowsFragmentConditionsToBeAbstractTypes(t *tes
 }
 func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 
-	//var encounteredSchema *graphql.Schema
-	//var encounteredRootValue interface{}
+	var encounteredSchema *graphql.Schema
+	var encounteredRootValue interface{}
 
 	var personType2 *graphql.Object
 
@@ -510,8 +510,8 @@ func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 			},
 		},
 		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
-			//encounteredSchema = &info.Schema
-			//encounteredRootValue = info.RootValue
+			encounteredSchema = &info.Schema
+			encounteredRootValue = info.RootValue
 			return personType2
 		},
 	})
@@ -531,9 +531,12 @@ func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 		},
 	})
 
-	schema2, _ := graphql.NewSchema(graphql.SchemaConfig{
+	schema2, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: personType2,
 	})
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
 
 	john2 := &testPerson{
 		Name: "John",
@@ -568,5 +571,11 @@ func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 	}
 	if !reflect.DeepEqual(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+	if !reflect.DeepEqual(encounteredSchema, &schema2) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(encounteredSchema, &schema2))
+	}
+	if !reflect.DeepEqual(encounteredRootValue, john2) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(encounteredRootValue, john2))
 	}
 }

@@ -65,7 +65,10 @@ func (ti *TypeInfo) Argument() *Argument {
 func (ti *TypeInfo) Enter(node ast.Node) {
 
 	schema := ti.schema
-	var ttype Type
+	var (
+		ttype Type
+		err   error
+	)
 	switch node := node.(type) {
 	case *ast.SelectionSet:
 		namedType := GetNamed(ti.Type())
@@ -100,14 +103,20 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 		}
 		ti.typeStack = append(ti.typeStack, ttype)
 	case *ast.InlineFragment:
-		ttype, _ = typeFromAST(*schema, node.TypeCondition)
-		ti.typeStack = append(ti.typeStack, ttype)
+		ttype, err = typeFromAST(*schema, node.TypeCondition)
+		if err == nil {
+			ti.typeStack = append(ti.typeStack, ttype)
+		}
 	case *ast.FragmentDefinition:
-		ttype, _ = typeFromAST(*schema, node.TypeCondition)
-		ti.typeStack = append(ti.typeStack, ttype)
+		ttype, err = typeFromAST(*schema, node.TypeCondition)
+		if err == nil {
+			ti.typeStack = append(ti.typeStack, ttype)
+		}
 	case *ast.VariableDefinition:
-		ttype, _ = typeFromAST(*schema, node.Type)
-		ti.inputTypeStack = append(ti.inputTypeStack, ttype)
+		ttype, err = typeFromAST(*schema, node.Type)
+		if err == nil {
+			ti.inputTypeStack = append(ti.inputTypeStack, ttype)
+		}
 	case *ast.Argument:
 		nameVal := ""
 		if node.Name != nil {

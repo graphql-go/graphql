@@ -2,13 +2,14 @@ package graphql
 
 import (
 	"fmt"
+	"sort"
+	"strings"
+
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/kinds"
 	"github.com/graphql-go/graphql/language/printer"
 	"github.com/graphql-go/graphql/language/visitor"
-	"sort"
-	"strings"
 )
 
 /**
@@ -950,7 +951,10 @@ func collectFieldASTsAndDefs(context *ValidationContext, parentType Named, selec
 				FieldDef: fieldDef,
 			})
 		case *ast.InlineFragment:
-			parentType, _ := typeFromAST(*context.Schema(), selection.TypeCondition)
+			parentType, err := typeFromAST(*context.Schema(), selection.TypeCondition)
+			if err != nil {
+				continue // TODO: Is this right?
+			}
 			astAndDefs = collectFieldASTsAndDefs(
 				context,
 				parentType,
@@ -971,7 +975,10 @@ func collectFieldASTsAndDefs(context *ValidationContext, parentType Named, selec
 			if fragment == nil {
 				continue
 			}
-			parentType, _ := typeFromAST(*context.Schema(), fragment.TypeCondition)
+			parentType, err := typeFromAST(*context.Schema(), fragment.TypeCondition)
+			if err != nil {
+				continue // TODO: Is this right?
+			}
 			astAndDefs = collectFieldASTsAndDefs(
 				context,
 				parentType,
@@ -1320,7 +1327,10 @@ func getFragmentType(context *ValidationContext, name string) Type {
 	if frag == nil {
 		return nil
 	}
-	ttype, _ := typeFromAST(*context.Schema(), frag.TypeCondition)
+	ttype, err := typeFromAST(*context.Schema(), frag.TypeCondition)
+	if err != nil {
+		return nil // TODO: Is this right?
+	}
 	return ttype
 }
 
@@ -1709,7 +1719,11 @@ func VariablesAreInputTypesRule(context *ValidationContext) *ValidationRuleInsta
 			kinds.VariableDefinition: visitor.NamedVisitFuncs{
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.VariableDefinition); ok && node != nil {
-						ttype, _ := typeFromAST(*context.Schema(), node.Type)
+						ttype, err := typeFromAST(*context.Schema(), node.Type)
+						if err != nil {
+							// TODO: Is this right?
+							return newValidationRuleError(err.Error(), []ast.Node{node.Type})
+						}
 
 						// If the variable type is not an input type, return an error.
 						if ttype != nil && !IsInputType(ttype) {
@@ -1820,11 +1834,21 @@ func VariablesInAllowedPositionRule(context *ValidationContext) *ValidationRuleI
 						if variableAST.Name != nil {
 							varName = variableAST.Name.Value
 						}
-						varDef, _ := varDefMap[varName]
-						var varType Type
-						if varDef != nil {
-							varType, _ = typeFromAST(*context.Schema(), varDef.Type)
+
+						varDef, varDefDefined := varDefMap[varName]
+
+						var (
+							varType Type
+							err     error
+						)
+						if varDefDefined {
+							varType, err = typeFromAST(*context.Schema(), varDef.Type)
 						}
+						if err != nil {
+							// TODO: Is this right?
+							return newValidationRuleError(err.Error(), []ast.Node{variableAST})
+						}
+
 						inputType := context.InputType()
 						if varType != nil && inputType != nil && !varTypeAllowedForType(effectiveType(varType, varDef), inputType) {
 							return newValidationRuleError(

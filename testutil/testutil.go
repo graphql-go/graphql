@@ -135,10 +135,12 @@ func init() {
 		},
 		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
 			if character, ok := value.(StarWarsChar); ok {
-				id, _ := strconv.Atoi(character.Id)
-				human := GetHuman(id)
-				if human.Id != "" {
-					return humanType
+				id, err := strconv.Atoi(character.Id)
+				if err == nil {
+					human := GetHuman(id)
+					if human.Id != "" {
+						return humanType
+					}
 				}
 			}
 			return droidType
@@ -317,9 +319,14 @@ func init() {
 			},
 		},
 	})
-	StarWarsSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
+
+	var err error
+	StarWarsSchema, err = graphql.NewSchema(graphql.SchemaConfig{
 		Query: queryType,
 	})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func GetHuman(id int) StarWarsChar {
