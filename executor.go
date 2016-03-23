@@ -397,10 +397,10 @@ func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment ast.Node, ttype
 		if conditionalType == ttype {
 			return true
 		}
-                if conditionalType.Name() == ttype.Name() {
+		if conditionalType.Name() == ttype.Name() {
 			return true
 		}
-		
+
 		if conditionalType, ok := conditionalType.(Abstract); ok {
 			return conditionalType.IsPossibleType(ttype)
 		}
@@ -586,6 +586,20 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 
 	if isNullish(result) {
 		return nil
+	}
+
+	// If field type is Pointer, pull value from pointer and pass it along
+	if returnType, ok := returnType.(*Pointer); ok {
+		resultVal := reflect.ValueOf(result)
+		err := invariant(
+			resultVal.IsValid() && resultVal.Type().Kind() == reflect.Ptr,
+			"User Error: expected pointer, but did not find one.",
+		)
+		if err != nil {
+			panic(gqlerrors.FormatError(err))
+		}
+
+		return completeValue(eCtx, returnType.OfType, fieldASTs, info, resultVal.Elem().Interface())
 	}
 
 	// If field type is List, complete each item in the list with the inner type

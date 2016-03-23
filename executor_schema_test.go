@@ -28,6 +28,10 @@ type testAuthor struct {
 	Pic           testPicFn    `json:"pic"`
 	RecentArticle *testArticle `json:"recentArticle"`
 }
+type testComment struct {
+	Id   *int    `json:"id"`
+	Body *string `json:"body"`
+}
 type testArticle struct {
 	Id          string        `json:"id"`
 	IsPublished string        `json:"isPublished"`
@@ -36,6 +40,7 @@ type testArticle struct {
 	Body        string        `json:"body"`
 	Hidden      string        `json:"hidden"`
 	Keywords    []interface{} `json:"keywords"`
+	Comments    []testComment `json:"comments"`
 }
 
 func getPic(id int, width, height string) *testPic {
@@ -48,6 +53,14 @@ func getPic(id int, width, height string) *testPic {
 
 var johnSmith *testAuthor
 
+func intToPtr(i int) *int {
+	return &i
+}
+
+func stringToPtr(s string) *string {
+	return &s
+}
+
 func article(id interface{}) *testArticle {
 	return &testArticle{
 		Id:          fmt.Sprintf("%v", id),
@@ -58,6 +71,10 @@ func article(id interface{}) *testArticle {
 		Hidden:      "This data is not exposed in the schema",
 		Keywords: []interface{}{
 			"foo", "bar", 1, true, nil,
+		},
+		Comments: []testComment{
+			{intToPtr(10), stringToPtr("This is a comment body")},
+			{intToPtr(20), stringToPtr("This is another comment body")},
 		},
 	}
 }
@@ -118,6 +135,17 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 			"recentArticle": &graphql.Field{},
 		},
 	})
+	blogComment := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Comment",
+		Fields: graphql.Fields{
+			"id": &graphql.Field{
+				Type: graphql.NewPointer(graphql.Int),
+			},
+			"body": &graphql.Field{
+				Type: graphql.NewPointer(graphql.String),
+			},
+		},
+	})
 	blogArticle := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Article",
 		Fields: graphql.Fields{
@@ -138,6 +166,9 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 			},
 			"keywords": &graphql.Field{
 				Type: graphql.NewList(graphql.String),
+			},
+			"comments": &graphql.Field{
+				Type: graphql.NewList(blogComment),
 			},
 		},
 	})
@@ -219,6 +250,10 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
         body,
         hidden,
         notdefined
+		comments {
+		  id,
+		  body
+		}
       }
 	`
 
@@ -247,6 +282,26 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 							"true",
 							nil,
 						},
+						"comments": []interface{}{
+							map[string]interface{}{
+								"id":   10,
+								"body": "This is a comment body",
+							},
+							map[string]interface{}{
+								"id":   20,
+								"body": "This is another comment body",
+							},
+						},
+					},
+				},
+				"comments": []interface{}{
+					map[string]interface{}{
+						"id":   10,
+						"body": "This is a comment body",
+					},
+					map[string]interface{}{
+						"id":   20,
+						"body": "This is another comment body",
 					},
 				},
 				"id":          "1",

@@ -164,6 +164,7 @@ var _ Named = (*Interface)(nil)
 var _ Named = (*Union)(nil)
 var _ Named = (*Enum)(nil)
 var _ Named = (*InputObject)(nil)
+var _ Named = (*Pointer)(nil)
 
 func GetNamed(ttype Type) Named {
 	unmodifiedType := ttype
@@ -1302,6 +1303,58 @@ func (gl *NonNull) String() string {
 }
 func (gl *NonNull) Error() error {
 	return gl.err
+}
+
+// Pointer represents just that, a pointer to a value of another type. Pointers
+// are specific to langauges that support them, such as Go.
+type Pointer struct {
+	OfType Type `json:"ofType"`
+
+	err error
+}
+
+// NewPointer takes the given type and constructs a GraphQL pointer for that
+// type.
+func NewPointer(t Type) *Pointer {
+	p := &Pointer{}
+
+	err := invariant(t != nil, fmt.Sprintf("Can only create Pointer of a Type but got: %v.", t))
+	if err != nil {
+		p.err = err
+
+		return p
+	}
+
+	p.OfType = t
+
+	return p
+}
+
+// Name returns a GraphQL 'type name' that should represent what piece of data
+// is defined.
+func (p *Pointer) Name() string {
+	return fmt.Sprintf("*%v", p.OfType)
+}
+
+// Description is empty at the moment.
+func (p *Pointer) Description() string {
+	return ""
+}
+
+// String returns the Name of the pointer, also defined to fit *Pointer to
+// the fmt.Stringer interface.
+func (p *Pointer) String() string {
+	if p.OfType != nil {
+		return p.Name()
+	}
+
+	return ""
+}
+
+// Error returns an error value that may be attached to the Pointer value from
+// previous encounters.
+func (p *Pointer) Error() error {
+	return p.err
 }
 
 var NAME_REGEXP, _ = regexp.Compile("^[_a-zA-Z][_a-zA-Z0-9]*$")

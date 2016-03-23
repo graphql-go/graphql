@@ -64,6 +64,21 @@ var blogArticle = graphql.NewObject(graphql.ObjectConfig{
 		"body": &graphql.Field{
 			Type: graphql.String,
 		},
+		"comments": &graphql.Field{
+			Type: graphql.NewPointer(graphql.NewList(blogComment)),
+		},
+	},
+})
+
+var blogComment = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Comment",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type: graphql.NewPointer(graphql.String),
+		},
+		"body": &graphql.Field{
+			Type: graphql.NewPointer(graphql.String),
+		},
 	},
 })
 
@@ -202,6 +217,19 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 	}
 	if feedField.Name != "feed" {
 		t.Fatalf("feedField.Name expected to equal `feed`, got: %v", feedField.Name)
+	}
+
+	commentField := articleFieldTypeObject.Fields()["comments"]
+	commentFieldPtr, ok := commentField.Type.(*graphql.Pointer)
+	if !ok {
+		t.Fatalf("expected commentFieldPtr to be a Pointer, got: %v", commentField)
+	}
+	commentFieldPtrList, ok := commentFieldPtr.OfType.(*graphql.List)
+	if !ok {
+		t.Fatalf("expected commentFieldPtrList to be a List, got: %v", commentFieldPtrList)
+	}
+	if commentFieldPtrList.OfType != blogComment {
+		t.Fatalf("commentFieldPtrList.OfType expected to equal blogComment, got: %v", commentFieldPtrList.OfType)
 	}
 }
 func TestTypeSystem_DefinitionExample_DefinesAMutationScheme(t *testing.T) {
@@ -377,6 +405,9 @@ func TestTypeSystem_DefinitionExample_StringifiesSimpleTypes(t *testing.T) {
 		Test{graphql.NewNonNull(graphql.NewList(graphql.Int)), "[Int]!"},
 		Test{graphql.NewList(graphql.NewNonNull(graphql.Int)), "[Int!]"},
 		Test{graphql.NewList(graphql.NewList(graphql.Int)), "[[Int]]"},
+		Test{graphql.NewPointer(graphql.Int), "*Int"},
+		Test{graphql.NewPointer(graphql.NewList(graphql.Int)), "*[Int]"},
+		Test{graphql.NewNonNull(graphql.NewPointer(graphql.Int)), "*Int!"},
 	}
 	for _, test := range tests {
 		ttypeStr := fmt.Sprintf("%v", test.ttype)
