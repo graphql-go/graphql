@@ -63,9 +63,16 @@ func TestValidate_VariableDefaultValuesOfCorrectType_VariablesWithInvalidDefault
       }
     `,
 		[]gqlerrors.FormattedError{
-			testutil.RuleError(`Variable "$a" of type "Int" has invalid default value: "one".`, 3, 19),
-			testutil.RuleError(`Variable "$b" of type "String" has invalid default value: 4.`, 4, 22),
-			testutil.RuleError(`Variable "$c" of type "ComplexInput" has invalid default value: "notverycomplex".`, 5, 28),
+			testutil.RuleError(`Variable "$a" has invalid default value: "one".`+
+				"\nExpected type \"Int\", found \"one\".",
+				3, 19),
+			testutil.RuleError(`Variable "$b" has invalid default value: 4.`+
+				"\nExpected type \"String\", found 4.",
+				4, 22),
+			testutil.RuleError(
+				`Variable "$c" has invalid default value: "notverycomplex".`+
+					"\nExpected \"ComplexInput\", found not an object.",
+				5, 28),
 		})
 }
 func TestValidate_VariableDefaultValuesOfCorrectType_ComplexVariablesMissingRequiredField(t *testing.T) {
@@ -75,7 +82,10 @@ func TestValidate_VariableDefaultValuesOfCorrectType_ComplexVariablesMissingRequ
       }
     `,
 		[]gqlerrors.FormattedError{
-			testutil.RuleError(`Variable "$a" of type "ComplexInput" has invalid default value: {intField: 3}.`, 2, 53),
+			testutil.RuleError(
+				`Variable "$a" has invalid default value: {intField: 3}.`+
+					"\nIn field \"requiredField\": Expected \"Boolean!\", found null.",
+				2, 53),
 		})
 }
 func TestValidate_VariableDefaultValuesOfCorrectType_ListVariablesWithInvalidItem(t *testing.T) {
@@ -85,6 +95,9 @@ func TestValidate_VariableDefaultValuesOfCorrectType_ListVariablesWithInvalidIte
       }
     `,
 		[]gqlerrors.FormattedError{
-			testutil.RuleError(`Variable "$a" of type "[String]" has invalid default value: ["one", 2].`, 2, 40),
+			testutil.RuleError(
+				`Variable "$a" has invalid default value: ["one", 2].`+
+					"\nIn element #1: Expected type \"String\", found 2.",
+				2, 40),
 		})
 }

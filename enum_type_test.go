@@ -6,6 +6,7 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/gqlerrors"
+	"github.com/graphql-go/graphql/language/location"
 	"github.com/graphql-go/graphql/testutil"
 )
 
@@ -178,7 +179,10 @@ func TestTypeSystem_EnumValues_DoesNotAcceptStringLiterals(t *testing.T) {
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
-				Message: `Argument "fromEnum" expected type "Color" but got: "GREEN".`,
+				Message: "Argument \"fromEnum\" has invalid value \"GREEN\".\nExpected type \"Color\", found \"GREEN\".",
+				Locations: []location.SourceLocation{
+					{Line: 1, Column: 23},
+				},
 			},
 		},
 	}
@@ -205,7 +209,10 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueInPlaceOfEnumLiteral(t 
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
-				Message: `Argument "fromEnum" expected type "Color" but got: 1.`,
+				Message: "Argument \"fromEnum\" has invalid value 1.\nExpected type \"Color\", found 1.",
+				Locations: []location.SourceLocation{
+					{Line: 1, Column: 23},
+				},
 			},
 		},
 	}
@@ -221,7 +228,10 @@ func TestTypeSystem_EnumValues_DoesNotAcceptEnumLiteralInPlaceOfInt(t *testing.T
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
-				Message: `Argument "fromInt" expected type "Int" but got: GREEN.`,
+				Message: "Argument \"fromInt\" has invalid value GREEN.\nExpected type \"Int\", found GREEN.",
+				Locations: []location.SourceLocation{
+					{Line: 1, Column: 23},
+				},
 			},
 		},
 	}
@@ -287,7 +297,10 @@ func TestTypeSystem_EnumValues_DoesNotAcceptInternalValueAsEnumVariable(t *testi
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
-				Message: `Variable "$color" expected value of type "Color!" but got: 2.`,
+				Message: "Variable \"$color\" got invalid value 2.\nExpected type \"Color\", found \"2\".",
+				Locations: []location.SourceLocation{
+					{Line: 1, Column: 12},
+				},
 			},
 		},
 	}

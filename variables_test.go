@@ -53,6 +53,18 @@ var testInputObject *graphql.InputObject = graphql.NewInputObject(graphql.InputO
 	},
 })
 
+var testNestedInputObject *graphql.InputObject = graphql.NewInputObject(graphql.InputObjectConfig{
+	Name: "TestNestedInputObject",
+	Fields: graphql.InputObjectConfigFieldMap{
+		"na": &graphql.InputObjectFieldConfig{
+			Type: graphql.NewNonNull(testInputObject),
+		},
+		"nb": &graphql.InputObjectFieldConfig{
+			Type: graphql.NewNonNull(graphql.String),
+		},
+	},
+})
+
 func inputResolved(p graphql.ResolveParams) (interface{}, error) {
 	input, ok := p.Args["input"]
 	if !ok {
@@ -100,6 +112,16 @@ var testType *graphql.Object = graphql.NewObject(graphql.ObjectConfig{
 			Args: graphql.FieldConfigArgument{
 				"input": &graphql.ArgumentConfig{
 					Type:         graphql.String,
+					DefaultValue: "Hello World",
+				},
+			},
+			Resolve: inputResolved,
+		},
+		"fieldWithNestedInputObject": &graphql.Field{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type:         testNestedInputObject,
 					DefaultValue: "Hello World",
 				},
 			},
@@ -369,8 +391,8 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnNullForNestedNon
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
-				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
-					`got: {"a":"foo","b":"bar","c":null}.`,
+				Message: `Variable "$input" got invalid value {"a":"foo","b":"bar","c":null}.` +
+					"\nIn field \"c\": Expected \"String!\", found null.",
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
 						Line: 2, Column: 17,
@@ -404,8 +426,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnIncorrectType(t 
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
-				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
-					`got: "foo bar".`,
+				Message: "Variable \"$input\" got invalid value \"foo bar\".\nExpected \"TestInputObject\", found not an object.",
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
 						Line: 2, Column: 17,
@@ -442,8 +463,8 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNested
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
-				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
-					`got: {"a":"foo","b":"bar"}.`,
+				Message: `Variable "$input" got invalid value {"a":"foo","b":"bar"}.` +
+					"\nIn field \"c\": Expected \"String!\", found null.",
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
 						Line: 2, Column: 17,
@@ -469,6 +490,51 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNested
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
+func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnDeepNestedErrorsAndWithManyErrors(t *testing.T) {
+	params := map[string]interface{}{
+		"input": map[string]interface{}{
+			"na": map[string]interface{}{
+				"a": "foo",
+			},
+		},
+	}
+	expected := &graphql.Result{
+		Data: nil,
+		Errors: []gqlerrors.FormattedError{
+			gqlerrors.FormattedError{
+				Message: `Variable "$input" got invalid value {"na":{"a":"foo"}}.` +
+					"\nIn field \"na\": In field \"c\": Expected \"String!\", found null." +
+					"\nIn field \"nb\": Expected \"String!\", found null.",
+				Locations: []location.SourceLocation{
+					location.SourceLocation{
+						Line: 2, Column: 19,
+					},
+				},
+			},
+		},
+	}
+	doc := `
+          query q($input: TestNestedInputObject) {
+            fieldWithNestedObjectInput(input: $input)
+          }
+        `
+
+	nestedAST := testutil.TestParse(t, doc)
+
+	// execute
+	ep := graphql.ExecuteParams{
+		Schema: variablesTestSchema,
+		AST:    nestedAST,
+		Args:   params,
+	}
+	result := testutil.TestExecute(t, ep)
+	if len(result.Errors) != len(expected.Errors) {
+		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
 func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknownInputField(t *testing.T) {
 	params := map[string]interface{}{
 		"input": map[string]interface{}{
@@ -482,8 +548,8 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknow
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
-				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
-					`got: {"a":"foo","b":"bar","c":"baz","d":"dog"}.`,
+				Message: `Variable "$input" got invalid value {"a":"foo","b":"bar","c":"baz","d":"dog"}.` +
+					"\nIn field \"d\": Expected type \"ComplexScalar\", found \"dog\".",
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
 						Line: 2, Column: 17,
@@ -1117,8 +1183,9 @@ func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
-				Message: `Variable "$input" expected value of type "[String!]" but got: ` +
-					`["A",null,"B"].`,
+				Message: `Variable "$input" got invalid value ` +
+					`["A",null,"B"].` +
+					"\nIn element #1: Expected \"String!\", found null.",
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
 						Line: 2, Column: 17,
@@ -1224,8 +1291,9 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContai
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
-				Message: `Variable "$input" expected value of type "[String!]!" but got: ` +
-					`["A",null,"B"].`,
+				Message: `Variable "$input" got invalid value ` +
+					`["A",null,"B"].` +
+					"\nIn element #1: Expected \"String!\", found null.",
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
 						Line: 2, Column: 17,

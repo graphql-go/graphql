@@ -79,15 +79,21 @@ func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInsta
 					if argAST, ok := p.Node.(*ast.Argument); ok {
 						value := argAST.Value
 						argDef := context.Argument()
-						if argDef != nil && !isValidLiteralValue(argDef.Type, value) {
+						isValid, messages := isValidLiteralValue(argDef.Type, value)
+						if argDef != nil && !isValid {
 							argNameValue := ""
 							if argAST.Name != nil {
 								argNameValue = argAST.Name.Value
 							}
+
+							messagesStr := ""
+							if len(messages) > 0 {
+								messagesStr = "\n" + strings.Join(messages, "\n")
+							}
 							return reportError(
 								context,
-								fmt.Sprintf(`Argument "%v" expected type "%v" but got: %v.`,
-									argNameValue, argDef.Type, printer.Print(value)),
+								fmt.Sprintf(`Argument "%v" has invalid value %v.%v`,
+									argNameValue, printer.Print(value), messagesStr),
 								[]ast.Node{value},
 							)
 						}
@@ -132,11 +138,16 @@ func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleI
 								[]ast.Node{defaultValue},
 							)
 						}
-						if ttype != nil && defaultValue != nil && !isValidLiteralValue(ttype, defaultValue) {
+						isValid, messages := isValidLiteralValue(ttype, defaultValue)
+						if ttype != nil && defaultValue != nil && !isValid {
+							messagesStr := ""
+							if len(messages) > 0 {
+								messagesStr = "\n" + strings.Join(messages, "\n")
+							}
 							return reportError(
 								context,
-								fmt.Sprintf(`Variable "$%v" of type "%v" has invalid default value: %v.`,
-									name, ttype, printer.Print(defaultValue)),
+								fmt.Sprintf(`Variable "$%v" has invalid default value: %v.%v`,
+									name, printer.Print(defaultValue), messagesStr),
 								[]ast.Node{defaultValue},
 							)
 						}
@@ -1858,36 +1869,41 @@ func VariablesInAllowedPositionRule(context *ValidationContext) *ValidationRuleI
  * Note that this only validates literal values, variables are assumed to
  * provide values of the correct type.
  */
-func isValidLiteralValue(ttype Input, valueAST ast.Value) bool {
+func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 	// A value must be provided if the type is non-null.
 	if ttype, ok := ttype.(*NonNull); ok {
 		if valueAST == nil {
-			return false
+			if ttype.OfType.Name() != "" {
+				return false, []string{fmt.Sprintf(`Expected "%v!", found null.`, ttype.OfType.Name())}
+			}
+			return false, []string{"Expected non-null value, found null."}
 		}
 		ofType, _ := ttype.OfType.(Input)
 		return isValidLiteralValue(ofType, valueAST)
 	}
 
 	if valueAST == nil {
-		return true
+		return true, nil
 	}
 
 	// This function only tests literals, and assumes variables will provide
 	// values of the correct type.
 	if valueAST.GetKind() == kinds.Variable {
-		return true
+		return true, nil
 	}
 
 	// Lists accept a non-list value as a list of one.
 	if ttype, ok := ttype.(*List); ok {
 		itemType, _ := ttype.OfType.(Input)
 		if valueAST, ok := valueAST.(*ast.ListValue); ok {
+			messagesReduce := []string{}
 			for _, value := range valueAST.Values {
-				if isValidLiteralValue(itemType, value) == false {
-					return false
+				_, messages := isValidLiteralValue(itemType, value)
+				for idx, message := range messages {
+					messagesReduce = append(messagesReduce, fmt.Sprintf(`In element #%v: %v`, idx+1, message))
 				}
 			}
-			return true
+			return (len(messagesReduce) == 0), messagesReduce
 		}
 		return isValidLiteralValue(itemType, valueAST)
 
@@ -1897,12 +1913,12 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) bool {
 	if ttype, ok := ttype.(*InputObject); ok {
 		valueAST, ok := valueAST.(*ast.ObjectValue)
 		if !ok {
-			return false
+			return false, []string{fmt.Sprintf(`Expected "%v", found not an object.`, ttype.Name())}
 		}
 		fields := ttype.Fields()
+		messagesReduce := []string{}
 
 		// Ensure every provided field is defined.
-		// Ensure every defined field is valid.
 		fieldASTs := valueAST.Fields
 		fieldASTMap := map[string]*ast.ObjectField{}
 		for _, fieldAST := range fieldASTs {
@@ -1913,35 +1929,39 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) bool {
 
 			fieldASTMap[fieldASTName] = fieldAST
 
-			// check if field is defined
 			field, ok := fields[fieldASTName]
 			if !ok || field == nil {
-				return false
+				messagesReduce = append(messagesReduce, fmt.Sprintf(`Unknown field "%v".`, fieldASTName))
 			}
 		}
+		// Ensure every defined field is valid.
 		for fieldName, field := range fields {
 			fieldAST, _ := fieldASTMap[fieldName]
 			var fieldASTValue ast.Value
 			if fieldAST != nil {
 				fieldASTValue = fieldAST.Value
 			}
-			if !isValidLiteralValue(field.Type, fieldASTValue) {
-				return false
+			if isValid, messages := isValidLiteralValue(field.Type, fieldASTValue); !isValid {
+				for _, message := range messages {
+					messagesReduce = append(messagesReduce, fmt.Sprintf("In field \"%v\": %v", fieldName, message))
+				}
 			}
 		}
-		return true
+		return (len(messagesReduce) == 0), messagesReduce
 	}
 
 	if ttype, ok := ttype.(*Scalar); ok {
-		return !isNullish(ttype.ParseLiteral(valueAST))
+		if isNullish(ttype.ParseLiteral(valueAST)) {
+			return false, []string{fmt.Sprintf(`Expected type "%v", found %v.`, ttype.Name(), printer.Print(valueAST))}
+		}
 	}
 	if ttype, ok := ttype.(*Enum); ok {
-		return !isNullish(ttype.ParseLiteral(valueAST))
+		if isNullish(ttype.ParseLiteral(valueAST)) {
+			return false, []string{fmt.Sprintf(`Expected type "%v", found %v.`, ttype.Name(), printer.Print(valueAST))}
+		}
 	}
 
-	// Must be input type (not scalar or enum)
-	// Silently fail, instead of panic()
-	return false
+	return true, nil
 }
 
 /**
