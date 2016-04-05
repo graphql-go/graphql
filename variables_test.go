@@ -538,18 +538,18 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnDeepNestedErrors
 func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknownInputField(t *testing.T) {
 	params := map[string]interface{}{
 		"input": map[string]interface{}{
-			"a": "foo",
-			"b": "bar",
-			"c": "baz",
-			"d": "dog",
+			"a":     "foo",
+			"b":     "bar",
+			"c":     "baz",
+			"extra": "dog",
 		},
 	}
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
 			gqlerrors.FormattedError{
-				Message: `Variable "$input" got invalid value {"a":"foo","b":"bar","c":"baz","d":"dog"}.` +
-					"\nIn field \"d\": Expected type \"ComplexScalar\", found \"dog\".",
+				Message: `Variable "$input" got invalid value {"a":"foo","b":"bar","c":"baz","extra":"dog"}.` +
+					"\nIn field \"extra\": Unknown field.",
 				Locations: []location.SourceLocation{
 					location.SourceLocation{
 						Line: 2, Column: 17,

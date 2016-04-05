@@ -281,7 +281,7 @@ func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
 		// Ensure every provided field is defined.
 		for _, fieldName := range valueMapFieldNames {
 			if _, ok := fields[fieldName]; !ok {
-				messagesReduce = append(messagesReduce, fmt.Sprintf(`Unknown field "%v".`, fieldName))
+				messagesReduce = append(messagesReduce, fmt.Sprintf(`In field "%v": Unknown field.`, fieldName))
 			}
 		}
 

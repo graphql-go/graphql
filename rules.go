@@ -1931,7 +1931,7 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 
 			field, ok := fields[fieldASTName]
 			if !ok || field == nil {
-				messagesReduce = append(messagesReduce, fmt.Sprintf(`Unknown field "%v".`, fieldASTName))
+				messagesReduce = append(messagesReduce, fmt.Sprintf(`In field "%v": Unknown field.`, fieldASTName))
 			}
 		}
 		// Ensure every defined field is valid.

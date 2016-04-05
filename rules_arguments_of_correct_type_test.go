@@ -760,7 +760,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidInputObjectValue_PartialObject_U
         `,
 		[]gqlerrors.FormattedError{
 			testutil.RuleError(
-				"Argument \"complexArg\" has invalid value {requiredField: true, unknownField: \"value\"}.\nUnknown field \"unknownField\".",
+				"Argument \"complexArg\" has invalid value {requiredField: true, unknownField: \"value\"}.\nIn field \"unknownField\": Unknown field.",
 				4, 41,
 			),
 		})
