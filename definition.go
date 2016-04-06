@@ -657,11 +657,12 @@ type Interface struct {
 	err error
 }
 type InterfaceConfig struct {
-	Name        string `json:"name"`
-	Fields      Fields `json:"fields"`
+	Name        string      `json:"name"`
+	Fields      interface{} `json:"fields"`
 	ResolveType ResolveTypeFn
 	Description string `json:"description"`
 }
+
 type ResolveTypeFn func(value interface{}, info ResolveInfo) *Object
 
 func NewInterface(config InterfaceConfig) *Interface {
@@ -690,7 +691,10 @@ func (it *Interface) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	if fieldName == "" || fieldConfig == nil {
 		return
 	}
-	it.typeConfig.Fields[fieldName] = fieldConfig
+	switch it.typeConfig.Fields.(type) {
+	case Fields:
+		it.typeConfig.Fields.(Fields)[fieldName] = fieldConfig
+	}
 }
 func (it *Interface) Name() string {
 	return it.PrivateName
@@ -699,7 +703,16 @@ func (it *Interface) Description() string {
 	return it.PrivateDescription
 }
 func (it *Interface) Fields() (fields FieldDefinitionMap) {
-	it.fields, it.err = defineFieldMap(it, it.typeConfig.Fields)
+	var configureFields Fields
+	switch it.typeConfig.Fields.(type) {
+	case Fields:
+		configureFields = it.typeConfig.Fields.(Fields)
+	case FieldsThunk:
+		configureFields = it.typeConfig.Fields.(FieldsThunk)()
+	}
+	fields, err := defineFieldMap(it, configureFields)
+	it.err = err
+	it.fields = fields
 	return it.fields
 }
 func (it *Interface) PossibleTypes() []*Object {

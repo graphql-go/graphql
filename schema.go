@@ -338,7 +338,7 @@ func assertObjectImplementsInterface(object *Object, iface *Interface) error {
 				return err
 			}
 		}
-		// Assert argument set invariance.
+		// Assert additional arguments must not be required.
 		for _, objectArg := range objectField.Args {
 			argName := objectArg.PrivateName
 			var ifaceArg *Argument
@@ -348,15 +348,19 @@ func assertObjectImplementsInterface(object *Object, iface *Interface) error {
 					break
 				}
 			}
-			err = invariant(
-				ifaceArg != nil,
-				fmt.Sprintf(`%v.%v does not define argument "%v" but `+
-					`%v.%v provides it.`,
-					iface, fieldName, argName,
-					object, fieldName),
-			)
-			if err != nil {
-				return err
+
+			if ifaceArg == nil {
+				_, ok := objectArg.Type.(*NonNull)
+				err = invariant(
+					!ok,
+					fmt.Sprintf(`%v.%v(%v:) is of required type `+
+						`"%v" but is not also provided by the interface %v.%v.`,
+						object, fieldName, argName,
+						objectArg.Type, iface, fieldName),
+				)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
