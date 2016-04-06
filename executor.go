@@ -627,7 +627,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		err := invariant(
 			resultVal.IsValid() && resultVal.Type().Kind() == reflect.Slice,
 			fmt.Sprintf("User Error: expected iterable, but did not find one "+
-				"for field %v.%v", parentTypeName, info.FieldName),
+				"for field %v.%v.", parentTypeName, info.FieldName),
 		)
 		if err != nil {
 			panic(gqlerrors.FormatError(err))
