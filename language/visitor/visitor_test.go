@@ -1495,7 +1495,9 @@ func TestVisitor_VisitWithTypeInfo_MaintainsTypeInfoDuringVisit(t *testing.T) {
 
 	visited := []interface{}{}
 
-	typeInfo := graphql.NewTypeInfo(testutil.DefaultRulesTestSchema)
+	typeInfo := graphql.NewTypeInfo(&graphql.TypeInfoConfig{
+		Schema: testutil.TestSchema,
+	})
 
 	query := `{ human(id: 4) { name, pets { name }, unknown } }`
 	astDoc := parse(t, query)
@@ -1604,7 +1606,9 @@ func TestVisitor_VisitWithTypeInfo_MaintainsTypeInfoDuringEdit(t *testing.T) {
 
 	visited := []interface{}{}
 
-	typeInfo := graphql.NewTypeInfo(testutil.DefaultRulesTestSchema)
+	typeInfo := graphql.NewTypeInfo(&graphql.TypeInfoConfig{
+		Schema: testutil.TestSchema,
+	})
 
 	astDoc := parse(t, `{ human(id: 4) { name, pets }, alien }`)
 
