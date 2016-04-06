@@ -324,6 +324,100 @@ func TestDirectivesWorksOnInlineFragmentUnlessTrueIncludesInlineFragment(t *test
 	}
 }
 
+func TestDirectivesWorksOnAnonymousInlineFragmentIfFalseOmitsAnonymousInlineFragment(t *testing.T) {
+	query := `
+        query Q {
+          a
+          ... @include(if: false) {
+            b
+          }
+        }
+	`
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"a": "a",
+		},
+	}
+	result := executeDirectivesTestQuery(t, query)
+	if len(result.Errors) != 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
+func TestDirectivesWorksOnAnonymousInlineFragmentIfTrueIncludesAnonymousInlineFragment(t *testing.T) {
+	query := `
+        query Q {
+          a
+          ... @include(if: true) {
+            b
+          }
+        }
+	`
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"a": "a",
+			"b": "b",
+		},
+	}
+	result := executeDirectivesTestQuery(t, query)
+	if len(result.Errors) != 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
+func TestDirectivesWorksOnAnonymousInlineFragmentUnlessFalseIncludesAnonymousInlineFragment(t *testing.T) {
+	query := `
+        query Q {
+          a
+          ... @skip(if: false) {
+            b
+          }
+        }
+	`
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"a": "a",
+			"b": "b",
+		},
+	}
+	result := executeDirectivesTestQuery(t, query)
+	if len(result.Errors) != 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
+func TestDirectivesWorksOnAnonymousInlineFragmentUnlessTrueIncludesAnonymousInlineFragment(t *testing.T) {
+	query := `
+        query Q {
+          a
+          ... @skip(if: true) {
+            b
+          }
+        }
+	`
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"a": "a",
+		},
+	}
+	result := executeDirectivesTestQuery(t, query)
+	if len(result.Errors) != 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
 func TestDirectivesWorksOnFragmentIfFalseOmitsFragment(t *testing.T) {
 	query := `
         query Q {
