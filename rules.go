@@ -42,8 +42,7 @@ var SpecifiedRules = []ValidationRuleFn{
 }
 
 type ValidationRuleInstance struct {
-	VisitorOpts          *visitor.VisitorOptions
-	VisitSpreadFragments bool
+	VisitorOpts *visitor.VisitorOptions
 }
 type ValidationRuleFn func(context *ValidationContext) *ValidationRuleInstance
 
@@ -731,8 +730,7 @@ func NoUndefinedVariablesRule(context *ValidationContext) *ValidationRuleInstanc
 		},
 	}
 	return &ValidationRuleInstance{
-		VisitSpreadFragments: true,
-		VisitorOpts:          visitorOpts,
+		VisitorOpts: visitorOpts,
 	}
 }
 
@@ -895,9 +893,7 @@ func NoUnusedVariablesRule(context *ValidationContext) *ValidationRuleInstance {
 		},
 	}
 	return &ValidationRuleInstance{
-		// Visit FragmentDefinition after visiting FragmentSpread
-		VisitSpreadFragments: true,
-		VisitorOpts:          visitorOpts,
+		VisitorOpts: visitorOpts,
 	}
 }
 
@@ -1906,8 +1902,7 @@ func VariablesInAllowedPositionRule(context *ValidationContext) *ValidationRuleI
 		},
 	}
 	return &ValidationRuleInstance{
-		VisitSpreadFragments: true,
-		VisitorOpts:          visitorOpts,
+		VisitorOpts: visitorOpts,
 	}
 }
 

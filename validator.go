@@ -12,6 +12,20 @@ type ValidationResult struct {
 	Errors  []gqlerrors.FormattedError
 }
 
+/**
+ * Implements the "Validation" section of the spec.
+ *
+ * Validation runs synchronously, returning an array of encountered errors, or
+ * an empty array if no errors were encountered and the document is valid.
+ *
+ * A list of specific validation rules may be provided. If not provided, the
+ * default list of rules defined by the GraphQL specification will be used.
+ *
+ * Each validation rules is a function which returns a visitor
+ * (see the language/visitor API). Visitor methods are expected to return
+ * GraphQLErrors, or Arrays of GraphQLErrors when invalid.
+ */
+
 func ValidateDocument(schema *Schema, astDoc *ast.Document, rules []ValidationRuleFn) (vr ValidationResult) {
 	if len(rules) == 0 {
 		rules = SpecifiedRules
@@ -40,7 +54,10 @@ func ValidateDocument(schema *Schema, astDoc *ast.Document, rules []ValidationRu
 /**
  * VisitUsingRules This uses a specialized visitor which runs multiple visitors in parallel,
  * while maintaining the visitor skip and break API.
+ *
  * @internal
+ * Had to expose it to unit test experimental customizable validation feature,
+ * but not meant for public consumption
  */
 func VisitUsingRules(schema *Schema, typeInfo *TypeInfo, astDoc *ast.Document, rules []ValidationRuleFn) []gqlerrors.FormattedError {
 
@@ -54,101 +71,6 @@ func VisitUsingRules(schema *Schema, typeInfo *TypeInfo, astDoc *ast.Document, r
 
 	// Visit the whole document with each instance of all provided rules.
 	visitor.Visit(astDoc, visitor.VisitWithTypeInfo(typeInfo, visitor.VisitInParallel(visitors...)), nil)
-	return context.Errors()
-}
-
-func visitUsingRulesOld(schema *Schema, astDoc *ast.Document, rules []ValidationRuleFn) []gqlerrors.FormattedError {
-	typeInfo := NewTypeInfo(&TypeInfoConfig{
-		Schema: schema,
-	})
-	context := NewValidationContext(schema, astDoc, typeInfo)
-
-	var visitInstance func(astNode ast.Node, instance *ValidationRuleInstance)
-
-	visitInstance = func(astNode ast.Node, instance *ValidationRuleInstance) {
-		visitor.Visit(astNode, &visitor.VisitorOptions{
-			Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
-				var action = visitor.ActionNoChange
-				var result interface{}
-				switch node := p.Node.(type) {
-				case ast.Node:
-					// Collect type information about the current position in the AST.
-					typeInfo.Enter(node)
-
-					// Do not visit top level fragment definitions if this instance will
-					// visit those fragments inline because it
-					// provided `visitSpreadFragments`.
-					kind := node.GetKind()
-
-					if kind == kinds.FragmentDefinition &&
-						p.Key != nil && instance.VisitSpreadFragments == true {
-						return visitor.ActionSkip, nil
-					}
-
-					// Get the visitor function from the validation instance, and if it
-					// exists, call it with the visitor arguments.
-					enterFn := visitor.GetVisitFn(instance.VisitorOpts, kind, false)
-					if enterFn != nil {
-						action, result = enterFn(p)
-					}
-
-					// If any validation instances provide the flag `visitSpreadFragments`
-					// and this node is a fragment spread, visit the fragment definition
-					// from this point.
-					if action == visitor.ActionNoChange && result == nil &&
-						instance.VisitSpreadFragments == true && kind == kinds.FragmentSpread {
-						node, _ := node.(*ast.FragmentSpread)
-						name := node.Name
-						nameVal := ""
-						if name != nil {
-							nameVal = name.Value
-						}
-						fragment := context.Fragment(nameVal)
-						if fragment != nil {
-							visitInstance(fragment, instance)
-						}
-					}
-
-					// If the result is "false" (ie action === Action.Skip), we're not visiting any descendent nodes,
-					// but need to update typeInfo.
-					if action == visitor.ActionSkip {
-						typeInfo.Leave(node)
-					}
-
-				}
-
-				return action, result
-			},
-			Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
-				var action = visitor.ActionNoChange
-				var result interface{}
-				switch node := p.Node.(type) {
-				case ast.Node:
-					kind := node.GetKind()
-
-					// Get the visitor function from the validation instance, and if it
-					// exists, call it with the visitor arguments.
-					leaveFn := visitor.GetVisitFn(instance.VisitorOpts, kind, true)
-					if leaveFn != nil {
-						action, result = leaveFn(p)
-					}
-
-					// Update typeInfo.
-					typeInfo.Leave(node)
-				}
-				return action, result
-			},
-		}, nil)
-	}
-
-	instances := []*ValidationRuleInstance{}
-	for _, rule := range rules {
-		instance := rule(context)
-		instances = append(instances, instance)
-	}
-	for _, instance := range instances {
-		visitInstance(astDoc, instance)
-	}
 	return context.Errors()
 }
 
