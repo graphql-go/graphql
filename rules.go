@@ -36,6 +36,7 @@ var SpecifiedRules = []ValidationRuleFn{
 	UniqueFragmentNamesRule,
 	UniqueInputFieldNamesRule,
 	UniqueOperationNamesRule,
+	UniqueVariableNamesRule,
 	VariablesAreInputTypesRule,
 	VariablesInAllowedPositionRule,
 }
@@ -1724,6 +1725,54 @@ func UniqueOperationNamesRule(context *ValidationContext) *ValidationRuleInstanc
 							)
 						}
 						knownOperationNames[operationName] = node.Name
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+		},
+	}
+	return &ValidationRuleInstance{
+		VisitorOpts: visitorOpts,
+	}
+}
+
+/**
+ * Unique variable names
+ *
+ * A GraphQL operation is only valid if all its variables are uniquely named.
+ */
+func UniqueVariableNamesRule(context *ValidationContext) *ValidationRuleInstance {
+	knownVariableNames := map[string]*ast.Name{}
+
+	visitorOpts := &visitor.VisitorOptions{
+		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.OperationDefinition); ok && node != nil {
+						knownVariableNames = map[string]*ast.Name{}
+					}
+					return visitor.ActionNoChange, nil
+				},
+			},
+			kinds.VariableDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					if node, ok := p.Node.(*ast.VariableDefinition); ok && node != nil {
+						variableName := ""
+						var variableNameAST *ast.Name
+						if node.Variable != nil && node.Variable.Name != nil {
+							variableNameAST = node.Variable.Name
+							variableName = node.Variable.Name.Value
+						}
+						if nameAST, ok := knownVariableNames[variableName]; ok {
+							return reportError(
+								context,
+								fmt.Sprintf(`There can only be one variable named "%v".`, variableName),
+								[]ast.Node{nameAST, variableNameAST},
+							)
+						}
+						if variableNameAST != nil {
+							knownVariableNames[variableName] = variableNameAST
+						}
 					}
 					return visitor.ActionNoChange, nil
 				},
