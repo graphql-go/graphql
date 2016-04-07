@@ -3,8 +3,9 @@ package visitor
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/graphql-go/graphql/language/ast"
 	"reflect"
+
+	"github.com/graphql-go/graphql/language/ast"
 )
 
 const (
@@ -138,7 +139,7 @@ type VisitFuncParams struct {
 	Ancestors []ast.Node
 }
 
-type VisitFunc func(p VisitFuncParams) (string, interface{})
+type VisitFunc func(p VisitFuncParams) (string, interface{}, error)
 
 type NamedVisitFuncs struct {
 	Kind  VisitFunc // 1) Named visitors triggered when entering a node a specific kind.
@@ -155,7 +156,7 @@ type VisitorOptions struct {
 	LeaveKindMap map[string]VisitFunc // 4) Parallel visitors for entering and leaving nodes of a specific kind
 }
 
-func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) interface{} {
+func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) (interface{}, error) {
 	visitorKeys := keyMap
 	if visitorKeys == nil {
 		visitorKeys = QueryDocumentKeys
@@ -390,7 +391,11 @@ Loop:
 					Ancestors: ancestorsConcrete,
 				}
 				action := ActionUpdate
-				action, result = visitFn(p)
+				var visitFnErr error
+				action, result, visitFnErr = visitFn(p)
+				if visitFnErr != nil {
+					return nil, visitFnErr
+				}
 				if action == ActionBreak {
 					break Loop
 				}
@@ -491,7 +496,7 @@ Loop:
 	if len(edits) != 0 {
 		result = edits[0].Value
 	}
-	return result
+	return result, nil
 }
 
 func pop(a []interface{}) (x interface{}, aa []interface{}) {

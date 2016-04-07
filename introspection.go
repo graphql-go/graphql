@@ -143,14 +143,22 @@ func init() {
 							return nil, nil
 						}
 						astVal := astFromValue(inputVal.DefaultValue, inputVal)
-						return printer.Print(astVal), nil
+						printed, err := printer.Print(astVal)
+						if err != nil {
+							return nil, err
+						}
+						return printed, nil
 					}
 					if inputVal, ok := p.Source.(*InputObjectField); ok {
 						if inputVal.DefaultValue == nil {
 							return nil, nil
 						}
 						astVal := astFromValue(inputVal.DefaultValue, inputVal)
-						return printer.Print(astVal), nil
+						printed, err := printer.Print(astVal)
+						if err != nil {
+							return nil, err
+						}
+						return printed, nil
 					}
 					return nil, nil
 				},
