@@ -9,30 +9,30 @@ import (
 )
 
 var printDocASTReducer11 = map[string]visitor.VisitFunc{
-	"Name": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"Name": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.Name:
-			return visitor.ActionUpdate, node.Value
+			return visitor.ActionUpdate, node.Value, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 
 	},
-	"Variable": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"Variable": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.Variable:
-			return visitor.ActionUpdate, fmt.Sprintf("$%v", node.Name)
+			return visitor.ActionUpdate, fmt.Sprintf("$%v", node.Name), nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"Document": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"Document": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.Document:
 			definitions := toSliceString(node.Definitions)
-			return visitor.ActionUpdate, join(definitions, "\n\n") + "\n"
+			return visitor.ActionUpdate, join(definitions, "\n\n") + "\n", nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"OperationDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"OperationDefinition": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.OperationDefinition:
 			op := node.Operation
@@ -52,32 +52,32 @@ var printDocASTReducer11 = map[string]visitor.VisitFunc{
 					selectionSet,
 				}, " ")
 			}
-			return visitor.ActionUpdate, str
+			return visitor.ActionUpdate, str, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"VariableDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"VariableDefinition": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.VariableDefinition:
 			variable := fmt.Sprintf("%v", node.Variable)
 			ttype := fmt.Sprintf("%v", node.Type)
 			defaultValue := fmt.Sprintf("%v", node.DefaultValue)
 
-			return visitor.ActionUpdate, variable + ": " + ttype + wrap(" = ", defaultValue, "")
+			return visitor.ActionUpdate, variable + ": " + ttype + wrap(" = ", defaultValue, ""), nil
 
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"SelectionSet": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"SelectionSet": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.SelectionSet:
 			str := block(node.Selections)
-			return visitor.ActionUpdate, str
+			return visitor.ActionUpdate, str, nil
 
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"Field": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"Field": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.Field:
 
@@ -95,242 +95,242 @@ var printDocASTReducer11 = map[string]visitor.VisitFunc{
 				},
 				" ",
 			)
-			return visitor.ActionUpdate, str
+			return visitor.ActionUpdate, str, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"Argument": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"Argument": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.Argument:
 			name := fmt.Sprintf("%v", node.Name)
 			value := fmt.Sprintf("%v", node.Value)
-			return visitor.ActionUpdate, name + ": " + value
+			return visitor.ActionUpdate, name + ": " + value, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"FragmentSpread": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"FragmentSpread": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.FragmentSpread:
 			name := fmt.Sprintf("%v", node.Name)
 			directives := toSliceString(node.Directives)
-			return visitor.ActionUpdate, "..." + name + wrap(" ", join(directives, " "), "")
+			return visitor.ActionUpdate, "..." + name + wrap(" ", join(directives, " "), ""), nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"InlineFragment": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"InlineFragment": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.InlineFragment:
 			typeCondition := fmt.Sprintf("%v", node.TypeCondition)
 			directives := toSliceString(node.Directives)
 			selectionSet := fmt.Sprintf("%v", node.SelectionSet)
-			return visitor.ActionUpdate, "... on " + typeCondition + " " + wrap("", join(directives, " "), " ") + selectionSet
+			return visitor.ActionUpdate, "... on " + typeCondition + " " + wrap("", join(directives, " "), " ") + selectionSet, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"FragmentDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"FragmentDefinition": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.FragmentDefinition:
 			name := fmt.Sprintf("%v", node.Name)
 			typeCondition := fmt.Sprintf("%v", node.TypeCondition)
 			directives := toSliceString(node.Directives)
 			selectionSet := fmt.Sprintf("%v", node.SelectionSet)
-			return visitor.ActionUpdate, "fragment " + name + " on " + typeCondition + " " + wrap("", join(directives, " "), " ") + selectionSet
+			return visitor.ActionUpdate, "fragment " + name + " on " + typeCondition + " " + wrap("", join(directives, " "), " ") + selectionSet, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
 
-	"IntValue": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"IntValue": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.IntValue:
-			return visitor.ActionUpdate, fmt.Sprintf("%v", node.Value)
+			return visitor.ActionUpdate, fmt.Sprintf("%v", node.Value), nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"FloatValue": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"FloatValue": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.FloatValue:
-			return visitor.ActionUpdate, fmt.Sprintf("%v", node.Value)
+			return visitor.ActionUpdate, fmt.Sprintf("%v", node.Value), nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"StringValue": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"StringValue": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.StringValue:
-			return visitor.ActionUpdate, `"` + fmt.Sprintf("%v", node.Value) + `"`
+			return visitor.ActionUpdate, `"` + fmt.Sprintf("%v", node.Value) + `"`, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"BooleanValue": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"BooleanValue": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.BooleanValue:
-			return visitor.ActionUpdate, fmt.Sprintf("%v", node.Value)
+			return visitor.ActionUpdate, fmt.Sprintf("%v", node.Value), nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"EnumValue": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"EnumValue": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.EnumValue:
-			return visitor.ActionUpdate, fmt.Sprintf("%v", node.Value)
+			return visitor.ActionUpdate, fmt.Sprintf("%v", node.Value), nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"ListValue": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"ListValue": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.ListValue:
-			return visitor.ActionUpdate, "[" + join(toSliceString(node.Values), ", ") + "]"
+			return visitor.ActionUpdate, "[" + join(toSliceString(node.Values), ", ") + "]", nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"ObjectValue": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"ObjectValue": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.ObjectValue:
-			return visitor.ActionUpdate, "{" + join(toSliceString(node.Fields), ", ") + "}"
+			return visitor.ActionUpdate, "{" + join(toSliceString(node.Fields), ", ") + "}", nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"ObjectField": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"ObjectField": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.ObjectField:
 			name := fmt.Sprintf("%v", node.Name)
 			value := fmt.Sprintf("%v", node.Value)
-			return visitor.ActionUpdate, name + ": " + value
+			return visitor.ActionUpdate, name + ": " + value, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
 
-	"Directive": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"Directive": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.Directive:
 			name := fmt.Sprintf("%v", node.Name)
 			args := toSliceString(node.Arguments)
-			return visitor.ActionUpdate, "@" + name + wrap("(", join(args, ", "), ")")
+			return visitor.ActionUpdate, "@" + name + wrap("(", join(args, ", "), ")"), nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
 
-	"Named": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"Named": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.Named:
-			return visitor.ActionUpdate, fmt.Sprintf("%v", node.Name)
+			return visitor.ActionUpdate, fmt.Sprintf("%v", node.Name), nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"List": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"List": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.List:
-			return visitor.ActionUpdate, "[" + fmt.Sprintf("%v", node.Type) + "]"
+			return visitor.ActionUpdate, "[" + fmt.Sprintf("%v", node.Type) + "]", nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"NonNull": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"NonNull": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.NonNull:
-			return visitor.ActionUpdate, fmt.Sprintf("%v", node.Type) + "!"
+			return visitor.ActionUpdate, fmt.Sprintf("%v", node.Type) + "!", nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
 
-	"ObjectDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"ObjectDefinition": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.ObjectDefinition:
 			name := fmt.Sprintf("%v", node.Name)
 			interfaces := toSliceString(node.Interfaces)
 			fields := node.Fields
 			str := "type " + name + " " + wrap("implements ", join(interfaces, ", "), " ") + block(fields)
-			return visitor.ActionUpdate, str
+			return visitor.ActionUpdate, str, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"FieldDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"FieldDefinition": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.FieldDefinition:
 			name := fmt.Sprintf("%v", node.Name)
 			ttype := fmt.Sprintf("%v", node.Type)
 			args := toSliceString(node.Arguments)
 			str := name + wrap("(", join(args, ", "), ")") + ": " + ttype
-			return visitor.ActionUpdate, str
+			return visitor.ActionUpdate, str, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"InputValueDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"InputValueDefinition": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.InputValueDefinition:
 			name := fmt.Sprintf("%v", node.Name)
 			ttype := fmt.Sprintf("%v", node.Type)
 			defaultValue := fmt.Sprintf("%v", node.DefaultValue)
 			str := name + ": " + ttype + wrap(" = ", defaultValue, "")
-			return visitor.ActionUpdate, str
+			return visitor.ActionUpdate, str, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"InterfaceDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"InterfaceDefinition": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.InterfaceDefinition:
 			name := fmt.Sprintf("%v", node.Name)
 			fields := node.Fields
 			str := "interface " + name + " " + block(fields)
-			return visitor.ActionUpdate, str
+			return visitor.ActionUpdate, str, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"UnionDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"UnionDefinition": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.UnionDefinition:
 			name := fmt.Sprintf("%v", node.Name)
 			types := toSliceString(node.Types)
 			str := "union " + name + " = " + join(types, " | ")
-			return visitor.ActionUpdate, str
+			return visitor.ActionUpdate, str, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"ScalarDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"ScalarDefinition": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.ScalarDefinition:
 			name := fmt.Sprintf("%v", node.Name)
 			str := "scalar " + name
-			return visitor.ActionUpdate, str
+			return visitor.ActionUpdate, str, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"EnumDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"EnumDefinition": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.EnumDefinition:
 			name := fmt.Sprintf("%v", node.Name)
 			values := node.Values
 			str := "enum " + name + " " + block(values)
-			return visitor.ActionUpdate, str
+			return visitor.ActionUpdate, str, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"EnumValueDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"EnumValueDefinition": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.EnumValueDefinition:
 			name := fmt.Sprintf("%v", node.Name)
-			return visitor.ActionUpdate, name
+			return visitor.ActionUpdate, name, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"InputObjectDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"InputObjectDefinition": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.InputObjectDefinition:
 			name := fmt.Sprintf("%v", node.Name)
 			fields := node.Fields
-			return visitor.ActionUpdate, "input " + name + " " + block(fields)
+			return visitor.ActionUpdate, "input " + name + " " + block(fields), nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
-	"TypeExtensionDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+	"TypeExtensionDefinition": func(p visitor.VisitFuncParams) (string, interface{}, error) {
 		switch node := p.Node.(type) {
 		case *ast.TypeExtensionDefinition:
 			definition := fmt.Sprintf("%v", node.Definition)
 			str := "extend " + definition
-			return visitor.ActionUpdate, str
+			return visitor.ActionUpdate, str, nil
 		}
-		return visitor.ActionNoChange, nil
+		return visitor.ActionNoChange, nil, nil
 	},
 }
 
-func Print11(astNode ast.Node) (printed interface{}) {
+func Print11(astNode ast.Node) (interface{}, error) {
 	//	defer func() interface{} {
 	//		if r := recover(); r != nil {
 	//			log.Println("Error: %v", r)
@@ -338,10 +338,13 @@ func Print11(astNode ast.Node) (printed interface{}) {
 	//		}
 	//		return printed
 	//	}()
-	printed = visitor.Visit(astNode, &visitor.VisitorOptions{
+	printed, err := visitor.Visit(astNode, &visitor.VisitorOptions{
 		LeaveKindMap: printDocASTReducer,
 	}, nil)
-	return printed
+	if err != nil {
+		return nil, err
+	}
+	return printed, nil
 }
 
 //
