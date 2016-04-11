@@ -5,6 +5,7 @@ import (
 )
 
 type Selection interface {
+	GetSelectionSet() *SelectionSet
 }
 
 // Ensure that all definition types implements Selection interface
