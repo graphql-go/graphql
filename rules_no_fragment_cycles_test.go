@@ -40,6 +40,13 @@ func TestValidate_NoCircularFragmentSpreads_DoubleSpreadWithinAbstractTypes(t *t
       }
     `)
 }
+func TestValidate_NoCircularFragmentSpreads_DoesNotFalsePositiveOnUnknownFragment(t *testing.T) {
+	testutil.ExpectPassesRule(t, graphql.NoFragmentCyclesRule, `
+      fragment nameFragment on Pet {
+        ...UnknownFragment
+      }
+    `)
+}
 func TestValidate_NoCircularFragmentSpreads_SpreadingRecursivelyWithinFieldFails(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.NoFragmentCyclesRule, `
       fragment fragA on Human { relatives { ...fragA } },
