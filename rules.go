@@ -352,7 +352,7 @@ func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleIn
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.InlineFragment); ok {
 						ttype := context.Type()
-						if ttype != nil && !IsCompositeType(ttype) {
+						if node.TypeCondition != nil && ttype != nil && !IsCompositeType(ttype) {
 							return reportError(
 								context,
 								fmt.Sprintf(`Fragment cannot condition on non composite type "%v".`, ttype),
@@ -1073,10 +1073,14 @@ func collectFieldASTsAndDefs(context *ValidationContext, parentType Named, selec
 				FieldDef: fieldDef,
 			})
 		case *ast.InlineFragment:
-			parentType, _ := typeFromAST(*context.Schema(), selection.TypeCondition)
+			inlineFragmentType := parentType
+			if selection.TypeCondition != nil {
+				parentType, _ := typeFromAST(*context.Schema(), selection.TypeCondition)
+				inlineFragmentType = parentType
+			}
 			astAndDefs = collectFieldASTsAndDefs(
 				context,
-				parentType,
+				inlineFragmentType,
 				selection.SelectionSet,
 				visitedFragmentNames,
 				astAndDefs,

@@ -367,6 +367,16 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Same
         }
     `)
 }
+func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_AllowsInlineTypelessFragments(t *testing.T) {
+	testutil.ExpectPassesRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+        {
+          a
+          ... {
+            a
+          }
+        }
+    `)
+}
 func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_ComparesDeepTypesIncludingList(t *testing.T) {
 	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {

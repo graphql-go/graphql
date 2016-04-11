@@ -31,6 +31,15 @@ func TestValidate_FragmentsOnCompositeTypes_ObjectIsValidInlineFragmentType(t *t
       }
     `)
 }
+func TestValidate_FragmentsOnCompositeTypes_InlineFragmentWithoutTypeIsValid(t *testing.T) {
+	testutil.ExpectPassesRule(t, graphql.FragmentsOnCompositeTypesRule, `
+      fragment validFragment on Pet {
+        ... {
+          name
+        }
+      }
+    `)
+}
 func TestValidate_FragmentsOnCompositeTypes_UnionIsValidFragmentType(t *testing.T) {
 	testutil.ExpectPassesRule(t, graphql.FragmentsOnCompositeTypesRule, `
       fragment validFragment on CatOrDog {
