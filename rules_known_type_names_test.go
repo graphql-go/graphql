@@ -37,3 +37,25 @@ func TestValidate_KnownTypeNames_UnknownTypeNamesAreInValid(t *testing.T) {
 		testutil.RuleError(`Unknown type "Peettt".`, 8, 29),
 	})
 }
+
+func TestValidate_KnownTypeNames_IgnoresTypeDefinitions(t *testing.T) {
+	testutil.ExpectFailsRule(t, graphql.KnownTypeNamesRule, `
+      type NotInTheSchema {
+        field: FooBar
+      }
+      interface FooBar {
+        field: NotInTheSchema
+      }
+      union U = A | B
+      input Blob {
+        field: UnknownType
+      }
+      query Foo($var: NotInTheSchema) {
+        user(id: $var) {
+          id
+        }
+      }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(`Unknown type "NotInTheSchema".`, 12, 23),
+	})
+}

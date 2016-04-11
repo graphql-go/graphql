@@ -600,6 +600,26 @@ func KnownFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 func KnownTypeNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
+			kinds.ObjectDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					return visitor.ActionSkip, nil
+				},
+			},
+			kinds.InterfaceDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					return visitor.ActionSkip, nil
+				},
+			},
+			kinds.UnionDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					return visitor.ActionSkip, nil
+				},
+			},
+			kinds.InputObjectDefinition: visitor.NamedVisitFuncs{
+				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
+					return visitor.ActionSkip, nil
+				},
+			},
 			kinds.Named: visitor.NamedVisitFuncs{
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.Named); ok {
