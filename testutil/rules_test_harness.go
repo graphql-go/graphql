@@ -41,6 +41,19 @@ func init() {
 			},
 		},
 	})
+	var canineInterface = graphql.NewInterface(graphql.InterfaceConfig{
+		Name: "Canine",
+		Fields: graphql.Fields{
+			"name": &graphql.Field{
+				Type: graphql.String,
+				Args: graphql.FieldConfigArgument{
+					"surname": &graphql.ArgumentConfig{
+						Type: graphql.Boolean,
+					},
+				},
+			},
+		},
+	})
 	var dogCommandEnum = graphql.NewEnum(graphql.EnumConfig{
 		Name: "DogCommand",
 		Values: graphql.EnumValueConfigMap{
@@ -110,6 +123,7 @@ func init() {
 		Interfaces: []*graphql.Interface{
 			beingInterface,
 			petInterface,
+			canineInterface,
 		},
 	})
 	var furColorEnum = graphql.NewEnum(graphql.EnumConfig{

@@ -162,6 +162,32 @@ func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleI
 	}
 }
 
+func UndefinedFieldMessage(fieldName string, ttypeName string, suggestedTypes []string) string {
+
+	quoteStrings := func(slice []string) []string {
+		quoted := []string{}
+		for _, s := range slice {
+			quoted = append(quoted, fmt.Sprintf(`"%v"`, s))
+		}
+		return quoted
+	}
+
+	// construct helpful (but long) message
+	message := fmt.Sprintf(`Cannot query field "%v" on type "%v".`, fieldName, ttypeName)
+	suggestions := strings.Join(quoteStrings(suggestedTypes), ", ")
+	const MAX_LENGTH = 5
+	if len(suggestedTypes) > 0 {
+		if len(suggestedTypes) > MAX_LENGTH {
+			suggestions = strings.Join(quoteStrings(suggestedTypes[0:MAX_LENGTH]), ", ") +
+				fmt.Sprintf(`, and %v other types`, len(suggestedTypes)-MAX_LENGTH)
+		}
+		message = message + fmt.Sprintf(` However, this field exists on %v.`, suggestions)
+		message = message + ` Perhaps you meant to use an inline fragment?`
+	}
+
+	return message
+}
+
 /**
  * FieldsOnCorrectTypeRule
  * Fields on correct type
@@ -182,14 +208,37 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 						if ttype != nil {
 							fieldDef := context.FieldDef()
 							if fieldDef == nil {
+								// This isn't valid. Let's find suggestions, if any.
+								suggestedTypes := []string{}
+
 								nodeName := ""
 								if node.Name != nil {
 									nodeName = node.Name.Value
 								}
+
+								if ttype, ok := ttype.(Abstract); ok {
+									siblingInterfaces := getSiblingInterfacesIncludingField(ttype, nodeName)
+									implementations := getImplementationsIncludingField(ttype, nodeName)
+									suggestedMaps := map[string]bool{}
+									for _, s := range siblingInterfaces {
+										if _, ok := suggestedMaps[s]; !ok {
+											suggestedMaps[s] = true
+											suggestedTypes = append(suggestedTypes, s)
+										}
+									}
+									for _, s := range implementations {
+										if _, ok := suggestedMaps[s]; !ok {
+											suggestedMaps[s] = true
+											suggestedTypes = append(suggestedTypes, s)
+										}
+									}
+								}
+
+								message := UndefinedFieldMessage(nodeName, ttype.Name(), suggestedTypes)
+
 								return reportError(
 									context,
-									fmt.Sprintf(`Cannot query field "%v" on "%v".`,
-										nodeName, ttype.Name()),
+									message,
 									[]ast.Node{node},
 								)
 							}
@@ -203,6 +252,89 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 	return &ValidationRuleInstance{
 		VisitorOpts: visitorOpts,
 	}
+}
+
+/**
+ * Return implementations of `type` that include `fieldName` as a valid field.
+ */
+func getImplementationsIncludingField(ttype Abstract, fieldName string) []string {
+
+	result := []string{}
+	for _, t := range ttype.PossibleTypes() {
+		fields := t.Fields()
+		if _, ok := fields[fieldName]; ok {
+			result = append(result, fmt.Sprintf(`%v`, t.Name()))
+		}
+	}
+
+	sort.Strings(result)
+	return result
+}
+
+/**
+ * Go through all of the implementations of type, and find other interaces
+ * that they implement. If those interfaces include `field` as a valid field,
+ * return them, sorted by how often the implementations include the other
+ * interface.
+ */
+func getSiblingInterfacesIncludingField(ttype Abstract, fieldName string) []string {
+	implementingObjects := ttype.PossibleTypes()
+
+	result := []string{}
+	suggestedInterfaceSlice := []*suggestedInterface{}
+
+	// stores a map of interface name => index in suggestedInterfaceSlice
+	suggestedInterfaceMap := map[string]int{}
+
+	for _, t := range implementingObjects {
+		for _, i := range t.Interfaces() {
+			if i == nil {
+				continue
+			}
+			fields := i.Fields()
+			if _, ok := fields[fieldName]; !ok {
+				continue
+			}
+			index, ok := suggestedInterfaceMap[i.Name()]
+			if !ok {
+				suggestedInterfaceSlice = append(suggestedInterfaceSlice, &suggestedInterface{
+					name:  i.Name(),
+					count: 0,
+				})
+				index = len(suggestedInterfaceSlice) - 1
+			}
+			if index < len(suggestedInterfaceSlice) {
+				s := suggestedInterfaceSlice[index]
+				if s.name == i.Name() {
+					s.count = s.count + 1
+				}
+			}
+		}
+	}
+	sort.Sort(suggestedInterfaceSortedSlice(suggestedInterfaceSlice))
+
+	for _, s := range suggestedInterfaceSlice {
+		result = append(result, fmt.Sprintf(`%v`, s.name))
+	}
+	return result
+
+}
+
+type suggestedInterface struct {
+	name  string
+	count int
+}
+
+type suggestedInterfaceSortedSlice []*suggestedInterface
+
+func (s suggestedInterfaceSortedSlice) Len() int {
+	return len(s)
+}
+func (s suggestedInterfaceSortedSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s suggestedInterfaceSortedSlice) Less(i, j int) bool {
+	return s[i].count < s[j].count
 }
 
 /**

@@ -10,7 +10,6 @@ import (
 	"github.com/graphql-go/graphql/language/parser"
 	"github.com/graphql-go/graphql/language/source"
 	"github.com/graphql-go/graphql/testutil"
-	"github.com/kr/pretty"
 	"reflect"
 )
 
@@ -75,25 +74,24 @@ func TestValidator_SupportsFullValidation_ValidatesUsingACustomTypeInfo(t *testi
 
 	expectedErrors := []gqlerrors.FormattedError{
 		{
-			Message: "Cannot query field \"catOrDog\" on \"QueryRoot\".",
+			Message: "Cannot query field \"catOrDog\" on type \"QueryRoot\".",
 			Locations: []location.SourceLocation{
 				{Line: 3, Column: 9},
 			},
 		},
 		{
-			Message: "Cannot query field \"furColor\" on \"Cat\".",
+			Message: "Cannot query field \"furColor\" on type \"Cat\".",
 			Locations: []location.SourceLocation{
 				{Line: 5, Column: 13},
 			},
 		},
 		{
-			Message: "Cannot query field \"isHousetrained\" on \"Dog\".",
+			Message: "Cannot query field \"isHousetrained\" on type \"Dog\".",
 			Locations: []location.SourceLocation{
 				{Line: 8, Column: 13},
 			},
 		},
 	}
-	pretty.Println(errors)
 	if !reflect.DeepEqual(expectedErrors, errors) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedErrors, errors))
 	}

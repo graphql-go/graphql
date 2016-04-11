@@ -127,6 +127,7 @@ func IsCompositeType(ttype interface{}) bool {
 
 // These types may describe the parent context of a selection set.
 type Abstract interface {
+	Name() string
 	ObjectType(value interface{}, info ResolveInfo) *Object
 	PossibleTypes() []*Object
 	IsPossibleType(ttype *Object) bool
