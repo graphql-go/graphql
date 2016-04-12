@@ -1078,8 +1078,9 @@ func NoUnusedVariablesRule(context *ValidationContext) *ValidationRuleInstance {
 }
 
 type fieldDefPair struct {
-	Field    *ast.Field
-	FieldDef *FieldDefinition
+	ParentType Composite
+	Field      *ast.Field
+	FieldDef   *FieldDefinition
 }
 
 func collectFieldASTsAndDefs(context *ValidationContext, parentType Named, selectionSet *ast.SelectionSet, visitedFragmentNames map[string]bool, astAndDefs map[string][]*fieldDefPair) map[string][]*fieldDefPair {
@@ -1116,10 +1117,18 @@ func collectFieldASTsAndDefs(context *ValidationContext, parentType Named, selec
 			if !ok {
 				astAndDefs[responseName] = []*fieldDefPair{}
 			}
-			astAndDefs[responseName] = append(astAndDefs[responseName], &fieldDefPair{
-				Field:    selection,
-				FieldDef: fieldDef,
-			})
+			if parentType, ok := parentType.(Composite); ok {
+				astAndDefs[responseName] = append(astAndDefs[responseName], &fieldDefPair{
+					ParentType: parentType,
+					Field:      selection,
+					FieldDef:   fieldDef,
+				})
+			} else {
+				astAndDefs[responseName] = append(astAndDefs[responseName], &fieldDefPair{
+					Field:    selection,
+					FieldDef: fieldDef,
+				})
+			}
 		case *ast.InlineFragment:
 			inlineFragmentType := parentType
 			if selection.TypeCondition != nil {
@@ -1279,6 +1288,10 @@ func sameValue(value1 ast.Value, value2 ast.Value) bool {
 	return val1 == val2
 }
 
+func sameType(typeA, typeB Type) bool {
+	return fmt.Sprintf("%v", typeA) == fmt.Sprintf("%v", typeB)
+}
+
 /**
  * OverlappingFieldsCanBeMergedRule
  * Overlapping fields can be merged
@@ -1291,15 +1304,38 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 
 	comparedSet := newPairSet()
 	var findConflicts func(fieldMap map[string][]*fieldDefPair) (conflicts []*conflict)
-	findConflict := func(responseName string, pair *fieldDefPair, pair2 *fieldDefPair) *conflict {
+	findConflict := func(responseName string, field *fieldDefPair, field2 *fieldDefPair) *conflict {
 
-		ast1 := pair.Field
-		def1 := pair.FieldDef
+		parentType1 := field.ParentType
+		ast1 := field.Field
+		def1 := field.FieldDef
 
-		ast2 := pair2.Field
-		def2 := pair2.FieldDef
+		parentType2 := field2.ParentType
+		ast2 := field2.Field
+		def2 := field2.FieldDef
 
-		if ast1 == ast2 || comparedSet.Has(ast1, ast2) {
+		// Not a pair.
+		if ast1 == ast2 {
+			return nil
+		}
+
+		// If the statically known parent types could not possibly apply at the same
+		// time, then it is safe to permit them to diverge as they will not present
+		// any ambiguity by differing.
+		// It is known that two parent types could never overlap if they are
+		// different Object types. Interface or Union types might overlap - if not
+		// in the current state of the schema, then perhaps in some future version,
+		// thus may not safely diverge.
+		if parentType1 != parentType2 {
+			_, ok1 := parentType1.(*Object)
+			_, ok2 := parentType2.(*Object)
+			if ok1 && ok2 {
+				return nil
+			}
+		}
+
+		// Memoize, do not report the same issue twice.
+		if comparedSet.Has(ast1, ast2) {
 			return nil
 		}
 		comparedSet.Add(ast1, ast2)
@@ -1332,7 +1368,7 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 			type2 = def2.Type
 		}
 
-		if type1 != nil && type2 != nil && !isEqualType(type1, type2) {
+		if type1 != nil && type2 != nil && !sameType(type1, type2) {
 			return &conflict{
 				Reason: conflictReason{
 					Name:    responseName,
