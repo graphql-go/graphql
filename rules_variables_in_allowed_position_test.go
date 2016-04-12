@@ -161,7 +161,7 @@ func TestValidate_VariablesInAllowedPosition_IntToNonNullableInt(t *testing.T) {
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Variable "$intArg" of type "Int" used in position `+
-			`expecting type "Int!".`, 4, 45, 2, 19),
+			`expecting type "Int!".`, 2, 19, 4, 45),
 	})
 }
 func TestValidate_VariablesInAllowedPosition_IntToNonNullableIntWithinFragment(t *testing.T) {
@@ -177,7 +177,7 @@ func TestValidate_VariablesInAllowedPosition_IntToNonNullableIntWithinFragment(t
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Variable "$intArg" of type "Int" used in position `+
-			`expecting type "Int!".`, 3, 43, 6, 19),
+			`expecting type "Int!".`, 6, 19, 3, 43),
 	})
 }
 func TestValidate_VariablesInAllowedPosition_IntToNonNullableIntWithinNestedFragment(t *testing.T) {
@@ -197,7 +197,7 @@ func TestValidate_VariablesInAllowedPosition_IntToNonNullableIntWithinNestedFrag
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Variable "$intArg" of type "Int" used in position `+
-			`expecting type "Int!".`, 7, 43, 10, 19),
+			`expecting type "Int!".`, 10, 19, 7, 43),
 	})
 }
 func TestValidate_VariablesInAllowedPosition_StringOverBoolean(t *testing.T) {
@@ -209,7 +209,7 @@ func TestValidate_VariablesInAllowedPosition_StringOverBoolean(t *testing.T) {
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Variable "$stringVar" of type "String" used in position `+
-			`expecting type "Boolean".`, 4, 39, 2, 19),
+			`expecting type "Boolean".`, 2, 19, 4, 39),
 	})
 }
 func TestValidate_VariablesInAllowedPosition_StringToListOfString(t *testing.T) {
@@ -221,7 +221,7 @@ func TestValidate_VariablesInAllowedPosition_StringToListOfString(t *testing.T) 
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Variable "$stringVar" of type "String" used in position `+
-			`expecting type "[String]".`, 4, 45, 2, 19),
+			`expecting type "[String]".`, 2, 19, 4, 45),
 	})
 }
 func TestValidate_VariablesInAllowedPosition_BooleanToNonNullableBooleanInDirective(t *testing.T) {
@@ -231,7 +231,7 @@ func TestValidate_VariablesInAllowedPosition_BooleanToNonNullableBooleanInDirect
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Variable "$boolVar" of type "Boolean" used in position `+
-			`expecting type "Boolean!".`, 3, 26, 2, 19),
+			`expecting type "Boolean!".`, 2, 19, 3, 26),
 	})
 }
 func TestValidate_VariablesInAllowedPosition_StringToNonNullableBooleanInDirective(t *testing.T) {
@@ -241,6 +241,6 @@ func TestValidate_VariablesInAllowedPosition_StringToNonNullableBooleanInDirecti
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Variable "$stringVar" of type "String" used in position `+
-			`expecting type "Boolean!".`, 3, 26, 2, 19),
+			`expecting type "Boolean!".`, 2, 19, 3, 26),
 	})
 }
