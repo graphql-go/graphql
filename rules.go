@@ -1215,37 +1215,6 @@ type conflict struct {
 	FieldsRight []ast.Node
 }
 
-func sameDirectives(directives1 []*ast.Directive, directives2 []*ast.Directive) bool {
-	if len(directives1) != len(directives1) {
-		return false
-	}
-	for _, directive1 := range directives1 {
-		directive1Name := ""
-		if directive1.Name != nil {
-			directive1Name = directive1.Name.Value
-		}
-
-		var foundDirective2 *ast.Directive
-		for _, directive2 := range directives2 {
-			directive2Name := ""
-			if directive2.Name != nil {
-				directive2Name = directive2.Name.Value
-			}
-			if directive1Name == directive2Name {
-				foundDirective2 = directive2
-			}
-			break
-		}
-		if foundDirective2 == nil {
-			return false
-		}
-		if sameArguments(directive1.Arguments, foundDirective2.Arguments) == false {
-			return false
-		}
-	}
-
-	return true
-}
 func sameArguments(args1 []*ast.Argument, args2 []*ast.Argument) bool {
 	if len(args1) != len(args2) {
 		return false
@@ -1383,16 +1352,6 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 				Reason: conflictReason{
 					Name:    responseName,
 					Message: `they have differing arguments`,
-				},
-				FieldsLeft:  []ast.Node{ast1},
-				FieldsRight: []ast.Node{ast2},
-			}
-		}
-		if !sameDirectives(ast1.Directives, ast2.Directives) {
-			return &conflict{
-				Reason: conflictReason{
-					Name:    responseName,
-					Message: `they have differing directives`,
 				},
 				FieldsLeft:  []ast.Node{ast1},
 				FieldsRight: []ast.Node{ast2},

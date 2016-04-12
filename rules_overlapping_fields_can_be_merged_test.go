@@ -56,6 +56,17 @@ func TestValidate_OverlappingFieldsCanBeMerged_DifferentDirectivesWithDifferentA
       }
     `)
 }
+func TestValidate_OverlappingFieldsCanBeMerged_DifferentSkipIncludeDirectivesAccepted(t *testing.T) {
+	// Note: Differing skip/include directives don't create an ambiguous return
+	// value and are acceptable in conditions where differing runtime values
+	// may have the same desired effect of including or skipping a field.
+	testutil.ExpectPassesRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
+      fragment differentDirectivesWithDifferentAliases on Dog {
+        name @include(if: true)
+        name @include(if: false)
+      }
+    `)
+}
 func TestValidate_OverlappingFieldsCanBeMerged_SameAliasesWithDifferentFieldTargets(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
       fragment sameAliasesWithDifferentFieldTargets on Dog {
@@ -131,46 +142,6 @@ func TestValidate_OverlappingFieldsCanBeMerged_AllowDifferentArgsWhereNoConflict
         }
       }
     `)
-}
-func TestValidate_OverlappingFieldsCanBeMerged_ConflictingDirectives(t *testing.T) {
-	testutil.ExpectFailsRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
-      fragment conflictingDirectiveArgs on Dog {
-        name @include(if: true)
-        name @skip(if: false)
-      }
-    `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Fields "name" conflict because they have differing directives.`, 3, 9, 4, 9),
-	})
-}
-func TestValidate_OverlappingFieldsCanBeMerged_ConflictingDirectiveArgs(t *testing.T) {
-	testutil.ExpectFailsRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
-      fragment conflictingDirectiveArgs on Dog {
-        name @include(if: true)
-        name @include(if: false)
-      }
-    `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Fields "name" conflict because they have differing directives.`, 3, 9, 4, 9),
-	})
-}
-func TestValidate_OverlappingFieldsCanBeMerged_ConflictingArgsWithMatchingDirectives(t *testing.T) {
-	testutil.ExpectFailsRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
-      fragment conflictingArgsWithMatchingDirectiveArgs on Dog {
-        doesKnowCommand(dogCommand: SIT) @include(if: true)
-        doesKnowCommand(dogCommand: HEEL) @include(if: true)
-      }
-    `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Fields "doesKnowCommand" conflict because they have differing arguments.`, 3, 9, 4, 9),
-	})
-}
-func TestValidate_OverlappingFieldsCanBeMerged_ConflictingDirectivesWithMatchingArgs(t *testing.T) {
-	testutil.ExpectFailsRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
-      fragment conflictingDirectiveArgsWithMatchingArgs on Dog {
-        doesKnowCommand(dogCommand: SIT) @include(if: true)
-        doesKnowCommand(dogCommand: SIT) @skip(if: false)
-      }
-    `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Fields "doesKnowCommand" conflict because they have differing directives.`, 3, 9, 4, 9),
-	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_EncountersConflictInFragments(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
