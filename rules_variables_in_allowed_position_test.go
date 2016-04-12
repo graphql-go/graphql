@@ -121,7 +121,7 @@ func TestValidate_VariablesInAllowedPosition_ComplexInputToComplexInput(t *testi
       query Query($complexVar: ComplexInput)
       {
         complicatedArgs {
-          complexArgField(complexArg: $ComplexInput)
+          complexArgField(complexArg: $complexVar)
         }
       }
     `)
