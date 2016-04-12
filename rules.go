@@ -2042,29 +2042,20 @@ func VariablesInAllowedPositionRule(context *ValidationContext) *ValidationRuleI
 							if usage != nil && usage.Node != nil && usage.Node.Name != nil {
 								varName = usage.Node.Name.Value
 							}
-							var varType Type
-							varDef, ok := varDefMap[varName]
-							if ok {
-								// A var type is allowed if it is the same or more strict (e.g. is
-								// a subtype of) than the expected type. It can be more strict if
-								// the variable type is non-null when the expected type is nullable.
-								// If both are list types, the variable item type can be more strict
-								// than the expected item type (contravariant).
-								var err error
-								varType, err = typeFromAST(*context.Schema(), varDef.Type)
+							varDef, _ := varDefMap[varName]
+							if varDef != nil && usage.Type != nil {
+								varType, err := typeFromAST(*context.Schema(), varDef.Type)
 								if err != nil {
 									varType = nil
 								}
-							}
-							if varType != nil &&
-								usage.Type != nil &&
-								!isTypeSubTypeOf(effectiveType(varType, varDef), usage.Type) {
-								reportError(
-									context,
-									fmt.Sprintf(`Variable "$%v" of type "%v" used in position `+
-										`expecting type "%v".`, varName, varType, usage.Type),
-									[]ast.Node{usage.Node},
-								)
+								if varType != nil && !isTypeSubTypeOf(effectiveType(varType, varDef), usage.Type) {
+									reportError(
+										context,
+										fmt.Sprintf(`Variable "$%v" of type "%v" used in position `+
+											`expecting type "%v".`, varName, varType, usage.Type),
+										[]ast.Node{usage.Node, varDef},
+									)
+								}
 							}
 						}
 
