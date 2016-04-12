@@ -829,6 +829,13 @@ func NoFragmentCyclesRule(context *ValidationContext) *ValidationRuleInstance {
 	}
 }
 
+func UndefinedVarMessage(varName string, opName string) string {
+	if opName != "" {
+		return fmt.Sprintf(`Variable "$%v" is not defined by operation "%v".`, varName, opName)
+	}
+	return fmt.Sprintf(`Variable "$%v" is not defined.`, varName)
+}
+
 /**
  * NoUndefinedVariables
  * No undefined variables
@@ -866,20 +873,11 @@ func NoUndefinedVariablesRule(context *ValidationContext) *ValidationRuleInstanc
 								opName = operation.Name.Value
 							}
 							if res, ok := variableNameDefined[varName]; !ok || !res {
-								if opName != "" {
-									reportError(
-										context,
-										fmt.Sprintf(`Variable "$%v" is not defined by operation "%v".`, varName, opName),
-										[]ast.Node{usage.Node, operation},
-									)
-								} else {
-
-									reportError(
-										context,
-										fmt.Sprintf(`Variable "$%v" is not defined.`, varName),
-										[]ast.Node{usage.Node, operation},
-									)
-								}
+								reportError(
+									context,
+									UndefinedVarMessage(varName, opName),
+									[]ast.Node{usage.Node, operation},
+								)
 							}
 						}
 					}
@@ -893,7 +891,6 @@ func NoUndefinedVariablesRule(context *ValidationContext) *ValidationRuleInstanc
 						if node.Variable != nil && node.Variable.Name != nil {
 							variableName = node.Variable.Name.Value
 						}
-						//						definedVariableNames[variableName] = true
 						variableNameDefined[variableName] = true
 					}
 					return visitor.ActionNoChange, nil
