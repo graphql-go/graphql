@@ -1000,6 +1000,13 @@ func NoUnusedFragmentsRule(context *ValidationContext) *ValidationRuleInstance {
 	}
 }
 
+func UnusedVariableMessage(varName string, opName string) string {
+	if opName != "" {
+		return fmt.Sprintf(`Variable "$%v" is never used in operation "%v".`, varName, opName)
+	}
+	return fmt.Sprintf(`Variable "$%v" is never used.`, varName)
+}
+
 /**
  * NoUnusedVariablesRule
  * No unused variables
@@ -1037,10 +1044,14 @@ func NoUnusedVariablesRule(context *ValidationContext) *ValidationRuleInstance {
 							if variableDef != nil && variableDef.Variable != nil && variableDef.Variable.Name != nil {
 								variableName = variableDef.Variable.Name.Value
 							}
+							opName := ""
+							if operation.Name != nil {
+								opName = operation.Name.Value
+							}
 							if res, ok := variableNameUsed[variableName]; !ok || !res {
 								reportError(
 									context,
-									fmt.Sprintf(`Variable "$%v" is never used.`, variableName),
+									UnusedVariableMessage(variableName, opName),
 									[]ast.Node{variableDef},
 								)
 							}
