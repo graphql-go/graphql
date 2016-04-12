@@ -18,7 +18,7 @@ func TestValidate_UniqueArgumentNames_NoArgumentsOnField(t *testing.T) {
 func TestValidate_UniqueArgumentNames_NoArgumentsOnDirective(t *testing.T) {
 	testutil.ExpectPassesRule(t, graphql.UniqueArgumentNamesRule, `
       {
-        field
+        field @directive
       }
     `)
 }
