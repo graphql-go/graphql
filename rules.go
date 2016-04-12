@@ -1201,8 +1201,9 @@ type conflictReason struct {
 	Message interface{} // conflictReason || []conflictReason
 }
 type conflict struct {
-	Reason conflictReason
-	Fields []ast.Node
+	Reason      conflictReason
+	FieldsLeft  []ast.Node
+	FieldsRight []ast.Node
 }
 
 func sameDirectives(directives1 []*ast.Directive, directives2 []*ast.Directive) bool {
@@ -1317,7 +1318,8 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 					Name:    responseName,
 					Message: fmt.Sprintf(`%v and %v are different fields`, name1, name2),
 				},
-				Fields: []ast.Node{ast1, ast2},
+				FieldsLeft:  []ast.Node{ast1},
+				FieldsRight: []ast.Node{ast2},
 			}
 		}
 
@@ -1336,7 +1338,8 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 					Name:    responseName,
 					Message: fmt.Sprintf(`they return differing types %v and %v`, type1, type2),
 				},
-				Fields: []ast.Node{ast1, ast2},
+				FieldsLeft:  []ast.Node{ast1},
+				FieldsRight: []ast.Node{ast2},
 			}
 		}
 		if !sameArguments(ast1.Arguments, ast2.Arguments) {
@@ -1345,7 +1348,8 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 					Name:    responseName,
 					Message: `they have differing arguments`,
 				},
-				Fields: []ast.Node{ast1, ast2},
+				FieldsLeft:  []ast.Node{ast1},
+				FieldsRight: []ast.Node{ast2},
 			}
 		}
 		if !sameDirectives(ast1.Directives, ast2.Directives) {
@@ -1354,7 +1358,8 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 					Name:    responseName,
 					Message: `they have differing directives`,
 				},
-				Fields: []ast.Node{ast1, ast2},
+				FieldsLeft:  []ast.Node{ast1},
+				FieldsRight: []ast.Node{ast2},
 			}
 		}
 
@@ -1380,10 +1385,12 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 			if len(conflicts) > 0 {
 
 				conflictReasons := []conflictReason{}
-				conflictFields := []ast.Node{ast1, ast2}
+				conflictFieldsLeft := []ast.Node{ast1}
+				conflictFieldsRight := []ast.Node{ast2}
 				for _, c := range conflicts {
 					conflictReasons = append(conflictReasons, c.Reason)
-					conflictFields = append(conflictFields, c.Fields...)
+					conflictFieldsLeft = append(conflictFieldsLeft, c.FieldsLeft...)
+					conflictFieldsRight = append(conflictFieldsRight, c.FieldsRight...)
 				}
 
 				return &conflict{
@@ -1391,7 +1398,8 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 						Name:    responseName,
 						Message: conflictReasons,
 					},
-					Fields: conflictFields,
+					FieldsLeft:  conflictFieldsLeft,
+					FieldsRight: conflictFieldsRight,
 				}
 			}
 		}
@@ -1467,7 +1475,7 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 										responseName,
 										reasonMessage(reason),
 									),
-									c.Fields,
+									append(c.FieldsLeft, c.FieldsRight...),
 								)
 							}
 							return visitor.ActionNoChange, nil

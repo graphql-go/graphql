@@ -183,7 +183,10 @@ func TestValidate_OverlappingFieldsCanBeMerged_DeepConflict(t *testing.T) {
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Fields "field" conflict because subfields "x" conflict because a and b are different fields.`,
-			3, 9, 6, 9, 4, 11, 7, 11),
+			3, 9,
+			4, 11,
+			6, 9,
+			7, 11),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_DeepConflictWithMultipleIssues(t *testing.T) {
@@ -202,7 +205,12 @@ func TestValidate_OverlappingFieldsCanBeMerged_DeepConflictWithMultipleIssues(t 
 		testutil.RuleError(
 			`Fields "field" conflict because subfields "x" conflict because a and b are different fields and `+
 				`subfields "y" conflict because c and d are different fields.`,
-			3, 9, 7, 9, 4, 11, 8, 11, 5, 11, 9, 11),
+			3, 9,
+			4, 11,
+			5, 11,
+			7, 9,
+			8, 11,
+			9, 11),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_VeryDeepConflict(t *testing.T) {
@@ -223,7 +231,12 @@ func TestValidate_OverlappingFieldsCanBeMerged_VeryDeepConflict(t *testing.T) {
 		testutil.RuleError(
 			`Fields "field" conflict because subfields "deepField" conflict because subfields "x" conflict because `+
 				`a and b are different fields.`,
-			3, 9, 8, 9, 4, 11, 9, 11, 5, 13, 10, 13),
+			3, 9,
+			4, 11,
+			5, 13,
+			8, 9,
+			9, 11,
+			10, 13),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReportsDeepConflictToNearestCommonAncestor(t *testing.T) {
@@ -247,7 +260,10 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReportsDeepConflictToNearestCommo
 		testutil.RuleError(
 			`Fields "deepField" conflict because subfields "x" conflict because `+
 				`a and b are different fields.`,
-			4, 11, 7, 11, 5, 13, 8, 13),
+			4, 11,
+			5, 13,
+			7, 11,
+			8, 13),
 	})
 }
 
@@ -350,7 +366,8 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Conf
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(
 			`Fields "scalar" conflict because they return differing types Int and String.`,
-			5, 15, 8, 15),
+			5, 15,
+			8, 15),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_SameWrappedScalarReturnTypes(t *testing.T) {
@@ -401,7 +418,12 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Comp
 		testutil.RuleError(
 			`Fields "edges" conflict because subfields "node" conflict because subfields "id" conflict because `+
 				`id and name are different fields.`,
-			14, 11, 5, 13, 15, 13, 6, 15, 16, 15, 7, 17),
+			14, 11,
+			15, 13,
+			16, 15,
+			5, 13,
+			6, 15,
+			7, 17),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_IgnoresUnknownTypes(t *testing.T) {
