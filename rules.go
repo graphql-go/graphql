@@ -77,23 +77,26 @@ func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInsta
 					if argAST, ok := p.Node.(*ast.Argument); ok {
 						value := argAST.Value
 						argDef := context.Argument()
-						isValid, messages := isValidLiteralValue(argDef.Type, value)
-						if argDef != nil && !isValid {
-							argNameValue := ""
-							if argAST.Name != nil {
-								argNameValue = argAST.Name.Value
+						if argDef != nil {
+							isValid, messages := isValidLiteralValue(argDef.Type, value)
+							if !isValid {
+								argNameValue := ""
+								if argAST.Name != nil {
+									argNameValue = argAST.Name.Value
+								}
+
+								messagesStr := ""
+								if len(messages) > 0 {
+									messagesStr = "\n" + strings.Join(messages, "\n")
+								}
+								return reportError(
+									context,
+									fmt.Sprintf(`Argument "%v" has invalid value %v.%v`,
+										argNameValue, printer.Print(value), messagesStr),
+									[]ast.Node{value},
+								)
 							}
 
-							messagesStr := ""
-							if len(messages) > 0 {
-								messagesStr = "\n" + strings.Join(messages, "\n")
-							}
-							return reportError(
-								context,
-								fmt.Sprintf(`Argument "%v" has invalid value %v.%v`,
-									argNameValue, printer.Print(value), messagesStr),
-								[]ast.Node{value},
-							)
 						}
 					}
 					return visitor.ActionSkip, nil
