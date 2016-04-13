@@ -922,50 +922,40 @@ func NoUndefinedVariablesRule(context *ValidationContext) *ValidationRuleInstanc
 func NoUnusedFragmentsRule(context *ValidationContext) *ValidationRuleInstance {
 
 	var fragmentDefs = []*ast.FragmentDefinition{}
-	var spreadsWithinOperation = [][]*ast.FragmentSpread{}
+	var operationDefs = []*ast.OperationDefinition{}
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
 			kinds.OperationDefinition: visitor.NamedVisitFuncs{
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.OperationDefinition); ok && node != nil {
-						spreadsWithinOperation = append(spreadsWithinOperation, context.FragmentSpreads(node))
+						operationDefs = append(operationDefs, node)
 					}
 					return visitor.ActionSkip, nil
 				},
 			},
 			kinds.FragmentDefinition: visitor.NamedVisitFuncs{
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if def, ok := p.Node.(*ast.FragmentDefinition); ok && def != nil {
-						fragmentDefs = append(fragmentDefs, def)
+					if node, ok := p.Node.(*ast.FragmentDefinition); ok && node != nil {
+						fragmentDefs = append(fragmentDefs, node)
 					}
 					return visitor.ActionSkip, nil
 				},
 			},
 			kinds.Document: visitor.NamedVisitFuncs{
 				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
-
-					fragmentNameUsed := map[string]interface{}{}
-
-					var reduceSpreadFragments func(spreads []*ast.FragmentSpread)
-					reduceSpreadFragments = func(spreads []*ast.FragmentSpread) {
-						for _, spread := range spreads {
+					fragmentNameUsed := map[string]bool{}
+					for _, operation := range operationDefs {
+						fragments := context.RecursivelyReferencedFragments(operation)
+						for _, fragment := range fragments {
 							fragName := ""
-							if spread.Name != nil {
-								fragName = spread.Name.Value
+							if fragment.Name != nil {
+								fragName = fragment.Name.Value
 							}
-							if isFragNameUsed, _ := fragmentNameUsed[fragName]; isFragNameUsed != true {
-								fragmentNameUsed[fragName] = true
-								fragment := context.Fragment(fragName)
-								if fragment != nil {
-									reduceSpreadFragments(context.FragmentSpreads(fragment))
-								}
-							}
+							fragmentNameUsed[fragName] = true
 						}
 					}
-					for _, spreadWithinOperation := range spreadsWithinOperation {
-						reduceSpreadFragments(spreadWithinOperation)
-					}
+
 					for _, def := range fragmentDefs {
 						defName := ""
 						if def.Name != nil {
