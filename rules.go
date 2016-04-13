@@ -420,7 +420,7 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 						if argumentOf == nil {
 							return action, result
 						}
-						if argumentOf.GetKind() == "Field" {
+						if argumentOf.GetKind() == kinds.Field {
 							fieldDef := context.FieldDef()
 							if fieldDef == nil {
 								return action, result
@@ -447,7 +447,7 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 									[]ast.Node{node},
 								)
 							}
-						} else if argumentOf.GetKind() == "Directive" {
+						} else if argumentOf.GetKind() == kinds.Directive {
 							directive := context.Directive()
 							if directive == nil {
 								return action, result
