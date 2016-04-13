@@ -364,10 +364,14 @@ func valueFromAST(valueAST ast.Value, ttype Input, variables map[string]interfac
 		obj := map[string]interface{}{}
 		for fieldName, field := range ttype.Fields() {
 			fieldAST, ok := fieldASTs[fieldName]
+			fieldValue := field.DefaultValue
 			if !ok || fieldAST == nil {
-				continue
+				if fieldValue == nil {
+					continue
+				}
+			} else {
+				fieldValue = valueFromAST(fieldAST.Value, field.Type, variables)
 			}
-			fieldValue := valueFromAST(fieldAST.Value, field.Type, variables)
 			if isNullish(fieldValue) {
 				fieldValue = field.DefaultValue
 			}
