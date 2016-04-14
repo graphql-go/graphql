@@ -1239,8 +1239,6 @@ func sameValue(value1 ast.Value, value2 ast.Value) bool {
 }
 
 func sameType(typeA, typeB Type) bool {
-	return fmt.Sprintf("%v", typeA) == fmt.Sprintf("%v", typeB)
-
 	if typeA == typeB {
 		return true
 	}
