@@ -89,7 +89,7 @@ func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInsta
 								if len(messages) > 0 {
 									messagesStr = "\n" + strings.Join(messages, "\n")
 								}
-								return reportError(
+								reportError(
 									context,
 									fmt.Sprintf(`Argument "%v" has invalid value %v.%v`,
 										argNameValue, printer.Print(value), messagesStr),
@@ -130,7 +130,7 @@ func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleI
 						ttype := context.InputType()
 
 						if ttype, ok := ttype.(*NonNull); ok && defaultValue != nil {
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`Variable "$%v" of type "%v" is required and will not use the default value. Perhaps you meant to use type "%v".`,
 									name, ttype, ttype.OfType),
@@ -143,7 +143,7 @@ func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleI
 							if len(messages) > 0 {
 								messagesStr = "\n" + strings.Join(messages, "\n")
 							}
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`Variable "$%v" has invalid default value: %v.%v`,
 									name, printer.Print(defaultValue), messagesStr),
@@ -245,7 +245,7 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 
 								message := UndefinedFieldMessage(nodeName, ttype.Name(), suggestedTypes)
 
-								return reportError(
+								reportError(
 									context,
 									message,
 									[]ast.Node{node},
@@ -362,7 +362,7 @@ func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleIn
 					if node, ok := p.Node.(*ast.InlineFragment); ok {
 						ttype := context.Type()
 						if node.TypeCondition != nil && ttype != nil && !IsCompositeType(ttype) {
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`Fragment cannot condition on non composite type "%v".`, ttype),
 								[]ast.Node{node.TypeCondition},
@@ -381,7 +381,7 @@ func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleIn
 							if node.Name != nil {
 								nodeName = node.Name.Value
 							}
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`Fragment "%v" cannot condition on non composite type "%v".`, nodeName, printer.Print(node.TypeCondition)),
 								[]ast.Node{node.TypeCondition},
@@ -441,7 +441,7 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 								if parentType != nil {
 									parentTypeName = parentType.Name()
 								}
-								return reportError(
+								reportError(
 									context,
 									fmt.Sprintf(`Unknown argument "%v" on field "%v" of type "%v".`, nodeName, fieldDef.Name, parentTypeName),
 									[]ast.Node{node},
@@ -463,7 +463,7 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 								}
 							}
 							if directiveArgDef == nil {
-								return reportError(
+								reportError(
 									context,
 									fmt.Sprintf(`Unknown argument "%v" on directive "@%v".`, nodeName, directive.Name),
 									[]ast.Node{node},
@@ -525,14 +525,14 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 						}
 
 						if appliedTo.GetKind() == kinds.OperationDefinition && directiveDef.OnOperation == false {
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "operation"),
 								[]ast.Node{node},
 							)
 						}
 						if appliedTo.GetKind() == kinds.Field && directiveDef.OnField == false {
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "field"),
 								[]ast.Node{node},
@@ -541,7 +541,7 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 						if (appliedTo.GetKind() == kinds.FragmentSpread ||
 							appliedTo.GetKind() == kinds.InlineFragment ||
 							appliedTo.GetKind() == kinds.FragmentDefinition) && directiveDef.OnFragment == false {
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "fragment"),
 								[]ast.Node{node},
@@ -582,7 +582,7 @@ func KnownFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 
 						fragment := context.Fragment(fragmentName)
 						if fragment == nil {
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`Unknown fragment "%v".`, fragmentName),
 								[]ast.Node{node.Name},
@@ -639,7 +639,7 @@ func KnownTypeNamesRule(context *ValidationContext) *ValidationRuleInstance {
 						}
 						ttype := context.Schema().Type(typeNameValue)
 						if ttype == nil {
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`Unknown type "%v".`, typeNameValue),
 								[]ast.Node{node},
@@ -684,7 +684,7 @@ func LoneAnonymousOperationRule(context *ValidationContext) *ValidationRuleInsta
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.OperationDefinition); ok {
 						if node.Name == nil && operationCount > 1 {
-							return reportError(
+							reportError(
 								context,
 								`This anonymous operation must be the only defined operation.`,
 								[]ast.Node{node},
@@ -1554,7 +1554,7 @@ func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInst
 						parentType, _ := context.ParentType().(Type)
 
 						if fragType != nil && parentType != nil && !doTypesOverlap(fragType, parentType) {
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`Fragment cannot be spread here as objects of `+
 									`type "%v" can never be of type "%v".`, parentType, fragType),
@@ -1575,7 +1575,7 @@ func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInst
 						fragType := getFragmentType(context, fragName)
 						parentType, _ := context.ParentType().(Type)
 						if fragType != nil && parentType != nil && !doTypesOverlap(fragType, parentType) {
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`Fragment "%v" cannot be spread here as objects of `+
 									`type "%v" can never be of type "%v".`, fragName, parentType, fragType),
@@ -1714,14 +1714,14 @@ func ScalarLeafsRule(context *ValidationContext) *ValidationRuleInstance {
 						if ttype != nil {
 							if IsLeafType(ttype) {
 								if node.SelectionSet != nil {
-									return reportError(
+									reportError(
 										context,
 										fmt.Sprintf(`Field "%v" of type "%v" must not have a sub selection.`, nodeName, ttype),
 										[]ast.Node{node.SelectionSet},
 									)
 								}
 							} else if node.SelectionSet == nil {
-								return reportError(
+								reportError(
 									context,
 									fmt.Sprintf(`Field "%v" of type "%v" must have a sub selection.`, nodeName, ttype),
 									[]ast.Node{node},
@@ -1771,13 +1771,14 @@ func UniqueArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance
 							argName = node.Name.Value
 						}
 						if nameAST, ok := knownArgNames[argName]; ok {
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`There can be only one argument named "%v".`, argName),
 								[]ast.Node{nameAST, node.Name},
 							)
+						} else {
+							knownArgNames[argName] = node.Name
 						}
-						knownArgNames[argName] = node.Name
 					}
 					return visitor.ActionSkip, nil
 				},
@@ -1813,13 +1814,14 @@ func UniqueFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance
 							fragmentName = node.Name.Value
 						}
 						if nameAST, ok := knownFragmentNames[fragmentName]; ok {
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`There can only be one fragment named "%v".`, fragmentName),
 								[]ast.Node{nameAST, node.Name},
 							)
+						} else {
+							knownFragmentNames[fragmentName] = node.Name
 						}
-						knownFragmentNames[fragmentName] = node.Name
 					}
 					return visitor.ActionSkip, nil
 				},
@@ -1863,7 +1865,7 @@ func UniqueInputFieldNamesRule(context *ValidationContext) *ValidationRuleInstan
 							fieldName = node.Name.Value
 						}
 						if knownNameAST, ok := knownNames[fieldName]; ok {
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`There can be only one input field named "%v".`, fieldName),
 								[]ast.Node{knownNameAST, node.Name},
@@ -1902,13 +1904,14 @@ func UniqueOperationNamesRule(context *ValidationContext) *ValidationRuleInstanc
 							operationName = node.Name.Value
 						}
 						if nameAST, ok := knownOperationNames[operationName]; ok {
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`There can only be one operation named "%v".`, operationName),
 								[]ast.Node{nameAST, node.Name},
 							)
+						} else {
+							knownOperationNames[operationName] = node.Name
 						}
-						knownOperationNames[operationName] = node.Name
 					}
 					return visitor.ActionSkip, nil
 				},
@@ -1953,13 +1956,12 @@ func UniqueVariableNamesRule(context *ValidationContext) *ValidationRuleInstance
 							variableName = node.Variable.Name.Value
 						}
 						if nameAST, ok := knownVariableNames[variableName]; ok {
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`There can only be one variable named "%v".`, variableName),
 								[]ast.Node{nameAST, variableNameAST},
 							)
-						}
-						if variableNameAST != nil {
+						} else {
 							knownVariableNames[variableName] = variableNameAST
 						}
 					}
@@ -1995,7 +1997,7 @@ func VariablesAreInputTypesRule(context *ValidationContext) *ValidationRuleInsta
 							if node.Variable != nil && node.Variable.Name != nil {
 								variableName = node.Variable.Name.Value
 							}
-							return reportError(
+							reportError(
 								context,
 								fmt.Sprintf(`Variable "$%v" cannot be non-input type "%v".`,
 									variableName, printer.Print(node.Type)),
