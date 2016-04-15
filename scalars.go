@@ -79,7 +79,7 @@ func coerceInt(value interface{}) interface{} {
 }
 
 // Int is the GraphQL Integer type definition.
-var Int *Scalar = NewScalar(ScalarConfig{
+var Int = NewScalar(ScalarConfig{
 	Name: "Int",
 	Description: "The `Int` scalar type represents non-fractional signed whole numeric " +
 		"values. Int can represent values between -(2^31) and 2^31 - 1. ",
@@ -120,7 +120,7 @@ func coerceFloat32(value interface{}) interface{} {
 }
 
 // Float is the GraphQL float type definition.
-var Float *Scalar = NewScalar(ScalarConfig{
+var Float = NewScalar(ScalarConfig{
 	Name: "Float",
 	Description: "The `Float` scalar type represents signed double-precision fractional " +
 		"values as specified by " +
@@ -147,7 +147,7 @@ func coerceString(value interface{}) interface{} {
 }
 
 // String is the GraphQL string type definition
-var String *Scalar = NewScalar(ScalarConfig{
+var String = NewScalar(ScalarConfig{
 	Name: "String",
 	Description: "The `String` scalar type represents textual data, represented as UTF-8 " +
 		"character sequences. The String type is most often used by GraphQL to " +
@@ -193,7 +193,7 @@ func coerceBool(value interface{}) interface{} {
 }
 
 // Boolean is the GraphQL boolean type definition
-var Boolean *Scalar = NewScalar(ScalarConfig{
+var Boolean = NewScalar(ScalarConfig{
 	Name:        "Boolean",
 	Description: "The `Boolean` scalar type represents `true` or `false`.",
 	Serialize:   coerceBool,
@@ -208,7 +208,7 @@ var Boolean *Scalar = NewScalar(ScalarConfig{
 })
 
 // ID is the GraphQL id type definition
-var ID *Scalar = NewScalar(ScalarConfig{
+var ID = NewScalar(ScalarConfig{
 	Name: "ID",
 	Description: "The `ID` scalar type represents a unique identifier, often used to " +
 		"refetch an object or as key for a cache. The ID type appears in a JSON " +

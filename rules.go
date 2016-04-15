@@ -11,9 +11,7 @@ import (
 	"strings"
 )
 
-/**
- * SpecifiedRules set includes all validation rules defined by the GraphQL spec.
- */
+// SpecifiedRules set includes all validation rules defined by the GraphQL spec.
 var SpecifiedRules = []ValidationRuleFn{
 	ArgumentsOfCorrectTypeRule,
 	DefaultValuesOfCorrectTypeRule,
@@ -62,13 +60,10 @@ func reportError(context *ValidationContext, message string, nodes []ast.Node) (
 	return visitor.ActionNoChange, nil
 }
 
-/**
- * ArgumentsOfCorrectTypeRule
- * Argument values of correct type
- *
- * A GraphQL document is only valid if all field argument literal values are
- * of the type expected by their position.
- */
+// ArgumentsOfCorrectTypeRule Argument values of correct type
+//
+// A GraphQL document is only valid if all field argument literal values are
+// of the type expected by their position.
 func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
@@ -109,13 +104,10 @@ func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInsta
 	}
 }
 
-/**
- * DefaultValuesOfCorrectTypeRule
- * Variable default values of correct type
- *
- * A GraphQL document is only valid if all variable default values are of the
- * type expected by their definition.
- */
+// DefaultValuesOfCorrectTypeRule Variable default values of correct type
+//
+// A GraphQL document is only valid if all variable default values are of the
+// type expected by their definition.
 func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
@@ -184,11 +176,11 @@ func UndefinedFieldMessage(fieldName string, ttypeName string, suggestedTypes []
 	// construct helpful (but long) message
 	message := fmt.Sprintf(`Cannot query field "%v" on type "%v".`, fieldName, ttypeName)
 	suggestions := strings.Join(quoteStrings(suggestedTypes), ", ")
-	const MAX_LENGTH = 5
+	const MaxLength = 5
 	if len(suggestedTypes) > 0 {
-		if len(suggestedTypes) > MAX_LENGTH {
-			suggestions = strings.Join(quoteStrings(suggestedTypes[0:MAX_LENGTH]), ", ") +
-				fmt.Sprintf(`, and %v other types`, len(suggestedTypes)-MAX_LENGTH)
+		if len(suggestedTypes) > MaxLength {
+			suggestions = strings.Join(quoteStrings(suggestedTypes[0:MaxLength]), ", ") +
+				fmt.Sprintf(`, and %v other types`, len(suggestedTypes)-MaxLength)
 		}
 		message = message + fmt.Sprintf(` However, this field exists on %v.`, suggestions)
 		message = message + ` Perhaps you meant to use an inline fragment?`
@@ -197,13 +189,10 @@ func UndefinedFieldMessage(fieldName string, ttypeName string, suggestedTypes []
 	return message
 }
 
-/**
- * FieldsOnCorrectTypeRule
- * Fields on correct type
- *
- * A GraphQL document is only valid if all fields selected are defined by the
- * parent type, or are an allowed meta field such as __typenamme
- */
+// FieldsOnCorrectTypeRule Fields on correct type
+//
+// A GraphQL document is only valid if all fields selected are defined by the
+// parent type, or are an allowed meta field such as __typenamme
 func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
@@ -263,9 +252,7 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 	}
 }
 
-/**
- * Return implementations of `type` that include `fieldName` as a valid field.
- */
+// Return implementations of `type` that include `fieldName` as a valid field.
 func getImplementationsIncludingField(ttype Abstract, fieldName string) []string {
 
 	result := []string{}
@@ -280,12 +267,10 @@ func getImplementationsIncludingField(ttype Abstract, fieldName string) []string
 	return result
 }
 
-/**
- * Go through all of the implementations of type, and find other interaces
- * that they implement. If those interfaces include `field` as a valid field,
- * return them, sorted by how often the implementations include the other
- * interface.
- */
+// Go through all of the implementations of type, and find other interaces
+// that they implement. If those interfaces include `field` as a valid field,
+// return them, sorted by how often the implementations include the other
+// interface.
 func getSiblingInterfacesIncludingField(ttype Abstract, fieldName string) []string {
 	implementingObjects := ttype.PossibleTypes()
 
@@ -346,14 +331,11 @@ func (s suggestedInterfaceSortedSlice) Less(i, j int) bool {
 	return s[i].count < s[j].count
 }
 
-/**
- * FragmentsOnCompositeTypesRule
- * Fragments on composite type
- *
- * Fragments use a type condition to determine if they apply, since fragments
- * can only be spread into a composite type (object, interface, or union), the
- * type condition must also be a composite type.
- */
+// FragmentsOnCompositeTypesRule Fragments on composite type
+//
+// Fragments use a type condition to determine if they apply, since fragments
+// can only be spread into a composite type (object, interface, or union), the
+// type condition must also be a composite type.
 func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
@@ -398,13 +380,10 @@ func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleIn
 	}
 }
 
-/**
- * KnownArgumentNamesRule
- * Known argument names
- *
- * A GraphQL field is only valid if all supplied arguments are defined by
- * that field.
- */
+// KnownArgumentNamesRule Known argument names
+//
+// A GraphQL field is only valid if all supplied arguments are defined by
+// that field.
 func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
@@ -482,12 +461,10 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 	}
 }
 
-/**
- * Known directives
- *
- * A GraphQL document is only valid if all `@directives` are known by the
- * schema and legally positioned.
- */
+// KnownDirectivesRule Known directives
+//
+// A GraphQL document is only valid if all `@directives` are known by the
+// schema and legally positioned.
 func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
@@ -559,13 +536,10 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 	}
 }
 
-/**
- * KnownFragmentNamesRule
- * Known fragment names
- *
- * A GraphQL document is only valid if all `...Fragment` fragment spreads refer
- * to fragments defined in the same document.
- */
+// KnownFragmentNamesRule Known fragment names
+//
+// A GraphQL document is only valid if all `...Fragment` fragment spreads refer
+// to fragments defined in the same document.
 func KnownFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
@@ -599,13 +573,10 @@ func KnownFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 	}
 }
 
-/**
- * KnownTypeNamesRule
- * Known type names
- *
- * A GraphQL document is only valid if referenced types (specifically
- * variable definitions and fragment conditions) are defined by the type schema.
- */
+// KnownTypeNamesRule Known type names
+//
+// A GraphQL document is only valid if referenced types (specifically
+// variable definitions and fragment conditions) are defined by the type schema.
 func KnownTypeNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
@@ -656,13 +627,10 @@ func KnownTypeNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	}
 }
 
-/**
- * LoneAnonymousOperationRule
- * Lone anonymous operation
- *
- * A GraphQL document is only valid if when it contains an anonymous operation
- * (the query short-hand) that it contains only that one operation definition.
- */
+// LoneAnonymousOperationRule Lone anonymous operation
+//
+// A GraphQL document is only valid if when it contains an anonymous operation
+// (the query short-hand) that it contains only that one operation definition.
 func LoneAnonymousOperationRule(context *ValidationContext) *ValidationRuleInstance {
 	var operationCount = 0
 	visitorOpts := &visitor.VisitorOptions{
@@ -730,9 +698,7 @@ func CycleErrorMessage(fragName string, spreadNames []string) string {
 	return fmt.Sprintf(`Cannot spread fragment "%v" within itself%v.`, fragName, via)
 }
 
-/**
- * NoFragmentCyclesRule
- */
+// NoFragmentCyclesRule No fragment cycles
 func NoFragmentCyclesRule(context *ValidationContext) *ValidationRuleInstance {
 
 	// Tracks already visited fragments to maintain O(N) and to ensure that cycles
@@ -845,13 +811,10 @@ func UndefinedVarMessage(varName string, opName string) string {
 	return fmt.Sprintf(`Variable "$%v" is not defined.`, varName)
 }
 
-/**
- * NoUndefinedVariables
- * No undefined variables
- *
- * A GraphQL operation is only valid if all variables encountered, both directly
- * and via fragment spreads, are defined by that operation.
- */
+// NoUndefinedVariablesRule No undefined variables
+//
+// A GraphQL operation is only valid if all variables encountered, both directly
+// and via fragment spreads, are defined by that operation.
 func NoUndefinedVariablesRule(context *ValidationContext) *ValidationRuleInstance {
 	var variableNameDefined = map[string]bool{}
 
@@ -912,13 +875,10 @@ func NoUndefinedVariablesRule(context *ValidationContext) *ValidationRuleInstanc
 	}
 }
 
-/**
- * NoUnusedFragmentsRule
- * No unused fragments
- *
- * A GraphQL document is only valid if all fragment definitions are spread
- * within operations, or spread within other fragments spread within operations.
- */
+// NoUnusedFragmentsRule No unused fragments
+//
+// A GraphQL document is only valid if all fragment definitions are spread
+// within operations, or spread within other fragments spread within operations.
 func NoUnusedFragmentsRule(context *ValidationContext) *ValidationRuleInstance {
 
 	var fragmentDefs = []*ast.FragmentDefinition{}
@@ -988,13 +948,10 @@ func UnusedVariableMessage(varName string, opName string) string {
 	return fmt.Sprintf(`Variable "$%v" is never used.`, varName)
 }
 
-/**
- * NoUnusedVariablesRule
- * No unused variables
- *
- * A GraphQL operation is only valid if all variables defined by an operation
- * are used, either directly or within a spread fragment.
- */
+// NoUnusedVariablesRule No unused variables
+//
+// A GraphQL operation is only valid if all variables defined by an operation
+// are used, either directly or within a spread fragment.
 func NoUnusedVariablesRule(context *ValidationContext) *ValidationRuleInstance {
 
 	var variableDefs = []*ast.VariableDefinition{}
@@ -1149,10 +1106,8 @@ func collectFieldASTsAndDefs(context *ValidationContext, parentType Named, selec
 	return astAndDefs
 }
 
-/**
- * pairSet A way to keep track of pairs of things when the ordering of the pair does
- * not matter. We do this by maintaining a sort of double adjacency sets.
- */
+// pairSet A way to keep track of pairs of things when the ordering of the pair does
+// not matter. We do this by maintaining a sort of double adjacency sets.
 type pairSet struct {
 	data map[ast.Node]*nodeSet
 }
@@ -1257,14 +1212,11 @@ func sameType(typeA, typeB Type) bool {
 	return false
 }
 
-/**
- * OverlappingFieldsCanBeMergedRule
- * Overlapping fields can be merged
- *
- * A selection set is only valid if all fields (including spreading any
- * fragments) either correspond to distinct response names or can be merged
- * without ambiguity.
- */
+// OverlappingFieldsCanBeMergedRule Overlapping fields can be merged
+//
+// A selection set is only valid if all fields (including spreading any
+// fragments) either correspond to distinct response names or can be merged
+// without ambiguity.
 func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRuleInstance {
 
 	comparedSet := newPairSet()
@@ -1401,7 +1353,7 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 
 		// ensure field traversal
 		orderedName := sort.StringSlice{}
-		for responseName, _ := range fieldMap {
+		for responseName := range fieldMap {
 			orderedName = append(orderedName, responseName)
 		}
 		orderedName.Sort()
@@ -1533,14 +1485,11 @@ func doTypesOverlap(t1 Type, t2 Type) bool {
 	return false
 }
 
-/**
- * PossibleFragmentSpreadsRule
- * Possible fragment spread
- *
- * A fragment spread is only valid if the type condition could ever possibly
- * be true: if there is a non-empty intersection of the possible parent types,
- * and possible types which pass the type condition.
- */
+// PossibleFragmentSpreadsRule Possible fragment spread
+//
+// A fragment spread is only valid if the type condition could ever possibly
+// be true: if there is a non-empty intersection of the possible parent types,
+// and possible types which pass the type condition.
 func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInstance {
 
 	visitorOpts := &visitor.VisitorOptions{
@@ -1591,13 +1540,10 @@ func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInst
 	}
 }
 
-/**
- * ProvidedNonNullArgumentsRule
- * Provided required arguments
- *
- * A field or directive is only valid if all required (non-null) field arguments
- * have been provided.
- */
+// ProvidedNonNullArgumentsRule Provided required arguments
+//
+// A field or directive is only valid if all required (non-null) field arguments
+// have been provided.
 func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleInstance {
 
 	visitorOpts := &visitor.VisitorOptions{
@@ -1690,13 +1636,10 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 	}
 }
 
-/**
- * ScalarLeafsRule
- * Scalar leafs
- *
- * A GraphQL document is valid only if all leaf fields (fields without
- * sub selections) are of scalar or enum types.
- */
+// ScalarLeafsRule Scalar leafs
+//
+// A GraphQL document is valid only if all leaf fields (fields without
+// sub selections) are of scalar or enum types.
 func ScalarLeafsRule(context *ValidationContext) *ValidationRuleInstance {
 
 	visitorOpts := &visitor.VisitorOptions{
@@ -1737,13 +1680,10 @@ func ScalarLeafsRule(context *ValidationContext) *ValidationRuleInstance {
 	}
 }
 
-/**
- * UniqueArgumentNamesRule
- * Unique argument names
- *
- * A GraphQL field or directive is only valid if all supplied arguments are
- * uniquely named.
- */
+// UniqueArgumentNamesRule Unique argument names
+//
+// A GraphQL field or directive is only valid if all supplied arguments are
+// uniquely named.
 func UniqueArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	knownArgNames := map[string]*ast.Name{}
 
@@ -1788,12 +1728,9 @@ func UniqueArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance
 	}
 }
 
-/**
- * UniqueFragmentNamesRule
- * Unique fragment names
- *
- * A GraphQL document is only valid if all defined fragments have unique names.
- */
+// UniqueFragmentNamesRule Unique fragment names
+//
+// A GraphQL document is only valid if all defined fragments have unique names.
 func UniqueFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	knownFragmentNames := map[string]*ast.Name{}
 
@@ -1831,12 +1768,10 @@ func UniqueFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance
 	}
 }
 
-/**
- * UniqueInputFieldNamesRule
- *
- * A GraphQL input object value is only valid if all supplied fields are
- * uniquely named.
- */
+// UniqueInputFieldNamesRule Unique input field names
+//
+// A GraphQL input object value is only valid if all supplied fields are
+// uniquely named.
 func UniqueInputFieldNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	knownNameStack := []map[string]*ast.Name{}
 	knownNames := map[string]*ast.Name{}
@@ -1883,12 +1818,9 @@ func UniqueInputFieldNamesRule(context *ValidationContext) *ValidationRuleInstan
 	}
 }
 
-/**
- * UniqueOperationNamesRule
- * Unique operation names
- *
- * A GraphQL document is only valid if all defined operations have unique names.
- */
+// UniqueOperationNamesRule Unique operation names
+//
+// A GraphQL document is only valid if all defined operations have unique names.
 func UniqueOperationNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	knownOperationNames := map[string]*ast.Name{}
 
@@ -1926,11 +1858,9 @@ func UniqueOperationNamesRule(context *ValidationContext) *ValidationRuleInstanc
 	}
 }
 
-/**
- * Unique variable names
- *
- * A GraphQL operation is only valid if all its variables are uniquely named.
- */
+// UniqueVariableNamesRule Unique variable names
+//
+// A GraphQL operation is only valid if all its variables are uniquely named.
 func UniqueVariableNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	knownVariableNames := map[string]*ast.Name{}
 
@@ -1973,13 +1903,10 @@ func UniqueVariableNamesRule(context *ValidationContext) *ValidationRuleInstance
 	}
 }
 
-/**
- * VariablesAreInputTypesRule
- * Variables are input types
- *
- * A GraphQL operation is only valid if all the variables it defines are of
- * input types (scalar, enum, or input object).
- */
+// VariablesAreInputTypesRule Variables are input types
+//
+// A GraphQL operation is only valid if all the variables it defines are of
+// input types (scalar, enum, or input object).
 func VariablesAreInputTypesRule(context *ValidationContext) *ValidationRuleInstance {
 
 	visitorOpts := &visitor.VisitorOptions{
@@ -2024,10 +1951,7 @@ func effectiveType(varType Type, varDef *ast.VariableDefinition) Type {
 	return NewNonNull(varType)
 }
 
-/**
- * VariablesInAllowedPositionRule
- * Variables passed to field arguments conform to type
- */
+// VariablesInAllowedPositionRule Variables passed to field arguments conform to type
 func VariablesInAllowedPositionRule(context *ValidationContext) *ValidationRuleInstance {
 
 	varDefMap := map[string]*ast.VariableDefinition{}
@@ -2090,13 +2014,11 @@ func VariablesInAllowedPositionRule(context *ValidationContext) *ValidationRuleI
 	}
 }
 
-/**
- * Utility for validators which determines if a value literal AST is valid given
- * an input type.
- *
- * Note that this only validates literal values, variables are assumed to
- * provide values of the correct type.
- */
+// Utility for validators which determines if a value literal AST is valid given
+// an input type.
+//
+// Note that this only validates literal values, variables are assumed to
+// provide values of the correct type.
 func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 	// A value must be provided if the type is non-null.
 	if ttype, ok := ttype.(*NonNull); ok {

@@ -86,7 +86,7 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 	switch node := node.(type) {
 	case *ast.SelectionSet:
 		namedType := GetNamed(ti.Type())
-		var compositeType Composite = nil
+		var compositeType Composite
 		if IsCompositeType(namedType) {
 			compositeType, _ = namedType.(Composite)
 		}
@@ -236,11 +236,9 @@ func (ti *TypeInfo) Leave(node ast.Node) {
 	}
 }
 
-/**
- * Not exactly the same as the executor's definition of FieldDef, in this
- * statically evaluated environment we do not always have an Object type,
- * and need to handle Interface and Union types.
- */
+// DefaultTypeInfoFieldDef Not exactly the same as the executor's definition of FieldDef, in this
+// statically evaluated environment we do not always have an Object type,
+// and need to handle Interface and Union types.
 func DefaultTypeInfoFieldDef(schema *Schema, parentType Type, fieldAST *ast.Field) *FieldDefinition {
 	name := ""
 	if fieldAST.Name != nil {

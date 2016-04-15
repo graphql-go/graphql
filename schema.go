@@ -4,18 +4,6 @@ import (
 	"fmt"
 )
 
-/**
-Schema Definition
-A Schema is created by supplying the root types of each type of operation,
-query, mutation (optional) and subscription (optional). A schema definition is then supplied to the
-validator and executor.
-Example:
-    myAppSchema, err := NewSchema(SchemaConfig({
-      Query: MyAppQueryRootType,
-      Mutation: MyAppMutationRootType,
-      Subscription: MyAppSubscriptionRootType,
-    });
-*/
 type SchemaConfig struct {
 	Query        *Object
 	Mutation     *Object
@@ -23,9 +11,18 @@ type SchemaConfig struct {
 	Directives   []*Directive
 }
 
-// chose to name as TypeMap instead of TypeMap
 type TypeMap map[string]Type
 
+//Schema Definition
+//A Schema is created by supplying the root types of each type of operation,
+//query, mutation (optional) and subscription (optional). A schema definition is then supplied to the
+//validator and executor.
+//Example:
+//    myAppSchema, err := NewSchema(SchemaConfig({
+//      Query: MyAppQueryRootType,
+//      Mutation: MyAppMutationRootType,
+//      Subscription: MyAppSubscriptionRootType,
+//    });
 type Schema struct {
 	typeMap    TypeMap
 	directives []*Directive
@@ -72,8 +69,8 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 		schema.QueryType(),
 		schema.MutationType(),
 		schema.SubscriptionType(),
-		__Type,
-		__Schema,
+		typeType,
+		schemaType,
 	}
 	for _, objectType := range objectTypes {
 		if objectType == nil {
@@ -274,7 +271,7 @@ func assertObjectImplementsInterface(object *Object, iface *Interface) error {
 	ifaceFieldMap := iface.Fields()
 
 	// Assert each interface field is implemented.
-	for fieldName, _ := range ifaceFieldMap {
+	for fieldName := range ifaceFieldMap {
 		objectField := objectFieldMap[fieldName]
 		ifaceField := ifaceFieldMap[fieldName]
 

@@ -1,5 +1,7 @@
 package graphql
 
+// Directive structs are used by the GraphQL runtime as a way of modifying execution
+// behavior. Type system creators will usually not create these directly.
 type Directive struct {
 	Name        string      `json:"name"`
 	Description string      `json:"description"`
@@ -9,10 +11,6 @@ type Directive struct {
 	OnField     bool        `json:"onField"`
 }
 
-/**
- * Directives are used by the GraphQL runtime as a way of modifying execution
- * behavior. Type system creators will usually not create these directly.
- */
 func NewDirective(config *Directive) *Directive {
 	if config == nil {
 		config = &Directive{}
@@ -27,10 +25,8 @@ func NewDirective(config *Directive) *Directive {
 	}
 }
 
-/**
- * Used to conditionally include fields or fragments
- */
-var IncludeDirective *Directive = NewDirective(&Directive{
+// IncludeDirective is used to conditionally include fields or fragments
+var IncludeDirective = NewDirective(&Directive{
 	Name: "include",
 	Description: "Directs the executor to include this field or fragment only when " +
 		"the `if` argument is true.",
@@ -46,10 +42,8 @@ var IncludeDirective *Directive = NewDirective(&Directive{
 	OnField:     true,
 })
 
-/**
- * Used to conditionally skip (exclude) fields or fragments
- */
-var SkipDirective *Directive = NewDirective(&Directive{
+// SkipDirective Used to conditionally skip (exclude) fields or fragments
+var SkipDirective = NewDirective(&Directive{
 	Name: "skip",
 	Description: "Directs the executor to skip this field or fragment when the `if` " +
 		"argument is true.",

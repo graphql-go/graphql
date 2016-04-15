@@ -268,12 +268,12 @@ func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
 		fieldNames := []string{}
 		valueMapFieldNames := []string{}
 
-		for fieldName, _ := range fields {
+		for fieldName := range fields {
 			fieldNames = append(fieldNames, fieldName)
 		}
 		sort.Strings(fieldNames)
 
-		for fieldName, _ := range valueMap {
+		for fieldName := range valueMap {
 			valueMapFieldNames = append(valueMapFieldNames, fieldName)
 		}
 		sort.Strings(valueMapFieldNames)
@@ -302,16 +302,15 @@ func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
 		parsedVal := ttype.ParseValue(value)
 		if isNullish(parsedVal) {
 			return false, []string{fmt.Sprintf(`Expected type "%v", found "%v".`, ttype.Name(), value)}
-		} else {
-			return true, nil
 		}
+		return true, nil
+
 	case *Enum:
 		parsedVal := ttype.ParseValue(value)
 		if isNullish(parsedVal) {
 			return false, []string{fmt.Sprintf(`Expected type "%v", found "%v".`, ttype.Name(), value)}
-		} else {
-			return true, nil
 		}
+		return true, nil
 	}
 	return true, nil
 }

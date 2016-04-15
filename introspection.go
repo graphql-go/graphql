@@ -19,14 +19,14 @@ const (
 	TypeKindNonNull     = "NON_NULL"
 )
 
-var __Directive *Object
-var __Schema *Object
-var __Type *Object
-var __Field *Object
-var __InputValue *Object
-var __EnumValue *Object
+var directiveType *Object
+var schemaType *Object
+var typeType *Object
+var fieldType *Object
+var inputValueType *Object
+var enumValueType *Object
 
-var __TypeKind *Enum
+var typeKindEnum *Enum
 
 var SchemaMetaFieldDef *FieldDefinition
 var TypeMetaFieldDef *FieldDefinition
@@ -34,7 +34,7 @@ var TypeNameMetaFieldDef *FieldDefinition
 
 func init() {
 
-	__TypeKind = NewEnum(EnumConfig{
+	typeKindEnum = NewEnum(EnumConfig{
 		Name:        "__TypeKind",
 		Description: "An enum describing what kind of type a given `__Type` is",
 		Values: EnumValueConfigMap{
@@ -81,7 +81,7 @@ func init() {
 	})
 
 	// Note: some fields (for e.g "fields", "interfaces") are defined later due to cyclic reference
-	__Type = NewObject(ObjectConfig{
+	typeType = NewObject(ObjectConfig{
 		Name: "__Type",
 		Description: "The fundamental unit of any GraphQL Schema is the type. There are " +
 			"many kinds of types in GraphQL as represented by the `__TypeKind` enum." +
@@ -94,7 +94,7 @@ func init() {
 
 		Fields: Fields{
 			"kind": &Field{
-				Type: NewNonNull(__TypeKind),
+				Type: NewNonNull(typeKindEnum),
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					switch p.Source.(type) {
 					case *Scalar:
@@ -132,7 +132,7 @@ func init() {
 		},
 	})
 
-	__InputValue = NewObject(ObjectConfig{
+	inputValueType = NewObject(ObjectConfig{
 		Name: "__InputValue",
 		Description: "Arguments provided to Fields or Directives and the input fields of an " +
 			"InputObject are represented as Input Values which describe their type " +
@@ -145,7 +145,7 @@ func init() {
 				Type: String,
 			},
 			"type": &Field{
-				Type: NewNonNull(__Type),
+				Type: NewNonNull(typeType),
 			},
 			"defaultValue": &Field{
 				Type: String,
@@ -175,7 +175,7 @@ func init() {
 		},
 	})
 
-	__Field = NewObject(ObjectConfig{
+	fieldType = NewObject(ObjectConfig{
 		Name: "__Field",
 		Description: "Object and Interface types are described by a list of Fields, each of " +
 			"which has a name, potentially a list of arguments, and a return type.",
@@ -187,7 +187,7 @@ func init() {
 				Type: String,
 			},
 			"args": &Field{
-				Type: NewNonNull(NewList(NewNonNull(__InputValue))),
+				Type: NewNonNull(NewList(NewNonNull(inputValueType))),
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					if field, ok := p.Source.(*FieldDefinition); ok {
 						return field.Args, nil
@@ -196,7 +196,7 @@ func init() {
 				},
 			},
 			"type": &Field{
-				Type: NewNonNull(__Type),
+				Type: NewNonNull(typeType),
 			},
 			"isDeprecated": &Field{
 				Type: NewNonNull(Boolean),
@@ -213,7 +213,7 @@ func init() {
 		},
 	})
 
-	__Directive = NewObject(ObjectConfig{
+	directiveType = NewObject(ObjectConfig{
 		Name: "__Directive",
 		Description: "A Directive provides a way to describe alternate runtime execution and " +
 			"type validation behavior in a GraphQL document. " +
@@ -230,7 +230,7 @@ func init() {
 			},
 			"args": &Field{
 				Type: NewNonNull(NewList(
-					NewNonNull(__InputValue),
+					NewNonNull(inputValueType),
 				)),
 			},
 			"onOperation": &Field{
@@ -245,7 +245,7 @@ func init() {
 		},
 	})
 
-	__Schema = NewObject(ObjectConfig{
+	schemaType = NewObject(ObjectConfig{
 		Name: "__Schema",
 		Description: `A GraphQL Schema defines the capabilities of a GraphQL server. ` +
 			`It exposes all available types and directives on the server, as well as ` +
@@ -254,7 +254,7 @@ func init() {
 			"types": &Field{
 				Description: "A list of all types supported by this server.",
 				Type: NewNonNull(NewList(
-					NewNonNull(__Type),
+					NewNonNull(typeType),
 				)),
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
@@ -269,7 +269,7 @@ func init() {
 			},
 			"queryType": &Field{
 				Description: "The type that query operations will be rooted at.",
-				Type:        NewNonNull(__Type),
+				Type:        NewNonNull(typeType),
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
 						return schema.QueryType(), nil
@@ -280,7 +280,7 @@ func init() {
 			"mutationType": &Field{
 				Description: `If this server supports mutation, the type that ` +
 					`mutation operations will be rooted at.`,
-				Type: __Type,
+				Type: typeType,
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
 						if schema.MutationType() != nil {
@@ -293,7 +293,7 @@ func init() {
 			"subscriptionType": &Field{
 				Description: `If this server supports subscription, the type that ` +
 					`subscription operations will be rooted at.`,
-				Type: __Type,
+				Type: typeType,
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
 						if schema.SubscriptionType() != nil {
@@ -306,7 +306,7 @@ func init() {
 			"directives": &Field{
 				Description: `A list of all directives supported by this server.`,
 				Type: NewNonNull(NewList(
-					NewNonNull(__Directive),
+					NewNonNull(directiveType),
 				)),
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
@@ -318,7 +318,7 @@ func init() {
 		},
 	})
 
-	__EnumValue = NewObject(ObjectConfig{
+	enumValueType = NewObject(ObjectConfig{
 		Name: "__EnumValue",
 		Description: "One possible value for a given Enum. Enum values are unique values, not " +
 			"a placeholder for a string or numeric value. However an Enum value is " +
@@ -347,8 +347,8 @@ func init() {
 
 	// Again, adding field configs to __Type that have cyclic reference here
 	// because golang don't like them too much during init/compile-time
-	__Type.AddFieldConfig("fields", &Field{
-		Type: NewList(NewNonNull(__Field)),
+	typeType.AddFieldConfig("fields", &Field{
+		Type: NewList(NewNonNull(fieldType)),
 		Args: FieldConfigArgument{
 			"includeDeprecated": &ArgumentConfig{
 				Type:         Boolean,
@@ -386,8 +386,8 @@ func init() {
 			return nil, nil
 		},
 	})
-	__Type.AddFieldConfig("interfaces", &Field{
-		Type: NewList(NewNonNull(__Type)),
+	typeType.AddFieldConfig("interfaces", &Field{
+		Type: NewList(NewNonNull(typeType)),
 		Resolve: func(p ResolveParams) (interface{}, error) {
 			switch ttype := p.Source.(type) {
 			case *Object:
@@ -396,8 +396,8 @@ func init() {
 			return nil, nil
 		},
 	})
-	__Type.AddFieldConfig("possibleTypes", &Field{
-		Type: NewList(NewNonNull(__Type)),
+	typeType.AddFieldConfig("possibleTypes", &Field{
+		Type: NewList(NewNonNull(typeType)),
 		Resolve: func(p ResolveParams) (interface{}, error) {
 			switch ttype := p.Source.(type) {
 			case *Interface:
@@ -408,8 +408,8 @@ func init() {
 			return nil, nil
 		},
 	})
-	__Type.AddFieldConfig("enumValues", &Field{
-		Type: NewList(NewNonNull(__EnumValue)),
+	typeType.AddFieldConfig("enumValues", &Field{
+		Type: NewList(NewNonNull(enumValueType)),
 		Args: FieldConfigArgument{
 			"includeDeprecated": &ArgumentConfig{
 				Type:         Boolean,
@@ -435,8 +435,8 @@ func init() {
 			return nil, nil
 		},
 	})
-	__Type.AddFieldConfig("inputFields", &Field{
-		Type: NewList(NewNonNull(__InputValue)),
+	typeType.AddFieldConfig("inputFields", &Field{
+		Type: NewList(NewNonNull(inputValueType)),
 		Resolve: func(p ResolveParams) (interface{}, error) {
 			switch ttype := p.Source.(type) {
 			case *InputObject:
@@ -449,18 +449,15 @@ func init() {
 			return nil, nil
 		},
 	})
-	__Type.AddFieldConfig("ofType", &Field{
-		Type: __Type,
+	typeType.AddFieldConfig("ofType", &Field{
+		Type: typeType,
 	})
 
-	/**
-	 * Note that these are FieldDefinition and not FieldConfig,
-	 * so the format for args is different.
-	 */
-
+	// Note that these are FieldDefinition and not FieldConfig,
+	// so the format for args is different.   d
 	SchemaMetaFieldDef = &FieldDefinition{
 		Name:        "__schema",
-		Type:        NewNonNull(__Schema),
+		Type:        NewNonNull(schemaType),
 		Description: "Access the current type schema of this server.",
 		Args:        []*Argument{},
 		Resolve: func(p ResolveParams) (interface{}, error) {
@@ -469,7 +466,7 @@ func init() {
 	}
 	TypeMetaFieldDef = &FieldDefinition{
 		Name:        "__type",
-		Type:        __Type,
+		Type:        typeType,
 		Description: "Request the type information of a single type.",
 		Args: []*Argument{
 			&Argument{
@@ -498,21 +495,19 @@ func init() {
 
 }
 
-/**
- * Produces a GraphQL Value AST given a Golang value.
- *
- * Optionally, a GraphQL type may be provided, which will be used to
- * disambiguate between value primitives.
- *
- * | JSON Value    | GraphQL Value        |
- * | ------------- | -------------------- |
- * | Object        | Input Object         |
- * | Array         | List                 |
- * | Boolean       | Boolean              |
- * | String        | String / Enum Value  |
- * | Number        | Int / Float          |
- *
- */
+// Produces a GraphQL Value AST given a Golang value.
+//
+// Optionally, a GraphQL type may be provided, which will be used to
+// disambiguate between value primitives.
+//
+// | JSON Value    | GraphQL Value        |
+// | ------------- | -------------------- |
+// | Object        | Input Object         |
+// | Array         | List                 |
+// | Boolean       | Boolean              |
+// | String        | String / Enum Value  |
+// | Number        | Int / Float          |
+
 func astFromValue(value interface{}, ttype Type) ast.Value {
 
 	if ttype, ok := ttype.(*NonNull); ok {
@@ -551,13 +546,12 @@ func astFromValue(value interface{}, ttype Type) ast.Value {
 			return ast.NewListValue(&ast.ListValue{
 				Values: values,
 			})
-		} else {
-			// Because GraphQL will accept single values as a "list of one" when
-			// expecting a list, if there's a non-array value and an expected list type,
-			// create an AST using the list's item type.
-			val := astFromValue(value, ttype.OfType)
-			return val
 		}
+		// Because GraphQL will accept single values as a "list of one" when
+		// expecting a list, if there's a non-array value and an expected list type,
+		// create an AST using the list's item type.
+		val := astFromValue(value, ttype.OfType)
+		return val
 	}
 
 	if valueVal.Type().Kind() == reflect.Map {
