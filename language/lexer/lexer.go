@@ -121,7 +121,7 @@ func readName(source *source.Source, position int) Token {
 				code >= 48 && code <= 57 || // 0-9
 				code >= 65 && code <= 90 || // A-Z
 				code >= 97 && code <= 122) { // a-z
-			end += 1
+			end++
 			continue
 		} else {
 			break
@@ -140,11 +140,11 @@ func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 	position := start
 	isFloat := false
 	if code == 45 { // -
-		position += 1
+		position++
 		code = charCodeAt(body, position)
 	}
 	if code == 48 { // 0
-		position += 1
+		position++
 		code = charCodeAt(body, position)
 		if code >= 48 && code <= 57 {
 			description := fmt.Sprintf("Invalid number, unexpected digit after 0: %v.", printCharCode(code))
@@ -160,7 +160,7 @@ func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 	}
 	if code == 46 { // .
 		isFloat = true
-		position += 1
+		position++
 		code = charCodeAt(body, position)
 		p, err := readDigits(s, position, code)
 		if err != nil {
@@ -171,10 +171,10 @@ func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 	}
 	if code == 69 || code == 101 { // E e
 		isFloat = true
-		position += 1
+		position++
 		code = charCodeAt(body, position)
 		if code == 43 || code == 45 { // + -
-			position += 1
+			position++
 			code = charCodeAt(body, position)
 		}
 		p, err := readDigits(s, position, code)
@@ -198,7 +198,7 @@ func readDigits(s *source.Source, start int, firstCode rune) (int, error) {
 	if code >= 48 && code <= 57 { // 0 - 9
 		for {
 			if code >= 48 && code <= 57 { // 0 - 9
-				position += 1
+				position++
 				code = charCodeAt(body, position)
 				continue
 			} else {
@@ -230,7 +230,7 @@ func readString(s *source.Source, start int) (Token, error) {
 			if code < 0x0020 && code != 0x0009 {
 				return Token{}, gqlerrors.NewSyntaxError(s, position, fmt.Sprintf(`Invalid character within String: %v.`, printCharCode(code)))
 			}
-			position += 1
+			position++
 			if code == 92 { // \
 				value += body[chunkStart : position-1]
 				code = charCodeAt(body, position)
@@ -278,7 +278,7 @@ func readString(s *source.Source, start int) (Token, error) {
 					return Token{}, gqlerrors.NewSyntaxError(s, position,
 						fmt.Sprintf(`Invalid character escape sequence: \\%c.`, code))
 				}
-				position += 1
+				position++
 				chunkStart = position
 			}
 			continue
@@ -313,11 +313,11 @@ func char2hex(a rune) int {
 		return int(a) - 48
 	} else if a >= 65 && a <= 70 { // A-F
 		return int(a) - 55
-	} else if a >= 97 && a <= 102 { // a-f
+	} else if a >= 97 && a <= 102 {
+		// a-f
 		return int(a) - 87
-	} else {
-		return -1
 	}
+	return -1
 }
 
 func makeToken(kind int, start int, end int, value string) Token {
@@ -409,9 +409,8 @@ func readToken(s *source.Source, fromPosition int) (Token, error) {
 		token, err := readNumber(s, position, code)
 		if err != nil {
 			return token, err
-		} else {
-			return token, nil
 		}
+		return token, nil
 	// "
 	case 34:
 		token, err := readString(s, position)
@@ -428,9 +427,9 @@ func charCodeAt(body string, position int) rune {
 	r := []rune(body)
 	if len(r) > position {
 		return r[position]
-	} else {
-		return -1
 	}
+	return -1
+
 }
 
 // Reads from body starting at startPosition until it finds a non-whitespace
@@ -453,16 +452,16 @@ func positionAfterWhitespace(body string, startPosition int) int {
 				code == 0x000D || // carriage return
 				// Comma
 				code == 0x002C {
-				position += 1
+				position++
 			} else if code == 35 { // #
-				position += 1
+				position++
 				for {
 					code := charCodeAt(body, position)
 					if position < bodyLength &&
 						code != 0 &&
 						// SourceCharacter but not LineTerminator
 						(code > 0x001F || code == 0x0009) && code != 0x000A && code != 0x000D {
-						position += 1
+						position++
 						continue
 					} else {
 						break
@@ -482,9 +481,8 @@ func positionAfterWhitespace(body string, startPosition int) int {
 func GetTokenDesc(token Token) string {
 	if token.Value == "" {
 		return GetTokenKindDesc(token.Kind)
-	} else {
-		return fmt.Sprintf("%s \"%s\"", GetTokenKindDesc(token.Kind), token.Value)
 	}
+	return fmt.Sprintf("%s \"%s\"", GetTokenKindDesc(token.Kind), token.Value)
 }
 
 func GetTokenKindDesc(kind int) string {

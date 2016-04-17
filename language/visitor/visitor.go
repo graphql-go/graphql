@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/graphql-go/graphql/language/ast"
-	"github.com/graphql-go/graphql/language/type_info"
+	"github.com/graphql-go/graphql/language/typeInfo"
 	"reflect"
 )
 
@@ -18,7 +18,7 @@ const (
 type KeyMap map[string][]string
 
 // note that the keys are in Capital letters, equivalent to the ast.Node field Names
-var QueryDocumentKeys KeyMap = KeyMap{
+var QueryDocumentKeys = KeyMap{
 	"Name":     []string{},
 	"Document": []string{"Definitions"},
 	"OperationDefinition": []string{
@@ -621,10 +621,9 @@ func updateNodeField(value interface{}, fieldName string, fieldValue interface{}
 					if isPtr == true {
 						retVal = val.Addr().Interface()
 						return retVal
-					} else {
-						retVal = val.Interface()
-						return retVal
 					}
+					retVal = val.Interface()
+					return retVal
 
 				}
 			}
@@ -710,12 +709,10 @@ func isNilNode(node interface{}) bool {
 	return val.Interface() == nil
 }
 
-/**
- * Creates a new visitor instance which delegates to many visitors to run in
- * parallel. Each visitor will be visited for each node before moving on.
- *
- * If a prior visitor edits a node, no following visitors will see that node.
- */
+// VisitInParallel Creates a new visitor instance which delegates to many visitors to run in
+// parallel. Each visitor will be visited for each node before moving on.
+//
+// If a prior visitor edits a node, no following visitors will see that node.
 func VisitInParallel(visitorOptsSlice ...*VisitorOptions) *VisitorOptions {
 	skipping := map[int]interface{}{}
 
@@ -768,23 +765,21 @@ func VisitInParallel(visitorOptsSlice ...*VisitorOptions) *VisitorOptions {
 	}
 }
 
-/**
- * Creates a new visitor instance which maintains a provided TypeInfo instance
- * along with visiting visitor.
- */
-func VisitWithTypeInfo(typeInfo type_info.TypeInfoI, visitorOpts *VisitorOptions) *VisitorOptions {
+// VisitWithTypeInfo Creates a new visitor instance which maintains a provided TypeInfo instance
+// along with visiting visitor.
+func VisitWithTypeInfo(ttypeInfo typeInfo.TypeInfoI, visitorOpts *VisitorOptions) *VisitorOptions {
 	return &VisitorOptions{
 		Enter: func(p VisitFuncParams) (string, interface{}) {
 			if node, ok := p.Node.(ast.Node); ok {
-				typeInfo.Enter(node)
+				ttypeInfo.Enter(node)
 				fn := GetVisitFn(visitorOpts, node.GetKind(), false)
 				if fn != nil {
 					action, result := fn(p)
 					if action == ActionUpdate {
-						typeInfo.Leave(node)
+						ttypeInfo.Leave(node)
 						if isNode(result) {
 							if result, ok := result.(ast.Node); ok {
-								typeInfo.Enter(result)
+								ttypeInfo.Enter(result)
 							}
 						}
 					}
@@ -801,17 +796,15 @@ func VisitWithTypeInfo(typeInfo type_info.TypeInfoI, visitorOpts *VisitorOptions
 				if fn != nil {
 					action, result = fn(p)
 				}
-				typeInfo.Leave(node)
+				ttypeInfo.Leave(node)
 			}
 			return action, result
 		},
 	}
 }
 
-/**
- * Given a visitor instance, if it is leaving or not, and a node kind, return
- * the function the visitor runtime should call.
- */
+// GetVisitFn Given a visitor instance, if it is leaving or not, and a node kind, return
+// the function the visitor runtime should call.
 func GetVisitFn(visitorOpts *VisitorOptions, kind string, isLeaving bool) VisitFunc {
 	if visitorOpts == nil {
 		return nil
@@ -825,35 +818,31 @@ func GetVisitFn(visitorOpts *VisitorOptions, kind string, isLeaving bool) VisitF
 		if isLeaving {
 			// { Kind: { leave() {} } }
 			return kindVisitor.Leave
-		} else {
-			// { Kind: { enter() {} } }
-			return kindVisitor.Enter
 		}
-	} else {
+		// { Kind: { enter() {} } }
+		return kindVisitor.Enter
 
-		if isLeaving {
-			// { enter() {} }
-			specificVisitor := visitorOpts.Leave
-			if specificVisitor != nil {
-				return specificVisitor
-			}
-			if specificKindVisitor, ok := visitorOpts.LeaveKindMap[kind]; ok {
-				// { leave: { Kind() {} } }
-				return specificKindVisitor
-			}
-
-		} else {
-			// { leave() {} }
-			specificVisitor := visitorOpts.Enter
-			if specificVisitor != nil {
-				return specificVisitor
-			}
-			if specificKindVisitor, ok := visitorOpts.EnterKindMap[kind]; ok {
-				// { enter: { Kind() {} } }
-				return specificKindVisitor
-			}
-		}
 	}
+	if isLeaving {
+		// { enter() {} }
+		specificVisitor := visitorOpts.Leave
+		if specificVisitor != nil {
+			return specificVisitor
+		}
+		if specificKindVisitor, ok := visitorOpts.LeaveKindMap[kind]; ok {
+			// { leave: { Kind() {} } }
+			return specificKindVisitor
+		}
 
+	}
+	// { leave() {} }
+	specificVisitor := visitorOpts.Enter
+	if specificVisitor != nil {
+		return specificVisitor
+	}
+	if specificKindVisitor, ok := visitorOpts.EnterKindMap[kind]; ok {
+		// { enter: { Kind() {} } }
+		return specificKindVisitor
+	}
 	return nil
 }

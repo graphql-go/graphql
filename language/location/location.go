@@ -23,7 +23,7 @@ func GetLocation(s *source.Source, position int) SourceLocation {
 	for _, match := range matches {
 		matchIndex := match[0]
 		if matchIndex < position {
-			line += 1
+			line++
 			l := len(s.Body[match[0]:match[1]])
 			column = position + 1 - (matchIndex + l)
 			continue

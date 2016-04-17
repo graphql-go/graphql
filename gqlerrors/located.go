@@ -5,7 +5,7 @@ import (
 	"github.com/graphql-go/graphql/language/ast"
 )
 
-// NewLocatedError
+// NewLocatedError creates a graphql.Error with location info
 // @deprecated 0.4.18
 // Already exists in `graphql.NewLocatedError()`
 func NewLocatedError(err interface{}, nodes []ast.Node) *Error {

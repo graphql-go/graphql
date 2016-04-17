@@ -363,9 +363,8 @@ func parseSelection(parser *Parser) (interface{}, error) {
 	if peek(parser, lexer.TokenKind[lexer.SPREAD]) {
 		r, err := parseFragment(parser)
 		return r, err
-	} else {
-		return parseField(parser)
 	}
+	return parseField(parser)
 }
 
 /**
@@ -1241,9 +1240,8 @@ func skip(parser *Parser, Kind int) (bool, error) {
 	if parser.Token.Kind == Kind {
 		err := advance(parser)
 		return true, err
-	} else {
-		return false, nil
 	}
+	return false, nil
 }
 
 // If the next token is of the given kind, return that token after advancing
