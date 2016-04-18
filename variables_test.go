@@ -251,6 +251,33 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_DoesNotUseIncorrectV
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
+func TestVariables_ObjectsAndNullability_UsingInlineStructs_ProperlyRunsParseLiteralOnComplexScalarTypes(t *testing.T) {
+	doc := `
+        {
+          fieldWithObjectInput(input: {a: "foo", d: "SerializedValue"})
+        }
+	`
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"fieldWithObjectInput": `{"a":"foo","d":"DeserializedValue"}`,
+		},
+	}
+	// parse query
+	ast := testutil.TestParse(t, doc)
+
+	// execute
+	ep := graphql.ExecuteParams{
+		Schema: variablesTestSchema,
+		AST:    ast,
+	}
+	result := testutil.TestExecute(t, ep)
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
 
 func testVariables_ObjectsAndNullability_UsingVariables_GetAST(t *testing.T) *ast.Document {
 	doc := `
