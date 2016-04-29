@@ -440,3 +440,85 @@ func toError(err error) *gqlerrors.Error {
 		return nil
 	}
 }
+
+func BenchmarkParser(b *testing.B) {
+	body := `
+mutation _ {
+	doSomeCoolStuff(input: {
+    objectID: "someKindOfID",
+  }) {
+    success
+    errorCode
+    errorMessage
+    object {
+      id
+    }
+  }
+}
+
+mutation _{
+  doAnotherThing(input: {
+    objectID: "toThisObject",
+    msg: {
+      text: "Testing",
+      internal: false,
+    }
+  }) {
+    success
+    errorCode
+    errorMessage
+  }
+}
+
+query _ {
+  queryThatThing(id: "fromThisID") {
+    title
+    subtitle
+    stuff {
+      id
+      name
+    }
+    items {
+      edges {
+        node {
+          id
+          data {
+            __typename
+            ...on Message {
+			  summaryMarkup
+              textMarkup
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+query _ {
+  me {
+    account {
+      organizations {
+        id
+      }
+    }
+  }
+}
+`
+	source := source.NewSource(&source.Source{Body: body})
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := Parse(
+			ParseParams{
+				Source: source,
+				Options: ParseOptions{
+					NoSource: true,
+				},
+			},
+		)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}

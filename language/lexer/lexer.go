@@ -392,12 +392,12 @@ func readToken(s *source.Source, fromPosition int) (Token, error) {
 }
 
 func charCodeAt(body string, position int) rune {
-	r := []rune(body)
-	if len(r) > position {
-		return r[position]
-	} else {
-		return 0
+	for i, r := range body {
+		if i == position {
+			return r
+		}
 	}
+	return 0
 }
 
 // Reads from body starting at startPosition until it finds a non-whitespace
