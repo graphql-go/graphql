@@ -14,7 +14,7 @@ type Argument struct {
 
 func NewArgument(arg *Argument) *Argument {
 	if arg == nil {
-		arg = &Argument{}
+		return &Argument{Kind: kinds.Argument}
 	}
 	return &Argument{
 		Kind:  kinds.Argument,

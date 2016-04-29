@@ -620,11 +620,9 @@ func updateNodeField(value interface{}, fieldName string, fieldValue interface{}
 					if isPtr == true {
 						retVal = val.Addr().Interface()
 						return retVal
-					} else {
-						retVal = val.Interface()
-						return retVal
 					}
-
+					retVal = val.Interface()
+					return retVal
 				}
 			}
 		}
@@ -632,8 +630,7 @@ func updateNodeField(value interface{}, fieldName string, fieldValue interface{}
 	return retVal
 }
 func toSliceInterfaces(slice interface{}) (result []interface{}) {
-	switch reflect.TypeOf(slice).Kind() {
-	case reflect.Slice:
+	if reflect.TypeOf(slice).Kind() == reflect.Slice {
 		s := reflect.ValueOf(slice)
 		for i := 0; i < s.Len(); i++ {
 			elem := s.Index(i)
@@ -642,10 +639,8 @@ func toSliceInterfaces(slice interface{}) (result []interface{}) {
 				result = append(result, elem)
 			}
 		}
-		return result
-	default:
-		return result
 	}
+	return result
 }
 
 func isSlice(value interface{}) bool {
@@ -722,10 +717,9 @@ func GetVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitF
 		if isLeaving {
 			// { Kind: { leave() {} } }
 			return kindVisitor.Leave
-		} else {
-			// { Kind: { enter() {} } }
-			return kindVisitor.Enter
 		}
+		// { Kind: { enter() {} } }
+		return kindVisitor.Enter
 	}
 
 	if isLeaving {

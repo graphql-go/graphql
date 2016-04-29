@@ -12,7 +12,7 @@ type Location struct {
 
 func NewLocation(loc *Location) *Location {
 	if loc == nil {
-		loc = &Location{}
+		return &Location{}
 	}
 	return &Location{
 		Start:  loc.Start,

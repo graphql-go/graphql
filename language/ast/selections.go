@@ -25,7 +25,7 @@ type Field struct {
 
 func NewField(f *Field) *Field {
 	if f == nil {
-		f = &Field{}
+		return &Field{Kind: kinds.Field}
 	}
 	return &Field{
 		Kind:         kinds.Field,
@@ -56,7 +56,7 @@ type FragmentSpread struct {
 
 func NewFragmentSpread(fs *FragmentSpread) *FragmentSpread {
 	if fs == nil {
-		fs = &FragmentSpread{}
+		return &FragmentSpread{Kind: kinds.FragmentSpread}
 	}
 	return &FragmentSpread{
 		Kind:       kinds.FragmentSpread,
@@ -85,7 +85,7 @@ type InlineFragment struct {
 
 func NewInlineFragment(f *InlineFragment) *InlineFragment {
 	if f == nil {
-		f = &InlineFragment{}
+		return &InlineFragment{Kind: kinds.InlineFragment}
 	}
 	return &InlineFragment{
 		Kind:          kinds.InlineFragment,
@@ -113,7 +113,7 @@ type SelectionSet struct {
 
 func NewSelectionSet(ss *SelectionSet) *SelectionSet {
 	if ss == nil {
-		ss = &SelectionSet{}
+		return &SelectionSet{Kind: kinds.SelectionSet}
 	}
 	return &SelectionSet{
 		Kind:       kinds.SelectionSet,

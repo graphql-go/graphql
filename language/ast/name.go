@@ -13,7 +13,7 @@ type Name struct {
 
 func NewName(node *Name) *Name {
 	if node == nil {
-		node = &Name{}
+		return &Name{Kind: kinds.Name}
 	}
 	return &Name{
 		Kind:  kinds.Name,

@@ -24,7 +24,7 @@ type Named struct {
 
 func NewNamed(t *Named) *Named {
 	if t == nil {
-		t = &Named{}
+		return &Named{Kind: kinds.Named}
 	}
 	return &Named{
 		Kind: kinds.Named,
@@ -54,7 +54,7 @@ type List struct {
 
 func NewList(t *List) *List {
 	if t == nil {
-		t = &List{}
+		return &List{Kind: kinds.List}
 	}
 	return &List{
 		Kind: kinds.List,
@@ -84,7 +84,7 @@ type NonNull struct {
 
 func NewNonNull(t *NonNull) *NonNull {
 	if t == nil {
-		t = &NonNull{}
+		return &NonNull{Kind: kinds.NonNull}
 	}
 	return &NonNull{
 		Kind: kinds.NonNull,

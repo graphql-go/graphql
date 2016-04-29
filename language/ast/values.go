@@ -29,7 +29,7 @@ type Variable struct {
 
 func NewVariable(v *Variable) *Variable {
 	if v == nil {
-		v = &Variable{}
+		return &Variable{Kind: kinds.Variable}
 	}
 	return &Variable{
 		Kind: kinds.Variable,
@@ -64,7 +64,7 @@ type IntValue struct {
 
 func NewIntValue(v *IntValue) *IntValue {
 	if v == nil {
-		v = &IntValue{}
+		return &IntValue{Kind: kinds.IntValue}
 	}
 	return &IntValue{
 		Kind:  kinds.IntValue,
@@ -94,7 +94,7 @@ type FloatValue struct {
 
 func NewFloatValue(v *FloatValue) *FloatValue {
 	if v == nil {
-		v = &FloatValue{}
+		return &FloatValue{Kind: kinds.FloatValue}
 	}
 	return &FloatValue{
 		Kind:  kinds.FloatValue,
@@ -124,7 +124,7 @@ type StringValue struct {
 
 func NewStringValue(v *StringValue) *StringValue {
 	if v == nil {
-		v = &StringValue{}
+		return &StringValue{Kind: kinds.StringValue}
 	}
 	return &StringValue{
 		Kind:  kinds.StringValue,
@@ -154,7 +154,7 @@ type BooleanValue struct {
 
 func NewBooleanValue(v *BooleanValue) *BooleanValue {
 	if v == nil {
-		v = &BooleanValue{}
+		return &BooleanValue{Kind: kinds.BooleanValue}
 	}
 	return &BooleanValue{
 		Kind:  kinds.BooleanValue,
@@ -184,7 +184,7 @@ type EnumValue struct {
 
 func NewEnumValue(v *EnumValue) *EnumValue {
 	if v == nil {
-		v = &EnumValue{}
+		return &EnumValue{Kind: kinds.EnumValue}
 	}
 	return &EnumValue{
 		Kind:  kinds.EnumValue,
@@ -214,7 +214,7 @@ type ListValue struct {
 
 func NewListValue(v *ListValue) *ListValue {
 	if v == nil {
-		v = &ListValue{}
+		return &ListValue{Kind: kinds.ListValue}
 	}
 	return &ListValue{
 		Kind:   kinds.ListValue,
@@ -250,7 +250,7 @@ type ObjectValue struct {
 
 func NewObjectValue(v *ObjectValue) *ObjectValue {
 	if v == nil {
-		v = &ObjectValue{}
+		return &ObjectValue{Kind: kinds.ObjectValue}
 	}
 	return &ObjectValue{
 		Kind:   kinds.ObjectValue,
@@ -282,7 +282,7 @@ type ObjectField struct {
 
 func NewObjectField(f *ObjectField) *ObjectField {
 	if f == nil {
-		f = &ObjectField{}
+		return &ObjectField{Kind: kinds.ObjectField}
 	}
 	return &ObjectField{
 		Kind:  kinds.ObjectField,

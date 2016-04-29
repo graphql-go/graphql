@@ -14,7 +14,7 @@ type Directive struct {
 
 func NewDirective(dir *Directive) *Directive {
 	if dir == nil {
-		dir = &Directive{}
+		return &Directive{Kind: kinds.Directive}
 	}
 	return &Directive{
 		Kind:      kinds.Directive,

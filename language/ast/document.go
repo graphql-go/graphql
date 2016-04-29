@@ -13,7 +13,7 @@ type Document struct {
 
 func NewDocument(d *Document) *Document {
 	if d == nil {
-		d = &Document{}
+		return &Document{Kind: kinds.Document}
 	}
 	return &Document{
 		Kind:        kinds.Document,

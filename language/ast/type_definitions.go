@@ -24,7 +24,7 @@ type ObjectDefinition struct {
 
 func NewObjectDefinition(def *ObjectDefinition) *ObjectDefinition {
 	if def == nil {
-		def = &ObjectDefinition{}
+		return &ObjectDefinition{Kind: kinds.ObjectDefinition}
 	}
 	return &ObjectDefinition{
 		Kind:       kinds.ObjectDefinition,
@@ -70,7 +70,7 @@ type FieldDefinition struct {
 
 func NewFieldDefinition(def *FieldDefinition) *FieldDefinition {
 	if def == nil {
-		def = &FieldDefinition{}
+		return &FieldDefinition{Kind: kinds.FieldDefinition}
 	}
 	return &FieldDefinition{
 		Kind:      kinds.FieldDefinition,
@@ -100,7 +100,7 @@ type InputValueDefinition struct {
 
 func NewInputValueDefinition(def *InputValueDefinition) *InputValueDefinition {
 	if def == nil {
-		def = &InputValueDefinition{}
+		return &InputValueDefinition{Kind: kinds.InputValueDefinition}
 	}
 	return &InputValueDefinition{
 		Kind:         kinds.InputValueDefinition,
@@ -129,7 +129,7 @@ type InterfaceDefinition struct {
 
 func NewInterfaceDefinition(def *InterfaceDefinition) *InterfaceDefinition {
 	if def == nil {
-		def = &InterfaceDefinition{}
+		return &InterfaceDefinition{Kind: kinds.InterfaceDefinition}
 	}
 	return &InterfaceDefinition{
 		Kind:   kinds.InterfaceDefinition,
@@ -173,7 +173,7 @@ type UnionDefinition struct {
 
 func NewUnionDefinition(def *UnionDefinition) *UnionDefinition {
 	if def == nil {
-		def = &UnionDefinition{}
+		return &UnionDefinition{Kind: kinds.UnionDefinition}
 	}
 	return &UnionDefinition{
 		Kind:  kinds.UnionDefinition,
@@ -216,7 +216,7 @@ type ScalarDefinition struct {
 
 func NewScalarDefinition(def *ScalarDefinition) *ScalarDefinition {
 	if def == nil {
-		def = &ScalarDefinition{}
+		return &ScalarDefinition{Kind: kinds.ScalarDefinition}
 	}
 	return &ScalarDefinition{
 		Kind: kinds.ScalarDefinition,
@@ -259,7 +259,7 @@ type EnumDefinition struct {
 
 func NewEnumDefinition(def *EnumDefinition) *EnumDefinition {
 	if def == nil {
-		def = &EnumDefinition{}
+		return &EnumDefinition{Kind: kinds.EnumDefinition}
 	}
 	return &EnumDefinition{
 		Kind:   kinds.EnumDefinition,
@@ -302,7 +302,7 @@ type EnumValueDefinition struct {
 
 func NewEnumValueDefinition(def *EnumValueDefinition) *EnumValueDefinition {
 	if def == nil {
-		def = &EnumValueDefinition{}
+		return &EnumValueDefinition{Kind: kinds.EnumValueDefinition}
 	}
 	return &EnumValueDefinition{
 		Kind: kinds.EnumValueDefinition,
@@ -329,7 +329,7 @@ type InputObjectDefinition struct {
 
 func NewInputObjectDefinition(def *InputObjectDefinition) *InputObjectDefinition {
 	if def == nil {
-		def = &InputObjectDefinition{}
+		return &InputObjectDefinition{Kind: kinds.InputObjectDefinition}
 	}
 	return &InputObjectDefinition{
 		Kind:   kinds.InputObjectDefinition,
@@ -372,7 +372,7 @@ type TypeExtensionDefinition struct {
 
 func NewTypeExtensionDefinition(def *TypeExtensionDefinition) *TypeExtensionDefinition {
 	if def == nil {
-		def = &TypeExtensionDefinition{}
+		return &TypeExtensionDefinition{Kind: kinds.TypeExtensionDefinition}
 	}
 	return &TypeExtensionDefinition{
 		Kind:       kinds.TypeExtensionDefinition,

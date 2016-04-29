@@ -29,7 +29,7 @@ type OperationDefinition struct {
 
 func NewOperationDefinition(op *OperationDefinition) *OperationDefinition {
 	if op == nil {
-		op = &OperationDefinition{}
+		return &OperationDefinition{Kind: kinds.OperationDefinition}
 	}
 	return &OperationDefinition{
 		Kind:                kinds.OperationDefinition,
@@ -84,7 +84,7 @@ type FragmentDefinition struct {
 
 func NewFragmentDefinition(fd *FragmentDefinition) *FragmentDefinition {
 	if fd == nil {
-		fd = &FragmentDefinition{}
+		return &FragmentDefinition{Kind: kinds.FragmentDefinition}
 	}
 	return &FragmentDefinition{
 		Kind:                kinds.FragmentDefinition,
@@ -133,7 +133,7 @@ type VariableDefinition struct {
 
 func NewVariableDefinition(vd *VariableDefinition) *VariableDefinition {
 	if vd == nil {
-		vd = &VariableDefinition{}
+		return &VariableDefinition{Kind: kinds.VariableDefinition}
 	}
 	return &VariableDefinition{
 		Kind:         kinds.VariableDefinition,
