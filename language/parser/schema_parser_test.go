@@ -738,13 +738,10 @@ input Hello {
 4: }
 `,
 		Nodes: []ast.Node{},
-		Source: &source.Source{
-			Body: `
+		Source: source.New("GraphQL", `
 input Hello {
   world(foo: Int): String
-}`,
-			Name: "GraphQL",
-		},
+}`),
 		Positions: []int{22},
 		Locations: []location.SourceLocation{
 			{Line: 3, Column: 8},

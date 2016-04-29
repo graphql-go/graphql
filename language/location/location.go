@@ -14,7 +14,7 @@ type SourceLocation struct {
 func GetLocation(s *source.Source, position int) SourceLocation {
 	body := ""
 	if s != nil {
-		body = s.Body
+		body = s.Body()
 	}
 	line := 1
 	column := position + 1
@@ -24,7 +24,7 @@ func GetLocation(s *source.Source, position int) SourceLocation {
 		matchIndex := match[0]
 		if matchIndex < position {
 			line += 1
-			l := len(s.Body[match[0]:match[1]])
+			l := len(body[match[0]:match[1]])
 			column = position + 1 - (matchIndex + l)
 			continue
 		} else {

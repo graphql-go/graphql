@@ -15,10 +15,7 @@ import (
 
 func TestBadToken(t *testing.T) {
 	_, err := Parse(ParseParams{
-		Source: &source.Source{
-			Body: "query _ {\n  me {\n    id`\n  }\n}",
-			Name: "GraphQL",
-		},
+		Source: source.New("GraphQL", "query _ {\n  me {\n    id`\n  }\n}"),
 	})
 	if err == nil {
 		t.Fatal("expected a parse error")
@@ -136,7 +133,7 @@ fragment MissingOn Type
 
 func TestParseProvidesUsefulErrorsWhenUsingSource(t *testing.T) {
 	test := errorMessageTest{
-		source.NewSource(&source.Source{Body: "query", Name: "MyQuery.graphql"}),
+		source.New("MyQuery.graphql", "query"),
 		`Syntax Error MyQuery.graphql (1:6) Expected Name, found EOF`,
 		false,
 	}
@@ -259,7 +256,7 @@ func TestParseCreatesAst(t *testing.T) {
   }
 }
 `
-	source := source.NewSource(&source.Source{Body: body})
+	source := source.New("", body)
 	document, err := Parse(
 		ParseParams{
 			Source: source,
@@ -471,7 +468,7 @@ mutation _{
 }
 
 query _ {
-  queryThatThing(id: "fromThisID") {
+  queryThatThing(id: "fromThisID", other: 123123123.123123) {
     title
     subtitle
     stuff {
@@ -505,7 +502,7 @@ query _ {
   }
 }
 `
-	source := source.NewSource(&source.Source{Body: body})
+	source := source.New("", body)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

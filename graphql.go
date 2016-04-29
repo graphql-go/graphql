@@ -20,10 +20,7 @@ type Params struct {
 }
 
 func Do(p Params) *Result {
-	source := source.NewSource(&source.Source{
-		Body: p.RequestString,
-		Name: "GraphQL request",
-	})
+	source := source.New("GraphQL request", p.RequestString)
 	AST, err := parser.Parse(parser.ParseParams{Source: source})
 	if err != nil {
 		return &Result{

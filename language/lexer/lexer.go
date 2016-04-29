@@ -105,13 +105,11 @@ func Lex(s *source.Source) Lexer {
 
 // Reads an alphanumeric + underscore name from the source.
 // [_A-Za-z][_0-9A-Za-z]*
-func readName(source *source.Source, position int) Token {
-	body := source.Body
-	bodyLength := len(body)
+func readName(s *source.Source, position int) Token {
 	end := position + 1
 	for {
-		code := charCodeAt(body, end)
-		if (end != bodyLength) && (code == 95 ||
+		code := s.RuneAt(end)
+		if code != 0 && (code == 95 ||
 			code >= 48 && code <= 57 ||
 			code >= 65 && code <= 90 ||
 			code >= 97 && code <= 122) {
@@ -121,7 +119,7 @@ func readName(source *source.Source, position int) Token {
 			break
 		}
 	}
-	return makeToken(TokenKind[NAME], position, end, body[position:end])
+	return makeToken(TokenKind[NAME], position, end, s.Body()[position:end])
 }
 
 // Reads a number token from the source file, either a float
@@ -130,16 +128,15 @@ func readName(source *source.Source, position int) Token {
 // Float: -?(0|[1-9][0-9]*)(\.[0-9]+)?((E|e)(+|-)?[0-9]+)?
 func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 	code := firstCode
-	body := s.Body
 	position := start
 	isFloat := false
 	if code == 45 { // -
 		position += 1
-		code = charCodeAt(body, position)
+		code = s.RuneAt(position)
 	}
 	if code == 48 { // 0
 		position += 1
-		code = charCodeAt(body, position)
+		code = s.RuneAt(position)
 		if code >= 48 && code <= 57 {
 			description := fmt.Sprintf("Invalid number, unexpected digit after 0: \"%c\".", code)
 			return Token{}, gqlerrors.NewSyntaxError(s, position, description)
@@ -150,26 +147,26 @@ func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 			return Token{}, err
 		}
 		position = p
-		code = charCodeAt(body, position)
+		code = s.RuneAt(position)
 	}
 	if code == 46 { // .
 		isFloat = true
 		position += 1
-		code = charCodeAt(body, position)
+		code = s.RuneAt(position)
 		p, err := readDigits(s, position, code)
 		if err != nil {
 			return Token{}, err
 		}
 		position = p
-		code = charCodeAt(body, position)
+		code = s.RuneAt(position)
 	}
 	if code == 69 || code == 101 { // E e
 		isFloat = true
 		position += 1
-		code = charCodeAt(body, position)
+		code = s.RuneAt(position)
 		if code == 43 || code == 45 { // + -
 			position += 1
-			code = charCodeAt(body, position)
+			code = s.RuneAt(position)
 		}
 		p, err := readDigits(s, position, code)
 		if err != nil {
@@ -181,19 +178,18 @@ func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 	if isFloat {
 		kind = TokenKind[FLOAT]
 	}
-	return makeToken(kind, start, position, body[start:position]), nil
+	return makeToken(kind, start, position, s.Body()[start:position]), nil
 }
 
 // Returns the new position in the source after reading digits.
 func readDigits(s *source.Source, start int, firstCode rune) (int, error) {
-	body := s.Body
 	position := start
 	code := firstCode
 	if code >= 48 && code <= 57 { // 0 - 9
 		for {
 			if code >= 48 && code <= 57 { // 0 - 9
 				position += 1
-				code = charCodeAt(body, position)
+				code = s.RuneAt(position)
 				continue
 			} else {
 				break
@@ -211,18 +207,18 @@ func readDigits(s *source.Source, start int, firstCode rune) (int, error) {
 }
 
 func readString(s *source.Source, start int) (Token, error) {
-	body := s.Body
+	body := s.Body()
 	position := start + 1
 	chunkStart := position
 	var code rune
 	var value string
 	for {
-		code = charCodeAt(body, position)
+		code = s.RuneAt(position)
 		if position < len(body) && code != 34 && code != 10 && code != 13 && code != 0x2028 && code != 0x2029 {
 			position += 1
 			if code == 92 { // \
 				value += body[chunkStart : position-1]
-				code = charCodeAt(body, position)
+				code = s.RuneAt(position)
 				switch code {
 				case 34:
 					value += "\""
@@ -250,10 +246,10 @@ func readString(s *source.Source, start int) (Token, error) {
 					break
 				case 117:
 					charCode := uniCharCode(
-						charCodeAt(body, position+1),
-						charCodeAt(body, position+2),
-						charCodeAt(body, position+3),
-						charCodeAt(body, position+4),
+						s.RuneAt(position+1),
+						s.RuneAt(position+2),
+						s.RuneAt(position+3),
+						s.RuneAt(position+4),
 					)
 					if charCode < 0 {
 						return Token{}, gqlerrors.NewSyntaxError(s, position, "Bad character escape sequence.")
@@ -311,10 +307,10 @@ func makeToken(kind int, start int, end int, value string) Token {
 }
 
 func readToken(s *source.Source, fromPosition int) (Token, error) {
-	body := s.Body
+	body := s.Body()
 	bodyLength := len(body)
-	position := positionAfterWhitespace(body, fromPosition)
-	code := charCodeAt(body, position)
+	position := positionAfterWhitespace(s, fromPosition)
+	code := s.RuneAt(position)
 	if position >= bodyLength {
 		return makeToken(TokenKind[EOF], position, position, ""), nil
 	}
@@ -333,7 +329,7 @@ func readToken(s *source.Source, fromPosition int) (Token, error) {
 		return makeToken(TokenKind[PAREN_R], position, position+1, ""), nil
 	// .
 	case 46:
-		if charCodeAt(body, position+1) == 46 && charCodeAt(body, position+2) == 46 {
+		if s.RuneAt(position+1) == 46 && s.RuneAt(position+2) == 46 {
 			return makeToken(TokenKind[SPREAD], position, position+3, ""), nil
 		}
 		break
@@ -391,24 +387,15 @@ func readToken(s *source.Source, fromPosition int) (Token, error) {
 	return Token{}, gqlerrors.NewSyntaxError(s, position, description)
 }
 
-func charCodeAt(body string, position int) rune {
-	for i, r := range body {
-		if i == position {
-			return r
-		}
-	}
-	return 0
-}
-
 // Reads from body starting at startPosition until it finds a non-whitespace
 // or commented character, then returns the position of that character for lexing.
 // lexing.
-func positionAfterWhitespace(body string, startPosition int) int {
-	bodyLength := len(body)
+func positionAfterWhitespace(s *source.Source, startPosition int) int {
+	bodyLength := len(s.Body())
 	position := startPosition
 	for {
 		if position < bodyLength {
-			code := charCodeAt(body, position)
+			code := s.RuneAt(position)
 			if code == 32 || // space
 				code == 44 || // comma
 				code == 160 || // '\xa0'
@@ -419,7 +406,7 @@ func positionAfterWhitespace(body string, startPosition int) int {
 			} else if code == 35 { // #
 				position += 1
 				for {
-					code := charCodeAt(body, position)
+					code := s.RuneAt(position)
 					if position < bodyLength &&
 						code != 10 && code != 13 && code != 0x2028 && code != 0x2029 {
 						position += 1
