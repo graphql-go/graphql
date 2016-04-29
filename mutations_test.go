@@ -218,16 +218,16 @@ func TestMutations_EvaluatesMutationsCorrectlyInThePresenceOfAFailedMutation(t *
 			"sixth": nil,
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Cannot change the number`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{Line: 8, Column: 7},
+					{Line: 8, Column: 7},
 				},
 			},
-			gqlerrors.FormattedError{
+			{
 				Message: `Cannot change the number`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{Line: 17, Column: 7},
+					{Line: 17, Column: 7},
 				},
 			},
 		},

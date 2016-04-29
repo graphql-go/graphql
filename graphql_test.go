@@ -19,7 +19,7 @@ var Tests = []T{}
 
 func init() {
 	Tests = []T{
-		T{
+		{
 			Query: `
 				query HeroNameQuery {
 					hero {
@@ -36,7 +36,7 @@ func init() {
 				},
 			},
 		},
-		T{
+		{
 			Query: `
 				query HeroNameAndFriendsQuery {
 					hero {

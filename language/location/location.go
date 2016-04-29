@@ -22,14 +22,12 @@ func GetLocation(s *source.Source, position int) SourceLocation {
 	matches := lineRegexp.FindAllStringIndex(body, -1)
 	for _, match := range matches {
 		matchIndex := match[0]
-		if matchIndex < position {
-			line += 1
-			l := len(body[match[0]:match[1]])
-			column = position + 1 - (matchIndex + l)
-			continue
-		} else {
+		if matchIndex >= position {
 			break
 		}
+		line++
+		l := len(body[match[0]:match[1]])
+		column = position + 1 - (matchIndex + l)
 	}
 	return SourceLocation{Line: line, Column: column}
 }
