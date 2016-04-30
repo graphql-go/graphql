@@ -3,8 +3,9 @@ package visitor
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sprucehealth/graphql/language/ast"
 	"reflect"
+
+	"github.com/sprucehealth/graphql/language/ast"
 )
 
 const (
@@ -389,7 +390,7 @@ Loop:
 					Path:      path,
 					Ancestors: ancestorsConcrete,
 				}
-				action := ActionUpdate
+				var action string
 				action, result = visitFn(p)
 				if action == ActionBreak {
 					break Loop
