@@ -27,9 +27,7 @@ func ValidateDocument(schema *Schema, astDoc *ast.Document, rules []ValidationRu
 		return vr
 	}
 	vr.Errors = visitUsingRules(schema, astDoc, rules)
-	if len(vr.Errors) == 0 {
-		vr.IsValid = true
-	}
+	vr.IsValid = len(vr.Errors) == 0
 	return vr
 }
 
@@ -137,13 +135,8 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 		}, nil)
 	}
 
-	instances := []*ValidationRuleInstance{}
 	for _, rule := range rules {
-		instance := rule(context)
-		instances = append(instances, instance)
-	}
-	for _, instance := range instances {
-		visitInstance(astDoc, instance)
+		visitInstance(astDoc, rule(context))
 	}
 	return errors
 }
@@ -176,7 +169,7 @@ func (ctx *ValidationContext) Fragment(name string) *ast.FragmentDefinition {
 			return nil
 		}
 		defs := ctx.Document().Definitions
-		fragments := map[string]*ast.FragmentDefinition{}
+		fragments := make(map[string]*ast.FragmentDefinition)
 		for _, def := range defs {
 			if def, ok := def.(*ast.FragmentDefinition); ok {
 				defName := ""

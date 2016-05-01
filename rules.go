@@ -1430,7 +1430,6 @@ func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInst
  * have been provided.
  */
 func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleInstance {
-
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
 			kinds.Field: {

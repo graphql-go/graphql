@@ -402,6 +402,7 @@ Loop:
 					}
 				}
 				if action != ActionNoChange {
+					fmt.Printf("%s %T %v %T %v\n", action, key, key, result, result)
 					resultIsUndefined = false
 					edits = append(edits, &edit{
 						Key:   key,

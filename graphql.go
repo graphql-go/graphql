@@ -21,13 +21,13 @@ type Params struct {
 
 func Do(p Params) *Result {
 	source := source.New("GraphQL request", p.RequestString)
-	AST, err := parser.Parse(parser.ParseParams{Source: source})
+	ast, err := parser.Parse(parser.ParseParams{Source: source})
 	if err != nil {
 		return &Result{
 			Errors: gqlerrors.FormatErrors(err),
 		}
 	}
-	validationResult := ValidateDocument(&p.Schema, AST, nil)
+	validationResult := ValidateDocument(&p.Schema, ast, nil)
 
 	if !validationResult.IsValid {
 		return &Result{
@@ -38,7 +38,7 @@ func Do(p Params) *Result {
 	return Execute(ExecuteParams{
 		Schema:        p.Schema,
 		Root:          p.RootObject,
-		AST:           AST,
+		AST:           ast,
 		OperationName: p.OperationName,
 		Args:          p.VariableValues,
 		Context:       p.Context,

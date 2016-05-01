@@ -63,7 +63,6 @@ func (ti *TypeInfo) Argument() *Argument {
 }
 
 func (ti *TypeInfo) Enter(node ast.Node) {
-
 	schema := ti.schema
 	var ttype Type
 	switch node := node.(type) {
