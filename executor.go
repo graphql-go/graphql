@@ -82,7 +82,6 @@ type ExecutionContext struct {
 
 func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error) {
 	eCtx := &ExecutionContext{}
-	//	operations := map[string]ast.Definition{}
 	var operation *ast.OperationDefinition
 	fragments := map[string]ast.Definition{}
 
