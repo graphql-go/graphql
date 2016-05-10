@@ -274,15 +274,51 @@ func executeFields(p ExecuteFieldsParams) *Result {
 		p.Fields = map[string][]*ast.Field{}
 	}
 
-	finalResults := map[string]interface{}{}
-	for responseName, fieldASTs := range p.Fields {
-		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
-		if state.hasNoFieldDefs {
-			continue
-		}
-		finalResults[responseName] = resolved
+	type resolvedChanResult struct {
+		responseName string
+		resolved     interface{}
+		state        resolveFieldResultState
+		panicErr     error
 	}
 
+	// concurrently resolve fields
+	var wg sync.WaitGroup
+	resolvedChan := make(chan resolvedChanResult, len(p.Fields))
+	for responseName, fieldASTs := range p.Fields {
+		wg.Add(1)
+		go func(responseName string, fieldASTs []*ast.Field) (resolved interface{}, state resolveFieldResultState, panicErr error) {
+			defer func() {
+				if r := recover(); r != nil {
+					if r, ok := r.(error); ok {
+						// recover panic that was thrown by resolveFields(),
+						// indicating that we should short-circuit traversal chain later
+						panicErr = r
+					}
+				}
+				resolvedChan <- resolvedChanResult{responseName, resolved, state, panicErr}
+				wg.Done()
+			}()
+			resolved, state = resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+			return resolved, state, panicErr
+		}(responseName, fieldASTs)
+	}
+
+	// wait for all routines to complete and then perform clean up
+	wg.Wait()
+	close(resolvedChan)
+
+	// iterate through resolved results
+	finalResults := map[string]interface{}{}
+	for result := range resolvedChan {
+		if result.panicErr != nil {
+			// short-circuit field resolution traversal chain
+			panic(result.panicErr)
+		}
+		if result.state.hasNoFieldDefs {
+			continue
+		}
+		finalResults[result.responseName] = result.resolved
+	}
 	return &Result{
 		Data:   finalResults,
 		Errors: p.ExecutionContext.Errors(),
