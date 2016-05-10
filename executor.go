@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
@@ -48,8 +49,8 @@ func Execute(p ExecuteParams) (result *Result) {
 			if r, ok := r.(error); ok {
 				err = gqlerrors.FormatError(r)
 			}
-			exeContext.Errors = append(exeContext.Errors, gqlerrors.FormatError(err))
-			result.Errors = exeContext.Errors
+			exeContext.AppendError(err)
+			result.Errors = exeContext.Errors()
 		}
 	}()
 
@@ -76,12 +77,39 @@ type ExecutionContext struct {
 	Root           interface{}
 	Operation      ast.Definition
 	VariableValues map[string]interface{}
-	Errors         []gqlerrors.FormattedError
 	Context        context.Context
+
+	errLock sync.RWMutex
+	errors  []gqlerrors.FormattedError
+}
+
+func (eCtx *ExecutionContext) AppendError(errs ...error) {
+	formattedErrors := []gqlerrors.FormattedError{}
+	for _, err := range errs {
+		formattedErrors = append(formattedErrors, gqlerrors.FormatError(err))
+	}
+	eCtx.errLock.Lock()
+	eCtx.errors = append(eCtx.errors, formattedErrors...)
+	eCtx.errLock.Unlock()
+}
+
+func (eCtx *ExecutionContext) Errors() (res []gqlerrors.FormattedError) {
+	eCtx.errLock.RLock()
+	res = eCtx.errors
+	eCtx.errLock.RUnlock()
+	return res
+}
+
+func (eCtx *ExecutionContext) SetErrors(errors []gqlerrors.FormattedError) {
+	eCtx.errLock.Lock()
+	eCtx.errors = errors
+	eCtx.errLock.Unlock()
 }
 
 func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error) {
-	eCtx := &ExecutionContext{}
+	eCtx := &ExecutionContext{
+		errLock: sync.RWMutex{},
+	}
 	var operation *ast.OperationDefinition
 	fragments := map[string]ast.Definition{}
 
@@ -122,7 +150,7 @@ func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error)
 	eCtx.Root = p.Root
 	eCtx.Operation = operation
 	eCtx.VariableValues = variableValues
-	eCtx.Errors = p.Errors
+	eCtx.SetErrors(p.Errors)
 	eCtx.Context = p.Context
 	return eCtx, nil
 }
@@ -233,7 +261,7 @@ func executeFieldsSerially(p ExecuteFieldsParams) *Result {
 
 	return &Result{
 		Data:   finalResults,
-		Errors: p.ExecutionContext.Errors,
+		Errors: p.ExecutionContext.Errors(),
 	}
 }
 
@@ -257,7 +285,7 @@ func executeFields(p ExecuteFieldsParams) *Result {
 
 	return &Result{
 		Data:   finalResults,
-		Errors: p.ExecutionContext.Errors,
+		Errors: p.ExecutionContext.Errors(),
 	}
 }
 
@@ -266,6 +294,7 @@ type CollectFieldsParams struct {
 	RuntimeType          *Object // previously known as OperationType
 	SelectionSet         *ast.SelectionSet
 	Fields               map[string][]*ast.Field
+	FieldOrder           []string
 	VisitedFragmentNames map[string]bool
 }
 
@@ -477,7 +506,6 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	var returnType Output
 	defer func() (interface{}, resolveFieldResultState) {
 		if r := recover(); r != nil {
-
 			var err error
 			if r, ok := r.(string); ok {
 				err = NewLocatedError(
@@ -492,7 +520,7 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 			if _, ok := returnType.(*NonNull); ok {
 				panic(gqlerrors.FormatError(err))
 			}
-			eCtx.Errors = append(eCtx.Errors, gqlerrors.FormatError(err))
+			eCtx.AppendError(err)
 			return result, resultState
 		}
 		return result, resultState
@@ -544,7 +572,8 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	})
 
 	if resolveFnError != nil {
-		panic(gqlerrors.FormatError(resolveFnError))
+		eCtx.AppendError(resolveFnError)
+		return nil, resultState
 	}
 
 	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
@@ -560,7 +589,7 @@ func completeValueCatchingError(eCtx *ExecutionContext, returnType Type, fieldAS
 				panic(r)
 			}
 			if err, ok := r.(gqlerrors.FormattedError); ok {
-				eCtx.Errors = append(eCtx.Errors, err)
+				eCtx.AppendError(err)
 			}
 			return completed
 		}
