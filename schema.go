@@ -258,7 +258,7 @@ func assertObjectImplementsInterface(object *Object, iface *Interface) error {
 	ifaceFieldMap := iface.Fields()
 
 	// Assert each interface field is implemented.
-	for fieldName, _ := range ifaceFieldMap {
+	for fieldName := range ifaceFieldMap {
 		objectField := objectFieldMap[fieldName]
 		ifaceField := ifaceFieldMap[fieldName]
 

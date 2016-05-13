@@ -246,13 +246,13 @@ func isValidInputValue(value interface{}, ttype Input) bool {
 		fields := ttype.Fields()
 
 		// Ensure every provided field is defined.
-		for fieldName, _ := range valueMap {
+		for fieldName := range valueMap {
 			if _, ok := fields[fieldName]; !ok {
 				return false
 			}
 		}
 		// Ensure every defined field is valid.
-		for fieldName, _ := range fields {
+		for fieldName := range fields {
 			isValid := isValidInputValue(valueMap[fieldName], fields[fieldName].Type)
 			if !isValid {
 				return false

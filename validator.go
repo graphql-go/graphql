@@ -94,7 +94,7 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 						}
 					}
 
-					// If the result is "false" (ie action === Action.Skip), we're not visiting any descendent nodes,
+					// If the result is "false" (ie action === Action.Skip), we're not visiting any descendant nodes,
 					// but need to update typeInfo.
 					if action == visitor.ActionSkip {
 						typeInfo.Leave(node)

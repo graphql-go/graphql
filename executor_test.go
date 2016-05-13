@@ -465,10 +465,10 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 		"syncError": nil,
 	}
 	expectedErrors := []gqlerrors.FormattedError{
-		gqlerrors.FormattedError{
+		{
 			Message: "Error getting syncError",
 			Locations: []location.SourceLocation{
-				location.SourceLocation{
+				{
 					Line: 3, Column: 7,
 				},
 			},
@@ -619,7 +619,7 @@ func TestThrowsIfNoOperationIsProvidedWithMultipleOperations(t *testing.T) {
 	}
 
 	expectedErrors := []gqlerrors.FormattedError{
-		gqlerrors.FormattedError{
+		{
 			Message:   "Must provide operation name if query contains multiple operations.",
 			Locations: []location.SourceLocation{},
 		},
@@ -1050,7 +1050,7 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 			},
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message:   `Expected value of type "SpecialType" but got: graphql_test.testNotSpecialType.`,
 				Locations: []location.SourceLocation{},
 			},
@@ -1119,7 +1119,7 @@ func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message:   "GraphQL cannot execute a request containing a ObjectDefinition",
 				Locations: []location.SourceLocation{},
 			},
