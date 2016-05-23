@@ -40,7 +40,8 @@ var SpecifiedRules = []ValidationRuleFn{
 }
 
 type ValidationRuleInstance struct {
-	VisitorOpts          *visitor.VisitorOptions
+	Enter                visitor.VisitFunc
+	Leave                visitor.VisitFunc
 	VisitSpreadFragments bool
 }
 type ValidationRuleFn func(context *ValidationContext) *ValidationRuleInstance
@@ -63,33 +64,25 @@ func newValidationRuleError(message string, nodes []ast.Node) (string, error) {
  * of the type expected by their position.
  */
 func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance {
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Argument: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					var action = visitor.ActionNoChange
-					if argAST, ok := p.Node.(*ast.Argument); ok {
-						value := argAST.Value
-						argDef := context.Argument()
-						if argDef != nil && !isValidLiteralValue(argDef.Type, value) {
-							argNameValue := ""
-							if argAST.Name != nil {
-								argNameValue = argAST.Name.Value
-							}
-							return newValidationRuleError(
-								fmt.Sprintf(`Argument "%v" expected type "%v" but got: %v.`,
-									argNameValue, argDef.Type, printer.Print(value)),
-								[]ast.Node{value},
-							)
-						}
-					}
-					return action, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			if argAST, ok := p.Node.(*ast.Argument); ok {
+				value := argAST.Value
+				argDef := context.Argument()
+				if argDef != nil && !isValidLiteralValue(argDef.Type, value) {
+					argNameValue := ""
+					if argAST.Name != nil {
+						argNameValue = argAST.Name.Value
+					}
+					return newValidationRuleError(
+						fmt.Sprintf(`Argument "%v" expected type "%v" but got: %v.`,
+							argNameValue, argDef.Type, printer.Print(value)),
+						[]ast.Node{value},
+					)
+				}
+			}
+			return visitor.ActionNoChange, nil
+		},
 	}
 }
 
@@ -101,41 +94,34 @@ func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInsta
  * type expected by their definition.
  */
 func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance {
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.VariableDefinition: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					var action = visitor.ActionNoChange
-					if varDefAST, ok := p.Node.(*ast.VariableDefinition); ok {
-						name := ""
-						if varDefAST.Variable != nil && varDefAST.Variable.Name != nil {
-							name = varDefAST.Variable.Name.Value
-						}
-						defaultValue := varDefAST.DefaultValue
-						ttype := context.InputType()
-
-						if ttype, ok := ttype.(*NonNull); ok && defaultValue != nil {
-							return newValidationRuleError(
-								fmt.Sprintf(`Variable "$%v" of type "%v" is required and will not use the default value. Perhaps you meant to use type "%v".`,
-									name, ttype, ttype.OfType),
-								[]ast.Node{defaultValue},
-							)
-						}
-						if ttype != nil && defaultValue != nil && !isValidLiteralValue(ttype, defaultValue) {
-							return newValidationRuleError(
-								fmt.Sprintf(`Variable "$%v" of type "%v" has invalid default value: %v.`,
-									name, ttype, printer.Print(defaultValue)),
-								[]ast.Node{defaultValue},
-							)
-						}
-					}
-					return action, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			var action = visitor.ActionNoChange
+			if varDefAST, ok := p.Node.(*ast.VariableDefinition); ok {
+				name := ""
+				if varDefAST.Variable != nil && varDefAST.Variable.Name != nil {
+					name = varDefAST.Variable.Name.Value
+				}
+				defaultValue := varDefAST.DefaultValue
+				ttype := context.InputType()
+
+				if ttype, ok := ttype.(*NonNull); ok && defaultValue != nil {
+					return newValidationRuleError(
+						fmt.Sprintf(`Variable "$%v" of type "%v" is required and will not use the default value. Perhaps you meant to use type "%v".`,
+							name, ttype, ttype.OfType),
+						[]ast.Node{defaultValue},
+					)
+				}
+				if ttype != nil && defaultValue != nil && !isValidLiteralValue(ttype, defaultValue) {
+					return newValidationRuleError(
+						fmt.Sprintf(`Variable "$%v" of type "%v" has invalid default value: %v.`,
+							name, ttype, printer.Print(defaultValue)),
+						[]ast.Node{defaultValue},
+					)
+				}
+			}
+			return action, nil
+		},
 	}
 }
 
@@ -147,36 +133,29 @@ func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleI
  * parent type, or are an allowed meta field such as __typenamme
  */
 func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance {
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Field: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					var action = visitor.ActionNoChange
-					if node, ok := p.Node.(*ast.Field); ok {
-						ttype := context.ParentType()
-
-						if ttype != nil {
-							fieldDef := context.FieldDef()
-							if fieldDef == nil {
-								nodeName := ""
-								if node.Name != nil {
-									nodeName = node.Name.Value
-								}
-								return newValidationRuleError(
-									fmt.Sprintf(`Cannot query field "%v" on "%v".`,
-										nodeName, ttype.Name()),
-									[]ast.Node{node},
-								)
-							}
-						}
-					}
-					return action, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			var action = visitor.ActionNoChange
+			if node, ok := p.Node.(*ast.Field); ok {
+				ttype := context.ParentType()
+
+				if ttype != nil {
+					fieldDef := context.FieldDef()
+					if fieldDef == nil {
+						nodeName := ""
+						if node.Name != nil {
+							nodeName = node.Name.Value
+						}
+						return newValidationRuleError(
+							fmt.Sprintf(`Cannot query field "%v" on "%v".`,
+								nodeName, ttype.Name()),
+							[]ast.Node{node},
+						)
+					}
+				}
+			}
+			return action, nil
+		},
 	}
 }
 
@@ -189,44 +168,32 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
  * type condition must also be a composite type.
  */
 func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleInstance {
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.InlineFragment: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.InlineFragment); ok {
-						ttype := context.Type()
-						if ttype != nil && !IsCompositeType(ttype) {
-							return newValidationRuleError(
-								fmt.Sprintf(`Fragment cannot condition on non composite type "%v".`, ttype),
-								[]ast.Node{node.TypeCondition},
-							)
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.FragmentDefinition: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.FragmentDefinition); ok {
-						ttype := context.Type()
-						if ttype != nil && !IsCompositeType(ttype) {
-							nodeName := ""
-							if node.Name != nil {
-								nodeName = node.Name.Value
-							}
-							return newValidationRuleError(
-								fmt.Sprintf(`Fragment "%v" cannot condition on non composite type "%v".`, nodeName, printer.Print(node.TypeCondition)),
-								[]ast.Node{node.TypeCondition},
-							)
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.InlineFragment:
+				ttype := context.Type()
+				if ttype != nil && !IsCompositeType(ttype) {
+					return newValidationRuleError(
+						fmt.Sprintf(`Fragment cannot condition on non composite type "%v".`, ttype),
+						[]ast.Node{node.TypeCondition},
+					)
+				}
+			case *ast.FragmentDefinition:
+				ttype := context.Type()
+				if ttype != nil && !IsCompositeType(ttype) {
+					nodeName := ""
+					if node.Name != nil {
+						nodeName = node.Name.Value
+					}
+					return newValidationRuleError(
+						fmt.Sprintf(`Fragment "%v" cannot condition on non composite type "%v".`, nodeName, printer.Print(node.TypeCondition)),
+						[]ast.Node{node.TypeCondition},
+					)
+				}
+			}
+			return visitor.ActionNoChange, nil
+		},
 	}
 }
 
@@ -238,76 +205,69 @@ func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleIn
  * that field.
  */
 func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance {
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Argument: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					var action = visitor.ActionNoChange
-					if node, ok := p.Node.(*ast.Argument); ok {
-						var argumentOf ast.Node
-						if len(p.Ancestors) > 0 {
-							argumentOf = p.Ancestors[len(p.Ancestors)-1]
-						}
-						if argumentOf == nil {
-							return action, nil
-						}
-						if argumentOf.GetKind() == "Field" {
-							fieldDef := context.FieldDef()
-							if fieldDef == nil {
-								return action, nil
-							}
-							nodeName := ""
-							if node.Name != nil {
-								nodeName = node.Name.Value
-							}
-							var fieldArgDef *Argument
-							for _, arg := range fieldDef.Args {
-								if arg.Name() == nodeName {
-									fieldArgDef = arg
-								}
-							}
-							if fieldArgDef == nil {
-								parentType := context.ParentType()
-								parentTypeName := ""
-								if parentType != nil {
-									parentTypeName = parentType.Name()
-								}
-								return newValidationRuleError(
-									fmt.Sprintf(`Unknown argument "%v" on field "%v" of type "%v".`, nodeName, fieldDef.Name, parentTypeName),
-									[]ast.Node{node},
-								)
-							}
-						} else if argumentOf.GetKind() == "Directive" {
-							directive := context.Directive()
-							if directive == nil {
-								return action, nil
-							}
-							nodeName := ""
-							if node.Name != nil {
-								nodeName = node.Name.Value
-							}
-							var directiveArgDef *Argument
-							for _, arg := range directive.Args {
-								if arg.Name() == nodeName {
-									directiveArgDef = arg
-								}
-							}
-							if directiveArgDef == nil {
-								return newValidationRuleError(
-									fmt.Sprintf(`Unknown argument "%v" on directive "@%v".`, nodeName, directive.Name),
-									[]ast.Node{node},
-								)
-							}
-						}
-
-					}
-					return action, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			var action = visitor.ActionNoChange
+			if node, ok := p.Node.(*ast.Argument); ok {
+				var argumentOf ast.Node
+				if len(p.Ancestors) > 0 {
+					argumentOf = p.Ancestors[len(p.Ancestors)-1]
+				}
+				if argumentOf == nil {
+					return action, nil
+				}
+				if argumentOf.GetKind() == "Field" {
+					fieldDef := context.FieldDef()
+					if fieldDef == nil {
+						return action, nil
+					}
+					nodeName := ""
+					if node.Name != nil {
+						nodeName = node.Name.Value
+					}
+					var fieldArgDef *Argument
+					for _, arg := range fieldDef.Args {
+						if arg.Name() == nodeName {
+							fieldArgDef = arg
+						}
+					}
+					if fieldArgDef == nil {
+						parentType := context.ParentType()
+						parentTypeName := ""
+						if parentType != nil {
+							parentTypeName = parentType.Name()
+						}
+						return newValidationRuleError(
+							fmt.Sprintf(`Unknown argument "%v" on field "%v" of type "%v".`, nodeName, fieldDef.Name, parentTypeName),
+							[]ast.Node{node},
+						)
+					}
+				} else if argumentOf.GetKind() == "Directive" {
+					directive := context.Directive()
+					if directive == nil {
+						return action, nil
+					}
+					nodeName := ""
+					if node.Name != nil {
+						nodeName = node.Name.Value
+					}
+					var directiveArgDef *Argument
+					for _, arg := range directive.Args {
+						if arg.Name() == nodeName {
+							directiveArgDef = arg
+						}
+					}
+					if directiveArgDef == nil {
+						return newValidationRuleError(
+							fmt.Sprintf(`Unknown argument "%v" on directive "@%v".`, nodeName, directive.Name),
+							[]ast.Node{node},
+						)
+					}
+				}
+
+			}
+			return action, nil
+		},
 	}
 }
 
@@ -318,67 +278,60 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
  * schema and legally positioned.
  */
 func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Directive: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					var action = visitor.ActionNoChange
-					if node, ok := p.Node.(*ast.Directive); ok {
-						nodeName := ""
-						if node.Name != nil {
-							nodeName = node.Name.Value
-						}
-
-						var directiveDef *Directive
-						for _, def := range context.Schema().Directives() {
-							if def.Name == nodeName {
-								directiveDef = def
-							}
-						}
-						if directiveDef == nil {
-							return newValidationRuleError(
-								fmt.Sprintf(`Unknown directive "%v".`, nodeName),
-								[]ast.Node{node},
-							)
-						}
-
-						var appliedTo ast.Node
-						if len(p.Ancestors) > 0 {
-							appliedTo = p.Ancestors[len(p.Ancestors)-1]
-						}
-						if appliedTo == nil {
-							return action, nil
-						}
-
-						if appliedTo.GetKind() == kinds.OperationDefinition && directiveDef.OnOperation == false {
-							return newValidationRuleError(
-								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "operation"),
-								[]ast.Node{node},
-							)
-						}
-						if appliedTo.GetKind() == kinds.Field && directiveDef.OnField == false {
-							return newValidationRuleError(
-								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "field"),
-								[]ast.Node{node},
-							)
-						}
-						if !directiveDef.OnFragment {
-							switch appliedTo.GetKind() {
-							case kinds.FragmentSpread, kinds.InlineFragment, kinds.FragmentDefinition:
-								return newValidationRuleError(
-									fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "fragment"),
-									[]ast.Node{node},
-								)
-							}
-						}
-					}
-					return action, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			var action = visitor.ActionNoChange
+			if node, ok := p.Node.(*ast.Directive); ok {
+				nodeName := ""
+				if node.Name != nil {
+					nodeName = node.Name.Value
+				}
+
+				var directiveDef *Directive
+				for _, def := range context.Schema().Directives() {
+					if def.Name == nodeName {
+						directiveDef = def
+					}
+				}
+				if directiveDef == nil {
+					return newValidationRuleError(
+						fmt.Sprintf(`Unknown directive "%v".`, nodeName),
+						[]ast.Node{node},
+					)
+				}
+
+				var appliedTo ast.Node
+				if len(p.Ancestors) > 0 {
+					appliedTo = p.Ancestors[len(p.Ancestors)-1]
+				}
+				if appliedTo == nil {
+					return action, nil
+				}
+
+				if appliedTo.GetKind() == kinds.OperationDefinition && directiveDef.OnOperation == false {
+					return newValidationRuleError(
+						fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "operation"),
+						[]ast.Node{node},
+					)
+				}
+				if appliedTo.GetKind() == kinds.Field && directiveDef.OnField == false {
+					return newValidationRuleError(
+						fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "field"),
+						[]ast.Node{node},
+					)
+				}
+				if !directiveDef.OnFragment {
+					switch appliedTo.GetKind() {
+					case kinds.FragmentSpread, kinds.InlineFragment, kinds.FragmentDefinition:
+						return newValidationRuleError(
+							fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "fragment"),
+							[]ast.Node{node},
+						)
+					}
+				}
+			}
+			return action, nil
+		},
 	}
 }
 
@@ -390,32 +343,25 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
  * to fragments defined in the same document.
  */
 func KnownFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance {
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.FragmentSpread: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					var action = visitor.ActionNoChange
-					if node, ok := p.Node.(*ast.FragmentSpread); ok {
-						fragmentName := ""
-						if node.Name != nil {
-							fragmentName = node.Name.Value
-						}
-
-						fragment := context.Fragment(fragmentName)
-						if fragment == nil {
-							return newValidationRuleError(
-								fmt.Sprintf(`Unknown fragment "%v".`, fragmentName),
-								[]ast.Node{node.Name},
-							)
-						}
-					}
-					return action, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			var action = visitor.ActionNoChange
+			if node, ok := p.Node.(*ast.FragmentSpread); ok {
+				fragmentName := ""
+				if node.Name != nil {
+					fragmentName = node.Name.Value
+				}
+
+				fragment := context.Fragment(fragmentName)
+				if fragment == nil {
+					return newValidationRuleError(
+						fmt.Sprintf(`Unknown fragment "%v".`, fragmentName),
+						[]ast.Node{node.Name},
+					)
+				}
+			}
+			return action, nil
+		},
 	}
 }
 
@@ -427,31 +373,24 @@ func KnownFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance 
  * variable definitions and fragment conditions) are defined by the type schema.
  */
 func KnownTypeNamesRule(context *ValidationContext) *ValidationRuleInstance {
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Named: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.Named); ok {
-						typeNameValue := ""
-						typeName := node.Name
-						if typeName != nil {
-							typeNameValue = typeName.Value
-						}
-						ttype := context.Schema().Type(typeNameValue)
-						if ttype == nil {
-							return newValidationRuleError(
-								fmt.Sprintf(`Unknown type "%v".`, typeNameValue),
-								[]ast.Node{node},
-							)
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			if node, ok := p.Node.(*ast.Named); ok {
+				typeNameValue := ""
+				typeName := node.Name
+				if typeName != nil {
+					typeNameValue = typeName.Value
+				}
+				ttype := context.Schema().Type(typeNameValue)
+				if ttype == nil {
+					return newValidationRuleError(
+						fmt.Sprintf(`Unknown type "%v".`, typeNameValue),
+						[]ast.Node{node},
+					)
+				}
+			}
+			return visitor.ActionNoChange, nil
+		},
 	}
 }
 
@@ -464,38 +403,26 @@ func KnownTypeNamesRule(context *ValidationContext) *ValidationRuleInstance {
  */
 func LoneAnonymousOperationRule(context *ValidationContext) *ValidationRuleInstance {
 	var operationCount = 0
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Document: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.Document); ok {
-						operationCount = 0
-						for _, definition := range node.Definitions {
-							if definition.GetKind() == kinds.OperationDefinition {
-								operationCount = operationCount + 1
-							}
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.OperationDefinition: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.OperationDefinition); ok {
-						if node.Name == nil && operationCount > 1 {
-							return newValidationRuleError(
-								`This anonymous operation must be the only defined operation.`,
-								[]ast.Node{node},
-							)
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Document:
+				operationCount = 0
+				for _, definition := range node.Definitions {
+					if definition.GetKind() == kinds.OperationDefinition {
+						operationCount = operationCount + 1
+					}
+				}
+			case *ast.OperationDefinition:
+				if node.Name == nil && operationCount > 1 {
+					return newValidationRuleError(
+						`This anonymous operation must be the only defined operation.`,
+						[]ast.Node{node},
+					)
+				}
+			}
+			return visitor.ActionNoChange, nil
+		},
 	}
 }
 
@@ -539,80 +466,73 @@ func NoFragmentCyclesRule(context *ValidationContext) *ValidationRuleInstance {
 	// redundantly reported.
 	knownToLeadToCycle := newNodeSet()
 
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.FragmentDefinition: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.FragmentDefinition); ok && node != nil {
-						var errors []error
-						var spreadPath []*ast.FragmentSpread
-						initialName := ""
-						if node.Name != nil {
-							initialName = node.Name.Value
+	return &ValidationRuleInstance{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			if node, ok := p.Node.(*ast.FragmentDefinition); ok && node != nil {
+				var errors []error
+				var spreadPath []*ast.FragmentSpread
+				initialName := ""
+				if node.Name != nil {
+					initialName = node.Name.Value
+				}
+				var detectCycleRecursive func(fragmentName string)
+				detectCycleRecursive = func(fragmentName string) {
+					spreadNodes := spreadsInFragment[fragmentName]
+					for _, spreadNode := range spreadNodes {
+						if knownToLeadToCycle.Has(spreadNode) {
+							continue
 						}
-						var detectCycleRecursive func(fragmentName string)
-						detectCycleRecursive = func(fragmentName string) {
-							spreadNodes := spreadsInFragment[fragmentName]
-							for _, spreadNode := range spreadNodes {
-								if knownToLeadToCycle.Has(spreadNode) {
-									continue
+						spreadNodeName := ""
+						if spreadNode.Name != nil {
+							spreadNodeName = spreadNode.Name.Value
+						}
+						if spreadNodeName == initialName {
+							cyclePath := make([]ast.Node, 0, len(spreadPath)+1)
+							for _, path := range spreadPath {
+								cyclePath = append(cyclePath, path)
+							}
+							cyclePath = append(cyclePath, spreadNode)
+							for _, spread := range cyclePath {
+								knownToLeadToCycle.Add(spread)
+							}
+							via := ""
+							spreadNames := make([]string, 0, len(spreadPath))
+							for _, s := range spreadPath {
+								if s.Name != nil {
+									spreadNames = append(spreadNames, s.Name.Value)
 								}
-								spreadNodeName := ""
-								if spreadNode.Name != nil {
-									spreadNodeName = spreadNode.Name.Value
-								}
-								if spreadNodeName == initialName {
-									cyclePath := make([]ast.Node, 0, len(spreadPath)+1)
-									for _, path := range spreadPath {
-										cyclePath = append(cyclePath, path)
-									}
-									cyclePath = append(cyclePath, spreadNode)
-									for _, spread := range cyclePath {
-										knownToLeadToCycle.Add(spread)
-									}
-									via := ""
-									spreadNames := make([]string, 0, len(spreadPath))
-									for _, s := range spreadPath {
-										if s.Name != nil {
-											spreadNames = append(spreadNames, s.Name.Value)
-										}
-									}
-									if len(spreadNames) > 0 {
-										via = " via " + strings.Join(spreadNames, ", ")
-									}
-									_, err := newValidationRuleError(
-										fmt.Sprintf(`Cannot spread fragment "%v" within itself%v.`, initialName, via),
-										cyclePath,
-									)
-									errors = append(errors, err)
-									continue
-								}
-								spreadPathHasCurrentNode := false
-								for _, spread := range spreadPath {
-									if spread == spreadNode {
-										spreadPathHasCurrentNode = true
-									}
-								}
-								if spreadPathHasCurrentNode {
-									continue
-								}
-								spreadPath = append(spreadPath, spreadNode)
-								detectCycleRecursive(spreadNodeName)
-								_, spreadPath = spreadPath[len(spreadPath)-1], spreadPath[:len(spreadPath)-1]
+							}
+							if len(spreadNames) > 0 {
+								via = " via " + strings.Join(spreadNames, ", ")
+							}
+							_, err := newValidationRuleError(
+								fmt.Sprintf(`Cannot spread fragment "%v" within itself%v.`, initialName, via),
+								cyclePath,
+							)
+							errors = append(errors, err)
+							continue
+						}
+						spreadPathHasCurrentNode := false
+						for _, spread := range spreadPath {
+							if spread == spreadNode {
+								spreadPathHasCurrentNode = true
 							}
 						}
-						detectCycleRecursive(initialName)
-						if len(errors) > 0 {
-							return visitor.ActionNoChange, errors
+						if spreadPathHasCurrentNode {
+							continue
 						}
+						spreadPath = append(spreadPath, spreadNode)
+						detectCycleRecursive(spreadNodeName)
+						_, spreadPath = spreadPath[len(spreadPath)-1], spreadPath[:len(spreadPath)-1]
 					}
-					return visitor.ActionNoChange, nil
-				},
-			},
+				}
+				detectCycleRecursive(initialName)
+				if len(errors) > 0 {
+					return visitor.ActionNoChange, errors
+				}
+			}
+			return visitor.ActionNoChange, nil
 		},
-	}
-	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
 	}
 }
 
@@ -627,81 +547,61 @@ func NoUndefinedVariablesRule(context *ValidationContext) *ValidationRuleInstanc
 	var operation *ast.OperationDefinition
 	var visitedFragmentNames = make(map[string]struct{})
 	var definedVariableNames = make(map[string]struct{})
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.OperationDefinition: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.OperationDefinition); ok && node != nil {
-						operation = node
-						visitedFragmentNames = make(map[string]struct{})
-						definedVariableNames = make(map[string]struct{})
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.VariableDefinition: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.VariableDefinition); ok && node != nil {
-						variableName := ""
-						if node.Variable != nil && node.Variable.Name != nil {
-							variableName = node.Variable.Name.Value
-						}
-						definedVariableNames[variableName] = struct{}{}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.Variable: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if variable, ok := p.Node.(*ast.Variable); ok && variable != nil {
-						variableName := ""
-						if variable.Name != nil {
-							variableName = variable.Name.Value
-						}
-						if _, ok := definedVariableNames[variableName]; !ok {
-							withinFragment := false
-							for _, node := range p.Ancestors {
-								if node.GetKind() == kinds.FragmentDefinition {
-									withinFragment = true
-									break
-								}
-							}
-							if withinFragment == true && operation != nil && operation.Name != nil {
-								return newValidationRuleError(
-									fmt.Sprintf(`Variable "$%v" is not defined by operation "%v".`, variableName, operation.Name.Value),
-									[]ast.Node{variable, operation},
-								)
-							}
-							return newValidationRuleError(
-								fmt.Sprintf(`Variable "$%v" is not defined.`, variableName),
-								[]ast.Node{variable},
-							)
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.FragmentSpread: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.FragmentSpread); ok && node != nil {
-						// Only visit fragments of a particular name once per operation
-						fragmentName := ""
-						if node.Name != nil {
-							fragmentName = node.Name.Value
-						}
-						if _, ok := visitedFragmentNames[fragmentName]; ok {
-							return visitor.ActionSkip, nil
-						}
-						visitedFragmentNames[fragmentName] = struct{}{}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.OperationDefinition:
+				operation = node
+				if len(visitedFragmentNames) != 0 {
+					visitedFragmentNames = make(map[string]struct{})
+				}
+				if len(definedVariableNames) != 0 {
+					definedVariableNames = make(map[string]struct{})
+				}
+			case *ast.VariableDefinition:
+				variableName := ""
+				if node.Variable != nil && node.Variable.Name != nil {
+					variableName = node.Variable.Name.Value
+				}
+				definedVariableNames[variableName] = struct{}{}
+			case *ast.Variable:
+				variableName := ""
+				if node.Name != nil {
+					variableName = node.Name.Value
+				}
+				if _, ok := definedVariableNames[variableName]; !ok {
+					withinFragment := false
+					for _, node := range p.Ancestors {
+						if node.GetKind() == kinds.FragmentDefinition {
+							withinFragment = true
+							break
+						}
+					}
+					if withinFragment == true && operation != nil && operation.Name != nil {
+						return newValidationRuleError(
+							fmt.Sprintf(`Variable "$%v" is not defined by operation "%v".`, variableName, operation.Name.Value),
+							[]ast.Node{node, operation},
+						)
+					}
+					return newValidationRuleError(
+						fmt.Sprintf(`Variable "$%v" is not defined.`, variableName),
+						[]ast.Node{node},
+					)
+				}
+			case *ast.FragmentSpread:
+				// Only visit fragments of a particular name once per operation
+				fragmentName := ""
+				if node.Name != nil {
+					fragmentName = node.Name.Value
+				}
+				if _, ok := visitedFragmentNames[fragmentName]; ok {
+					return visitor.ActionSkip, nil
+				}
+				visitedFragmentNames[fragmentName] = struct{}{}
+			}
+			return visitor.ActionNoChange, nil
+		},
 		VisitSpreadFragments: true,
-		VisitorOpts:          visitorOpts,
 	}
 }
 
@@ -718,90 +618,73 @@ func NoUnusedFragmentsRule(context *ValidationContext) *ValidationRuleInstance {
 	var fragAdjacencies = make(map[string]map[string]struct{})
 	var spreadNames = make(map[string]struct{})
 
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.OperationDefinition: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.OperationDefinition); ok && node != nil {
-						spreadNames = make(map[string]struct{})
-						spreadsWithinOperation = append(spreadsWithinOperation, spreadNames)
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.FragmentDefinition: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if def, ok := p.Node.(*ast.FragmentDefinition); ok && def != nil {
-						defName := ""
-						if def.Name != nil {
-							defName = def.Name.Value
-						}
-
-						fragmentDefs = append(fragmentDefs, def)
-						spreadNames = make(map[string]struct{})
-						fragAdjacencies[defName] = spreadNames
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.FragmentSpread: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if spread, ok := p.Node.(*ast.FragmentSpread); ok && spread != nil {
-						spreadName := ""
-						if spread.Name != nil {
-							spreadName = spread.Name.Value
-						}
-						spreadNames[spreadName] = struct{}{}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.Document: {
-				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
-					fragmentNameUsed := make(map[string]struct{})
-
-					var reduceSpreadFragments func(spreads map[string]struct{})
-					reduceSpreadFragments = func(spreads map[string]struct{}) {
-						for fragName := range spreads {
-							if _, isFragNameUsed := fragmentNameUsed[fragName]; !isFragNameUsed {
-								fragmentNameUsed[fragName] = struct{}{}
-
-								if adjacencies, ok := fragAdjacencies[fragName]; ok {
-									reduceSpreadFragments(adjacencies)
-								}
-							}
-						}
-					}
-					for _, spreadWithinOperation := range spreadsWithinOperation {
-						reduceSpreadFragments(spreadWithinOperation)
-					}
-					var errors []error
-					for _, def := range fragmentDefs {
-						defName := ""
-						if def.Name != nil {
-							defName = def.Name.Value
-						}
-
-						_, isFragNameUsed := fragmentNameUsed[defName]
-						if !isFragNameUsed {
-							_, err := newValidationRuleError(
-								fmt.Sprintf(`Fragment "%v" is never used.`, defName),
-								[]ast.Node{def},
-							)
-
-							errors = append(errors, err)
-						}
-					}
-					if len(errors) > 0 {
-						return visitor.ActionNoChange, errors
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.OperationDefinition:
+				spreadNames = make(map[string]struct{})
+				spreadsWithinOperation = append(spreadsWithinOperation, spreadNames)
+			case *ast.FragmentDefinition:
+				defName := ""
+				if node.Name != nil {
+					defName = node.Name.Value
+				}
+
+				fragmentDefs = append(fragmentDefs, node)
+				spreadNames = make(map[string]struct{})
+				fragAdjacencies[defName] = spreadNames
+			case *ast.FragmentSpread:
+				spreadName := ""
+				if node.Name != nil {
+					spreadName = node.Name.Value
+				}
+				spreadNames[spreadName] = struct{}{}
+			}
+			return visitor.ActionNoChange, nil
+		},
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+			if _, ok := p.Node.(*ast.Document); !ok {
+				return visitor.ActionNoChange, nil
+			}
+			fragmentNameUsed := make(map[string]struct{})
+
+			var reduceSpreadFragments func(spreads map[string]struct{})
+			reduceSpreadFragments = func(spreads map[string]struct{}) {
+				for fragName := range spreads {
+					if _, isFragNameUsed := fragmentNameUsed[fragName]; !isFragNameUsed {
+						fragmentNameUsed[fragName] = struct{}{}
+
+						if adjacencies, ok := fragAdjacencies[fragName]; ok {
+							reduceSpreadFragments(adjacencies)
+						}
+					}
+				}
+			}
+			for _, spreadWithinOperation := range spreadsWithinOperation {
+				reduceSpreadFragments(spreadWithinOperation)
+			}
+			var errors []error
+			for _, def := range fragmentDefs {
+				defName := ""
+				if def.Name != nil {
+					defName = def.Name.Value
+				}
+
+				_, isFragNameUsed := fragmentNameUsed[defName]
+				if !isFragNameUsed {
+					_, err := newValidationRuleError(
+						fmt.Sprintf(`Fragment "%v" is never used.`, defName),
+						[]ast.Node{def},
+					)
+
+					errors = append(errors, err)
+				}
+			}
+			if len(errors) > 0 {
+				return visitor.ActionNoChange, errors
+			}
+			return visitor.ActionNoChange, nil
+		},
 	}
 }
 
@@ -817,81 +700,61 @@ func NoUnusedVariablesRule(context *ValidationContext) *ValidationRuleInstance {
 	var variableDefs []*ast.VariableDefinition
 	var variableNameUsed = make(map[string]struct{})
 
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.OperationDefinition: {
-				Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if len(visitedFragmentNames) != 0 {
-						visitedFragmentNames = make(map[string]struct{})
-					}
-					variableDefs = variableDefs[:0]
-					if len(variableNameUsed) != 0 {
-						variableNameUsed = make(map[string]struct{})
-					}
-					return visitor.ActionNoChange, nil
-				},
-				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
-					var errors []error
-					for _, def := range variableDefs {
-						variableName := ""
-						if def.Variable != nil && def.Variable.Name != nil {
-							variableName = def.Variable.Name.Value
-						}
-						if _, isVariableNameUsed := variableNameUsed[variableName]; !isVariableNameUsed {
-							_, err := newValidationRuleError(
-								fmt.Sprintf(`Variable "$%v" is never used.`, variableName),
-								[]ast.Node{def},
-							)
-							errors = append(errors, err)
-						}
-					}
-					if len(errors) > 0 {
-						return visitor.ActionNoChange, errors
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.VariableDefinition: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if def, ok := p.Node.(*ast.VariableDefinition); ok && def != nil {
-						variableDefs = append(variableDefs, def)
-					}
-					// Do not visit deeper, or else the defined variable name will be visited.
-					return visitor.ActionSkip, nil
-				},
-			},
-			kinds.Variable: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if variable, ok := p.Node.(*ast.Variable); ok && variable != nil {
-						if variable.Name != nil {
-							variableNameUsed[variable.Name.Value] = struct{}{}
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.FragmentSpread: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if spreadAST, ok := p.Node.(*ast.FragmentSpread); ok && spreadAST != nil {
-						// Only visit fragments of a particular name once per operation
-						spreadName := ""
-						if spreadAST.Name != nil {
-							spreadName = spreadAST.Name.Value
-						}
-						if _, hasVisitedFragmentNames := visitedFragmentNames[spreadName]; hasVisitedFragmentNames {
-							return visitor.ActionSkip, nil
-						}
-						visitedFragmentNames[spreadName] = struct{}{}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		// Visit FragmentDefinition after visiting FragmentSpread
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.OperationDefinition:
+				if len(visitedFragmentNames) != 0 {
+					visitedFragmentNames = make(map[string]struct{})
+				}
+				variableDefs = variableDefs[:0]
+				if len(variableNameUsed) != 0 {
+					variableNameUsed = make(map[string]struct{})
+				}
+			case *ast.Variable:
+				if node.Name != nil {
+					variableNameUsed[node.Name.Value] = struct{}{}
+				}
+			case *ast.FragmentSpread:
+				// Only visit fragments of a particular name once per operation
+				spreadName := ""
+				if node.Name != nil {
+					spreadName = node.Name.Value
+				}
+				if _, hasVisitedFragmentNames := visitedFragmentNames[spreadName]; hasVisitedFragmentNames {
+					return visitor.ActionSkip, nil
+				}
+				visitedFragmentNames[spreadName] = struct{}{}
+			case *ast.VariableDefinition:
+				variableDefs = append(variableDefs, node)
+				// Do not visit deeper, or else the defined variable name will be visited.
+				return visitor.ActionSkip, nil
+			}
+			return visitor.ActionNoChange, nil
+		},
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+			if _, ok := p.Node.(*ast.OperationDefinition); ok {
+				var errors []error
+				for _, def := range variableDefs {
+					variableName := ""
+					if def.Variable != nil && def.Variable.Name != nil {
+						variableName = def.Variable.Name.Value
+					}
+					if _, isVariableNameUsed := variableNameUsed[variableName]; !isVariableNameUsed {
+						_, err := newValidationRuleError(
+							fmt.Sprintf(`Variable "$%v" is never used.`, variableName),
+							[]ast.Node{def},
+						)
+						errors = append(errors, err)
+					}
+				}
+				if len(errors) > 0 {
+					return visitor.ActionNoChange, errors
+				}
+			}
+			return visitor.ActionNoChange, nil
+		},
 		VisitSpreadFragments: true,
-		VisitorOpts:          visitorOpts,
 	}
 }
 
@@ -1256,46 +1119,39 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 		return ""
 	}
 
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.SelectionSet: {
-				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if selectionSet, ok := p.Node.(*ast.SelectionSet); ok && selectionSet != nil {
-						parentType, _ := context.ParentType().(Named)
-						fieldMap := collectFieldASTsAndDefs(
-							context,
-							parentType,
-							selectionSet,
-							nil,
-							nil,
-						)
-						conflicts := findConflicts(fieldMap)
-						if len(conflicts) > 0 {
-							errors := make([]error, 0, len(conflicts))
-							for _, c := range conflicts {
-								responseName := c.Reason.Name
-								reason := c.Reason
-								_, err := newValidationRuleError(
-									fmt.Sprintf(
-										`Fields "%v" conflict because %v.`,
-										responseName,
-										reasonMessage(reason),
-									),
-									c.Fields,
-								)
-								errors = append(errors, err)
-
-							}
-							return visitor.ActionNoChange, errors
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+			if selectionSet, ok := p.Node.(*ast.SelectionSet); ok && selectionSet != nil {
+				parentType, _ := context.ParentType().(Named)
+				fieldMap := collectFieldASTsAndDefs(
+					context,
+					parentType,
+					selectionSet,
+					nil,
+					nil,
+				)
+				conflicts := findConflicts(fieldMap)
+				if len(conflicts) > 0 {
+					errors := make([]error, 0, len(conflicts))
+					for _, c := range conflicts {
+						responseName := c.Reason.Name
+						reason := c.Reason
+						_, err := newValidationRuleError(
+							fmt.Sprintf(
+								`Fields "%v" conflict because %v.`,
+								responseName,
+								reasonMessage(reason),
+							),
+							c.Fields,
+						)
+						errors = append(errors, err)
+
+					}
+					return visitor.ActionNoChange, errors
+				}
+			}
+			return visitor.ActionNoChange, nil
+		},
 	}
 }
 
@@ -1360,49 +1216,37 @@ func doTypesOverlap(t1 Type, t2 Type) bool {
  * and possible types which pass the type condition.
  */
 func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInstance {
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.InlineFragment: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.InlineFragment); ok && node != nil {
-						fragType := context.Type()
-						parentType, _ := context.ParentType().(Type)
-
-						if fragType != nil && parentType != nil && !doTypesOverlap(fragType, parentType) {
-							return newValidationRuleError(
-								fmt.Sprintf(`Fragment cannot be spread here as objects of `+
-									`type "%v" can never be of type "%v".`, parentType, fragType),
-								[]ast.Node{node},
-							)
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.FragmentSpread: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.FragmentSpread); ok && node != nil {
-						fragName := ""
-						if node.Name != nil {
-							fragName = node.Name.Value
-						}
-						fragType := getFragmentType(context, fragName)
-						parentType, _ := context.ParentType().(Type)
-						if fragType != nil && parentType != nil && !doTypesOverlap(fragType, parentType) {
-							return newValidationRuleError(
-								fmt.Sprintf(`Fragment "%v" cannot be spread here as objects of `+
-									`type "%v" can never be of type "%v".`, fragName, parentType, fragType),
-								[]ast.Node{node},
-							)
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.InlineFragment:
+				fragType := context.Type()
+				parentType, _ := context.ParentType().(Type)
+
+				if fragType != nil && parentType != nil && !doTypesOverlap(fragType, parentType) {
+					return newValidationRuleError(
+						fmt.Sprintf(`Fragment cannot be spread here as objects of `+
+							`type "%v" can never be of type "%v".`, parentType, fragType),
+						[]ast.Node{node},
+					)
+				}
+			case *ast.FragmentSpread:
+				fragName := ""
+				if node.Name != nil {
+					fragName = node.Name.Value
+				}
+				fragType := getFragmentType(context, fragName)
+				parentType, _ := context.ParentType().(Type)
+				if fragType != nil && parentType != nil && !doTypesOverlap(fragType, parentType) {
+					return newValidationRuleError(
+						fmt.Sprintf(`Fragment "%v" cannot be spread here as objects of `+
+							`type "%v" can never be of type "%v".`, fragName, parentType, fragType),
+						[]ast.Node{node},
+					)
+				}
+			}
+			return visitor.ActionNoChange, nil
+		},
 	}
 }
 
@@ -1414,101 +1258,92 @@ func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInst
  * have been provided.
  */
 func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleInstance {
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Field: {
-				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
-					// Validate on leave to allow for deeper errors to appear first.
-					if fieldAST, ok := p.Node.(*ast.Field); ok && fieldAST != nil {
-						fieldDef := context.FieldDef()
-						if fieldDef == nil {
-							return visitor.ActionSkip, nil
-						}
-
-						var errors []error
-						argASTs := fieldAST.Arguments
-
-						argASTMap := make(map[string]*ast.Argument, len(argASTs))
-						for _, arg := range argASTs {
-							name := ""
-							if arg.Name != nil {
-								name = arg.Name.Value
-							}
-							argASTMap[name] = arg
-						}
-						for _, argDef := range fieldDef.Args {
-							argAST, _ := argASTMap[argDef.Name()]
-							if argAST == nil {
-								if argDefType, ok := argDef.Type.(*NonNull); ok {
-									fieldName := ""
-									if fieldAST.Name != nil {
-										fieldName = fieldAST.Name.Value
-									}
-									_, err := newValidationRuleError(
-										fmt.Sprintf(`Field "%v" argument "%v" of type "%v" `+
-											`is required but not provided.`, fieldName, argDef.Name(), argDefType),
-										[]ast.Node{fieldAST},
-									)
-									errors = append(errors, err)
-								}
-							}
-						}
-						if len(errors) > 0 {
-							return visitor.ActionNoChange, errors
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.Directive: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					// Validate on leave to allow for deeper errors to appear first.
-
-					if directiveAST, ok := p.Node.(*ast.Directive); ok && directiveAST != nil {
-						directiveDef := context.Directive()
-						if directiveDef == nil {
-							return visitor.ActionSkip, nil
-						}
-						var errors []error
-						argASTs := directiveAST.Arguments
-
-						argASTMap := make(map[string]*ast.Argument, len(argASTs))
-						for _, arg := range argASTs {
-							name := ""
-							if arg.Name != nil {
-								name = arg.Name.Value
-							}
-							argASTMap[name] = arg
-						}
-
-						for _, argDef := range directiveDef.Args {
-							argAST, _ := argASTMap[argDef.Name()]
-							if argAST == nil {
-								if argDefType, ok := argDef.Type.(*NonNull); ok {
-									directiveName := ""
-									if directiveAST.Name != nil {
-										directiveName = directiveAST.Name.Value
-									}
-									_, err := newValidationRuleError(
-										fmt.Sprintf(`Directive "@%v" argument "%v" of type `+
-											`"%v" is required but not provided.`, directiveName, argDef.Name(), argDefType),
-										[]ast.Node{directiveAST},
-									)
-									errors = append(errors, err)
-								}
-							}
-						}
-						if len(errors) > 0 {
-							return visitor.ActionNoChange, errors
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
+			// Validate on leave to allow for deeper errors to appear first.
+			if fieldAST, ok := p.Node.(*ast.Field); ok && fieldAST != nil {
+				fieldDef := context.FieldDef()
+				if fieldDef == nil {
+					return visitor.ActionSkip, nil
+				}
+
+				var errors []error
+				argASTs := fieldAST.Arguments
+
+				argASTMap := make(map[string]*ast.Argument, len(argASTs))
+				for _, arg := range argASTs {
+					name := ""
+					if arg.Name != nil {
+						name = arg.Name.Value
+					}
+					argASTMap[name] = arg
+				}
+				for _, argDef := range fieldDef.Args {
+					argAST, _ := argASTMap[argDef.Name()]
+					if argAST == nil {
+						if argDefType, ok := argDef.Type.(*NonNull); ok {
+							fieldName := ""
+							if fieldAST.Name != nil {
+								fieldName = fieldAST.Name.Value
+							}
+							_, err := newValidationRuleError(
+								fmt.Sprintf(`Field "%v" argument "%v" of type "%v" `+
+									`is required but not provided.`, fieldName, argDef.Name(), argDefType),
+								[]ast.Node{fieldAST},
+							)
+							errors = append(errors, err)
+						}
+					}
+				}
+				if len(errors) > 0 {
+					return visitor.ActionNoChange, errors
+				}
+			}
+			return visitor.ActionNoChange, nil
+		},
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			// Validate on leave to allow for deeper errors to appear first.
+
+			if directiveAST, ok := p.Node.(*ast.Directive); ok && directiveAST != nil {
+				directiveDef := context.Directive()
+				if directiveDef == nil {
+					return visitor.ActionSkip, nil
+				}
+				var errors []error
+				argASTs := directiveAST.Arguments
+
+				argASTMap := make(map[string]*ast.Argument, len(argASTs))
+				for _, arg := range argASTs {
+					name := ""
+					if arg.Name != nil {
+						name = arg.Name.Value
+					}
+					argASTMap[name] = arg
+				}
+
+				for _, argDef := range directiveDef.Args {
+					argAST, _ := argASTMap[argDef.Name()]
+					if argAST == nil {
+						if argDefType, ok := argDef.Type.(*NonNull); ok {
+							directiveName := ""
+							if directiveAST.Name != nil {
+								directiveName = directiveAST.Name.Value
+							}
+							_, err := newValidationRuleError(
+								fmt.Sprintf(`Directive "@%v" argument "%v" of type `+
+									`"%v" is required but not provided.`, directiveName, argDef.Name(), argDefType),
+								[]ast.Node{directiveAST},
+							)
+							errors = append(errors, err)
+						}
+					}
+				}
+				if len(errors) > 0 {
+					return visitor.ActionNoChange, errors
+				}
+			}
+			return visitor.ActionNoChange, nil
+		},
 	}
 }
 
@@ -1520,39 +1355,32 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
  * sub selections) are of scalar or enum types.
  */
 func ScalarLeafsRule(context *ValidationContext) *ValidationRuleInstance {
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Field: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.Field); ok && node != nil {
-						nodeName := ""
-						if node.Name != nil {
-							nodeName = node.Name.Value
-						}
-						ttype := context.Type()
-						if ttype != nil {
-							if IsLeafType(ttype) {
-								if node.SelectionSet != nil {
-									return newValidationRuleError(
-										fmt.Sprintf(`Field "%v" of type "%v" must not have a sub selection.`, nodeName, ttype),
-										[]ast.Node{node.SelectionSet},
-									)
-								}
-							} else if node.SelectionSet == nil {
-								return newValidationRuleError(
-									fmt.Sprintf(`Field "%v" of type "%v" must have a sub selection.`, nodeName, ttype),
-									[]ast.Node{node},
-								)
-							}
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			if node, ok := p.Node.(*ast.Field); ok && node != nil {
+				nodeName := ""
+				if node.Name != nil {
+					nodeName = node.Name.Value
+				}
+				ttype := context.Type()
+				if ttype != nil {
+					if IsLeafType(ttype) {
+						if node.SelectionSet != nil {
+							return newValidationRuleError(
+								fmt.Sprintf(`Field "%v" of type "%v" must not have a sub selection.`, nodeName, ttype),
+								[]ast.Node{node.SelectionSet},
+							)
+						}
+					} else if node.SelectionSet == nil {
+						return newValidationRuleError(
+							fmt.Sprintf(`Field "%v" of type "%v" must have a sub selection.`, nodeName, ttype),
+							[]ast.Node{node},
+						)
+					}
+				}
+			}
+			return visitor.ActionNoChange, nil
+		},
 	}
 }
 
@@ -1566,46 +1394,32 @@ func ScalarLeafsRule(context *ValidationContext) *ValidationRuleInstance {
 func UniqueArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	knownArgNames := make(map[string]*ast.Name)
 
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Field: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if len(knownArgNames) != 0 {
-						knownArgNames = make(map[string]*ast.Name)
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.Directive: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if len(knownArgNames) != 0 {
-						knownArgNames = make(map[string]*ast.Name)
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.Argument: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.Argument); ok {
-						argName := ""
-						if node.Name != nil {
-							argName = node.Name.Value
-						}
-						if nameAST, ok := knownArgNames[argName]; ok {
-							return newValidationRuleError(
-								fmt.Sprintf(`There can be only one argument named "%v".`, argName),
-								[]ast.Node{nameAST, node.Name},
-							)
-						}
-						knownArgNames[argName] = node.Name
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case *ast.Field:
+				if len(knownArgNames) != 0 {
+					knownArgNames = make(map[string]*ast.Name)
+				}
+			case *ast.Directive:
+				if len(knownArgNames) != 0 {
+					knownArgNames = make(map[string]*ast.Name)
+				}
+			case *ast.Argument:
+				argName := ""
+				if node.Name != nil {
+					argName = node.Name.Value
+				}
+				if nameAST, ok := knownArgNames[argName]; ok {
+					return newValidationRuleError(
+						fmt.Sprintf(`There can be only one argument named "%v".`, argName),
+						[]ast.Node{nameAST, node.Name},
+					)
+				}
+				knownArgNames[argName] = node.Name
+			}
+			return visitor.ActionNoChange, nil
+		},
 	}
 }
 
@@ -1617,30 +1431,23 @@ func UniqueArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance
  */
 func UniqueFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	knownFragmentNames := make(map[string]*ast.Name)
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.FragmentDefinition: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.FragmentDefinition); ok && node != nil {
-						fragmentName := ""
-						if node.Name != nil {
-							fragmentName = node.Name.Value
-						}
-						if nameAST, ok := knownFragmentNames[fragmentName]; ok {
-							return newValidationRuleError(
-								fmt.Sprintf(`There can only be one fragment named "%v".`, fragmentName),
-								[]ast.Node{nameAST, node.Name},
-							)
-						}
-						knownFragmentNames[fragmentName] = node.Name
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			if node, ok := p.Node.(*ast.FragmentDefinition); ok && node != nil {
+				fragmentName := ""
+				if node.Name != nil {
+					fragmentName = node.Name.Value
+				}
+				if nameAST, ok := knownFragmentNames[fragmentName]; ok {
+					return newValidationRuleError(
+						fmt.Sprintf(`There can only be one fragment named "%v".`, fragmentName),
+						[]ast.Node{nameAST, node.Name},
+					)
+				}
+				knownFragmentNames[fragmentName] = node.Name
+			}
+			return visitor.ActionNoChange, nil
+		},
 	}
 }
 
@@ -1652,30 +1459,23 @@ func UniqueFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance
  */
 func UniqueOperationNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	knownOperationNames := make(map[string]*ast.Name)
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.OperationDefinition: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.OperationDefinition); ok && node != nil {
-						operationName := ""
-						if node.Name != nil {
-							operationName = node.Name.Value
-						}
-						if nameAST, ok := knownOperationNames[operationName]; ok {
-							return newValidationRuleError(
-								fmt.Sprintf(`There can only be one operation named "%v".`, operationName),
-								[]ast.Node{nameAST, node.Name},
-							)
-						}
-						knownOperationNames[operationName] = node.Name
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			if node, ok := p.Node.(*ast.OperationDefinition); ok && node != nil {
+				operationName := ""
+				if node.Name != nil {
+					operationName = node.Name.Value
+				}
+				if nameAST, ok := knownOperationNames[operationName]; ok {
+					return newValidationRuleError(
+						fmt.Sprintf(`There can only be one operation named "%v".`, operationName),
+						[]ast.Node{nameAST, node.Name},
+					)
+				}
+				knownOperationNames[operationName] = node.Name
+			}
+			return visitor.ActionNoChange, nil
+		},
 	}
 }
 
@@ -1687,33 +1487,26 @@ func UniqueOperationNamesRule(context *ValidationContext) *ValidationRuleInstanc
  * input types (scalar, enum, or input object).
  */
 func VariablesAreInputTypesRule(context *ValidationContext) *ValidationRuleInstance {
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.VariableDefinition: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if node, ok := p.Node.(*ast.VariableDefinition); ok && node != nil {
-						ttype, _ := typeFromAST(*context.Schema(), node.Type)
-
-						// If the variable type is not an input type, return an error.
-						if ttype != nil && !IsInputType(ttype) {
-							variableName := ""
-							if node.Variable != nil && node.Variable.Name != nil {
-								variableName = node.Variable.Name.Value
-							}
-							return newValidationRuleError(
-								fmt.Sprintf(`Variable "$%v" cannot be non-input type "%v".`,
-									variableName, printer.Print(node.Type)),
-								[]ast.Node{node.Type},
-							)
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			if node, ok := p.Node.(*ast.VariableDefinition); ok && node != nil {
+				ttype, _ := typeFromAST(*context.Schema(), node.Type)
+
+				// If the variable type is not an input type, return an error.
+				if ttype != nil && !IsInputType(ttype) {
+					variableName := ""
+					if node.Variable != nil && node.Variable.Name != nil {
+						variableName = node.Variable.Name.Value
+					}
+					return newValidationRuleError(
+						fmt.Sprintf(`Variable "$%v" cannot be non-input type "%v".`,
+							variableName, printer.Print(node.Type)),
+						[]ast.Node{node.Type},
+					)
+				}
+			}
+			return visitor.ActionNoChange, nil
+		},
 	}
 }
 
@@ -1758,76 +1551,54 @@ func VariablesInAllowedPositionRule(context *ValidationContext) *ValidationRuleI
 	varDefMap := make(map[string]*ast.VariableDefinition)
 	visitedFragmentNames := make(map[string]struct{})
 
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.OperationDefinition: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if len(varDefMap) != 0 {
-						varDefMap = make(map[string]*ast.VariableDefinition)
-					}
-					if len(visitedFragmentNames) != 0 {
-						visitedFragmentNames = make(map[string]struct{})
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.VariableDefinition: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if varDefAST, ok := p.Node.(*ast.VariableDefinition); ok {
-						defName := ""
-						if varDefAST.Variable != nil && varDefAST.Variable.Name != nil {
-							defName = varDefAST.Variable.Name.Value
-						}
-						varDefMap[defName] = varDefAST
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.FragmentSpread: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					// Only visit fragments of a particular name once per operation
-					if spreadAST, ok := p.Node.(*ast.FragmentSpread); ok {
-						spreadName := ""
-						if spreadAST.Name != nil {
-							spreadName = spreadAST.Name.Value
-						}
-						if _, hasVisited := visitedFragmentNames[spreadName]; hasVisited {
-							return visitor.ActionSkip, nil
-						}
-						visitedFragmentNames[spreadName] = struct{}{}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-			kinds.Variable: {
-				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if variableAST, ok := p.Node.(*ast.Variable); ok && variableAST != nil {
-						varName := ""
-						if variableAST.Name != nil {
-							varName = variableAST.Name.Value
-						}
-						varDef, _ := varDefMap[varName]
-						var varType Type
-						if varDef != nil {
-							varType, _ = typeFromAST(*context.Schema(), varDef.Type)
-						}
-						inputType := context.InputType()
-						if varType != nil && inputType != nil && !varTypeAllowedForType(effectiveType(varType, varDef), inputType) {
-							return newValidationRuleError(
-								fmt.Sprintf(`Variable "$%v" of type "%v" used in position `+
-									`expecting type "%v".`, varName, varType, inputType),
-								[]ast.Node{variableAST},
-							)
-						}
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
 	return &ValidationRuleInstance{
+		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+			switch node := p.Node.(type) {
+			case ast.OperationDefinition:
+				if len(varDefMap) != 0 {
+					varDefMap = make(map[string]*ast.VariableDefinition)
+				}
+				if len(visitedFragmentNames) != 0 {
+					visitedFragmentNames = make(map[string]struct{})
+				}
+			case *ast.VariableDefinition:
+				defName := ""
+				if node.Variable != nil && node.Variable.Name != nil {
+					defName = node.Variable.Name.Value
+				}
+				varDefMap[defName] = node
+				// Only visit fragments of a particular name once per operation
+			case *ast.FragmentSpread:
+				spreadName := ""
+				if node.Name != nil {
+					spreadName = node.Name.Value
+				}
+				if _, hasVisited := visitedFragmentNames[spreadName]; hasVisited {
+					return visitor.ActionSkip, nil
+				}
+				visitedFragmentNames[spreadName] = struct{}{}
+			case *ast.Variable:
+				varName := ""
+				if node.Name != nil {
+					varName = node.Name.Value
+				}
+				varDef, _ := varDefMap[varName]
+				var varType Type
+				if varDef != nil {
+					varType, _ = typeFromAST(*context.Schema(), varDef.Type)
+				}
+				inputType := context.InputType()
+				if varType != nil && inputType != nil && !varTypeAllowedForType(effectiveType(varType, varDef), inputType) {
+					return newValidationRuleError(
+						fmt.Sprintf(`Variable "$%v" of type "%v" used in position `+
+							`expecting type "%v".`, varName, varType, inputType),
+						[]ast.Node{node},
+					)
+				}
+			}
+			return visitor.ActionNoChange, nil
+		},
 		VisitSpreadFragments: true,
-		VisitorOpts:          visitorOpts,
 	}
 }
 

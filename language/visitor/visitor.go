@@ -21,16 +21,9 @@ type VisitFuncParams struct {
 
 type VisitFunc func(p VisitFuncParams) (string, interface{})
 
-type NamedVisitFuncs struct {
-	Kind  VisitFunc // 1) Named visitors triggered when entering a node a specific kind.
-	Leave VisitFunc // 2) Named visitors that trigger upon entering and leaving a node of
-	Enter VisitFunc // 2) Named visitors that trigger upon entering and leaving a node of
-}
-
 type VisitorOptions struct {
-	KindFuncMap map[string]NamedVisitFuncs
-	Enter       VisitFunc // 3) Generic visitors that trigger upon entering and leaving any node.
-	Leave       VisitFunc // 3) Generic visitors that trigger upon entering and leaving any node.
+	Enter VisitFunc
+	Leave VisitFunc
 }
 
 type actionBreak struct{}
@@ -215,40 +208,5 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions) (err error) {
 		}
 	}()
 	visit(root, visitorOpts, make([]ast.Node, 0, 64), nil, nil)
-	return nil
-}
-
-func GetVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitFunc {
-	if visitorOpts == nil {
-		return nil
-	}
-	kindVisitor, ok := visitorOpts.KindFuncMap[kind]
-	if ok {
-		if !isLeaving && kindVisitor.Kind != nil {
-			// { Kind() {} }
-			return kindVisitor.Kind
-		}
-		if isLeaving {
-			// { Kind: { leave() {} } }
-			return kindVisitor.Leave
-		}
-		// { Kind: { enter() {} } }
-		return kindVisitor.Enter
-	}
-
-	if isLeaving {
-		// { enter() {} }
-		specificVisitor := visitorOpts.Leave
-		if specificVisitor != nil {
-			return specificVisitor
-		}
-	} else {
-		// { leave() {} }
-		specificVisitor := visitorOpts.Enter
-		if specificVisitor != nil {
-			return specificVisitor
-		}
-	}
-
 	return nil
 }

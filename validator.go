@@ -59,9 +59,8 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 
 					// Get the visitor function from the validation instance, and if it
 					// exists, call it with the visitor arguments.
-					enterFn := visitor.GetVisitFn(instance.VisitorOpts, false, kind)
-					if enterFn != nil {
-						action, result = enterFn(p)
+					if instance.Enter != nil {
+						action, result = instance.Enter(p)
 					}
 
 					// If the visitor returned an error, log it and do not visit any
@@ -97,7 +96,6 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 					if action == visitor.ActionSkip {
 						typeInfo.Leave(node)
 					}
-
 				}
 
 				return action, result
@@ -107,13 +105,10 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 				var result interface{}
 				switch node := p.Node.(type) {
 				case ast.Node:
-					kind := node.GetKind()
-
 					// Get the visitor function from the validation instance, and if it
 					// exists, call it with the visitor arguments.
-					leaveFn := visitor.GetVisitFn(instance.VisitorOpts, true, kind)
-					if leaveFn != nil {
-						action, result = leaveFn(p)
+					if instance.Leave != nil {
+						action, result = instance.Leave(p)
 					}
 
 					// If the visitor returned an error, log it and do not visit any
