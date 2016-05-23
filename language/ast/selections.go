@@ -5,6 +5,7 @@ import (
 )
 
 type Selection interface {
+	Node
 }
 
 // Ensure that all definition types implements Selection interface

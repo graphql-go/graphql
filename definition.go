@@ -652,7 +652,7 @@ type Interface struct {
 	typeConfig      InterfaceConfig
 	fields          FieldDefinitionMap
 	implementations []*Object
-	possibleTypes   map[string]bool
+	possibleTypes   map[string]struct{}
 
 	err error
 }
@@ -710,19 +710,17 @@ func (it *Interface) IsPossibleType(ttype *Object) bool {
 		return false
 	}
 	if len(it.possibleTypes) == 0 {
-		possibleTypes := map[string]bool{}
+		possibleTypes := make(map[string]struct{}, len(it.PossibleTypes()))
 		for _, possibleType := range it.PossibleTypes() {
 			if possibleType == nil {
 				continue
 			}
-			possibleTypes[possibleType.PrivateName] = true
+			possibleTypes[possibleType.PrivateName] = struct{}{}
 		}
 		it.possibleTypes = possibleTypes
 	}
-	if val, ok := it.possibleTypes[ttype.PrivateName]; ok {
-		return val
-	}
-	return false
+	_, ok := it.possibleTypes[ttype.PrivateName]
+	return ok
 }
 func (it *Interface) ObjectType(value interface{}, info ResolveInfo) *Object {
 	if it.ResolveType != nil {
@@ -780,7 +778,7 @@ type Union struct {
 
 	typeConfig    UnionConfig
 	types         []*Object
-	possibleTypes map[string]bool
+	possibleTypes map[string]struct{}
 
 	err error
 }
@@ -848,25 +846,21 @@ func (ut *Union) PossibleTypes() []*Object {
 	return ut.types
 }
 func (ut *Union) IsPossibleType(ttype *Object) bool {
-
 	if ttype == nil {
 		return false
 	}
 	if len(ut.possibleTypes) == 0 {
-		possibleTypes := map[string]bool{}
+		possibleTypes := make(map[string]struct{}, len(ut.PossibleTypes()))
 		for _, possibleType := range ut.PossibleTypes() {
 			if possibleType == nil {
 				continue
 			}
-			possibleTypes[possibleType.PrivateName] = true
+			possibleTypes[possibleType.PrivateName] = struct{}{}
 		}
 		ut.possibleTypes = possibleTypes
 	}
-
-	if val, ok := ut.possibleTypes[ttype.PrivateName]; ok {
-		return val
-	}
-	return false
+	_, ok := ut.possibleTypes[ttype.PrivateName]
+	return ok
 }
 func (ut *Union) ObjectType(value interface{}, info ResolveInfo) *Object {
 	if ut.ResolveType != nil {

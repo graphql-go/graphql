@@ -611,7 +611,7 @@ func parseObject(parser *Parser, isConst bool) (*ast.ObjectValue, error) {
 		return nil, err
 	}
 	fields := []*ast.ObjectField{}
-	fieldNames := map[string]bool{}
+	fieldNames := make(map[string]struct{})
 	for {
 		if skp, err := skip(parser, lexer.TokenKind[lexer.BRACE_R]); err != nil {
 			return nil, err
@@ -622,7 +622,7 @@ func parseObject(parser *Parser, isConst bool) (*ast.ObjectValue, error) {
 		if err != nil {
 			return nil, err
 		}
-		fieldNames[fieldName] = true
+		fieldNames[fieldName] = struct{}{}
 		fields = append(fields, field)
 	}
 	return ast.NewObjectValue(&ast.ObjectValue{
@@ -631,7 +631,7 @@ func parseObject(parser *Parser, isConst bool) (*ast.ObjectValue, error) {
 	}), nil
 }
 
-func parseObjectField(parser *Parser, isConst bool, fieldNames map[string]bool) (*ast.ObjectField, string, error) {
+func parseObjectField(parser *Parser, isConst bool, fieldNames map[string]struct{}) (*ast.ObjectField, string, error) {
 	start := parser.Token.Start
 	name, err := parseName(parser)
 	if err != nil {

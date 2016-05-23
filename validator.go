@@ -132,7 +132,7 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 				}
 				return action, result
 			},
-		}, nil)
+		})
 	}
 
 	for _, rule := range rules {
@@ -164,7 +164,7 @@ func (ctx *ValidationContext) Document() *ast.Document {
 }
 
 func (ctx *ValidationContext) Fragment(name string) *ast.FragmentDefinition {
-	if len(ctx.fragments) == 0 {
+	if ctx.fragments == nil {
 		if ctx.Document() == nil {
 			return nil
 		}
