@@ -7,15 +7,14 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/location"
-	"github.com/graphql-go/graphql/testutil"
+	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
+	"github.com/sprucehealth/graphql/language/location"
+	"github.com/sprucehealth/graphql/testutil"
 	"golang.org/x/net/context"
 )
 
 func TestExecutesArbitraryCode(t *testing.T) {
-
 	deepData := map[string]interface{}{}
 	data := map[string]interface{}{
 		"a": func() interface{} { return "Apple" },
@@ -84,7 +83,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 				"b": "Boring",
 				"c": []interface{}{
 					"Contrived",
-					nil,
+					"",
 					"Confusing",
 				},
 				"deeper": []interface{}{
@@ -346,6 +345,65 @@ func TestThreadsSourceCorrectly(t *testing.T) {
 	}
 }
 
+func TestOmitEmpty(t *testing.T) {
+	query := `query Example { a {
+		b
+		c
+		d
+	} }`
+
+	aType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "A",
+		Fields: graphql.Fields{
+			"b": &graphql.Field{Type: graphql.String},
+			"c": &graphql.Field{Type: graphql.String},
+			"d": &graphql.Field{Type: graphql.String},
+		},
+	})
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Type",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{
+					Type: aType,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return &struct {
+							B string `json:"b"`
+							C string `json:"c,omitempty"`
+						}{}, nil
+					},
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	ast := testutil.TestParse(t, query)
+	ep := graphql.ExecuteParams{
+		Schema: schema,
+		AST:    ast,
+	}
+	result := testutil.TestExecute(t, ep)
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"a": map[string]interface{}{
+				"b": "",
+				"c": nil,
+				"d": nil,
+			},
+		},
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
 func TestCorrectlyThreadsArguments(t *testing.T) {
 
 	query := `
@@ -465,10 +523,10 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 		"syncError": nil,
 	}
 	expectedErrors := []gqlerrors.FormattedError{
-		gqlerrors.FormattedError{
+		{
 			Message: "Error getting syncError",
 			Locations: []location.SourceLocation{
-				location.SourceLocation{
+				{
 					Line: 3, Column: 7,
 				},
 			},
@@ -619,7 +677,7 @@ func TestThrowsIfNoOperationIsProvidedWithMultipleOperations(t *testing.T) {
 	}
 
 	expectedErrors := []gqlerrors.FormattedError{
-		gqlerrors.FormattedError{
+		{
 			Message:   "Must provide operation name if query contains multiple operations.",
 			Locations: []location.SourceLocation{},
 		},
@@ -1050,7 +1108,7 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 			},
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message:   `Expected value of type "SpecialType" but got: graphql_test.testNotSpecialType.`,
 				Locations: []location.SourceLocation{},
 			},
@@ -1119,7 +1177,7 @@ func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message:   "GraphQL cannot execute a request containing a ObjectDefinition",
 				Locations: []location.SourceLocation{},
 			},
@@ -1332,6 +1390,59 @@ func TestMutation_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 		t.Fatalf("unexpected error, got: %v", err)
 	}
 	query := "mutation _ { newBar: bar(b:\"title\") }"
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+	})
+	if len(result.Errors) != 0 {
+		t.Fatalf("wrong result, unexpected errors: %+v", result.Errors)
+	}
+}
+
+func TestMutation_NonNullSubField(t *testing.T) {
+	queryType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Query",
+		Fields: graphql.Fields{
+			"a": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+	accountType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Account",
+		Fields: graphql.Fields{
+			"id": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		},
+	})
+	authenticatePayloadType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "AuthenticatePayload",
+		Fields: graphql.Fields{
+			"account": &graphql.Field{Type: accountType},
+		},
+	})
+	mutationType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Mutation",
+		Fields: graphql.Fields{
+			"authenticate": &graphql.Field{
+				Type: graphql.NewNonNull(authenticatePayloadType),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return struct {
+						Account *struct{} `json:"account"`
+					}{
+						Account: nil,
+					}, nil
+				},
+			},
+		},
+	})
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query:    queryType,
+		Mutation: mutationType,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error, got: %v", err)
+	}
+	query := "mutation _ { authenticate { account { id } } }"
 	result := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,

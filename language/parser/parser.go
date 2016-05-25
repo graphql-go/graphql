@@ -3,10 +3,10 @@ package parser
 import (
 	"fmt"
 
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/ast"
-	"github.com/graphql-go/graphql/language/lexer"
-	"github.com/graphql-go/graphql/language/source"
+	"github.com/sprucehealth/graphql/gqlerrors"
+	"github.com/sprucehealth/graphql/language/ast"
+	"github.com/sprucehealth/graphql/language/lexer"
+	"github.com/sprucehealth/graphql/language/source"
 )
 
 type parseFn func(parser *Parser) (interface{}, error)
@@ -36,7 +36,7 @@ func Parse(p ParseParams) (*ast.Document, error) {
 		sourceObj = p.Source.(*source.Source)
 	default:
 		body, _ := p.Source.(string)
-		sourceObj = source.NewSource(&source.Source{Body: body})
+		sourceObj = source.New("GraphQL", body)
 	}
 	parser, err := makeParser(sourceObj, p.Options)
 	if err != nil {
@@ -58,7 +58,7 @@ func parseValue(p ParseParams) (ast.Value, error) {
 		sourceObj = p.Source.(*source.Source)
 	default:
 		body, _ := p.Source.(string)
-		sourceObj = source.NewSource(&source.Source{Body: body})
+		sourceObj = source.New("", body)
 	}
 	parser, err := makeParser(sourceObj, p.Options)
 	if err != nil {
@@ -117,11 +117,7 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
 			nodes = append(nodes, node)
 		} else if peek(parser, lexer.TokenKind[lexer.NAME]) {
 			switch parser.Token.Value {
-			case "query":
-				fallthrough
-			case "mutation":
-				fallthrough
-			case "subscription": // Note: subscription is an experimental non-spec addition.
+			case "query", "mutation", "subscription": // Note: subscription is an experimental non-spec addition.
 				node, err := parseOperationDefinition(parser)
 				if err != nil {
 					return nil, err
@@ -240,16 +236,17 @@ func parseOperationDefinition(parser *Parser) (*ast.OperationDefinition, error) 
 }
 
 func parseVariableDefinitions(parser *Parser) ([]*ast.VariableDefinition, error) {
-	variableDefinitions := []*ast.VariableDefinition{}
+	var variableDefinitions []*ast.VariableDefinition
 	if peek(parser, lexer.TokenKind[lexer.PAREN_L]) {
 		vdefs, err := many(parser, lexer.TokenKind[lexer.PAREN_L], parseVariableDefinition, lexer.TokenKind[lexer.PAREN_R])
+		if err != nil {
+			return variableDefinitions, err
+		}
+		variableDefinitions := make([]*ast.VariableDefinition, 0, len(vdefs))
 		for _, vdef := range vdefs {
 			if vdef != nil {
 				variableDefinitions = append(variableDefinitions, vdef.(*ast.VariableDefinition))
 			}
-		}
-		if err != nil {
-			return variableDefinitions, err
 		}
 		return variableDefinitions, nil
 	}
@@ -310,7 +307,7 @@ func parseSelectionSet(parser *Parser) (*ast.SelectionSet, error) {
 	if err != nil {
 		return nil, err
 	}
-	selections := []ast.Selection{}
+	selections := make([]ast.Selection, 0, len(iSelections))
 	for _, iSelection := range iSelections {
 		if iSelection != nil {
 			// type assert interface{} into Selection interface
@@ -328,9 +325,8 @@ func parseSelection(parser *Parser) (interface{}, error) {
 	if peek(parser, lexer.TokenKind[lexer.SPREAD]) {
 		r, err := parseFragment(parser)
 		return r, err
-	} else {
-		return parseField(parser)
 	}
+	return parseField(parser)
 }
 
 func parseField(parser *Parser) (*ast.Field, error) {
@@ -382,12 +378,13 @@ func parseField(parser *Parser) (*ast.Field, error) {
 }
 
 func parseArguments(parser *Parser) ([]*ast.Argument, error) {
-	arguments := []*ast.Argument{}
+	var arguments []*ast.Argument
 	if peek(parser, lexer.TokenKind[lexer.PAREN_L]) {
 		iArguments, err := many(parser, lexer.TokenKind[lexer.PAREN_L], parseArgument, lexer.TokenKind[lexer.PAREN_R])
 		if err != nil {
 			return arguments, err
 		}
+		arguments := make([]*ast.Argument, 0, len(iArguments))
 		for _, iArgument := range iArguments {
 			if iArgument != nil {
 				arguments = append(arguments, iArgument.(*ast.Argument))
@@ -614,7 +611,7 @@ func parseObject(parser *Parser, isConst bool) (*ast.ObjectValue, error) {
 		return nil, err
 	}
 	fields := []*ast.ObjectField{}
-	fieldNames := map[string]bool{}
+	fieldNames := make(map[string]struct{})
 	for {
 		if skp, err := skip(parser, lexer.TokenKind[lexer.BRACE_R]); err != nil {
 			return nil, err
@@ -625,7 +622,7 @@ func parseObject(parser *Parser, isConst bool) (*ast.ObjectValue, error) {
 		if err != nil {
 			return nil, err
 		}
-		fieldNames[fieldName] = true
+		fieldNames[fieldName] = struct{}{}
 		fields = append(fields, field)
 	}
 	return ast.NewObjectValue(&ast.ObjectValue{
@@ -634,7 +631,7 @@ func parseObject(parser *Parser, isConst bool) (*ast.ObjectValue, error) {
 	}), nil
 }
 
-func parseObjectField(parser *Parser, isConst bool, fieldNames map[string]bool) (*ast.ObjectField, string, error) {
+func parseObjectField(parser *Parser, isConst bool, fieldNames map[string]struct{}) (*ast.ObjectField, string, error) {
 	start := parser.Token.Start
 	name, err := parseName(parser)
 	if err != nil {
@@ -1093,11 +1090,9 @@ func peek(parser *Parser, Kind int) bool {
 // the parser. Otherwise, do not change the parser state and return false.
 func skip(parser *Parser, Kind int) (bool, error) {
 	if parser.Token.Kind == Kind {
-		err := advance(parser)
-		return true, err
-	} else {
-		return false, nil
+		return true, advance(parser)
 	}
+	return false, nil
 }
 
 // If the next token is of the given kind, return that token after advancing
@@ -1105,8 +1100,7 @@ func skip(parser *Parser, Kind int) (bool, error) {
 func expect(parser *Parser, kind int) (lexer.Token, error) {
 	token := parser.Token
 	if token.Kind == kind {
-		err := advance(parser)
-		return token, err
+		return token, advance(parser)
 	}
 	descp := fmt.Sprintf("Expected %s, found %s", lexer.GetTokenKindDesc(kind), lexer.GetTokenDesc(token))
 	return token, gqlerrors.NewSyntaxError(parser.Source, token.Start, descp)
@@ -1117,8 +1111,7 @@ func expect(parser *Parser, kind int) (lexer.Token, error) {
 func expectKeyWord(parser *Parser, value string) (lexer.Token, error) {
 	token := parser.Token
 	if token.Kind == lexer.TokenKind[lexer.NAME] && token.Value == value {
-		err := advance(parser)
-		return token, err
+		return token, advance(parser)
 	}
 	descp := fmt.Sprintf("Expected \"%s\", found %s", value, lexer.GetTokenDesc(token))
 	return token, gqlerrors.NewSyntaxError(parser.Source, token.Start, descp)
@@ -1127,17 +1120,15 @@ func expectKeyWord(parser *Parser, value string) (lexer.Token, error) {
 // Helper function for creating an error when an unexpected lexed token
 // is encountered.
 func unexpected(parser *Parser, atToken lexer.Token) error {
-	var token lexer.Token
-	if (atToken == lexer.Token{}) {
-		token = parser.Token
-	} else {
+	token := atToken
+	if (token == lexer.Token{}) {
 		token = parser.Token
 	}
 	description := fmt.Sprintf("Unexpected %v", lexer.GetTokenDesc(token))
 	return gqlerrors.NewSyntaxError(parser.Source, token.Start, description)
 }
 
-//  Returns a possibly empty list of parse nodes, determined by
+// any returns a possibly empty list of parse nodes, determined by
 // the parseFn. This list begins with a lex token of openKind
 // and ends with a lex token of closeKind. Advances the parser
 // to the next lex token after the closing token.
@@ -1162,7 +1153,7 @@ func any(parser *Parser, openKind int, parseFn parseFn, closeKind int) ([]interf
 	return nodes, nil
 }
 
-//  Returns a non-empty list of parse nodes, determined by
+// many returns a non-empty list of parse nodes, determined by
 // the parseFn. This list begins with a lex token of openKind
 // and ends with a lex token of closeKind. Advances the parser
 // to the next lex token after the closing token.

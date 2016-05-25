@@ -3,11 +3,11 @@ package testutil
 import (
 	"testing"
 
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/location"
-	"github.com/graphql-go/graphql/language/parser"
-	"github.com/graphql-go/graphql/language/source"
+	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
+	"github.com/sprucehealth/graphql/language/location"
+	"github.com/sprucehealth/graphql/language/parser"
+	"github.com/sprucehealth/graphql/language/source"
 	"reflect"
 )
 
@@ -452,9 +452,7 @@ func init() {
 
 }
 func expectValidRule(t *testing.T, schema *graphql.Schema, rules []graphql.ValidationRuleFn, queryString string) {
-	source := source.NewSource(&source.Source{
-		Body: queryString,
-	})
+	source := source.New("", queryString)
 	AST, err := parser.Parse(parser.ParseParams{Source: source})
 	if err != nil {
 		t.Fatal(err)
@@ -469,9 +467,7 @@ func expectValidRule(t *testing.T, schema *graphql.Schema, rules []graphql.Valid
 
 }
 func expectInvalidRule(t *testing.T, schema *graphql.Schema, rules []graphql.ValidationRuleFn, queryString string, expectedErrors []gqlerrors.FormattedError) {
-	source := source.NewSource(&source.Source{
-		Body: queryString,
-	})
+	source := source.New("", queryString)
 	AST, err := parser.Parse(parser.ParseParams{Source: source})
 	if err != nil {
 		t.Fatal(err)

@@ -35,7 +35,7 @@ var IncludeDirective *Directive = NewDirective(&Directive{
 	Description: "Directs the executor to include this field or fragment only when " +
 		"the `if` argument is true.",
 	Args: []*Argument{
-		&Argument{
+		{
 			PrivateName:        "if",
 			Type:               NewNonNull(Boolean),
 			PrivateDescription: "Included when true.",
@@ -54,7 +54,7 @@ var SkipDirective *Directive = NewDirective(&Directive{
 	Description: "Directs the executor to skip this field or fragment when the `if` " +
 		"argument is true.",
 	Args: []*Argument{
-		&Argument{
+		{
 			PrivateName:        "if",
 			Type:               NewNonNull(Boolean),
 			PrivateDescription: "Skipped when true.",

@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/graphql-go/graphql/language/source"
+	"github.com/sprucehealth/graphql/language/source"
 )
 
 type Location struct {
@@ -12,7 +12,7 @@ type Location struct {
 
 func NewLocation(loc *Location) *Location {
 	if loc == nil {
-		loc = &Location{}
+		return &Location{}
 	}
 	return &Location{
 		Start:  loc.Start,

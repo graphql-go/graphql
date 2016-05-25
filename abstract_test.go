@@ -4,10 +4,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/location"
-	"github.com/graphql-go/graphql/testutil"
+	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
+	"github.com/sprucehealth/graphql/language/location"
+	"github.com/sprucehealth/graphql/testutil"
 )
 
 type testDog struct {
@@ -405,7 +405,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 			},
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message:   `Runtime Object type "Human" is not a possible type for "Pet".`,
 				Locations: []location.SourceLocation{},
 			},
@@ -523,7 +523,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 			},
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message:   `Runtime Object type "Human" is not a possible type for "Pet".`,
 				Locations: []location.SourceLocation{},
 			},

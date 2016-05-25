@@ -7,18 +7,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/ast"
-	"github.com/graphql-go/graphql/language/location"
-	"github.com/graphql-go/graphql/language/source"
+	"github.com/sprucehealth/graphql/gqlerrors"
+	"github.com/sprucehealth/graphql/language/ast"
+	"github.com/sprucehealth/graphql/language/location"
+	"github.com/sprucehealth/graphql/language/source"
 )
 
 func TestBadToken(t *testing.T) {
 	_, err := Parse(ParseParams{
-		Source: &source.Source{
-			Body: "query _ {\n  me {\n    id`\n  }\n}",
-			Name: "GraphQL",
-		},
+		Source: source.New("GraphQL", "query _ {\n  me {\n    id`\n  }\n}"),
 	})
 	if err == nil {
 		t.Fatal("expected a parse error")
@@ -62,7 +59,6 @@ func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
 						},
 						Value: "field",
 					},
-					Arguments:  []*ast.Argument{},
 					Directives: []*ast.Directive{},
 				},
 			},
@@ -136,7 +132,7 @@ fragment MissingOn Type
 
 func TestParseProvidesUsefulErrorsWhenUsingSource(t *testing.T) {
 	test := errorMessageTest{
-		source.NewSource(&source.Source{Body: "query", Name: "MyQuery.graphql"}),
+		source.New("MyQuery.graphql", "query"),
 		`Syntax Error MyQuery.graphql (1:6) Expected Name, found EOF`,
 		false,
 	}
@@ -259,7 +255,7 @@ func TestParseCreatesAst(t *testing.T) {
   }
 }
 `
-	source := source.NewSource(&source.Source{Body: body})
+	source := source.New("", body)
 	document, err := Parse(
 		ParseParams{
 			Source: source,
@@ -338,7 +334,6 @@ func TestParseCreatesAst(t *testing.T) {
 									},
 									Value: "id",
 								},
-								Arguments:    []*ast.Argument{},
 								Directives:   []*ast.Directive{},
 								SelectionSet: nil,
 							},
@@ -354,7 +349,6 @@ func TestParseCreatesAst(t *testing.T) {
 									},
 									Value: "name",
 								},
-								Arguments:    []*ast.Argument{},
 								Directives:   []*ast.Directive{},
 								SelectionSet: nil,
 							},
@@ -438,5 +432,87 @@ func toError(err error) *gqlerrors.Error {
 		return err
 	default:
 		return nil
+	}
+}
+
+func BenchmarkParser(b *testing.B) {
+	body := `
+mutation _ {
+	doSomeCoolStuff(input: {
+    objectID: "someKindOfID",
+  }) {
+    success
+    errorCode
+    errorMessage
+    object {
+      id
+    }
+  }
+}
+
+mutation _{
+  doAnotherThing(input: {
+    objectID: "toThisObject",
+    msg: {
+      text: "Testing",
+      internal: false,
+    }
+  }) {
+    success
+    errorCode
+    errorMessage
+  }
+}
+
+query _ {
+  queryThatThing(id: "fromThisID", other: 123123123.123123) {
+    title
+    subtitle
+    stuff {
+      id
+      name
+    }
+    items {
+      edges {
+        node {
+          id
+          data {
+            __typename
+            ...on Message {
+			  summaryMarkup
+              textMarkup
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+query _ {
+  me {
+    account {
+      organizations {
+        id
+      }
+    }
+  }
+}
+`
+	source := source.New("", body)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := Parse(
+			ParseParams{
+				Source: source,
+				Options: ParseOptions{
+					NoSource: true,
+				},
+			},
+		)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }

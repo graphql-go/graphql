@@ -1,9 +1,9 @@
 package graphql
 
 import (
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/parser"
-	"github.com/graphql-go/graphql/language/source"
+	"github.com/sprucehealth/graphql/gqlerrors"
+	"github.com/sprucehealth/graphql/language/parser"
+	"github.com/sprucehealth/graphql/language/source"
 	"golang.org/x/net/context"
 )
 
@@ -20,17 +20,14 @@ type Params struct {
 }
 
 func Do(p Params) *Result {
-	source := source.NewSource(&source.Source{
-		Body: p.RequestString,
-		Name: "GraphQL request",
-	})
-	AST, err := parser.Parse(parser.ParseParams{Source: source})
+	source := source.New("GraphQL request", p.RequestString)
+	ast, err := parser.Parse(parser.ParseParams{Source: source})
 	if err != nil {
 		return &Result{
 			Errors: gqlerrors.FormatErrors(err),
 		}
 	}
-	validationResult := ValidateDocument(&p.Schema, AST, nil)
+	validationResult := ValidateDocument(&p.Schema, ast, nil)
 
 	if !validationResult.IsValid {
 		return &Result{
@@ -41,7 +38,7 @@ func Do(p Params) *Result {
 	return Execute(ExecuteParams{
 		Schema:        p.Schema,
 		Root:          p.RootObject,
-		AST:           AST,
+		AST:           ast,
 		OperationName: p.OperationName,
 		Args:          p.VariableValues,
 		Context:       p.Context,

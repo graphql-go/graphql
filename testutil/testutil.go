@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/language/ast"
-	"github.com/graphql-go/graphql/language/parser"
 	"github.com/kr/pretty"
+	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/language/ast"
+	"github.com/sprucehealth/graphql/language/parser"
 )
 
 var (
@@ -343,7 +343,7 @@ func GetHero(episode interface{}) interface{} {
 
 // Test helper functions
 
-func TestParse(t *testing.T, query string) *ast.Document {
+func TestParse(t testing.TB, query string) *ast.Document {
 	astDoc, err := parser.Parse(parser.ParseParams{
 		Source: query,
 		Options: parser.ParseOptions{
@@ -356,7 +356,7 @@ func TestParse(t *testing.T, query string) *ast.Document {
 	}
 	return astDoc
 }
-func TestExecute(t *testing.T, ep graphql.ExecuteParams) *graphql.Result {
+func TestExecute(t testing.TB, ep graphql.ExecuteParams) *graphql.Result {
 	return graphql.Execute(ep)
 }
 
@@ -364,7 +364,7 @@ func Diff(a, b interface{}) []string {
 	return pretty.Diff(a, b)
 }
 
-func ASTToJSON(t *testing.T, a ast.Node) interface{} {
+func ASTToJSON(t testing.TB, a ast.Node) interface{} {
 	b, err := json.Marshal(a)
 	if err != nil {
 		t.Fatalf("Failed to marshal Node %v", err)

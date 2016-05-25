@@ -6,10 +6,10 @@ import (
 	"math"
 	"reflect"
 
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/ast"
-	"github.com/graphql-go/graphql/language/kinds"
-	"github.com/graphql-go/graphql/language/printer"
+	"github.com/sprucehealth/graphql/gqlerrors"
+	"github.com/sprucehealth/graphql/language/ast"
+	"github.com/sprucehealth/graphql/language/kinds"
+	"github.com/sprucehealth/graphql/language/printer"
 )
 
 // Prepares an object map of variableValues of the correct type based on the
@@ -200,7 +200,10 @@ func typeFromAST(schema Schema, inputTypeAST ast.Type) (Type, error) {
 		ttype := schema.Type(nameValue)
 		return ttype, nil
 	default:
-		return nil, invariant(inputTypeAST.GetKind() == kinds.Named, "Must be a named type.")
+		if inputTypeAST.GetKind() != kinds.Named {
+			return nil, gqlerrors.NewFormattedError("Must be a named type.")
+		}
+		return nil, nil
 	}
 }
 
@@ -246,13 +249,13 @@ func isValidInputValue(value interface{}, ttype Input) bool {
 		fields := ttype.Fields()
 
 		// Ensure every provided field is defined.
-		for fieldName, _ := range valueMap {
+		for fieldName := range valueMap {
 			if _, ok := fields[fieldName]; !ok {
 				return false
 			}
 		}
 		// Ensure every defined field is valid.
-		for fieldName, _ := range fields {
+		for fieldName := range fields {
 			isValid := isValidInputValue(valueMap[fieldName], fields[fieldName].Type)
 			if !isValid {
 				return false
@@ -274,19 +277,37 @@ func isValidInputValue(value interface{}, ttype Input) bool {
 
 // Returns true if a value is null, undefined, or NaN.
 func isNullish(value interface{}) bool {
-	if value, ok := value.(string); ok {
-		return value == ""
+	switch v := value.(type) {
+	case nil:
+		return true
+	case float32:
+		return math.IsNaN(float64(v))
+	case float64:
+		return math.IsNaN(v)
 	}
-	if value, ok := value.(int); ok {
-		return math.IsNaN(float64(value))
+	// The interface{} can hide an underlying nil ptr
+	if v := reflect.ValueOf(value); v.Kind() == reflect.Ptr {
+		return v.IsNil()
 	}
-	if value, ok := value.(float32); ok {
-		return math.IsNaN(float64(value))
+	return false
+}
+
+func isEmptyValue(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
+		return v.Len() == 0
+	case reflect.Bool:
+		return !v.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return v.Float() == 0
+	case reflect.Interface, reflect.Ptr:
+		return v.IsNil()
 	}
-	if value, ok := value.(float64); ok {
-		return math.IsNaN(value)
-	}
-	return value == nil
+	return false
 }
 
 /**
@@ -389,13 +410,6 @@ func valueFromAST(valueAST ast.Value, ttype Input, variables map[string]interfac
 		if !isNullish(parsed) {
 			return parsed
 		}
-	}
-	return nil
-}
-
-func invariant(condition bool, message string) error {
-	if !condition {
-		return gqlerrors.NewFormattedError(message)
 	}
 	return nil
 }

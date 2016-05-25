@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/graphql-go/graphql/language/ast"
-	"github.com/graphql-go/graphql/language/printer"
+	"github.com/sprucehealth/graphql/language/ast"
+	"github.com/sprucehealth/graphql/language/printer"
 )
 
 const (
@@ -33,7 +33,6 @@ var TypeMetaFieldDef *FieldDefinition
 var TypeNameMetaFieldDef *FieldDefinition
 
 func init() {
-
 	__TypeKind = NewEnum(EnumConfig{
 		Name:        "__TypeKind",
 		Description: "An enum describing what kind of type a given __Type is",
@@ -440,7 +439,7 @@ mutation operations.`,
 		Type:        __Type,
 		Description: "Request the type information of a single type.",
 		Args: []*Argument{
-			&Argument{
+			{
 				PrivateName: "name",
 				Type:        NewNonNull(String),
 			},
@@ -519,13 +518,12 @@ func astFromValue(value interface{}, ttype Type) ast.Value {
 			return ast.NewListValue(&ast.ListValue{
 				Values: values,
 			})
-		} else {
-			// Because GraphQL will accept single values as a "list of one" when
-			// expecting a list, if there's a non-array value and an expected list type,
-			// create an AST using the list's item type.
-			val := astFromValue(value, ttype.OfType)
-			return val
 		}
+		// Because GraphQL will accept single values as a "list of one" when
+		// expecting a list, if there's a non-array value and an expected list type,
+		// create an AST using the list's item type.
+		val := astFromValue(value, ttype.OfType)
+		return val
 	}
 
 	if valueVal.Type().Kind() == reflect.Map {

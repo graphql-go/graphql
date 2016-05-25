@@ -4,10 +4,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/ast"
-	"github.com/graphql-go/graphql/language/location"
-	"github.com/graphql-go/graphql/language/source"
+	"github.com/sprucehealth/graphql/gqlerrors"
+	"github.com/sprucehealth/graphql/language/ast"
+	"github.com/sprucehealth/graphql/language/location"
+	"github.com/sprucehealth/graphql/language/source"
 )
 
 func parse(t *testing.T, query string) *ast.Document {
@@ -738,13 +738,10 @@ input Hello {
 4: }
 `,
 		Nodes: []ast.Node{},
-		Source: &source.Source{
-			Body: `
+		Source: source.New("GraphQL", `
 input Hello {
   world(foo: Int): String
-}`,
-			Name: "GraphQL",
-		},
+}`),
 		Positions: []int{22},
 		Locations: []location.SourceLocation{
 			{Line: 3, Column: 8},

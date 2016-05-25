@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/graphql-go/graphql/language/kinds"
+	"github.com/sprucehealth/graphql/language/kinds"
 )
 
 // Document implements Node
@@ -13,7 +13,7 @@ type Document struct {
 
 func NewDocument(d *Document) *Document {
 	if d == nil {
-		d = &Document{}
+		return &Document{Kind: kinds.Document}
 	}
 	return &Document{
 		Kind:        kinds.Document,

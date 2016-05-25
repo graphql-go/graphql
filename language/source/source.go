@@ -5,16 +5,30 @@ const (
 )
 
 type Source struct {
-	Body string
-	Name string
+	body  string
+	name  string
+	runes []rune
 }
 
-func NewSource(s *Source) *Source {
-	if s == nil {
-		s = &Source{Name: name}
+func New(name, body string) *Source {
+	return &Source{
+		name:  name,
+		body:  body,
+		runes: []rune(body),
 	}
-	if s.Name == "" {
-		s.Name = name
+}
+
+func (s *Source) Name() string {
+	return s.name
+}
+
+func (s *Source) Body() string {
+	return s.body
+}
+
+func (s *Source) RuneAt(i int) rune {
+	if i >= len(s.runes) {
+		return 0
 	}
-	return s
+	return s.runes[i]
 }

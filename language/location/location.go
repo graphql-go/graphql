@@ -3,7 +3,7 @@ package location
 import (
 	"regexp"
 
-	"github.com/graphql-go/graphql/language/source"
+	"github.com/sprucehealth/graphql/language/source"
 )
 
 type SourceLocation struct {
@@ -14,7 +14,7 @@ type SourceLocation struct {
 func GetLocation(s *source.Source, position int) SourceLocation {
 	body := ""
 	if s != nil {
-		body = s.Body
+		body = s.Body()
 	}
 	line := 1
 	column := position + 1
@@ -22,14 +22,12 @@ func GetLocation(s *source.Source, position int) SourceLocation {
 	matches := lineRegexp.FindAllStringIndex(body, -1)
 	for _, match := range matches {
 		matchIndex := match[0]
-		if matchIndex < position {
-			line += 1
-			l := len(s.Body[match[0]:match[1]])
-			column = position + 1 - (matchIndex + l)
-			continue
-		} else {
+		if matchIndex >= position {
 			break
 		}
+		line++
+		l := len(body[match[0]:match[1]])
+		column = position + 1 - (matchIndex + l)
 	}
 	return SourceLocation{Line: line, Column: column}
 }

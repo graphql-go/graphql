@@ -1,10 +1,10 @@
 package graphql
 
 import (
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/ast"
-	"github.com/graphql-go/graphql/language/kinds"
-	"github.com/graphql-go/graphql/language/visitor"
+	"github.com/sprucehealth/graphql/gqlerrors"
+	"github.com/sprucehealth/graphql/language/ast"
+	"github.com/sprucehealth/graphql/language/kinds"
+	"github.com/sprucehealth/graphql/language/visitor"
 )
 
 type ValidationResult struct {
@@ -27,9 +27,7 @@ func ValidateDocument(schema *Schema, astDoc *ast.Document, rules []ValidationRu
 		return vr
 	}
 	vr.Errors = visitUsingRules(schema, astDoc, rules)
-	if len(vr.Errors) == 0 {
-		vr.IsValid = true
-	}
+	vr.IsValid = len(vr.Errors) == 0
 	return vr
 }
 
@@ -54,16 +52,14 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 					// provided `visitSpreadFragments`.
 					kind := node.GetKind()
 
-					if kind == kinds.FragmentDefinition &&
-						p.Key != nil && instance.VisitSpreadFragments == true {
+					if kind == kinds.FragmentDefinition && p.Parent != nil && instance.VisitSpreadFragments == true {
 						return visitor.ActionSkip, nil
 					}
 
 					// Get the visitor function from the validation instance, and if it
 					// exists, call it with the visitor arguments.
-					enterFn := visitor.GetVisitFn(instance.VisitorOpts, false, kind)
-					if enterFn != nil {
-						action, result = enterFn(p)
+					if instance.Enter != nil {
+						action, result = instance.Enter(p)
 					}
 
 					// If the visitor returned an error, log it and do not visit any
@@ -99,7 +95,6 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 					if action == visitor.ActionSkip {
 						typeInfo.Leave(node)
 					}
-
 				}
 
 				return action, result
@@ -109,13 +104,10 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 				var result interface{}
 				switch node := p.Node.(type) {
 				case ast.Node:
-					kind := node.GetKind()
-
 					// Get the visitor function from the validation instance, and if it
 					// exists, call it with the visitor arguments.
-					leaveFn := visitor.GetVisitFn(instance.VisitorOpts, true, kind)
-					if leaveFn != nil {
-						action, result = leaveFn(p)
+					if instance.Leave != nil {
+						action, result = instance.Leave(p)
 					}
 
 					// If the visitor returned an error, log it and do not visit any
@@ -134,16 +126,11 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 				}
 				return action, result
 			},
-		}, nil)
+		})
 	}
 
-	instances := []*ValidationRuleInstance{}
 	for _, rule := range rules {
-		instance := rule(context)
-		instances = append(instances, instance)
-	}
-	for _, instance := range instances {
-		visitInstance(astDoc, instance)
+		visitInstance(astDoc, rule(context))
 	}
 	return errors
 }
@@ -171,12 +158,12 @@ func (ctx *ValidationContext) Document() *ast.Document {
 }
 
 func (ctx *ValidationContext) Fragment(name string) *ast.FragmentDefinition {
-	if len(ctx.fragments) == 0 {
+	if ctx.fragments == nil {
 		if ctx.Document() == nil {
 			return nil
 		}
 		defs := ctx.Document().Definitions
-		fragments := map[string]*ast.FragmentDefinition{}
+		fragments := make(map[string]*ast.FragmentDefinition)
 		for _, def := range defs {
 			if def, ok := def.(*ast.FragmentDefinition); ok {
 				defName := ""

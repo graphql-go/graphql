@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/graphql-go/graphql/language/kinds"
+	"github.com/sprucehealth/graphql/language/kinds"
 )
 
 // Directive implements Node
@@ -14,7 +14,7 @@ type Directive struct {
 
 func NewDirective(dir *Directive) *Directive {
 	if dir == nil {
-		dir = &Directive{}
+		return &Directive{Kind: kinds.Directive}
 	}
 	return &Directive{
 		Kind:      kinds.Directive,

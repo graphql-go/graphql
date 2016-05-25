@@ -3,8 +3,8 @@ package graphql_test
 import (
 	"testing"
 
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/language/ast"
+	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/language/ast"
 )
 
 var someScalarType = graphql.NewScalar(graphql.ScalarConfig{
@@ -243,7 +243,6 @@ func schemaWithArgOfType(ttype graphql.Type) (graphql.Schema, error) {
 	})
 }
 func schemaWithInputFieldOfType(ttype graphql.Type) (graphql.Schema, error) {
-
 	badInputObject := graphql.NewInputObject(graphql.InputObjectConfig{
 		Name: "BadInputObject",
 		Fields: graphql.InputObjectConfigFieldMap{
@@ -303,7 +302,6 @@ func TestTypeSystem_SchemaMustHaveObjectRootTypes_RejectsASchemaWithoutAQueryTyp
 }
 
 func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichRedefinesABuiltInType(t *testing.T) {
-
 	fakeString := graphql.NewScalar(graphql.ScalarConfig{
 		Name: "String",
 		Serialize: func(value interface{}) interface{} {
@@ -367,7 +365,6 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichDefin
 	}
 }
 func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichHaveSameNamedObjectsImplementingAnInterface(t *testing.T) {
-
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
 		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {

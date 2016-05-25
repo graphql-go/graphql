@@ -5,7 +5,7 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/graphql-go/graphql/language/ast"
+	"github.com/sprucehealth/graphql/language/ast"
 )
 
 func coerceInt(value interface{}) interface{} {

@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/graphql-go/graphql/language/kinds"
+	"github.com/sprucehealth/graphql/language/kinds"
 )
 
 // Argument implements Node
@@ -14,7 +14,7 @@ type Argument struct {
 
 func NewArgument(arg *Argument) *Argument {
 	if arg == nil {
-		arg = &Argument{}
+		return &Argument{Kind: kinds.Argument}
 	}
 	return &Argument{
 		Kind:  kinds.Argument,

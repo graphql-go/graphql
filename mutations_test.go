@@ -4,10 +4,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/location"
-	"github.com/graphql-go/graphql/testutil"
+	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
+	"github.com/sprucehealth/graphql/language/location"
+	"github.com/sprucehealth/graphql/testutil"
 )
 
 // testNumberHolder maps to numberHolderType
@@ -218,16 +218,16 @@ func TestMutations_EvaluatesMutationsCorrectlyInThePresenceOfAFailedMutation(t *
 			"sixth": nil,
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Cannot change the number`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{Line: 8, Column: 7},
+					{Line: 8, Column: 7},
 				},
 			},
-			gqlerrors.FormattedError{
+			{
 				Message: `Cannot change the number`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{Line: 17, Column: 7},
+					{Line: 17, Column: 7},
 				},
 			},
 		},

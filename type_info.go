@@ -1,8 +1,8 @@
 package graphql
 
 import (
-	"github.com/graphql-go/graphql/language/ast"
-	"github.com/graphql-go/graphql/language/kinds"
+	"github.com/sprucehealth/graphql/language/ast"
+	"github.com/sprucehealth/graphql/language/kinds"
 )
 
 // TODO: can move TypeInfo to a utils package if there ever is one
@@ -63,7 +63,6 @@ func (ti *TypeInfo) Argument() *Argument {
 }
 
 func (ti *TypeInfo) Enter(node ast.Node) {
-
 	schema := ti.schema
 	var ttype Type
 	switch node := node.(type) {

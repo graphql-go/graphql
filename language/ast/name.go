@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/graphql-go/graphql/language/kinds"
+	"github.com/sprucehealth/graphql/language/kinds"
 )
 
 // Name implements Node
@@ -13,7 +13,7 @@ type Name struct {
 
 func NewName(node *Name) *Name {
 	if node == nil {
-		node = &Name{}
+		return &Name{Kind: kinds.Name}
 	}
 	return &Name{
 		Kind:  kinds.Name,

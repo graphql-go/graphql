@@ -5,11 +5,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/ast"
-	"github.com/graphql-go/graphql/language/location"
-	"github.com/graphql-go/graphql/testutil"
+	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
+	"github.com/sprucehealth/graphql/language/ast"
+	"github.com/sprucehealth/graphql/language/location"
+	"github.com/sprucehealth/graphql/testutil"
 )
 
 var testComplexScalar *graphql.Scalar = graphql.NewScalar(graphql.ScalarConfig{
@@ -368,11 +368,11 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnNullForNestedNon
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
 					`got: {"a":"foo","b":"bar","c":null}.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -403,11 +403,11 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnIncorrectType(t 
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
 					`got: "foo bar".`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -441,11 +441,11 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNested
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
 					`got: {"a":"foo","b":"bar"}.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -481,11 +481,11 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknow
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" expected value of type "TestInputObject" but ` +
 					`got: {"a":"foo","b":"bar","c":"baz","d":"dog"}.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -692,10 +692,10 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeOmittedIn
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$value" of required type "String!" was not provided.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 31,
 					},
 				},
@@ -731,10 +731,10 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeSetToNull
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$value" of required type "String!" was not provided.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 31,
 					},
 				},
@@ -959,10 +959,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListsToBeNull(t *testi
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" of required type "[String]!" was not provided.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -1116,11 +1116,11 @@ func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" expected value of type "[String!]" but got: ` +
 					`["A",null,"B"].`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -1155,10 +1155,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToBeNull
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" of required type "[String!]!" was not provided.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -1223,11 +1223,11 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContai
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" expected value of type "[String!]!" but got: ` +
 					`["A",null,"B"].`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -1264,10 +1264,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowInvalidTypesToBeUsedAsValues(
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" expected value of type "TestType!" which cannot be used as an input type.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -1302,10 +1302,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowUnknownTypesToBeUsedAsValues(
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" expected value of type "UnknownType!" which cannot be used as an input type.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},

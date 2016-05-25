@@ -5,13 +5,13 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/graphql-go/graphql/language/ast"
-	"github.com/graphql-go/graphql/language/parser"
-	"github.com/graphql-go/graphql/language/printer"
-	"github.com/graphql-go/graphql/testutil"
+	"github.com/sprucehealth/graphql/language/ast"
+	"github.com/sprucehealth/graphql/language/parser"
+	"github.com/sprucehealth/graphql/language/printer"
+	"github.com/sprucehealth/graphql/testutil"
 )
 
-func parse(t *testing.T, query string) *ast.Document {
+func parse(t testing.TB, query string) *ast.Document {
 	astDoc, err := parser.Parse(parser.ParseParams{
 		Source: query,
 		Options: parser.ParseOptions{
@@ -99,9 +99,22 @@ fragment frag on Follower {
   query
 }
 `
-	results := printer.Print(astDoc)
 
+	results := printer.Print(astDoc)
 	if !reflect.DeepEqual(expected, results) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(results, expected))
+	}
+}
+
+func BenchmarkPrint(b *testing.B) {
+	buf, err := ioutil.ReadFile("../../kitchen-sink.graphql")
+	if err != nil {
+		b.Fatalf("unable to load kitchen-sink.graphql: %s", err)
+	}
+	astDoc := parse(b, string(buf))
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		printer.Print(astDoc)
 	}
 }
