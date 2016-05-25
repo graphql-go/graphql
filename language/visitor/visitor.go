@@ -14,7 +14,6 @@ const (
 
 type VisitFuncParams struct {
 	Node      interface{}
-	Key       interface{} // The name of this node's field in its parent node
 	Parent    ast.Node
 	Ancestors []ast.Node
 }
@@ -28,14 +27,13 @@ type VisitorOptions struct {
 
 type actionBreak struct{}
 
-func visit(root ast.Node, visitorOpts *VisitorOptions, ancestors []ast.Node, parent ast.Node, key interface{}) {
+func visit(root ast.Node, visitorOpts *VisitorOptions, ancestors []ast.Node, parent ast.Node) {
 	if root == nil || reflect.ValueOf(root).IsNil() {
 		return
 	}
 
 	p := VisitFuncParams{
 		Node:      root,
-		Key:       key,
 		Parent:    parent,
 		Ancestors: ancestors,
 	}
@@ -57,130 +55,130 @@ func visit(root ast.Node, visitorOpts *VisitorOptions, ancestors []ast.Node, par
 	switch root := root.(type) {
 	case *ast.Name:
 	case *ast.Variable:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
+		visit(root.Name, visitorOpts, p.Ancestors, root)
 	case *ast.Document:
-		for i, n := range root.Definitions {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		for _, n := range root.Definitions {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
 	case *ast.OperationDefinition:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
-		for i, n := range root.VariableDefinitions {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		visit(root.Name, visitorOpts, p.Ancestors, root)
+		for _, n := range root.VariableDefinitions {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
-		for i, n := range root.Directives {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		for _, n := range root.Directives {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
-		visit(root.SelectionSet, visitorOpts, p.Ancestors, root, "SelectionSet")
+		visit(root.SelectionSet, visitorOpts, p.Ancestors, root)
 	case *ast.VariableDefinition:
-		visit(root.Variable, visitorOpts, p.Ancestors, root, "Variable")
-		visit(root.Type, visitorOpts, p.Ancestors, root, "Type")
-		visit(root.DefaultValue, visitorOpts, p.Ancestors, root, "DefaultValue")
+		visit(root.Variable, visitorOpts, p.Ancestors, root)
+		visit(root.Type, visitorOpts, p.Ancestors, root)
+		visit(root.DefaultValue, visitorOpts, p.Ancestors, root)
 	case *ast.SelectionSet:
-		for i, n := range root.Selections {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		for _, n := range root.Selections {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
 	case *ast.Field:
-		visit(root.Alias, visitorOpts, p.Ancestors, root, "Alias")
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
-		for i, n := range root.Arguments {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		visit(root.Alias, visitorOpts, p.Ancestors, root)
+		visit(root.Name, visitorOpts, p.Ancestors, root)
+		for _, n := range root.Arguments {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
-		for i, n := range root.Directives {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		for _, n := range root.Directives {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
-		visit(root.SelectionSet, visitorOpts, p.Ancestors, root, "SelectionSet")
+		visit(root.SelectionSet, visitorOpts, p.Ancestors, root)
 	case *ast.Argument:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
-		visit(root.Value, visitorOpts, p.Ancestors, root, "Value")
+		visit(root.Name, visitorOpts, p.Ancestors, root)
+		visit(root.Value, visitorOpts, p.Ancestors, root)
 	case *ast.FragmentSpread:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
-		for i, n := range root.Directives {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		visit(root.Name, visitorOpts, p.Ancestors, root)
+		for _, n := range root.Directives {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
 	case *ast.InlineFragment:
-		visit(root.TypeCondition, visitorOpts, p.Ancestors, root, "TypeCondition")
-		for i, n := range root.Directives {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		visit(root.TypeCondition, visitorOpts, p.Ancestors, root)
+		for _, n := range root.Directives {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
-		visit(root.SelectionSet, visitorOpts, p.Ancestors, root, "SelectionSet")
+		visit(root.SelectionSet, visitorOpts, p.Ancestors, root)
 	case *ast.FragmentDefinition:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
-		visit(root.TypeCondition, visitorOpts, p.Ancestors, root, "TypeCondition")
-		for i, n := range root.Directives {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		visit(root.Name, visitorOpts, p.Ancestors, root)
+		visit(root.TypeCondition, visitorOpts, p.Ancestors, root)
+		for _, n := range root.Directives {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
-		visit(root.SelectionSet, visitorOpts, p.Ancestors, root, "SelectionSet")
+		visit(root.SelectionSet, visitorOpts, p.Ancestors, root)
 	case *ast.IntValue:
 	case *ast.FloatValue:
 	case *ast.StringValue:
 	case *ast.BooleanValue:
 	case *ast.EnumValue:
 	case *ast.ListValue:
-		for i, n := range root.Values {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		for _, n := range root.Values {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
 	case *ast.ObjectValue:
-		for i, n := range root.Fields {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		for _, n := range root.Fields {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
 	case *ast.ObjectField:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
-		visit(root.Value, visitorOpts, p.Ancestors, root, "Value")
+		visit(root.Name, visitorOpts, p.Ancestors, root)
+		visit(root.Value, visitorOpts, p.Ancestors, root)
 	case *ast.Directive:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
-		for i, n := range root.Arguments {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		visit(root.Name, visitorOpts, p.Ancestors, root)
+		for _, n := range root.Arguments {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
 	case *ast.Named:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
+		visit(root.Name, visitorOpts, p.Ancestors, root)
 	case *ast.List:
-		visit(root.Type, visitorOpts, p.Ancestors, root, "Type")
+		visit(root.Type, visitorOpts, p.Ancestors, root)
 	case *ast.NonNull:
-		visit(root.Type, visitorOpts, p.Ancestors, root, "Type")
+		visit(root.Type, visitorOpts, p.Ancestors, root)
 	case *ast.ObjectDefinition:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
-		for i, n := range root.Interfaces {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		visit(root.Name, visitorOpts, p.Ancestors, root)
+		for _, n := range root.Interfaces {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
-		for i, n := range root.Fields {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		for _, n := range root.Fields {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
 	case *ast.FieldDefinition:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
-		for i, n := range root.Arguments {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		visit(root.Name, visitorOpts, p.Ancestors, root)
+		for _, n := range root.Arguments {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
-		visit(root.Type, visitorOpts, p.Ancestors, root, "Type")
+		visit(root.Type, visitorOpts, p.Ancestors, root)
 	case *ast.InputValueDefinition:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
-		visit(root.Type, visitorOpts, p.Ancestors, root, "Type")
-		visit(root.DefaultValue, visitorOpts, p.Ancestors, root, "DefaultValue")
+		visit(root.Name, visitorOpts, p.Ancestors, root)
+		visit(root.Type, visitorOpts, p.Ancestors, root)
+		visit(root.DefaultValue, visitorOpts, p.Ancestors, root)
 	case *ast.InterfaceDefinition:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
-		for i, n := range root.Fields {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		visit(root.Name, visitorOpts, p.Ancestors, root)
+		for _, n := range root.Fields {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
 	case *ast.UnionDefinition:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
-		for i, n := range root.Types {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		visit(root.Name, visitorOpts, p.Ancestors, root)
+		for _, n := range root.Types {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
 	case *ast.ScalarDefinition:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
+		visit(root.Name, visitorOpts, p.Ancestors, root)
 	case *ast.EnumDefinition:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
-		for i, n := range root.Values {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		visit(root.Name, visitorOpts, p.Ancestors, root)
+		for _, n := range root.Values {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
 	case *ast.EnumValueDefinition:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
+		visit(root.Name, visitorOpts, p.Ancestors, root)
 	case *ast.InputObjectDefinition:
-		visit(root.Name, visitorOpts, p.Ancestors, root, "Name")
-		for i, n := range root.Fields {
-			visit(n, visitorOpts, p.Ancestors, root, i)
+		visit(root.Name, visitorOpts, p.Ancestors, root)
+		for _, n := range root.Fields {
+			visit(n, visitorOpts, p.Ancestors, root)
 		}
 	case *ast.TypeExtensionDefinition:
-		visit(root.Definition, visitorOpts, p.Ancestors, root, "Definition")
+		visit(root.Definition, visitorOpts, p.Ancestors, root)
 	default:
 		panic("unknown node type")
 	}
@@ -207,6 +205,6 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions) (err error) {
 			}
 		}
 	}()
-	visit(root, visitorOpts, make([]ast.Node, 0, 64), nil, nil)
+	visit(root, visitorOpts, make([]ast.Node, 0, 64), nil)
 	return nil
 }

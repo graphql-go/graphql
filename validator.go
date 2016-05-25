@@ -52,8 +52,7 @@ func visitUsingRules(schema *Schema, astDoc *ast.Document, rules []ValidationRul
 					// provided `visitSpreadFragments`.
 					kind := node.GetKind()
 
-					if kind == kinds.FragmentDefinition &&
-						p.Key != nil && instance.VisitSpreadFragments == true {
+					if kind == kinds.FragmentDefinition && p.Parent != nil && instance.VisitSpreadFragments == true {
 						return visitor.ActionSkip, nil
 					}
 
