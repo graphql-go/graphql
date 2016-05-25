@@ -200,7 +200,10 @@ func typeFromAST(schema Schema, inputTypeAST ast.Type) (Type, error) {
 		ttype := schema.Type(nameValue)
 		return ttype, nil
 	default:
-		return nil, invariant(inputTypeAST.GetKind() == kinds.Named, "Must be a named type.")
+		if inputTypeAST.GetKind() != kinds.Named {
+			return nil, gqlerrors.NewFormattedError("Must be a named type.")
+		}
+		return nil, nil
 	}
 }
 
@@ -407,13 +410,6 @@ func valueFromAST(valueAST ast.Value, ttype Input, variables map[string]interfac
 		if !isNullish(parsed) {
 			return parsed
 		}
-	}
-	return nil
-}
-
-func invariant(condition bool, message string) error {
-	if !condition {
-		return gqlerrors.NewFormattedError(message)
 	}
 	return nil
 }

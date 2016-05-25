@@ -553,8 +553,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		if propertyFn, ok := result.(func() interface{}); ok {
 			return propertyFn()
 		}
-		err := gqlerrors.NewFormattedError("Error resolving func. Expected `func() interface{}` signature")
-		panic(gqlerrors.FormatError(err))
+		panic(gqlerrors.NewFormattedError("Error resolving func. Expected `func() interface{}` signature"))
 	}
 
 	if returnType, ok := returnType.(*NonNull); ok {
@@ -575,18 +574,13 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 
 	// If field type is List, complete each item in the list with the inner type
 	if returnType, ok := returnType.(*List); ok {
-
 		resultVal := reflect.ValueOf(result)
-		err := invariant(
-			resultVal.IsValid() && resultVal.Type().Kind() == reflect.Slice,
-			"User Error: expected iterable, but did not find one.",
-		)
-		if err != nil {
-			panic(gqlerrors.FormatError(err))
+		if !resultVal.IsValid() || resultVal.Type().Kind() != reflect.Slice {
+			panic(gqlerrors.NewFormattedError("User Error: expected iterable, but did not find one."))
 		}
 
 		itemType := returnType.OfType
-		completedResults := []interface{}{}
+		completedResults := make([]interface{}, 0, resultVal.Len())
 		for i := 0; i < resultVal.Len(); i++ {
 			val := resultVal.Index(i).Interface()
 			completedItem := completeValueCatchingError(eCtx, itemType, fieldASTs, info, val)
