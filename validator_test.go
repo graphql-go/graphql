@@ -9,6 +9,32 @@ import (
 	"github.com/sprucehealth/graphql/testutil"
 )
 
+func TestConcurrentValidateDocument(t *testing.T) {
+	validate := func() {
+		query := `
+		query HeroNameAndFriendsQuery {
+			hero {
+				id
+				name
+				friends {
+					name
+				}
+			}
+		}
+	`
+		ast, err := parser.Parse(parser.ParseParams{Source: source.New("", query)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		r := graphql.ValidateDocument(&testutil.StarWarsSchema, ast, nil)
+		if !r.IsValid {
+			t.Fatal("Not valid")
+		}
+	}
+	go validate()
+	validate()
+}
+
 func BenchmarkValidateDocument(b *testing.B) {
 	query := `
 		query HeroNameAndFriendsQuery {

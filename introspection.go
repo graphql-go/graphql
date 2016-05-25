@@ -33,7 +33,6 @@ var TypeMetaFieldDef *FieldDefinition
 var TypeNameMetaFieldDef *FieldDefinition
 
 func init() {
-
 	__TypeKind = NewEnum(EnumConfig{
 		Name:        "__TypeKind",
 		Description: "An enum describing what kind of type a given __Type is",
@@ -519,13 +518,12 @@ func astFromValue(value interface{}, ttype Type) ast.Value {
 			return ast.NewListValue(&ast.ListValue{
 				Values: values,
 			})
-		} else {
-			// Because GraphQL will accept single values as a "list of one" when
-			// expecting a list, if there's a non-array value and an expected list type,
-			// create an AST using the list's item type.
-			val := astFromValue(value, ttype.OfType)
-			return val
 		}
+		// Because GraphQL will accept single values as a "list of one" when
+		// expecting a list, if there's a non-array value and an expected list type,
+		// create an AST using the list's item type.
+		val := astFromValue(value, ttype.OfType)
+		return val
 	}
 
 	if valueVal.Type().Kind() == reflect.Map {

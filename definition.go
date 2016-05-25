@@ -1,10 +1,11 @@
 package graphql
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
+	"sync"
+	"sync/atomic"
 
 	"github.com/sprucehealth/graphql/gqlerrors"
 	"github.com/sprucehealth/graphql/language/ast"
@@ -322,11 +323,12 @@ type Object struct {
 	PrivateDescription string `json:"description"`
 	IsTypeOf           IsTypeOfFn
 
+	mu         sync.RWMutex
 	typeConfig ObjectConfig
 	fields     FieldDefinitionMap
 	interfaces []*Interface
 	// Interim alternative to throwing an error during schema definition at run-time
-	err error
+	err atomic.Value
 }
 
 type IsTypeOfFn func(value interface{}, info ResolveInfo) bool
@@ -342,6 +344,8 @@ type ObjectConfig struct {
 }
 type FieldsThunk func() Fields
 
+type errWrapper struct{ err error }
+
 func NewObject(config ObjectConfig) *Object {
 	objectType := &Object{
 		PrivateName:        config.Name,
@@ -349,13 +353,14 @@ func NewObject(config ObjectConfig) *Object {
 		IsTypeOf:           config.IsTypeOf,
 		typeConfig:         config,
 	}
+	objectType.setErr(nil)
 
 	if config.Name == "" {
-		objectType.err = gqlerrors.NewFormattedError("Type must be named.")
+		objectType.setErr(gqlerrors.NewFormattedError("Type must be named."))
 		return objectType
 	}
 	if err := assertValidName(config.Name); err != nil {
-		objectType.err = err
+		objectType.setErr(err)
 		return objectType
 	}
 
@@ -376,13 +381,19 @@ func NewObject(config ObjectConfig) *Object {
 
 	return objectType
 }
+func (gt *Object) setErr(err error) {
+	gt.err.Store(errWrapper{err: err})
+}
 func (gt *Object) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	if fieldName == "" || fieldConfig == nil {
 		return
 	}
+	gt.mu.Lock()
+	defer gt.mu.Unlock()
 	switch gt.typeConfig.Fields.(type) {
 	case Fields:
 		gt.typeConfig.Fields.(Fields)[fieldName] = fieldConfig
+		gt.fields = nil // invalidate the fields map cache
 	}
 }
 func (gt *Object) Name() string {
@@ -395,6 +406,21 @@ func (gt *Object) String() string {
 	return gt.PrivateName
 }
 func (gt *Object) Fields() FieldDefinitionMap {
+	gt.mu.RLock()
+	fields := gt.fields
+	gt.mu.RUnlock()
+
+	if fields != nil {
+		return fields
+	}
+
+	gt.mu.Lock()
+	defer gt.mu.Unlock()
+	fields = gt.fields
+	if fields != nil {
+		return fields
+	}
+
 	var configureFields Fields
 	switch gt.typeConfig.Fields.(type) {
 	case Fields:
@@ -403,12 +429,27 @@ func (gt *Object) Fields() FieldDefinitionMap {
 		configureFields = gt.typeConfig.Fields.(FieldsThunk)()
 	}
 	fields, err := defineFieldMap(gt, configureFields)
-	gt.err = err
+	gt.setErr(err)
 	gt.fields = fields
 	return gt.fields
 }
 
 func (gt *Object) Interfaces() []*Interface {
+	gt.mu.RLock()
+	interfaces := gt.interfaces
+	gt.mu.RUnlock()
+
+	if interfaces != nil {
+		return interfaces
+	}
+
+	gt.mu.Lock()
+	defer gt.mu.Unlock()
+	interfaces = gt.interfaces
+	if interfaces != nil {
+		return interfaces
+	}
+
 	var configInterfaces []*Interface
 	switch gt.typeConfig.Interfaces.(type) {
 	case InterfacesThunk:
@@ -417,16 +458,16 @@ func (gt *Object) Interfaces() []*Interface {
 		configInterfaces = gt.typeConfig.Interfaces.([]*Interface)
 	case nil:
 	default:
-		gt.err = errors.New(fmt.Sprintf("Unknown Object.Interfaces type: %v", reflect.TypeOf(gt.typeConfig.Interfaces)))
+		gt.setErr(fmt.Errorf("Unknown Object.Interfaces type: %v", reflect.TypeOf(gt.typeConfig.Interfaces)))
 		return nil
 	}
 	interfaces, err := defineInterfaces(gt, configInterfaces)
-	gt.err = err
+	gt.setErr(err)
 	gt.interfaces = interfaces
 	return gt.interfaces
 }
 func (gt *Object) Error() error {
-	return gt.err
+	return gt.err.Load().(errWrapper).err
 }
 
 func defineInterfaces(ttype *Object, interfaces []*Interface) ([]*Interface, error) {
@@ -611,6 +652,7 @@ type Interface struct {
 	PrivateDescription string `json:"description"`
 	ResolveType        ResolveTypeFn
 
+	mu              sync.RWMutex
 	typeConfig      InterfaceConfig
 	fields          FieldDefinitionMap
 	implementations []*Object
@@ -648,7 +690,10 @@ func (it *Interface) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	if fieldName == "" || fieldConfig == nil {
 		return
 	}
+	it.mu.Lock()
+	defer it.mu.Unlock()
 	it.typeConfig.Fields[fieldName] = fieldConfig
+	it.fields = nil
 }
 func (it *Interface) Name() string {
 	return it.PrivateName
@@ -656,7 +701,16 @@ func (it *Interface) Name() string {
 func (it *Interface) Description() string {
 	return it.PrivateDescription
 }
-func (it *Interface) Fields() (fields FieldDefinitionMap) {
+func (it *Interface) Fields() FieldDefinitionMap {
+	it.mu.RLock()
+	fields := it.fields
+	it.mu.RUnlock()
+	if fields != nil {
+		return fields
+	}
+
+	it.mu.Lock()
+	defer it.mu.Unlock()
 	it.fields, it.err = defineFieldMap(it, it.typeConfig.Fields)
 	return it.fields
 }
@@ -667,17 +721,25 @@ func (it *Interface) IsPossibleType(ttype *Object) bool {
 	if ttype == nil {
 		return false
 	}
-	if len(it.possibleTypes) == 0 {
-		possibleTypes := make(map[string]struct{}, len(it.PossibleTypes()))
-		for _, possibleType := range it.PossibleTypes() {
-			if possibleType == nil {
-				continue
+	it.mu.RLock()
+	possibleTypes := it.possibleTypes
+	it.mu.RUnlock()
+	if possibleTypes == nil {
+		it.mu.Lock()
+		defer it.mu.Unlock()
+		possibleTypes = it.possibleTypes
+		if possibleTypes == nil {
+			possibleTypes = make(map[string]struct{}, len(it.PossibleTypes()))
+			for _, possibleType := range it.PossibleTypes() {
+				if possibleType == nil {
+					continue
+				}
+				possibleTypes[possibleType.PrivateName] = struct{}{}
 			}
-			possibleTypes[possibleType.PrivateName] = struct{}{}
+			it.possibleTypes = possibleTypes
 		}
-		it.possibleTypes = possibleTypes
 	}
-	_, ok := it.possibleTypes[ttype.PrivateName]
+	_, ok := possibleTypes[ttype.PrivateName]
 	return ok
 }
 func (it *Interface) ObjectType(value interface{}, info ResolveInfo) *Object {
@@ -690,6 +752,8 @@ func (it *Interface) String() string {
 	return it.PrivateName
 }
 func (it *Interface) Error() error {
+	it.mu.RLock()
+	defer it.mu.RUnlock()
 	return it.err
 }
 

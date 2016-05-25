@@ -39,11 +39,11 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 	}
 
 	// if schema config contains error at creation time, return those errors
-	if config.Query != nil && config.Query.err != nil {
-		return schema, config.Query.err
+	if config.Query != nil && config.Query.Error() != nil {
+		return schema, config.Query.Error()
 	}
-	if config.Mutation != nil && config.Mutation.err != nil {
-		return schema, config.Mutation.err
+	if config.Mutation != nil && config.Mutation.Error() != nil {
+		return schema, config.Mutation.Error()
 	}
 
 	schema.schemaConfig = config
@@ -60,8 +60,8 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 		if objectType == nil {
 			continue
 		}
-		if objectType.err != nil {
-			return schema, objectType.err
+		if objectType.Error() != nil {
+			return schema, objectType.Error()
 		}
 		var err error
 		typeMap, err = typeMapReducer(typeMap, objectType)
@@ -137,8 +137,8 @@ func typeMapReducer(typeMap TypeMap, objectType Type) (TypeMap, error) {
 			return typeMapReducer(typeMap, objectType.OfType)
 		}
 	case *Object:
-		if objectType.err != nil {
-			return typeMap, objectType.err
+		if objectType.Error() != nil {
+			return typeMap, objectType.Error()
 		}
 	}
 
@@ -157,12 +157,12 @@ func typeMapReducer(typeMap TypeMap, objectType Type) (TypeMap, error) {
 	switch objectType := objectType.(type) {
 	case *Union:
 		types := objectType.PossibleTypes()
-		if objectType.err != nil {
-			return typeMap, objectType.err
+		if objectType.Error() != nil {
+			return typeMap, objectType.Error()
 		}
 		for _, innerObjectType := range types {
-			if innerObjectType.err != nil {
-				return typeMap, innerObjectType.err
+			if innerObjectType.Error() != nil {
+				return typeMap, innerObjectType.Error()
 			}
 			typeMap, err = typeMapReducer(typeMap, innerObjectType)
 			if err != nil {
@@ -175,8 +175,8 @@ func typeMapReducer(typeMap TypeMap, objectType Type) (TypeMap, error) {
 			return typeMap, objectType.err
 		}
 		for _, innerObjectType := range types {
-			if innerObjectType.err != nil {
-				return typeMap, innerObjectType.err
+			if innerObjectType.Error() != nil {
+				return typeMap, innerObjectType.Error()
 			}
 			typeMap, err = typeMapReducer(typeMap, innerObjectType)
 			if err != nil {
@@ -185,12 +185,12 @@ func typeMapReducer(typeMap TypeMap, objectType Type) (TypeMap, error) {
 		}
 	case *Object:
 		interfaces := objectType.Interfaces()
-		if objectType.err != nil {
-			return typeMap, objectType.err
+		if objectType.Error() != nil {
+			return typeMap, objectType.Error()
 		}
 		for _, innerObjectType := range interfaces {
-			if innerObjectType.err != nil {
-				return typeMap, innerObjectType.err
+			if innerObjectType.Error() != nil {
+				return typeMap, innerObjectType.Error()
 			}
 			typeMap, err = typeMapReducer(typeMap, innerObjectType)
 			if err != nil {
@@ -202,8 +202,8 @@ func typeMapReducer(typeMap TypeMap, objectType Type) (TypeMap, error) {
 	switch objectType := objectType.(type) {
 	case *Object:
 		fieldMap := objectType.Fields()
-		if objectType.err != nil {
-			return typeMap, objectType.err
+		if objectType.Error() != nil {
+			return typeMap, objectType.Error()
 		}
 		for _, field := range fieldMap {
 			for _, arg := range field.Args {
@@ -219,8 +219,8 @@ func typeMapReducer(typeMap TypeMap, objectType Type) (TypeMap, error) {
 		}
 	case *Interface:
 		fieldMap := objectType.Fields()
-		if objectType.err != nil {
-			return typeMap, objectType.err
+		if objectType.Error() != nil {
+			return typeMap, objectType.Error()
 		}
 		for _, field := range fieldMap {
 			for _, arg := range field.Args {
