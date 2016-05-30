@@ -624,7 +624,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		return completeLeafValue(eCtx, returnType, fieldASTs, info, result)
 	}
 	if returnType, ok := returnType.(*Enum); ok {
-		return completeLeafValue(eCtx, returnType, fieldASTs, info, result)
+		return completeLeafValue(returnType, result)
 	}
 
 	// If field type is an abstract type, Interface or Union, determine the
@@ -715,7 +715,7 @@ func completeObjectValue(eCtx *ExecutionContext, returnType *Object, fieldASTs [
 }
 
 // completeLeafValue complete a leaf value (Scalar / Enum) by serializing to a valid value, returning nil if serialization is not possible.
-func completeLeafValue(eCtx *ExecutionContext, returnType Leaf, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
+func completeLeafValue(returnType Leaf, result interface{}) interface{} {
 	serializedResult := returnType.Serialize(result)
 	if isNullish(serializedResult) {
 		return nil
