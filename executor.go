@@ -614,29 +614,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 
 	// If field type is List, complete each item in the list with the inner type
 	if returnType, ok := returnType.(*List); ok {
-
-		resultVal := reflect.ValueOf(result)
-		parentTypeName := ""
-		if info.ParentType != nil {
-			parentTypeName = info.ParentType.Name()
-		}
-		err := invariant(
-			resultVal.IsValid() && resultVal.Type().Kind() == reflect.Slice,
-			fmt.Sprintf("User Error: expected iterable, but did not find one "+
-				"for field %v.%v.", parentTypeName, info.FieldName),
-		)
-		if err != nil {
-			panic(gqlerrors.FormatError(err))
-		}
-
-		itemType := returnType.OfType
-		completedResults := []interface{}{}
-		for i := 0; i < resultVal.Len(); i++ {
-			val := resultVal.Index(i).Interface()
-			completedItem := completeValueCatchingError(eCtx, itemType, fieldASTs, info, val)
-			completedResults = append(completedResults, completedItem)
-		}
-		return completedResults
+		return completeListValue(eCtx, returnType, fieldASTs, info, result)
 	}
 
 	// If field type is Scalar or Enum, serialize to a valid value, returning
@@ -712,6 +690,32 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 
 	return results.Data
 
+}
+
+// completeListValue complete a list value by completeing each item in the list with the inner type
+func completeListValue(eCtx *ExecutionContext, returnType *List, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
+	resultVal := reflect.ValueOf(result)
+	parentTypeName := ""
+	if info.ParentType != nil {
+		parentTypeName = info.ParentType.Name()
+	}
+	err := invariant(
+		resultVal.IsValid() && resultVal.Type().Kind() == reflect.Slice,
+		fmt.Sprintf("User Error: expected iterable, but did not find one "+
+			"for field %v.%v.", parentTypeName, info.FieldName),
+	)
+	if err != nil {
+		panic(gqlerrors.FormatError(err))
+	}
+
+	itemType := returnType.OfType
+	completedResults := []interface{}{}
+	for i := 0; i < resultVal.Len(); i++ {
+		val := resultVal.Index(i).Interface()
+		completedItem := completeValueCatchingError(eCtx, itemType, fieldASTs, info, val)
+		completedResults = append(completedResults, completedItem)
+	}
+	return completedResults
 }
 
 func defaultResolveFn(p ResolveParams) (interface{}, error) {
