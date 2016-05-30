@@ -497,9 +497,6 @@ func TestUnionIntersectionTypes_AllowsFragmentConditionsToBeAbstractTypes(t *tes
 }
 func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 
-	//var encounteredSchema *graphql.Schema
-	//var encounteredRootValue interface{}
-
 	var personType2 *graphql.Object
 
 	namedType2 := graphql.NewInterface(graphql.InterfaceConfig{
@@ -510,8 +507,6 @@ func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 			},
 		},
 		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
-			//encounteredSchema = &info.Schema
-			//encounteredRootValue = info.RootValue
 			return personType2
 		},
 	})
