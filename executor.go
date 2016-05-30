@@ -683,6 +683,8 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	return results.Data
 
 }
+
+// completeLeafValue complete a leaf value (Scalar / Enum) by serializing to a valid value, returning nil if serialization is not possible.
 func completeLeafValue(eCtx *ExecutionContext, returnType Leaf, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
 	serializedResult := returnType.Serialize(result)
 	if isNullish(serializedResult) {
@@ -691,7 +693,7 @@ func completeLeafValue(eCtx *ExecutionContext, returnType Leaf, fieldASTs []*ast
 	return serializedResult
 }
 
-// completeListValue complete a list value by completeing each item in the list with the inner type
+// completeListValue complete a list value by completing each item in the list with the inner type
 func completeListValue(eCtx *ExecutionContext, returnType *List, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
 	resultVal := reflect.ValueOf(result)
 	parentTypeName := ""
