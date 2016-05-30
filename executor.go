@@ -628,7 +628,19 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		return completeObjectValue(eCtx, returnType, fieldASTs, info, result)
 	}
 
-	// ast.Field type must be Object, Interface or Union and expect sub-selections.
+	if returnType, ok := returnType.(Abstract); ok {
+		return completeAbstractValue(eCtx, returnType, fieldASTs, info, result)
+	}
+
+	// Not reachable
+	return nil
+
+}
+
+// completeObjectValue completes value of an Abstract type (Union / Interface) by determining the runtime type
+// of that value, then completing based on that type.
+func completeAbstractValue(eCtx *ExecutionContext, returnType Abstract, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
+
 	var runtimeType *Object
 
 	if returnType, ok := returnType.(Abstract); ok {
@@ -646,10 +658,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	}
 
 	return completeObjectValue(eCtx, runtimeType, fieldASTs, info, result)
-
 }
-
-// completeObjectValue completes an Object value by evaluating all sub-selections
 func completeObjectValue(eCtx *ExecutionContext, returnType *Object, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
 
 	// If there is an isTypeOf predicate function, call it with the
