@@ -29,7 +29,7 @@ var (
 )
 
 type StarWarsChar struct {
-	Id              string
+	ID              string
 	Name            string
 	Friends         []StarWarsChar
 	AppearsIn       []int
@@ -39,41 +39,41 @@ type StarWarsChar struct {
 
 func init() {
 	Luke = StarWarsChar{
-		Id:         "1000",
+		ID:         "1000",
 		Name:       "Luke Skywalker",
 		AppearsIn:  []int{4, 5, 6},
 		HomePlanet: "Tatooine",
 	}
 	Vader = StarWarsChar{
-		Id:         "1001",
+		ID:         "1001",
 		Name:       "Darth Vader",
 		AppearsIn:  []int{4, 5, 6},
 		HomePlanet: "Tatooine",
 	}
 	Han = StarWarsChar{
-		Id:        "1002",
+		ID:        "1002",
 		Name:      "Han Solo",
 		AppearsIn: []int{4, 5, 6},
 	}
 	Leia = StarWarsChar{
-		Id:         "1003",
+		ID:         "1003",
 		Name:       "Leia Organa",
 		AppearsIn:  []int{4, 5, 6},
 		HomePlanet: "Alderaa",
 	}
 	Tarkin = StarWarsChar{
-		Id:        "1004",
+		ID:        "1004",
 		Name:      "Wilhuff Tarkin",
 		AppearsIn: []int{4},
 	}
 	Threepio = StarWarsChar{
-		Id:              "2000",
+		ID:              "2000",
 		Name:            "C-3PO",
 		AppearsIn:       []int{4, 5, 6},
 		PrimaryFunction: "Protocol",
 	}
 	Artoo = StarWarsChar{
-		Id:              "2001",
+		ID:              "2001",
 		Name:            "R2-D2",
 		AppearsIn:       []int{4, 5, 6},
 		PrimaryFunction: "Astromech",
@@ -135,9 +135,9 @@ func init() {
 		},
 		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
 			if character, ok := value.(StarWarsChar); ok {
-				id, _ := strconv.Atoi(character.Id)
+				id, _ := strconv.Atoi(character.ID)
 				human := GetHuman(id)
-				if human.Id != "" {
+				if human.ID != "" {
 					return humanType
 				}
 			}
@@ -158,7 +158,7 @@ func init() {
 				Description: "The id of the human.",
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					if human, ok := p.Source.(StarWarsChar); ok {
-						return human.Id, nil
+						return human.ID, nil
 					}
 					return nil, nil
 				},
@@ -217,7 +217,7 @@ func init() {
 				Description: "The id of the droid.",
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					if droid, ok := p.Source.(StarWarsChar); ok {
-						return droid.Id, nil
+						return droid.ID, nil
 					}
 					return nil, nil
 				},
@@ -241,7 +241,7 @@ func init() {
 						for _, friend := range droid.Friends {
 							friends = append(friends, map[string]interface{}{
 								"name": friend.Name,
-								"id":   friend.Id,
+								"id":   friend.ID,
 							})
 						}
 						return droid.Friends, nil
@@ -418,9 +418,8 @@ subLoop:
 		}
 		if !found {
 			return false
-		} else {
-			continue subLoop
 		}
+		continue subLoop
 	}
 	return true
 }

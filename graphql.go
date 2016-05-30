@@ -8,11 +8,24 @@ import (
 )
 
 type Params struct {
-	Schema         Schema
-	RequestString  string
-	RootObject     map[string]interface{}
+	// The GraphQL type system to use when validating and executing a query.
+	Schema Schema
+
+	// A GraphQL language formatted string representing the requested operation.
+	RequestString string
+
+	// The value provided as the first argument to resolver functions on the top
+	// level type (e.g. the query object type).
+	RootObject map[string]interface{}
+
+	// A mapping of variable name to runtime value to use for all variables
+	// defined in the requestString.
 	VariableValues map[string]interface{}
-	OperationName  string
+
+	// The name of the operation to use if requestString contains multiple
+	// possible operations. Can be omitted if requestString contains only
+	// one operation.
+	OperationName string
 
 	// Context may be provided to pass application-specific per-request
 	// information to resolve functions.

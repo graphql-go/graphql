@@ -49,6 +49,10 @@ func TestValidate_UniqueOperationNames_MultipleOperationsOfDifferentTypes(t *tes
       mutation Bar {
         field
       }
+
+      subscription Baz {
+      	field
+      }
     `)
 }
 func TestValidate_UniqueOperationNames_FragmentAndOperationNamedTheSame(t *testing.T) {
@@ -73,7 +77,7 @@ func TestValidate_UniqueOperationNames_MultipleOperationsOfSameName(t *testing.T
 		testutil.RuleError(`There can only be one operation named "Foo".`, 2, 13, 5, 13),
 	})
 }
-func TestValidate_UniqueOperationNames_MultipleOperationsOfSameNameOfDifferentTypes(t *testing.T) {
+func TestValidate_UniqueOperationNames_MultipleOperationsOfSameNameOfDifferentTypes_Mutation(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.UniqueOperationNamesRule, `
       query Foo {
         fieldA
@@ -83,5 +87,18 @@ func TestValidate_UniqueOperationNames_MultipleOperationsOfSameNameOfDifferentTy
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`There can only be one operation named "Foo".`, 2, 13, 5, 16),
+	})
+}
+
+func TestValidate_UniqueOperationNames_MultipleOperationsOfSameNameOfDifferentTypes_Subscription(t *testing.T) {
+	testutil.ExpectFailsRule(t, graphql.UniqueOperationNamesRule, `
+      query Foo {
+        fieldA
+      }
+      subscription Foo {
+        fieldB
+      }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(`There can only be one operation named "Foo".`, 2, 13, 5, 20),
 	})
 }

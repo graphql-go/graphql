@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/graphql-go/graphql/language/ast"
+	"github.com/graphql-go/graphql/language/typeInfo"
 	"reflect"
 )
 
@@ -17,7 +18,7 @@ const (
 type KeyMap map[string][]string
 
 // note that the keys are in Capital letters, equivalent to the ast.Node field Names
-var QueryDocumentKeys KeyMap = KeyMap{
+var QueryDocumentKeys = KeyMap{
 	"Name":     []string{},
 	"Document": []string{"Definitions"},
 	"OperationDefinition": []string{
@@ -380,7 +381,7 @@ Loop:
 				kind = node.GetKind()
 			}
 
-			visitFn := GetVisitFn(visitorOpts, isLeaving, kind)
+			visitFn := GetVisitFn(visitorOpts, kind, isLeaving)
 			if visitFn != nil {
 				p := VisitFuncParams{
 					Node:      nodeIn,
@@ -489,7 +490,7 @@ Loop:
 		}
 	}
 	if len(edits) != 0 {
-		result = edits[0].Value
+		result = edits[len(edits)-1].Value
 	}
 	return result
 }
@@ -620,10 +621,9 @@ func updateNodeField(value interface{}, fieldName string, fieldValue interface{}
 					if isPtr == true {
 						retVal = val.Addr().Interface()
 						return retVal
-					} else {
-						retVal = val.Interface()
-						return retVal
 					}
+					retVal = val.Interface()
+					return retVal
 
 				}
 			}
@@ -709,7 +709,103 @@ func isNilNode(node interface{}) bool {
 	return val.Interface() == nil
 }
 
-func GetVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitFunc {
+// VisitInParallel Creates a new visitor instance which delegates to many visitors to run in
+// parallel. Each visitor will be visited for each node before moving on.
+//
+// If a prior visitor edits a node, no following visitors will see that node.
+func VisitInParallel(visitorOptsSlice ...*VisitorOptions) *VisitorOptions {
+	skipping := map[int]interface{}{}
+
+	return &VisitorOptions{
+		Enter: func(p VisitFuncParams) (string, interface{}) {
+			for i, visitorOpts := range visitorOptsSlice {
+				if _, ok := skipping[i]; !ok {
+					switch node := p.Node.(type) {
+					case ast.Node:
+						kind := node.GetKind()
+						fn := GetVisitFn(visitorOpts, kind, false)
+						if fn != nil {
+							action, result := fn(p)
+							if action == ActionSkip {
+								skipping[i] = node
+							} else if action == ActionBreak {
+								skipping[i] = ActionBreak
+							} else if action == ActionUpdate {
+								return ActionUpdate, result
+							}
+						}
+					}
+				}
+			}
+			return ActionNoChange, nil
+		},
+		Leave: func(p VisitFuncParams) (string, interface{}) {
+			for i, visitorOpts := range visitorOptsSlice {
+				skippedNode, ok := skipping[i]
+				if !ok {
+					switch node := p.Node.(type) {
+					case ast.Node:
+						kind := node.GetKind()
+						fn := GetVisitFn(visitorOpts, kind, true)
+						if fn != nil {
+							action, result := fn(p)
+							if action == ActionBreak {
+								skipping[i] = ActionBreak
+							} else if action == ActionUpdate {
+								return ActionUpdate, result
+							}
+						}
+					}
+				} else if skippedNode == p.Node {
+					delete(skipping, i)
+				}
+			}
+			return ActionNoChange, nil
+		},
+	}
+}
+
+// VisitWithTypeInfo Creates a new visitor instance which maintains a provided TypeInfo instance
+// along with visiting visitor.
+func VisitWithTypeInfo(ttypeInfo typeInfo.TypeInfoI, visitorOpts *VisitorOptions) *VisitorOptions {
+	return &VisitorOptions{
+		Enter: func(p VisitFuncParams) (string, interface{}) {
+			if node, ok := p.Node.(ast.Node); ok {
+				ttypeInfo.Enter(node)
+				fn := GetVisitFn(visitorOpts, node.GetKind(), false)
+				if fn != nil {
+					action, result := fn(p)
+					if action == ActionUpdate {
+						ttypeInfo.Leave(node)
+						if isNode(result) {
+							if result, ok := result.(ast.Node); ok {
+								ttypeInfo.Enter(result)
+							}
+						}
+					}
+					return action, result
+				}
+			}
+			return ActionNoChange, nil
+		},
+		Leave: func(p VisitFuncParams) (string, interface{}) {
+			action := ActionNoChange
+			var result interface{}
+			if node, ok := p.Node.(ast.Node); ok {
+				fn := GetVisitFn(visitorOpts, node.GetKind(), true)
+				if fn != nil {
+					action, result = fn(p)
+				}
+				ttypeInfo.Leave(node)
+			}
+			return action, result
+		},
+	}
+}
+
+// GetVisitFn Given a visitor instance, if it is leaving or not, and a node kind, return
+// the function the visitor runtime should call.
+func GetVisitFn(visitorOpts *VisitorOptions, kind string, isLeaving bool) VisitFunc {
 	if visitorOpts == nil {
 		return nil
 	}
@@ -722,12 +818,11 @@ func GetVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitF
 		if isLeaving {
 			// { Kind: { leave() {} } }
 			return kindVisitor.Leave
-		} else {
-			// { Kind: { enter() {} } }
-			return kindVisitor.Enter
 		}
-	}
+		// { Kind: { enter() {} } }
+		return kindVisitor.Enter
 
+	}
 	if isLeaving {
 		// { enter() {} }
 		specificVisitor := visitorOpts.Leave
@@ -739,17 +834,15 @@ func GetVisitFn(visitorOpts *VisitorOptions, isLeaving bool, kind string) VisitF
 			return specificKindVisitor
 		}
 
-	} else {
-		// { leave() {} }
-		specificVisitor := visitorOpts.Enter
-		if specificVisitor != nil {
-			return specificVisitor
-		}
-		if specificKindVisitor, ok := visitorOpts.EnterKindMap[kind]; ok {
-			// { enter: { Kind() {} } }
-			return specificKindVisitor
-		}
 	}
-
+	// { leave() {} }
+	specificVisitor := visitorOpts.Enter
+	if specificVisitor != nil {
+		return specificVisitor
+	}
+	if specificKindVisitor, ok := visitorOpts.EnterKindMap[kind]; ok {
+		// { enter: { Kind() {} } }
+		return specificKindVisitor
+	}
 	return nil
 }

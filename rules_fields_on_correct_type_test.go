@@ -53,16 +53,30 @@ func TestValidate_FieldsOnCorrectType_IgnoresFieldsOnUnknownType(t *testing.T) {
       }
     `)
 }
+func TestValidate_FieldsOnCorrectType_ReportErrorsWhenTheTypeIsKnownAgain(t *testing.T) {
+	testutil.ExpectFailsRule(t, graphql.FieldsOnCorrectTypeRule, `
+      fragment typeKnownAgain on Pet {
+        unknown_pet_field {
+          ... on Cat {
+            unknown_cat_field
+          }
+        }
+      }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(`Cannot query field "unknown_pet_field" on type "Pet".`, 3, 9),
+		testutil.RuleError(`Cannot query field "unknown_cat_field" on type "Cat".`, 5, 13),
+	})
+}
 func TestValidate_FieldsOnCorrectType_FieldNotDefinedOnFragment(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.FieldsOnCorrectTypeRule, `
       fragment fieldNotDefined on Dog {
         meowVolume
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Cannot query field "meowVolume" on "Dog".`, 3, 9),
+		testutil.RuleError(`Cannot query field "meowVolume" on type "Dog".`, 3, 9),
 	})
 }
-func TestValidate_FieldsOnCorrectType_FieldNotDefinedDeeplyOnlyReportsFirst(t *testing.T) {
+func TestValidate_FieldsOnCorrectType_IgnoreDeeplyUnknownField(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.FieldsOnCorrectTypeRule, `
       fragment deepFieldNotDefined on Dog {
         unknown_field {
@@ -70,7 +84,7 @@ func TestValidate_FieldsOnCorrectType_FieldNotDefinedDeeplyOnlyReportsFirst(t *t
         }
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Cannot query field "unknown_field" on "Dog".`, 3, 9),
+		testutil.RuleError(`Cannot query field "unknown_field" on type "Dog".`, 3, 9),
 	})
 }
 func TestValidate_FieldsOnCorrectType_SubFieldNotDefined(t *testing.T) {
@@ -81,7 +95,7 @@ func TestValidate_FieldsOnCorrectType_SubFieldNotDefined(t *testing.T) {
         }
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Cannot query field "unknown_field" on "Pet".`, 4, 11),
+		testutil.RuleError(`Cannot query field "unknown_field" on type "Pet".`, 4, 11),
 	})
 }
 func TestValidate_FieldsOnCorrectType_FieldNotDefinedOnInlineFragment(t *testing.T) {
@@ -92,7 +106,7 @@ func TestValidate_FieldsOnCorrectType_FieldNotDefinedOnInlineFragment(t *testing
         }
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Cannot query field "meowVolume" on "Dog".`, 4, 11),
+		testutil.RuleError(`Cannot query field "meowVolume" on type "Dog".`, 4, 11),
 	})
 }
 func TestValidate_FieldsOnCorrectType_AliasedFieldTargetNotDefined(t *testing.T) {
@@ -101,7 +115,7 @@ func TestValidate_FieldsOnCorrectType_AliasedFieldTargetNotDefined(t *testing.T)
         volume : mooVolume
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Cannot query field "mooVolume" on "Dog".`, 3, 9),
+		testutil.RuleError(`Cannot query field "mooVolume" on type "Dog".`, 3, 9),
 	})
 }
 func TestValidate_FieldsOnCorrectType_AliasedLyingFieldTargetNotDefined(t *testing.T) {
@@ -110,7 +124,7 @@ func TestValidate_FieldsOnCorrectType_AliasedLyingFieldTargetNotDefined(t *testi
         barkVolume : kawVolume
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Cannot query field "kawVolume" on "Dog".`, 3, 9),
+		testutil.RuleError(`Cannot query field "kawVolume" on type "Dog".`, 3, 9),
 	})
 }
 func TestValidate_FieldsOnCorrectType_NotDefinedOnInterface(t *testing.T) {
@@ -119,7 +133,7 @@ func TestValidate_FieldsOnCorrectType_NotDefinedOnInterface(t *testing.T) {
         tailLength
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Cannot query field "tailLength" on "Pet".`, 3, 9),
+		testutil.RuleError(`Cannot query field "tailLength" on type "Pet".`, 3, 9),
 	})
 }
 func TestValidate_FieldsOnCorrectType_DefinedOnImplementorsButNotOnInterface(t *testing.T) {
@@ -128,7 +142,7 @@ func TestValidate_FieldsOnCorrectType_DefinedOnImplementorsButNotOnInterface(t *
         nickname
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Cannot query field "nickname" on "Pet".`, 3, 9),
+		testutil.RuleError(`Cannot query field "nickname" on type "Pet". However, this field exists on "Cat", "Dog". Perhaps you meant to use an inline fragment?`, 3, 9),
 	})
 }
 func TestValidate_FieldsOnCorrectType_MetaFieldSelectionOnUnion(t *testing.T) {
@@ -144,16 +158,16 @@ func TestValidate_FieldsOnCorrectType_DirectFieldSelectionOnUnion(t *testing.T) 
         directField
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Cannot query field "directField" on "CatOrDog".`, 3, 9),
+		testutil.RuleError(`Cannot query field "directField" on type "CatOrDog".`, 3, 9),
 	})
 }
-func TestValidate_FieldsOnCorrectType_DirectImplementorsQueriedOnUnion(t *testing.T) {
+func TestValidate_FieldsOnCorrectType_DefinedImplementorsQueriedOnUnion(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.FieldsOnCorrectTypeRule, `
       fragment definedOnImplementorsQueriedOnUnion on CatOrDog {
         name
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Cannot query field "name" on "CatOrDog".`, 3, 9),
+		testutil.RuleError(`Cannot query field "name" on type "CatOrDog". However, this field exists on "Being", "Pet", "Canine", "Cat", "Dog". Perhaps you meant to use an inline fragment?`, 3, 9),
 	})
 }
 func TestValidate_FieldsOnCorrectType_ValidFieldInInlineFragment(t *testing.T) {
@@ -162,6 +176,36 @@ func TestValidate_FieldsOnCorrectType_ValidFieldInInlineFragment(t *testing.T) {
         ... on Dog {
           name
         }
+        ... {
+          name
+        }
       }
     `)
+}
+
+func TestValidate_FieldsOnCorrectTypeErrorMessage_WorksWithNoSuggestions(t *testing.T) {
+	message := graphql.UndefinedFieldMessage("T", "f", []string{})
+	expected := `Cannot query field "T" on type "f".`
+	if message != expected {
+		t.Fatalf("Unexpected message, expected: %v, got %v", expected, message)
+	}
+}
+
+func TestValidate_FieldsOnCorrectTypeErrorMessage_WorksWithNoSmallNumbersOfSuggestions(t *testing.T) {
+	message := graphql.UndefinedFieldMessage("T", "f", []string{"A", "B"})
+	expected := `Cannot query field "T" on type "f". ` +
+		`However, this field exists on "A", "B". ` +
+		`Perhaps you meant to use an inline fragment?`
+	if message != expected {
+		t.Fatalf("Unexpected message, expected: %v, got %v", expected, message)
+	}
+}
+func TestValidate_FieldsOnCorrectTypeErrorMessage_WorksWithLotsOfSuggestions(t *testing.T) {
+	message := graphql.UndefinedFieldMessage("T", "f", []string{"A", "B", "C", "D", "E", "F"})
+	expected := `Cannot query field "T" on type "f". ` +
+		`However, this field exists on "A", "B", "C", "D", "E", and 1 other types. ` +
+		`Perhaps you meant to use an inline fragment?`
+	if message != expected {
+		t.Fatalf("Unexpected message, expected: %v, got %v", expected, message)
+	}
 }

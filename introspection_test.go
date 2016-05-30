@@ -30,7 +30,8 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 	}
 	expectedDataSubSet := map[string]interface{}{
 		"__schema": map[string]interface{}{
-			"mutationType": nil,
+			"mutationType":     nil,
+			"subscriptionType": nil,
 			"queryType": map[string]interface{}{
 				"name": "QueryRoot",
 			},
@@ -85,6 +86,16 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 						},
 						map[string]interface{}{
 							"name": "mutationType",
+							"args": []interface{}{},
+							"type": map[string]interface{}{
+								"kind": "OBJECT",
+								"name": "__Type",
+							},
+							"isDeprecated":      false,
+							"deprecationReason": nil,
+						},
+						map[string]interface{}{
+							"name": "subscriptionType",
 							"args": []interface{}{},
 							"type": map[string]interface{}{
 								"kind": "OBJECT",
@@ -1257,14 +1268,15 @@ func TestIntrospection_ExposesDescriptionsOnTypesAndFields(t *testing.T) {
         }
       }
     `
+
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"schemaType": map[string]interface{}{
 				"name": "__Schema",
-				"description": `A GraphQL Schema defines the capabilities of a GraphQL
-server. It exposes all available types and directives on
-the server, as well as the entry points for query and
-mutation operations.`,
+				"description": `A GraphQL Schema defines the capabilities of a GraphQL ` +
+					`server. It exposes all available types and directives on ` +
+					`the server, as well as the entry points for query, mutation, ` +
+					`and subscription operations.`,
 				"fields": []interface{}{
 					map[string]interface{}{
 						"name":        "types",
@@ -1278,6 +1290,11 @@ mutation operations.`,
 						"name": "mutationType",
 						"description": "If this server supports mutation, the type that " +
 							"mutation operations will be rooted at.",
+					},
+					map[string]interface{}{
+						"name": "subscriptionType",
+						"description": "If this server supports subscription, the type that " +
+							"subscription operations will be rooted at.",
 					},
 					map[string]interface{}{
 						"name":        "directives",
@@ -1327,7 +1344,7 @@ func TestIntrospection_ExposesDescriptionsOnEnums(t *testing.T) {
 		Data: map[string]interface{}{
 			"typeKindType": map[string]interface{}{
 				"name":        "__TypeKind",
-				"description": `An enum describing what kind of type a given __Type is`,
+				"description": "An enum describing what kind of type a given `__Type` is",
 				"enumValues": []interface{}{
 					map[string]interface{}{
 						"name":        "SCALAR",

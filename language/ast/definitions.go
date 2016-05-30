@@ -9,11 +9,14 @@ type Definition interface {
 	GetOperation() string
 	GetVariableDefinitions() []*VariableDefinition
 	GetSelectionSet() *SelectionSet
+	GetKind() string
+	GetLoc() *Location
 }
 
 // Ensure that all definition types implements Definition interface
 var _ Definition = (*OperationDefinition)(nil)
 var _ Definition = (*FragmentDefinition)(nil)
+var _ Definition = (*TypeExtensionDefinition)(nil)
 var _ Definition = (Definition)(nil)
 
 // OperationDefinition implements Node, Definition
@@ -150,4 +153,42 @@ func (vd *VariableDefinition) GetKind() string {
 
 func (vd *VariableDefinition) GetLoc() *Location {
 	return vd.Loc
+}
+
+// TypeExtensionDefinition implements Node, Definition
+type TypeExtensionDefinition struct {
+	Kind       string
+	Loc        *Location
+	Definition *ObjectDefinition
+}
+
+func NewTypeExtensionDefinition(def *TypeExtensionDefinition) *TypeExtensionDefinition {
+	if def == nil {
+		def = &TypeExtensionDefinition{}
+	}
+	return &TypeExtensionDefinition{
+		Kind:       kinds.TypeExtensionDefinition,
+		Loc:        def.Loc,
+		Definition: def.Definition,
+	}
+}
+
+func (def *TypeExtensionDefinition) GetKind() string {
+	return def.Kind
+}
+
+func (def *TypeExtensionDefinition) GetLoc() *Location {
+	return def.Loc
+}
+
+func (def *TypeExtensionDefinition) GetVariableDefinitions() []*VariableDefinition {
+	return []*VariableDefinition{}
+}
+
+func (def *TypeExtensionDefinition) GetSelectionSet() *SelectionSet {
+	return &SelectionSet{}
+}
+
+func (def *TypeExtensionDefinition) GetOperation() string {
+	return ""
 }

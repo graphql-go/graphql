@@ -56,7 +56,20 @@ func TestValidate_AnonymousOperationMustBeAlone_MultipleAnonOperations(t *testin
 		testutil.RuleError(`This anonymous operation must be the only defined operation.`, 5, 7),
 	})
 }
-func TestValidate_AnonymousOperationMustBeAlone_AnonOperationWithAnotherOperation(t *testing.T) {
+func TestValidate_AnonymousOperationMustBeAlone_AnonOperationWithAMutation(t *testing.T) {
+	testutil.ExpectFailsRule(t, graphql.LoneAnonymousOperationRule, `
+      {
+        fieldA
+      }
+      mutation Foo {
+        fieldB
+      }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(`This anonymous operation must be the only defined operation.`, 2, 7),
+	})
+}
+
+func TestValidate_AnonymousOperationMustBeAlone_AnonOperationWithASubscription(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.LoneAnonymousOperationRule, `
       {
         fieldA

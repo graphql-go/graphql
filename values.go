@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"strings"
 
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/kinds"
 	"github.com/graphql-go/graphql/language/printer"
+	"sort"
 )
 
 // Prepares an object map of variableValues of the correct type based on the
@@ -77,10 +79,12 @@ func getVariableValue(schema Schema, definitionAST *ast.VariableDefinition, inpu
 			"",
 			nil,
 			[]int{},
+			nil,
 		)
 	}
 
-	if isValidInputValue(input, ttype) {
+	isValid, messages := isValidInputValue(input, ttype)
+	if isValid {
 		if isNullish(input) {
 			defaultValue := definitionAST.DefaultValue
 			if defaultValue != nil {
@@ -99,20 +103,28 @@ func getVariableValue(schema Schema, definitionAST *ast.VariableDefinition, inpu
 			"",
 			nil,
 			[]int{},
+			nil,
 		)
 	}
+	// convert input interface into string for error message
 	inputStr := ""
 	b, err := json.Marshal(input)
 	if err == nil {
 		inputStr = string(b)
 	}
+	messagesStr := ""
+	if len(messages) > 0 {
+		messagesStr = "\n" + strings.Join(messages, "\n")
+	}
+
 	return "", gqlerrors.NewError(
-		fmt.Sprintf(`Variable "$%v" expected value of type `+
-			`"%v" but got: %v.`, variable.Name.Value, printer.Print(definitionAST.Type), inputStr),
+		fmt.Sprintf(`Variable "$%v" got invalid value `+
+			`%v.%v`, variable.Name.Value, inputStr, messagesStr),
 		[]ast.Node{definitionAST},
 		"",
 		nil,
 		[]int{},
+		nil,
 	)
 }
 
@@ -208,16 +220,19 @@ func typeFromAST(schema Schema, inputTypeAST ast.Type) (Type, error) {
 // Given a value and a GraphQL type, determine if the value will be
 // accepted for that type. This is primarily useful for validating the
 // runtime values of query variables.
-func isValidInputValue(value interface{}, ttype Input) bool {
+func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
 	if ttype, ok := ttype.(*NonNull); ok {
 		if isNullish(value) {
-			return false
+			if ttype.OfType.Name() != "" {
+				return false, []string{fmt.Sprintf(`Expected "%v!", found null.`, ttype.OfType.Name())}
+			}
+			return false, []string{"Expected non-null value, found null."}
 		}
 		return isValidInputValue(value, ttype.OfType)
 	}
 
 	if isNullish(value) {
-		return true
+		return true, nil
 	}
 
 	switch ttype := ttype.(type) {
@@ -228,48 +243,76 @@ func isValidInputValue(value interface{}, ttype Input) bool {
 			valType = valType.Elem()
 		}
 		if valType.Kind() == reflect.Slice {
+			messagesReduce := []string{}
 			for i := 0; i < valType.Len(); i++ {
 				val := valType.Index(i).Interface()
-				if !isValidInputValue(val, itemType) {
-					return false
+				_, messages := isValidInputValue(val, itemType)
+				for idx, message := range messages {
+					messagesReduce = append(messagesReduce, fmt.Sprintf(`In element #%v: %v`, idx+1, message))
 				}
 			}
-			return true
+			return (len(messagesReduce) == 0), messagesReduce
 		}
 		return isValidInputValue(value, itemType)
 
 	case *InputObject:
+		messagesReduce := []string{}
+
 		valueMap, ok := value.(map[string]interface{})
 		if !ok {
-			return false
+			return false, []string{fmt.Sprintf(`Expected "%v", found not an object.`, ttype.Name())}
 		}
 		fields := ttype.Fields()
 
+		// to ensure stable order of field evaluation
+		fieldNames := []string{}
+		valueMapFieldNames := []string{}
+
+		for fieldName := range fields {
+			fieldNames = append(fieldNames, fieldName)
+		}
+		sort.Strings(fieldNames)
+
+		for fieldName := range valueMap {
+			valueMapFieldNames = append(valueMapFieldNames, fieldName)
+		}
+		sort.Strings(valueMapFieldNames)
+
 		// Ensure every provided field is defined.
-		for fieldName, _ := range valueMap {
+		for _, fieldName := range valueMapFieldNames {
 			if _, ok := fields[fieldName]; !ok {
-				return false
+				messagesReduce = append(messagesReduce, fmt.Sprintf(`In field "%v": Unknown field.`, fieldName))
 			}
 		}
+
 		// Ensure every defined field is valid.
-		for fieldName, _ := range fields {
-			isValid := isValidInputValue(valueMap[fieldName], fields[fieldName].Type)
-			if !isValid {
-				return false
+		for _, fieldName := range fieldNames {
+			_, messages := isValidInputValue(valueMap[fieldName], fields[fieldName].Type)
+			if messages != nil {
+				for _, message := range messages {
+					messagesReduce = append(messagesReduce, fmt.Sprintf(`In field "%v": %v`, fieldName, message))
+				}
 			}
 		}
-		return true
+		return (len(messagesReduce) == 0), messagesReduce
 	}
 
 	switch ttype := ttype.(type) {
 	case *Scalar:
 		parsedVal := ttype.ParseValue(value)
-		return !isNullish(parsedVal)
+		if isNullish(parsedVal) {
+			return false, []string{fmt.Sprintf(`Expected type "%v", found "%v".`, ttype.Name(), value)}
+		}
+		return true, nil
+
 	case *Enum:
 		parsedVal := ttype.ParseValue(value)
-		return !isNullish(parsedVal)
+		if isNullish(parsedVal) {
+			return false, []string{fmt.Sprintf(`Expected type "%v", found "%v".`, ttype.Name(), value)}
+		}
+		return true, nil
 	}
-	return false
+	return true, nil
 }
 
 // Returns true if a value is null, undefined, or NaN.

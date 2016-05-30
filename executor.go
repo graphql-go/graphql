@@ -82,43 +82,34 @@ type ExecutionContext struct {
 
 func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error) {
 	eCtx := &ExecutionContext{}
-	operations := map[string]ast.Definition{}
+	var operation *ast.OperationDefinition
 	fragments := map[string]ast.Definition{}
-	for _, statement := range p.AST.Definitions {
-		switch stm := statement.(type) {
+
+	for _, definition := range p.AST.Definitions {
+		switch definition := definition.(type) {
 		case *ast.OperationDefinition:
-			key := ""
-			if stm.GetName() != nil && stm.GetName().Value != "" {
-				key = stm.GetName().Value
+			if (p.OperationName == "") && operation != nil {
+				return nil, errors.New("Must provide operation name if query contains multiple operations.")
 			}
-			operations[key] = stm
+			if p.OperationName == "" || definition.GetName() != nil && definition.GetName().Value == p.OperationName {
+				operation = definition
+			}
 		case *ast.FragmentDefinition:
 			key := ""
-			if stm.GetName() != nil && stm.GetName().Value != "" {
-				key = stm.GetName().Value
+			if definition.GetName() != nil && definition.GetName().Value != "" {
+				key = definition.GetName().Value
 			}
-			fragments[key] = stm
+			fragments[key] = definition
 		default:
-			return nil, fmt.Errorf("GraphQL cannot execute a request containing a %v", statement.GetKind())
+			return nil, fmt.Errorf("GraphQL cannot execute a request containing a %v", definition.GetKind())
 		}
 	}
 
-	if (p.OperationName == "") && (len(operations) != 1) {
-		return nil, errors.New("Must provide operation name if query contains multiple operations.")
-	}
-
-	opName := p.OperationName
-	if opName == "" {
-		// get first opName
-		for k, _ := range operations {
-			opName = k
-			break
+	if operation == nil {
+		if p.OperationName == "" {
+			return nil, fmt.Errorf(`Unknown operation named "%v".`, p.OperationName)
 		}
-	}
-
-	operation, found := operations[opName]
-	if !found {
-		return nil, fmt.Errorf(`Unknown operation named "%v".`, opName)
+		return nil, fmt.Errorf(`Must provide an operation`)
 	}
 
 	variableValues, err := getVariableValues(p.Schema, operation.GetVariableDefinitions(), p.Args)
@@ -149,9 +140,9 @@ func executeOperation(p ExecuteOperationParams) *Result {
 	}
 
 	fields := collectFields(CollectFieldsParams{
-		ExeContext:    p.ExecutionContext,
-		OperationType: operationType,
-		SelectionSet:  p.Operation.GetSelectionSet(),
+		ExeContext:   p.ExecutionContext,
+		RuntimeType:  operationType,
+		SelectionSet: p.Operation.GetSelectionSet(),
 	})
 
 	executeFieldsParams := ExecuteFieldsParams{
@@ -163,9 +154,9 @@ func executeOperation(p ExecuteOperationParams) *Result {
 
 	if p.Operation.GetOperation() == "mutation" {
 		return executeFieldsSerially(executeFieldsParams)
-	} else {
-		return executeFields(executeFieldsParams)
 	}
+	return executeFields(executeFieldsParams)
+
 }
 
 // Extracts the root type of the operation from the schema.
@@ -180,11 +171,38 @@ func getOperationRootType(schema Schema, operation ast.Definition) (*Object, err
 	case "mutation":
 		mutationType := schema.MutationType()
 		if mutationType.PrivateName == "" {
-			return nil, errors.New("Schema is not configured for mutations")
+			return nil, gqlerrors.NewError(
+				"Schema is not configured for mutations",
+				[]ast.Node{operation},
+				"",
+				nil,
+				[]int{},
+				nil,
+			)
 		}
 		return mutationType, nil
+	case "subscription":
+		subscriptionType := schema.SubscriptionType()
+		if subscriptionType.PrivateName == "" {
+			return nil, gqlerrors.NewError(
+				"Schema is not configured for subscriptions",
+				[]ast.Node{operation},
+				"",
+				nil,
+				[]int{},
+				nil,
+			)
+		}
+		return subscriptionType, nil
 	default:
-		return nil, errors.New("Can only execute queries and mutations")
+		return nil, gqlerrors.NewError(
+			"Can only execute queries, mutations and subscription",
+			[]ast.Node{operation},
+			"",
+			nil,
+			[]int{},
+			nil,
+		)
 	}
 }
 
@@ -245,7 +263,7 @@ func executeFields(p ExecuteFieldsParams) *Result {
 
 type CollectFieldsParams struct {
 	ExeContext           *ExecutionContext
-	OperationType        *Object
+	RuntimeType          *Object // previously known as OperationType
 	SelectionSet         *ast.SelectionSet
 	Fields               map[string][]*ast.Field
 	VisitedFragmentNames map[string]bool
@@ -253,6 +271,9 @@ type CollectFieldsParams struct {
 
 // Given a selectionSet, adds all of the fields in that selection to
 // the passed in map of fields, and returns it at the end.
+// CollectFields requires the "runtime type" of an object. For a field which
+// returns and Interface or Union type, the "runtime type" will be the actual
+// Object type returned by that field.
 func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 
 	fields := p.Fields
@@ -279,12 +300,12 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 		case *ast.InlineFragment:
 
 			if !shouldIncludeNode(p.ExeContext, selection.Directives) ||
-				!doesFragmentConditionMatch(p.ExeContext, selection, p.OperationType) {
+				!doesFragmentConditionMatch(p.ExeContext, selection, p.RuntimeType) {
 				continue
 			}
 			innerParams := CollectFieldsParams{
 				ExeContext:           p.ExeContext,
-				OperationType:        p.OperationType,
+				RuntimeType:          p.RuntimeType,
 				SelectionSet:         selection.SelectionSet,
 				Fields:               fields,
 				VisitedFragmentNames: p.VisitedFragmentNames,
@@ -307,12 +328,12 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 
 			if fragment, ok := fragment.(*ast.FragmentDefinition); ok {
 				if !shouldIncludeNode(p.ExeContext, fragment.Directives) ||
-					!doesFragmentConditionMatch(p.ExeContext, fragment, p.OperationType) {
+					!doesFragmentConditionMatch(p.ExeContext, fragment, p.RuntimeType) {
 					continue
 				}
 				innerParams := CollectFieldsParams{
 					ExeContext:           p.ExeContext,
-					OperationType:        p.OperationType,
+					RuntimeType:          p.RuntimeType,
 					SelectionSet:         fragment.GetSelectionSet(),
 					Fields:               fields,
 					VisitedFragmentNames: p.VisitedFragmentNames,
@@ -390,29 +411,38 @@ func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment ast.Node, ttype
 
 	switch fragment := fragment.(type) {
 	case *ast.FragmentDefinition:
-		conditionalType, err := typeFromAST(eCtx.Schema, fragment.TypeCondition)
+		typeConditionAST := fragment.TypeCondition
+		if typeConditionAST == nil {
+			return true
+		}
+		conditionalType, err := typeFromAST(eCtx.Schema, typeConditionAST)
 		if err != nil {
 			return false
 		}
 		if conditionalType == ttype {
 			return true
 		}
-                if conditionalType.Name() == ttype.Name() {
+		if conditionalType.Name() == ttype.Name() {
 			return true
 		}
-		
 		if conditionalType, ok := conditionalType.(Abstract); ok {
 			return conditionalType.IsPossibleType(ttype)
 		}
 	case *ast.InlineFragment:
-		conditionalType, err := typeFromAST(eCtx.Schema, fragment.TypeCondition)
+		typeConditionAST := fragment.TypeCondition
+		if typeConditionAST == nil {
+			return true
+		}
+		conditionalType, err := typeFromAST(eCtx.Schema, typeConditionAST)
 		if err != nil {
 			return false
 		}
 		if conditionalType == ttype {
 			return true
 		}
-
+		if conditionalType.Name() == ttype.Name() {
+			return true
+		}
 		if conditionalType, ok := conditionalType.(Abstract); ok {
 			return conditionalType.IsPossibleType(ttype)
 		}
@@ -438,12 +468,10 @@ type resolveFieldResultState struct {
 	hasNoFieldDefs bool
 }
 
-/**
- * Resolves the field on the given source object. In particular, this
- * figures out the value that the field returns by calling its resolve function,
- * then calls completeValue to complete promises, serialize scalars, or execute
- * the sub-selection-set for objects.
- */
+// Resolves the field on the given source object. In particular, this
+// figures out the value that the field returns by calling its resolve function,
+// then calls completeValue to complete promises, serialize scalars, or execute
+// the sub-selection-set for objects.
 func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}, fieldASTs []*ast.Field) (result interface{}, resultState resolveFieldResultState) {
 	// catch panic from resolveFn
 	var returnType Output
@@ -506,10 +534,6 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 		VariableValues: eCtx.VariableValues,
 	}
 
-	// TODO: If an error occurs while calling the field `resolve` function, ensure that
-	// it is wrapped as a Error with locations. Log this error and return
-	// null if allowed, otherwise throw the error so the parent field can handle
-	// it.
 	var resolveFnError error
 
 	result, resolveFnError = resolveFn(ResolveParams{
@@ -592,9 +616,14 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	if returnType, ok := returnType.(*List); ok {
 
 		resultVal := reflect.ValueOf(result)
+		parentTypeName := ""
+		if info.ParentType != nil {
+			parentTypeName = info.ParentType.Name()
+		}
 		err := invariant(
 			resultVal.IsValid() && resultVal.Type().Kind() == reflect.Slice,
-			"User Error: expected iterable, but did not find one.",
+			fmt.Sprintf("User Error: expected iterable, but did not find one "+
+				"for field %v.%v.", parentTypeName, info.FieldName),
 		)
 		if err != nil {
 			panic(gqlerrors.FormatError(err))
@@ -628,29 +657,29 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	}
 
 	// ast.Field type must be Object, Interface or Union and expect sub-selections.
-	var objectType *Object
+	var runtimeType *Object
 	switch returnType := returnType.(type) {
 	case *Object:
-		objectType = returnType
+		runtimeType = returnType
 	case Abstract:
-		objectType = returnType.ObjectType(result, info)
-		if objectType != nil && !returnType.IsPossibleType(objectType) {
+		runtimeType = returnType.ObjectType(result, info)
+		if runtimeType != nil && !returnType.IsPossibleType(runtimeType) {
 			panic(gqlerrors.NewFormattedError(
 				fmt.Sprintf(`Runtime Object type "%v" is not a possible type `+
-					`for "%v".`, objectType, returnType),
+					`for "%v".`, runtimeType, returnType),
 			))
 		}
 	}
-	if objectType == nil {
+	if runtimeType == nil {
 		return nil
 	}
 
 	// If there is an isTypeOf predicate function, call it with the
 	// current result. If isTypeOf returns false, then raise an error rather
 	// than continuing execution.
-	if objectType.IsTypeOf != nil && !objectType.IsTypeOf(result, info) {
+	if runtimeType.IsTypeOf != nil && !runtimeType.IsTypeOf(result, info) {
 		panic(gqlerrors.NewFormattedError(
-			fmt.Sprintf(`Expected value of type "%v" but got: %T.`, objectType, result),
+			fmt.Sprintf(`Expected value of type "%v" but got: %T.`, runtimeType, result),
 		))
 	}
 
@@ -665,7 +694,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		if selectionSet != nil {
 			innerParams := CollectFieldsParams{
 				ExeContext:           eCtx,
-				OperationType:        objectType,
+				RuntimeType:          runtimeType,
 				SelectionSet:         selectionSet,
 				Fields:               subFieldASTs,
 				VisitedFragmentNames: visitedFragmentNames,
@@ -675,7 +704,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	}
 	executeFieldsParams := ExecuteFieldsParams{
 		ExecutionContext: eCtx,
-		ParentType:       objectType,
+		ParentType:       runtimeType,
 		Source:           result,
 		Fields:           subFieldASTs,
 	}
@@ -738,15 +767,13 @@ func defaultResolveFn(p ResolveParams) (interface{}, error) {
 	return nil, nil
 }
 
-/**
- * This method looks up the field on the given type defintion.
- * It has special casing for the two introspection fields, __schema
- * and __typename. __typename is special because it can always be
- * queried as a field, even in situations where no other fields
- * are allowed, like on a Union. __schema could get automatically
- * added to the query type, but that would require mutating type
- * definitions, which would cause issues.
- */
+// This method looks up the field on the given type defintion.
+// It has special casing for the two introspection fields, __schema
+// and __typename. __typename is special because it can always be
+// queried as a field, even in situations where no other fields
+// are allowed, like on a Union. __schema could get automatically
+// added to the query type, but that would require mutating type
+// definitions, which would cause issues.
 func getFieldDef(schema Schema, parentType *Object, fieldName string) *FieldDefinition {
 
 	if parentType == nil {

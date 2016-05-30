@@ -294,6 +294,23 @@ func TestTypeSystem_SchemaMustHaveObjectRootTypes_AcceptsASchemaWhoseQueryAndMut
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+func TestTypeSystem_SchemaMustHaveObjectRootTypes_AcceptsASchemaWhoseQueryAndSubscriptionTypesAreObjectType(t *testing.T) {
+	subscriptionType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Subscription",
+		Fields: graphql.Fields{
+			"subscribe": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+	_, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query:    someObjectType,
+		Mutation: subscriptionType,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
 func TestTypeSystem_SchemaMustHaveObjectRootTypes_RejectsASchemaWithoutAQueryType(t *testing.T) {
 	_, err := graphql.NewSchema(graphql.SchemaConfig{})
 	expectedError := "Schema query must be Object Type but got: nil."
@@ -1175,7 +1192,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 		t.Fatalf(`unexpected error: %v for type "%v"`, err, anotherObject)
 	}
 }
-func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWhichImplementsAnInterfaceFieldAlongWithMoreArguments(t *testing.T) {
+func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhichImpementsAnInterfaceFieldAlongWithAdditionalOptionalArguments(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
 		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
@@ -1210,7 +1227,46 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWhi
 		},
 	})
 	_, err := schemaWithObjectFieldOfType(anotherObject)
-	expectedError := `AnotherInterface.field does not define argument "anotherInput" but AnotherObject.field provides it.`
+	if err != nil {
+		t.Fatalf(`unexpected error: %v for type "%v"`, err, anotherObject)
+	}
+}
+func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWhichImplementsAnInterfaceFieldAlongWithAdditionalRequiredArguments(t *testing.T) {
+	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
+		Name: "AnotherInterface",
+		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+			return nil
+		},
+		Fields: graphql.Fields{
+			"field": &graphql.Field{
+				Type: graphql.String,
+				Args: graphql.FieldConfigArgument{
+					"input": &graphql.ArgumentConfig{
+						Type: graphql.String,
+					},
+				},
+			},
+		},
+	})
+	anotherObject := graphql.NewObject(graphql.ObjectConfig{
+		Name:       "AnotherObject",
+		Interfaces: []*graphql.Interface{anotherInterface},
+		Fields: graphql.Fields{
+			"field": &graphql.Field{
+				Type: graphql.String,
+				Args: graphql.FieldConfigArgument{
+					"input": &graphql.ArgumentConfig{
+						Type: graphql.String,
+					},
+					"anotherInput": &graphql.ArgumentConfig{
+						Type: graphql.NewNonNull(graphql.String),
+					},
+				},
+			},
+		},
+	})
+	_, err := schemaWithObjectFieldOfType(anotherObject)
+	expectedError := `AnotherObject.field(anotherInput:) is of required type "String!" but is not also provided by the interface AnotherInterface.field.`
 	if err == nil || err.Error() != expectedError {
 		t.Fatalf("Expected error: %v, got %v", expectedError, err)
 	}
@@ -1247,6 +1303,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMis
 		t.Fatalf("Expected error: %v, got %v", expectedError, err)
 	}
 }
+
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWithAnIncorrectlyTypedInterfaceField(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
@@ -1256,11 +1313,6 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 		Fields: graphql.Fields{
 			"field": &graphql.Field{
 				Type: graphql.String,
-				Args: graphql.FieldConfigArgument{
-					"input": &graphql.ArgumentConfig{
-						Type: graphql.String,
-					},
-				},
 			},
 		},
 	})
@@ -1270,11 +1322,6 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 		Fields: graphql.Fields{
 			"field": &graphql.Field{
 				Type: someScalarType,
-				Args: graphql.FieldConfigArgument{
-					"input": &graphql.ArgumentConfig{
-						Type: graphql.String,
-					},
-				},
 			},
 		},
 	})
@@ -1282,6 +1329,111 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 	expectedError := `AnotherInterface.field expects type "String" but AnotherObject.field provides type "SomeScalar".`
 	if err == nil || err.Error() != expectedError {
 		t.Fatalf("Expected error: %v, got %v", expectedError, err)
+	}
+}
+
+func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWithADifferentlyTypeInterfaceField(t *testing.T) {
+
+	typeA := graphql.NewObject(graphql.ObjectConfig{
+		Name: "A",
+		Fields: graphql.Fields{
+			"foo": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+	typeB := graphql.NewObject(graphql.ObjectConfig{
+		Name: "B",
+		Fields: graphql.Fields{
+			"foo": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+
+	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
+		Name: "AnotherInterface",
+		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+			return nil
+		},
+		Fields: graphql.Fields{
+			"field": &graphql.Field{
+				Type: typeA,
+			},
+		},
+	})
+	anotherObject := graphql.NewObject(graphql.ObjectConfig{
+		Name:       "AnotherObject",
+		Interfaces: []*graphql.Interface{anotherInterface},
+		Fields: graphql.Fields{
+			"field": &graphql.Field{
+				Type: typeB,
+			},
+		},
+	})
+	_, err := schemaWithObjectFieldOfType(anotherObject)
+	expectedError := `AnotherInterface.field expects type "A" but AnotherObject.field provides type "B".`
+	if err == nil || err.Error() != expectedError {
+		t.Fatalf("Expected error: %v, got %v", expectedError, err)
+	}
+}
+
+func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWithASubtypedInterfaceField_Interface(t *testing.T) {
+	var anotherInterface *graphql.Interface
+	anotherInterface = graphql.NewInterface(graphql.InterfaceConfig{
+		Name: "AnotherInterface",
+		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+			return nil
+		},
+		Fields: (graphql.FieldsThunk)(func() graphql.Fields {
+			return graphql.Fields{
+				"field": &graphql.Field{
+					Type: anotherInterface,
+				},
+			}
+		}),
+	})
+	var anotherObject *graphql.Object
+	anotherObject = graphql.NewObject(graphql.ObjectConfig{
+		Name:       "AnotherObject",
+		Interfaces: []*graphql.Interface{anotherInterface},
+		Fields: (graphql.FieldsThunk)(func() graphql.Fields {
+			return graphql.Fields{
+				"field": &graphql.Field{
+					Type: anotherObject,
+				},
+			}
+		}),
+	})
+	_, err := schemaWithFieldType(anotherObject)
+	if err != nil {
+		t.Fatalf(`unexpected error: %v for type "%v"`, err, anotherObject)
+	}
+}
+func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWithASubtypedInterfaceField_Union(t *testing.T) {
+	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
+		Name: "AnotherInterface",
+		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+			return nil
+		},
+		Fields: graphql.Fields{
+			"field": &graphql.Field{
+				Type: someUnionType,
+			},
+		},
+	})
+	anotherObject := graphql.NewObject(graphql.ObjectConfig{
+		Name:       "AnotherObject",
+		Interfaces: []*graphql.Interface{anotherInterface},
+		Fields: graphql.Fields{
+			"field": &graphql.Field{
+				Type: someObjectType,
+			},
+		},
+	})
+	_, err := schemaWithFieldType(anotherObject)
+	if err != nil {
+		t.Fatalf(`unexpected error: %v for type "%v"`, err, anotherObject)
 	}
 }
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMissingAnInterfaceArgument(t *testing.T) {
@@ -1379,7 +1531,63 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWit
 		t.Fatalf(`unexpected error: %v for type "%v"`, err, anotherObject)
 	}
 }
-func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWithADifferentlyModifiedInterfaceFieldType(t *testing.T) {
+func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWithANonListInterfaceFieldListType(t *testing.T) {
+	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
+		Name: "AnotherInterface",
+		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+			return nil
+		},
+		Fields: graphql.Fields{
+			"field": &graphql.Field{
+				Type: graphql.NewList(graphql.String),
+			},
+		},
+	})
+	anotherObject := graphql.NewObject(graphql.ObjectConfig{
+		Name:       "AnotherObject",
+		Interfaces: []*graphql.Interface{anotherInterface},
+		Fields: graphql.Fields{
+			"field": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+	_, err := schemaWithFieldType(anotherObject)
+	expectedError := `AnotherInterface.field expects type "[String]" but AnotherObject.field provides type "String".`
+	if err == nil || err.Error() != expectedError {
+		t.Fatalf("Expected error: %v, got %v", expectedError, err)
+	}
+}
+
+func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWithAListInterfaceFieldNonListType(t *testing.T) {
+	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
+		Name: "AnotherInterface",
+		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+			return nil
+		},
+		Fields: graphql.Fields{
+			"field": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+	anotherObject := graphql.NewObject(graphql.ObjectConfig{
+		Name:       "AnotherObject",
+		Interfaces: []*graphql.Interface{anotherInterface},
+		Fields: graphql.Fields{
+			"field": &graphql.Field{
+				Type: graphql.NewList(graphql.String),
+			},
+		},
+	})
+	_, err := schemaWithFieldType(anotherObject)
+	expectedError := `AnotherInterface.field expects type "String" but AnotherObject.field provides type "[String]".`
+	if err == nil || err.Error() != expectedError {
+		t.Fatalf("Expected error: %v, got %v", expectedError, err)
+	}
+}
+
+func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWithSubsetNonNullInterfaceFieldType(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
 		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
@@ -1400,8 +1608,35 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 			},
 		},
 	})
-	_, err := schemaWithObjectFieldOfType(anotherObject)
-	expectedError := `AnotherInterface.field expects type "String" but AnotherObject.field provides type "String!".`
+	_, err := schemaWithFieldType(anotherObject)
+	if err != nil {
+		t.Fatalf(`unexpected error: %v for type "%v"`, err, anotherObject)
+	}
+}
+
+func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWithASupersetNullableInterfaceFieldType(t *testing.T) {
+	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
+		Name: "AnotherInterface",
+		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+			return nil
+		},
+		Fields: graphql.Fields{
+			"field": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+		},
+	})
+	anotherObject := graphql.NewObject(graphql.ObjectConfig{
+		Name:       "AnotherObject",
+		Interfaces: []*graphql.Interface{anotherInterface},
+		Fields: graphql.Fields{
+			"field": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+	_, err := schemaWithFieldType(anotherObject)
+	expectedError := `AnotherInterface.field expects type "String!" but AnotherObject.field provides type "String".`
 	if err == nil || err.Error() != expectedError {
 		t.Fatalf("Expected error: %v, got %v", expectedError, err)
 	}

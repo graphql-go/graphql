@@ -11,7 +11,7 @@ import (
 	"reflect"
 )
 
-var defaultRulesTestSchema *graphql.Schema
+var TestSchema *graphql.Schema
 
 func init() {
 
@@ -30,6 +30,19 @@ func init() {
 	})
 	var petInterface = graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "Pet",
+		Fields: graphql.Fields{
+			"name": &graphql.Field{
+				Type: graphql.String,
+				Args: graphql.FieldConfigArgument{
+					"surname": &graphql.ArgumentConfig{
+						Type: graphql.Boolean,
+					},
+				},
+			},
+		},
+	})
+	var canineInterface = graphql.NewInterface(graphql.InterfaceConfig{
+		Name: "Canine",
 		Fields: graphql.Fields{
 			"name": &graphql.Field{
 				Type: graphql.String,
@@ -110,6 +123,7 @@ func init() {
 		Interfaces: []*graphql.Interface{
 			beingInterface,
 			petInterface,
+			canineInterface,
 		},
 	})
 	var furColorEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -444,11 +458,19 @@ func init() {
 	})
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: queryRoot,
+		Directives: []*graphql.Directive{
+			graphql.NewDirective(&graphql.Directive{
+				Name:        "operationOnly",
+				OnOperation: true,
+			}),
+			graphql.IncludeDirective,
+			graphql.SkipDirective,
+		},
 	})
 	if err != nil {
 		panic(err)
 	}
-	defaultRulesTestSchema = &schema
+	TestSchema = &schema
 
 }
 func expectValidRule(t *testing.T, schema *graphql.Schema, rules []graphql.ValidationRuleFn, queryString string) {
@@ -498,10 +520,10 @@ func expectInvalidRule(t *testing.T, schema *graphql.Schema, rules []graphql.Val
 
 }
 func ExpectPassesRule(t *testing.T, rule graphql.ValidationRuleFn, queryString string) {
-	expectValidRule(t, defaultRulesTestSchema, []graphql.ValidationRuleFn{rule}, queryString)
+	expectValidRule(t, TestSchema, []graphql.ValidationRuleFn{rule}, queryString)
 }
 func ExpectFailsRule(t *testing.T, rule graphql.ValidationRuleFn, queryString string, expectedErrors []gqlerrors.FormattedError) {
-	expectInvalidRule(t, defaultRulesTestSchema, []graphql.ValidationRuleFn{rule}, queryString, expectedErrors)
+	expectInvalidRule(t, TestSchema, []graphql.ValidationRuleFn{rule}, queryString, expectedErrors)
 }
 func ExpectFailsRuleWithSchema(t *testing.T, schema *graphql.Schema, rule graphql.ValidationRuleFn, queryString string, expectedErrors []gqlerrors.FormattedError) {
 	expectInvalidRule(t, schema, []graphql.ValidationRuleFn{rule}, queryString, expectedErrors)

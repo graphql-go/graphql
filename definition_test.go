@@ -98,6 +98,20 @@ var blogMutation = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+var blogSubscription = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Subscription",
+	Fields: graphql.Fields{
+		"articleSubscribe": &graphql.Field{
+			Type: blogArticle,
+			Args: graphql.FieldConfigArgument{
+				"id": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+			},
+		},
+	},
+})
+
 var objectType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Object",
 	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
@@ -204,6 +218,7 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 		t.Fatalf("feedField.Name expected to equal `feed`, got: %v", feedField.Name)
 	}
 }
+
 func TestTypeSystem_DefinitionExample_DefinesAMutationScheme(t *testing.T) {
 	blogSchema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query:    blogQuery,
@@ -230,6 +245,35 @@ func TestTypeSystem_DefinitionExample_DefinesAMutationScheme(t *testing.T) {
 	}
 	if writeMutation.Name != "writeArticle" {
 		t.Fatalf("writeMutation.Name expected to equal `writeArticle`, got: %v", writeMutation.Name)
+	}
+}
+
+func TestTypeSystem_DefinitionExample_DefinesASubscriptionScheme(t *testing.T) {
+	blogSchema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query:        blogQuery,
+		Subscription: blogSubscription,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error, got: %v", err)
+	}
+
+	if blogSchema.SubscriptionType() != blogSubscription {
+		t.Fatalf("expected blogSchema.SubscriptionType() == blogSubscription")
+	}
+
+	subMutation, _ := blogSubscription.Fields()["articleSubscribe"]
+	if subMutation == nil {
+		t.Fatalf("subMutation is nil")
+	}
+	subMutationType := subMutation.Type
+	if subMutationType != blogArticle {
+		t.Fatalf("subMutationType expected to equal blogArticle, got: %v", subMutationType)
+	}
+	if subMutationType.Name() != "Article" {
+		t.Fatalf("subMutationType.Name expected to equal `Article`, got: %v", subMutationType.Name())
+	}
+	if subMutation.Name != "articleSubscribe" {
+		t.Fatalf("subMutation.Name expected to equal `articleSubscribe`, got: %v", subMutation.Name)
 	}
 }
 
@@ -263,9 +307,23 @@ func TestTypeSystem_DefinitionExample_IncludesNestedInputObjectsInTheMap(t *test
 			},
 		},
 	})
+	someSubscription := graphql.NewObject(graphql.ObjectConfig{
+		Name: "SomeSubscription",
+		Fields: graphql.Fields{
+			"subscribeToSomething": &graphql.Field{
+				Type: blogArticle,
+				Args: graphql.FieldConfigArgument{
+					"input": &graphql.ArgumentConfig{
+						Type: someInputObject,
+					},
+				},
+			},
+		},
+	})
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
-		Query:    blogQuery,
-		Mutation: someMutation,
+		Query:        blogQuery,
+		Mutation:     someMutation,
+		Subscription: someSubscription,
 	})
 	if err != nil {
 		t.Fatalf("unexpected error, got: %v", err)

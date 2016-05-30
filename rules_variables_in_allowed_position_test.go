@@ -121,7 +121,7 @@ func TestValidate_VariablesInAllowedPosition_ComplexInputToComplexInput(t *testi
       query Query($complexVar: ComplexInput)
       {
         complicatedArgs {
-          complexArgField(complexArg: $ComplexInput)
+          complexArgField(complexArg: $complexVar)
         }
       }
     `)
@@ -154,15 +154,14 @@ func TestValidate_VariablesInAllowedPosition_NonNullableBooleanToNonNullableBool
 }
 func TestValidate_VariablesInAllowedPosition_IntToNonNullableInt(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.VariablesInAllowedPositionRule, `
-      query Query($intArg: Int)
-      {
+      query Query($intArg: Int) {
         complicatedArgs {
           nonNullIntArgField(nonNullIntArg: $intArg)
         }
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Variable "$intArg" of type "Int" used in position `+
-			`expecting type "Int!".`, 5, 45),
+			`expecting type "Int!".`, 2, 19, 4, 45),
 	})
 }
 func TestValidate_VariablesInAllowedPosition_IntToNonNullableIntWithinFragment(t *testing.T) {
@@ -171,15 +170,14 @@ func TestValidate_VariablesInAllowedPosition_IntToNonNullableIntWithinFragment(t
         nonNullIntArgField(nonNullIntArg: $intArg)
       }
 
-      query Query($intArg: Int)
-      {
+      query Query($intArg: Int) {
         complicatedArgs {
           ...nonNullIntArgFieldFrag
         }
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Variable "$intArg" of type "Int" used in position `+
-			`expecting type "Int!".`, 3, 43),
+			`expecting type "Int!".`, 6, 19, 3, 43),
 	})
 }
 func TestValidate_VariablesInAllowedPosition_IntToNonNullableIntWithinNestedFragment(t *testing.T) {
@@ -192,62 +190,57 @@ func TestValidate_VariablesInAllowedPosition_IntToNonNullableIntWithinNestedFrag
         nonNullIntArgField(nonNullIntArg: $intArg)
       }
 
-      query Query($intArg: Int)
-      {
+      query Query($intArg: Int) {
         complicatedArgs {
           ...outerFrag
         }
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Variable "$intArg" of type "Int" used in position `+
-			`expecting type "Int!".`, 7, 43),
+			`expecting type "Int!".`, 10, 19, 7, 43),
 	})
 }
 func TestValidate_VariablesInAllowedPosition_StringOverBoolean(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.VariablesInAllowedPositionRule, `
-      query Query($stringVar: String)
-      {
+      query Query($stringVar: String) {
         complicatedArgs {
           booleanArgField(booleanArg: $stringVar)
         }
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Variable "$stringVar" of type "String" used in position `+
-			`expecting type "Boolean".`, 5, 39),
+			`expecting type "Boolean".`, 2, 19, 4, 39),
 	})
 }
 func TestValidate_VariablesInAllowedPosition_StringToListOfString(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.VariablesInAllowedPositionRule, `
-      query Query($stringVar: String)
-      {
+      query Query($stringVar: String) {
         complicatedArgs {
           stringListArgField(stringListArg: $stringVar)
         }
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Variable "$stringVar" of type "String" used in position `+
-			`expecting type "[String]".`, 5, 45),
+			`expecting type "[String]".`, 2, 19, 4, 45),
 	})
 }
 func TestValidate_VariablesInAllowedPosition_BooleanToNonNullableBooleanInDirective(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.VariablesInAllowedPositionRule, `
-      query Query($boolVar: Boolean)
-      {
+      query Query($boolVar: Boolean) {
         dog @include(if: $boolVar)
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Variable "$boolVar" of type "Boolean" used in position `+
-			`expecting type "Boolean!".`, 4, 26),
+			`expecting type "Boolean!".`, 2, 19, 3, 26),
 	})
 }
 func TestValidate_VariablesInAllowedPosition_StringToNonNullableBooleanInDirective(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.VariablesInAllowedPositionRule, `
-      query Query($stringVar: String)
-      {
+      query Query($stringVar: String) {
         dog @include(if: $stringVar)
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Variable "$stringVar" of type "String" used in position `+
-			`expecting type "Boolean!".`, 4, 26),
+			`expecting type "Boolean!".`, 2, 19, 3, 26),
 	})
 }

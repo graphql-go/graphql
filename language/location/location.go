@@ -18,12 +18,12 @@ func GetLocation(s *source.Source, position int) SourceLocation {
 	}
 	line := 1
 	column := position + 1
-	lineRegexp := regexp.MustCompile("\r\n|[\n\r\u2028\u2029]")
+	lineRegexp := regexp.MustCompile("\r\n|[\n\r]")
 	matches := lineRegexp.FindAllStringIndex(body, -1)
 	for _, match := range matches {
 		matchIndex := match[0]
 		if matchIndex < position {
-			line += 1
+			line++
 			l := len(s.Body[match[0]:match[1]])
 			column = position + 1 - (matchIndex + l)
 			continue

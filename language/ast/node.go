@@ -27,6 +27,7 @@ var _ Node = (*ListValue)(nil)
 var _ Node = (*ObjectValue)(nil)
 var _ Node = (*ObjectField)(nil)
 var _ Node = (*Directive)(nil)
+var _ Node = (*Named)(nil)
 var _ Node = (*List)(nil)
 var _ Node = (*NonNull)(nil)
 var _ Node = (*ObjectDefinition)(nil)
@@ -39,7 +40,3 @@ var _ Node = (*EnumDefinition)(nil)
 var _ Node = (*EnumValueDefinition)(nil)
 var _ Node = (*InputObjectDefinition)(nil)
 var _ Node = (*TypeExtensionDefinition)(nil)
-
-// TODO: File issue in `graphql-js` where Named is not
-// defined as a Node. This might be a mistake in `graphql-js`?
-var _ Node = (*Named)(nil)

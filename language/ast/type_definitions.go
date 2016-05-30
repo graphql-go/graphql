@@ -11,7 +11,6 @@ var _ Definition = (*UnionDefinition)(nil)
 var _ Definition = (*ScalarDefinition)(nil)
 var _ Definition = (*EnumDefinition)(nil)
 var _ Definition = (*InputObjectDefinition)(nil)
-var _ Definition = (*TypeExtensionDefinition)(nil)
 
 // ObjectDefinition implements Node, Definition
 type ObjectDefinition struct {
@@ -360,43 +359,5 @@ func (def *InputObjectDefinition) GetSelectionSet() *SelectionSet {
 }
 
 func (def *InputObjectDefinition) GetOperation() string {
-	return ""
-}
-
-// TypeExtensionDefinition implements Node, Definition
-type TypeExtensionDefinition struct {
-	Kind       string
-	Loc        *Location
-	Definition *ObjectDefinition
-}
-
-func NewTypeExtensionDefinition(def *TypeExtensionDefinition) *TypeExtensionDefinition {
-	if def == nil {
-		def = &TypeExtensionDefinition{}
-	}
-	return &TypeExtensionDefinition{
-		Kind:       kinds.TypeExtensionDefinition,
-		Loc:        def.Loc,
-		Definition: def.Definition,
-	}
-}
-
-func (def *TypeExtensionDefinition) GetKind() string {
-	return def.Kind
-}
-
-func (def *TypeExtensionDefinition) GetLoc() *Location {
-	return def.Loc
-}
-
-func (def *TypeExtensionDefinition) GetVariableDefinitions() []*VariableDefinition {
-	return []*VariableDefinition{}
-}
-
-func (def *TypeExtensionDefinition) GetSelectionSet() *SelectionSet {
-	return &SelectionSet{}
-}
-
-func (def *TypeExtensionDefinition) GetOperation() string {
 	return ""
 }

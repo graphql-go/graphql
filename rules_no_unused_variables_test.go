@@ -10,7 +10,7 @@ import (
 
 func TestValidate_NoUnusedVariables_UsesAllVariables(t *testing.T) {
 	testutil.ExpectPassesRule(t, graphql.NoUnusedVariablesRule, `
-      query Foo($a: String, $b: String, $c: String) {
+      query ($a: String, $b: String, $c: String) {
         field(a: $a, b: $b, c: $c)
       }
     `)
@@ -91,11 +91,11 @@ func TestValidate_NoUnusedVariables_VariableUsedByRecursiveFragment(t *testing.T
 }
 func TestValidate_NoUnusedVariables_VariableNotUsed(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.NoUnusedVariablesRule, `
-      query Foo($a: String, $b: String, $c: String) {
+      query ($a: String, $b: String, $c: String) {
         field(a: $a, b: $b)
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Variable "$c" is never used.`, 2, 41),
+		testutil.RuleError(`Variable "$c" is never used.`, 2, 38),
 	})
 }
 func TestValidate_NoUnusedVariables_MultipleVariablesNotUsed(t *testing.T) {
@@ -104,8 +104,8 @@ func TestValidate_NoUnusedVariables_MultipleVariablesNotUsed(t *testing.T) {
         field(b: $b)
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Variable "$a" is never used.`, 2, 17),
-		testutil.RuleError(`Variable "$c" is never used.`, 2, 41),
+		testutil.RuleError(`Variable "$a" is never used in operation "Foo".`, 2, 17),
+		testutil.RuleError(`Variable "$c" is never used in operation "Foo".`, 2, 41),
 	})
 }
 func TestValidate_NoUnusedVariables_VariableNotUsedInFragments(t *testing.T) {
@@ -127,7 +127,7 @@ func TestValidate_NoUnusedVariables_VariableNotUsedInFragments(t *testing.T) {
         field
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Variable "$c" is never used.`, 2, 41),
+		testutil.RuleError(`Variable "$c" is never used in operation "Foo".`, 2, 41),
 	})
 }
 func TestValidate_NoUnusedVariables_MultipleVariablesNotUsed2(t *testing.T) {
@@ -149,8 +149,8 @@ func TestValidate_NoUnusedVariables_MultipleVariablesNotUsed2(t *testing.T) {
         field
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Variable "$a" is never used.`, 2, 17),
-		testutil.RuleError(`Variable "$c" is never used.`, 2, 41),
+		testutil.RuleError(`Variable "$a" is never used in operation "Foo".`, 2, 17),
+		testutil.RuleError(`Variable "$c" is never used in operation "Foo".`, 2, 41),
 	})
 }
 func TestValidate_NoUnusedVariables_VariableNotUsedByUnreferencedFragment(t *testing.T) {
@@ -165,7 +165,7 @@ func TestValidate_NoUnusedVariables_VariableNotUsedByUnreferencedFragment(t *tes
         field(b: $b)
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Variable "$b" is never used.`, 2, 17),
+		testutil.RuleError(`Variable "$b" is never used in operation "Foo".`, 2, 17),
 	})
 }
 func TestValidate_NoUnusedVariables_VariableNotUsedByFragmentUsedByOtherOperation(t *testing.T) {
@@ -183,7 +183,7 @@ func TestValidate_NoUnusedVariables_VariableNotUsedByFragmentUsedByOtherOperatio
         field(b: $b)
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Variable "$b" is never used.`, 2, 17),
-		testutil.RuleError(`Variable "$a" is never used.`, 5, 17),
+		testutil.RuleError(`Variable "$b" is never used in operation "Foo".`, 2, 17),
+		testutil.RuleError(`Variable "$a" is never used in operation "Bar".`, 5, 17),
 	})
 }

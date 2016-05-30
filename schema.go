@@ -4,29 +4,32 @@ import (
 	"fmt"
 )
 
-/**
-Schema Definition
-A Schema is created by supplying the root types of each type of operation,
-query and mutation (optional). A schema definition is then supplied to the
-validator and executor.
-Example:
-    myAppSchema, err := NewSchema(SchemaConfig({
-      Query: MyAppQueryRootType
-      Mutation: MyAppMutationRootType
-    });
-*/
 type SchemaConfig struct {
-	Query    *Object
-	Mutation *Object
+	Query        *Object
+	Mutation     *Object
+	Subscription *Object
+	Directives   []*Directive
 }
 
-// chose to name as TypeMap instead of TypeMap
 type TypeMap map[string]Type
 
+//Schema Definition
+//A Schema is created by supplying the root types of each type of operation,
+//query, mutation (optional) and subscription (optional). A schema definition is then supplied to the
+//validator and executor.
+//Example:
+//    myAppSchema, err := NewSchema(SchemaConfig({
+//      Query: MyAppQueryRootType,
+//      Mutation: MyAppMutationRootType,
+//      Subscription: MyAppSubscriptionRootType,
+//    });
 type Schema struct {
-	schemaConfig SchemaConfig
-	typeMap      TypeMap
-	directives   []*Directive
+	typeMap    TypeMap
+	directives []*Directive
+
+	queryType        *Object
+	mutationType     *Object
+	subscriptionType *Object
 }
 
 func NewSchema(config SchemaConfig) (Schema, error) {
@@ -47,15 +50,27 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 		return schema, config.Mutation.err
 	}
 
-	schema.schemaConfig = config
+	schema.queryType = config.Query
+	schema.mutationType = config.Mutation
+	schema.subscriptionType = config.Subscription
+
+	// Provide `@include() and `@skip()` directives by default.
+	schema.directives = config.Directives
+	if len(schema.directives) == 0 {
+		schema.directives = []*Directive{
+			IncludeDirective,
+			SkipDirective,
+		}
+	}
 
 	// Build type map now to detect any errors within this schema.
 	typeMap := TypeMap{}
 	objectTypes := []*Object{
 		schema.QueryType(),
 		schema.MutationType(),
-		__Type,
-		__Schema,
+		schema.SubscriptionType(),
+		typeType,
+		schemaType,
 	}
 	for _, objectType := range objectTypes {
 		if objectType == nil {
@@ -87,20 +102,18 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 }
 
 func (gq *Schema) QueryType() *Object {
-	return gq.schemaConfig.Query
+	return gq.queryType
 }
 
 func (gq *Schema) MutationType() *Object {
-	return gq.schemaConfig.Mutation
+	return gq.mutationType
+}
+
+func (gq *Schema) SubscriptionType() *Object {
+	return gq.subscriptionType
 }
 
 func (gq *Schema) Directives() []*Directive {
-	if len(gq.directives) == 0 {
-		gq.directives = []*Directive{
-			IncludeDirective,
-			SkipDirective,
-		}
-	}
 	return gq.directives
 }
 
@@ -258,7 +271,7 @@ func assertObjectImplementsInterface(object *Object, iface *Interface) error {
 	ifaceFieldMap := iface.Fields()
 
 	// Assert each interface field is implemented.
-	for fieldName, _ := range ifaceFieldMap {
+	for fieldName := range ifaceFieldMap {
 		objectField := objectFieldMap[fieldName]
 		ifaceField := ifaceFieldMap[fieldName]
 
@@ -272,9 +285,10 @@ func assertObjectImplementsInterface(object *Object, iface *Interface) error {
 			return err
 		}
 
-		// Assert interface field type matches object field type. (invariant)
+		// Assert interface field type is satisfied by object field type, by being
+		// a valid subtype. (covariant)
 		err = invariant(
-			isEqualType(ifaceField.Type, objectField.Type),
+			isTypeSubTypeOf(objectField.Type, ifaceField.Type),
 			fmt.Sprintf(`%v.%v expects type "%v" but `+
 				`%v.%v provides type "%v".`,
 				iface, fieldName, ifaceField.Type,
@@ -321,7 +335,7 @@ func assertObjectImplementsInterface(object *Object, iface *Interface) error {
 				return err
 			}
 		}
-		// Assert argument set invariance.
+		// Assert additional arguments must not be required.
 		for _, objectArg := range objectField.Args {
 			argName := objectArg.PrivateName
 			var ifaceArg *Argument
@@ -331,15 +345,19 @@ func assertObjectImplementsInterface(object *Object, iface *Interface) error {
 					break
 				}
 			}
-			err = invariant(
-				ifaceArg != nil,
-				fmt.Sprintf(`%v.%v does not define argument "%v" but `+
-					`%v.%v provides it.`,
-					iface, fieldName, argName,
-					object, fieldName),
-			)
-			if err != nil {
-				return err
+
+			if ifaceArg == nil {
+				_, ok := objectArg.Type.(*NonNull)
+				err = invariant(
+					!ok,
+					fmt.Sprintf(`%v.%v(%v:) is of required type `+
+						`"%v" but is not also provided by the interface %v.%v.`,
+						object, fieldName, argName,
+						objectArg.Type, iface, fieldName),
+				)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -347,15 +365,72 @@ func assertObjectImplementsInterface(object *Object, iface *Interface) error {
 }
 
 func isEqualType(typeA Type, typeB Type) bool {
+	// Equivalent type is a valid subtype
+	if typeA == typeB {
+		return true
+	}
+	// If either type is non-null, the other must also be non-null.
 	if typeA, ok := typeA.(*NonNull); ok {
 		if typeB, ok := typeB.(*NonNull); ok {
 			return isEqualType(typeA.OfType, typeB.OfType)
 		}
 	}
+	// If either type is a list, the other must also be a list.
 	if typeA, ok := typeA.(*List); ok {
 		if typeB, ok := typeB.(*List); ok {
 			return isEqualType(typeA.OfType, typeB.OfType)
 		}
 	}
-	return typeA == typeB
+	// Otherwise the types are not equal.
+	return false
+}
+
+/**
+ * Provided a type and a super type, return true if the first type is either
+ * equal or a subset of the second super type (covariant).
+ */
+func isTypeSubTypeOf(maybeSubType Type, superType Type) bool {
+	// Equivalent type is a valid subtype
+	if maybeSubType == superType {
+		return true
+	}
+
+	// If superType is non-null, maybeSubType must also be nullable.
+	if superType, ok := superType.(*NonNull); ok {
+		if maybeSubType, ok := maybeSubType.(*NonNull); ok {
+			return isTypeSubTypeOf(maybeSubType.OfType, superType.OfType)
+		}
+		return false
+	}
+	if maybeSubType, ok := maybeSubType.(*NonNull); ok {
+		// If superType is nullable, maybeSubType may be non-null.
+		return isTypeSubTypeOf(maybeSubType.OfType, superType)
+	}
+
+	// If superType type is a list, maybeSubType type must also be a list.
+	if superType, ok := superType.(*List); ok {
+		if maybeSubType, ok := maybeSubType.(*List); ok {
+			return isTypeSubTypeOf(maybeSubType.OfType, superType.OfType)
+		}
+		return false
+	} else if _, ok := maybeSubType.(*List); ok {
+		// If superType is not a list, maybeSubType must also be not a list.
+		return false
+	}
+
+	// If superType type is an abstract type, maybeSubType type may be a currently
+	// possible object type.
+	if superType, ok := superType.(*Interface); ok {
+		if maybeSubType, ok := maybeSubType.(*Object); ok && superType.IsPossibleType(maybeSubType) {
+			return true
+		}
+	}
+	if superType, ok := superType.(*Union); ok {
+		if maybeSubType, ok := maybeSubType.(*Object); ok && superType.IsPossibleType(maybeSubType) {
+			return true
+		}
+	}
+
+	// Otherwise, the child type is not a valid subtype of the parent type.
+	return false
 }

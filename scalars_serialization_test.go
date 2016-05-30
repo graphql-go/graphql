@@ -35,11 +35,13 @@ func TestTypeSystem_Scalar_SerializesOutputInt(t *testing.T) {
 		{float32(0.1), 0},
 		{float32(1.1), 1},
 		{float32(-1.1), -1},
-		// Bigger than 2^32, but still representable as an Int
 		{float32(1e5), 100000},
 		{float32(math.MaxFloat32), nil},
-		{9876504321, 9876504321},
-		{-9876504321, -9876504321},
+		// Maybe a safe Go/Javascript `int`, but bigger than 2^32, so not
+		// representable as a GraphQL Int
+		{9876504321, nil},
+		{-9876504321, nil},
+		// Too big to represent as an Int in Go, JavaScript or GraphQL
 		{float64(1e100), nil},
 		{float64(-1e100), nil},
 		{"-1.1", -1},
@@ -51,6 +53,9 @@ func TestTypeSystem_Scalar_SerializesOutputInt(t *testing.T) {
 		{int32(1), 1},
 		{int64(1), 1},
 		{uint(1), 1},
+		// Maybe a safe Go `uint`, but bigger than 2^32, so not
+		// representable as a GraphQL Int
+		{uint(math.MaxInt32 + 1), nil},
 		{uint8(1), 1},
 		{uint16(1), 1},
 		{uint32(1), 1},

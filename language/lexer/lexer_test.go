@@ -16,6 +16,51 @@ func createSource(body string) *source.Source {
 	return source.NewSource(&source.Source{Body: body})
 }
 
+func TestDisallowsUncommonControlCharacters(t *testing.T) {
+	tests := []Test{
+		Test{
+			Body: "\u0007",
+			Expected: `Syntax Error GraphQL (1:1) Invalid character "\\u0007"
+
+1: \u0007
+   ^
+`,
+		},
+	}
+	for _, test := range tests {
+		_, err := Lex(createSource(test.Body))(0)
+		if err == nil {
+			t.Fatalf("unexpected nil error\nexpected:\n%v\n\ngot:\n%v", test.Expected, err)
+		}
+		if err.Error() != test.Expected {
+			t.Fatalf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", test.Expected, err.Error())
+		}
+	}
+}
+
+func TestAcceptsBOMHeader(t *testing.T) {
+	tests := []Test{
+		Test{
+			Body: "\uFEFF foo",
+			Expected: Token{
+				Kind:  TokenKind[NAME],
+				Start: 2,
+				End:   5,
+				Value: "foo",
+			},
+		},
+	}
+	for _, test := range tests {
+		token, err := Lex(&source.Source{Body: test.Body})(0)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !reflect.DeepEqual(token, test.Expected) {
+			t.Fatalf("unexpected token, expected: %v, got: %v", test.Expected, token)
+		}
+	}
+}
+
 func TestSkipsWhiteSpace(t *testing.T) {
 	tests := []Test{
 		Test{
@@ -151,11 +196,35 @@ func TestLexesStrings(t *testing.T) {
 func TestLexReportsUsefulStringErrors(t *testing.T) {
 	tests := []Test{
 		Test{
+			Body: "\"",
+			Expected: `Syntax Error GraphQL (1:2) Unterminated string.
+
+1: "
+    ^
+`,
+		},
+		Test{
 			Body: "\"no end quote",
 			Expected: `Syntax Error GraphQL (1:14) Unterminated string.
 
 1: "no end quote
                 ^
+`,
+		},
+		Test{
+			Body: "\"contains unescaped \u0007 control char\"",
+			Expected: `Syntax Error GraphQL (1:21) Invalid character within String: "\\u0007".
+
+1: "contains unescaped \u0007 control char"
+                       ^
+`,
+		},
+		Test{
+			Body: "\"null-byte is not \u0000 end of file\"",
+			Expected: `Syntax Error GraphQL (1:19) Invalid character within String: "\\u0000".
+
+1: "null-byte is not \u0000 end of file"
+                     ^
 `,
 		},
 		Test{
@@ -177,26 +246,8 @@ func TestLexReportsUsefulStringErrors(t *testing.T) {
 `,
 		},
 		Test{
-			Body: "\"multi\u2028line\"",
-			Expected: `Syntax Error GraphQL (1:7) Unterminated string.
-
-1: "multi
-         ^
-2: line"
-`,
-		},
-		Test{
-			Body: "\"multi\u2029line\"",
-			Expected: `Syntax Error GraphQL (1:7) Unterminated string.
-
-1: "multi
-         ^
-2: line"
-`,
-		},
-		Test{
 			Body: "\"bad \\z esc\"",
-			Expected: `Syntax Error GraphQL (1:7) Bad character escape sequence.
+			Expected: `Syntax Error GraphQL (1:7) Invalid character escape sequence: \\z.
 
 1: "bad \z esc"
          ^
@@ -204,7 +255,7 @@ func TestLexReportsUsefulStringErrors(t *testing.T) {
 		},
 		Test{
 			Body: "\"bad \\x esc\"",
-			Expected: `Syntax Error GraphQL (1:7) Bad character escape sequence.
+			Expected: `Syntax Error GraphQL (1:7) Invalid character escape sequence: \\x.
 
 1: "bad \x esc"
          ^
@@ -212,7 +263,7 @@ func TestLexReportsUsefulStringErrors(t *testing.T) {
 		},
 		Test{
 			Body: "\"bad \\u1 esc\"",
-			Expected: `Syntax Error GraphQL (1:7) Bad character escape sequence.
+			Expected: `Syntax Error GraphQL (1:7) Invalid character escape sequence: \u1 es
 
 1: "bad \u1 esc"
          ^
@@ -220,7 +271,7 @@ func TestLexReportsUsefulStringErrors(t *testing.T) {
 		},
 		Test{
 			Body: "\"bad \\u0XX1 esc\"",
-			Expected: `Syntax Error GraphQL (1:7) Bad character escape sequence.
+			Expected: `Syntax Error GraphQL (1:7) Invalid character escape sequence: \u0XX1
 
 1: "bad \u0XX1 esc"
          ^
@@ -228,7 +279,7 @@ func TestLexReportsUsefulStringErrors(t *testing.T) {
 		},
 		Test{
 			Body: "\"bad \\uXXXX esc\"",
-			Expected: `Syntax Error GraphQL (1:7) Bad character escape sequence.
+			Expected: `Syntax Error GraphQL (1:7) Invalid character escape sequence: \uXXXX
 
 1: "bad \uXXXX esc"
          ^
@@ -236,7 +287,7 @@ func TestLexReportsUsefulStringErrors(t *testing.T) {
 		},
 		Test{
 			Body: "\"bad \\uFXXX esc\"",
-			Expected: `Syntax Error GraphQL (1:7) Bad character escape sequence.
+			Expected: `Syntax Error GraphQL (1:7) Invalid character escape sequence: \uFXXX
 
 1: "bad \uFXXX esc"
          ^
@@ -244,7 +295,7 @@ func TestLexReportsUsefulStringErrors(t *testing.T) {
 		},
 		Test{
 			Body: "\"bad \\uXXXF esc\"",
-			Expected: `Syntax Error GraphQL (1:7) Bad character escape sequence.
+			Expected: `Syntax Error GraphQL (1:7) Invalid character escape sequence: \uXXXF
 
 1: "bad \uXXXF esc"
          ^
@@ -440,7 +491,7 @@ func TestLexReportsUsefulNumbeErrors(t *testing.T) {
 		},
 		Test{
 			Body: "1.",
-			Expected: `Syntax Error GraphQL (1:3) Invalid number, expected digit but got: EOF.
+			Expected: `Syntax Error GraphQL (1:3) Invalid number, expected digit but got: <EOF>.
 
 1: 1.
      ^
@@ -472,7 +523,8 @@ func TestLexReportsUsefulNumbeErrors(t *testing.T) {
 		},
 		Test{
 			Body: "1.0e",
-			Expected: `Syntax Error GraphQL (1:5) Invalid number, expected digit but got: EOF.
+
+			Expected: `Syntax Error GraphQL (1:5) Invalid number, expected digit but got: <EOF>.
 
 1: 1.0e
        ^
@@ -649,7 +701,15 @@ func TestLexReportsUsefulUnknownCharacterError(t *testing.T) {
 		},
 		Test{
 			Body: "\u203B",
-			Expected: `Syntax Error GraphQL (1:1) Unexpected character "※".
+			Expected: `Syntax Error GraphQL (1:1) Unexpected character "\\u203B".
+
+1: ※
+   ^
+`,
+		},
+		Test{
+			Body: "\u203b",
+			Expected: `Syntax Error GraphQL (1:1) Unexpected character "\\u203B".
 
 1: ※
    ^

@@ -56,6 +56,17 @@ func TestValidate_OverlappingFieldsCanBeMerged_DifferentDirectivesWithDifferentA
       }
     `)
 }
+func TestValidate_OverlappingFieldsCanBeMerged_DifferentSkipIncludeDirectivesAccepted(t *testing.T) {
+	// Note: Differing skip/include directives don't create an ambiguous return
+	// value and are acceptable in conditions where differing runtime values
+	// may have the same desired effect of including or skipping a field.
+	testutil.ExpectPassesRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
+      fragment differentDirectivesWithDifferentAliases on Dog {
+        name @include(if: true)
+        name @include(if: false)
+      }
+    `)
+}
 func TestValidate_OverlappingFieldsCanBeMerged_SameAliasesWithDifferentFieldTargets(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
       fragment sameAliasesWithDifferentFieldTargets on Dog {
@@ -66,7 +77,19 @@ func TestValidate_OverlappingFieldsCanBeMerged_SameAliasesWithDifferentFieldTarg
 		testutil.RuleError(`Fields "fido" conflict because name and nickname are different fields.`, 3, 9, 4, 9),
 	})
 }
-func TestValidate_OverlappingFieldsCanBeMerged_AliasMakingDirectFieldAccess(t *testing.T) {
+func TestValidate_OverlappingFieldsCanBeMerged_SameAliasesAllowedOnNonOverlappingFields(t *testing.T) {
+	testutil.ExpectPassesRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
+      fragment sameAliasesWithDifferentFieldTargets on Pet {
+        ... on Dog {
+          name
+        }
+        ... on Cat {
+          name: nickname
+        }
+      }
+    `)
+}
+func TestValidate_OverlappingFieldsCanBeMerged_AliasMaskingDirectFieldAccess(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
       fragment aliasMaskingDirectFieldAccess on Dog {
         name: nickname
@@ -74,6 +97,26 @@ func TestValidate_OverlappingFieldsCanBeMerged_AliasMakingDirectFieldAccess(t *t
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Fields "name" conflict because nickname and name are different fields.`, 3, 9, 4, 9),
+	})
+}
+func TestValidate_OverlappingFieldsCanBeMerged_DifferentArgs_SecondAddsAnArgument(t *testing.T) {
+	testutil.ExpectFailsRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
+      fragment conflictingArgs on Dog {
+        doesKnowCommand
+        doesKnowCommand(dogCommand: HEEL)
+      }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(`Fields "doesKnowCommand" conflict because they have differing arguments.`, 3, 9, 4, 9),
+	})
+}
+func TestValidate_OverlappingFieldsCanBeMerged_DifferentArgs_SecondMissingAnArgument(t *testing.T) {
+	testutil.ExpectFailsRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
+      fragment conflictingArgs on Dog {
+        doesKnowCommand(dogCommand: SIT)
+        doesKnowCommand
+      }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(`Fields "doesKnowCommand" conflict because they have differing arguments.`, 3, 9, 4, 9),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ConflictingArgs(t *testing.T) {
@@ -86,45 +129,19 @@ func TestValidate_OverlappingFieldsCanBeMerged_ConflictingArgs(t *testing.T) {
 		testutil.RuleError(`Fields "doesKnowCommand" conflict because they have differing arguments.`, 3, 9, 4, 9),
 	})
 }
-func TestValidate_OverlappingFieldsCanBeMerged_ConflictingDirectives(t *testing.T) {
-	testutil.ExpectFailsRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
-      fragment conflictingDirectiveArgs on Dog {
-        name @include(if: true)
-        name @skip(if: false)
+func TestValidate_OverlappingFieldsCanBeMerged_AllowDifferentArgsWhereNoConflictIsPossible(t *testing.T) {
+	// This is valid since no object can be both a "Dog" and a "Cat", thus
+	// these fields can never overlap.
+	testutil.ExpectPassesRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
+      fragment conflictingArgs on Pet {
+        ... on Dog {
+          name(surname: true)
+        }
+        ... on Cat {
+          name
+        }
       }
-    `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Fields "name" conflict because they have differing directives.`, 3, 9, 4, 9),
-	})
-}
-func TestValidate_OverlappingFieldsCanBeMerged_ConflictingDirectiveArgs(t *testing.T) {
-	testutil.ExpectFailsRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
-      fragment conflictingDirectiveArgs on Dog {
-        name @include(if: true)
-        name @include(if: false)
-      }
-    `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Fields "name" conflict because they have differing directives.`, 3, 9, 4, 9),
-	})
-}
-func TestValidate_OverlappingFieldsCanBeMerged_ConflictingArgsWithMatchingDirectives(t *testing.T) {
-	testutil.ExpectFailsRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
-      fragment conflictingArgsWithMatchingDirectiveArgs on Dog {
-        doesKnowCommand(dogCommand: SIT) @include(if: true)
-        doesKnowCommand(dogCommand: HEEL) @include(if: true)
-      }
-    `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Fields "doesKnowCommand" conflict because they have differing arguments.`, 3, 9, 4, 9),
-	})
-}
-func TestValidate_OverlappingFieldsCanBeMerged_ConflictingDirectivesWithMatchingArgs(t *testing.T) {
-	testutil.ExpectFailsRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
-      fragment conflictingDirectiveArgsWithMatchingArgs on Dog {
-        doesKnowCommand(dogCommand: SIT) @include(if: true)
-        doesKnowCommand(dogCommand: SIT) @skip(if: false)
-      }
-    `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Fields "doesKnowCommand" conflict because they have differing directives.`, 3, 9, 4, 9),
-	})
+    `)
 }
 func TestValidate_OverlappingFieldsCanBeMerged_EncountersConflictInFragments(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
@@ -183,7 +200,10 @@ func TestValidate_OverlappingFieldsCanBeMerged_DeepConflict(t *testing.T) {
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Fields "field" conflict because subfields "x" conflict because a and b are different fields.`,
-			3, 9, 6, 9, 4, 11, 7, 11),
+			3, 9,
+			4, 11,
+			6, 9,
+			7, 11),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_DeepConflictWithMultipleIssues(t *testing.T) {
@@ -202,7 +222,12 @@ func TestValidate_OverlappingFieldsCanBeMerged_DeepConflictWithMultipleIssues(t 
 		testutil.RuleError(
 			`Fields "field" conflict because subfields "x" conflict because a and b are different fields and `+
 				`subfields "y" conflict because c and d are different fields.`,
-			3, 9, 7, 9, 4, 11, 8, 11, 5, 11, 9, 11),
+			3, 9,
+			4, 11,
+			5, 11,
+			7, 9,
+			8, 11,
+			9, 11),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_VeryDeepConflict(t *testing.T) {
@@ -223,7 +248,12 @@ func TestValidate_OverlappingFieldsCanBeMerged_VeryDeepConflict(t *testing.T) {
 		testutil.RuleError(
 			`Fields "field" conflict because subfields "deepField" conflict because subfields "x" conflict because `+
 				`a and b are different fields.`,
-			3, 9, 8, 9, 4, 11, 9, 11, 5, 13, 10, 13),
+			3, 9,
+			4, 11,
+			5, 13,
+			8, 9,
+			9, 11,
+			10, 13),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReportsDeepConflictToNearestCommonAncestor(t *testing.T) {
@@ -247,98 +277,180 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReportsDeepConflictToNearestCommo
 		testutil.RuleError(
 			`Fields "deepField" conflict because subfields "x" conflict because `+
 				`a and b are different fields.`,
-			4, 11, 7, 11, 5, 13, 8, 13),
+			4, 11,
+			5, 13,
+			7, 11,
+			8, 13),
 	})
 }
 
-var stringBoxObject = graphql.NewObject(graphql.ObjectConfig{
-	Name: "StringBox",
-	Fields: graphql.Fields{
-		"scalar": &graphql.Field{
-			Type: graphql.String,
-		},
-	},
-})
-var intBoxObject = graphql.NewObject(graphql.ObjectConfig{
-	Name: "IntBox",
-	Fields: graphql.Fields{
-		"scalar": &graphql.Field{
-			Type: graphql.Int,
-		},
-	},
-})
-var nonNullStringBox1Object = graphql.NewObject(graphql.ObjectConfig{
-	Name: "NonNullStringBox1",
-	Fields: graphql.Fields{
-		"scalar": &graphql.Field{
-			Type: graphql.NewNonNull(graphql.String),
-		},
-	},
-})
-var nonNullStringBox2Object = graphql.NewObject(graphql.ObjectConfig{
-	Name: "NonNullStringBox2",
-	Fields: graphql.Fields{
-		"scalar": &graphql.Field{
-			Type: graphql.NewNonNull(graphql.String),
-		},
-	},
-})
-var boxUnionObject = graphql.NewUnion(graphql.UnionConfig{
-	Name: "BoxUnion",
-	ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
-		return stringBoxObject
-	},
-	Types: []*graphql.Object{
-		stringBoxObject,
-		intBoxObject,
-		nonNullStringBox1Object,
-		nonNullStringBox2Object,
-	},
-})
+var someBoxInterface *graphql.Interface
+var stringBoxObject *graphql.Object
+var schema graphql.Schema
 
-var connectionObject = graphql.NewObject(graphql.ObjectConfig{
-	Name: "Connection",
-	Fields: graphql.Fields{
-		"edges": &graphql.Field{
-			Type: graphql.NewList(graphql.NewObject(graphql.ObjectConfig{
-				Name: "Edge",
-				Fields: graphql.Fields{
-					"node": &graphql.Field{
-						Type: graphql.NewObject(graphql.ObjectConfig{
-							Name: "Node",
-							Fields: graphql.Fields{
-								"id": &graphql.Field{
-									Type: graphql.ID,
-								},
-								"name": &graphql.Field{
-									Type: graphql.String,
-								},
-							},
-						}),
-					},
-				},
-			})),
+func init() {
+	someBoxInterface = graphql.NewInterface(graphql.InterfaceConfig{
+		Name: "SomeBox",
+		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+			return stringBoxObject
 		},
-	},
-})
-var schema, _ = graphql.NewSchema(graphql.SchemaConfig{
-	Query: graphql.NewObject(graphql.ObjectConfig{
-		Name: "QueryRoot",
 		Fields: graphql.Fields{
-			"boxUnion": &graphql.Field{
-				Type: boxUnionObject,
-			},
-			"connection": &graphql.Field{
-				Type: connectionObject,
+			"unrelatedField": &graphql.Field{
+				Type: graphql.String,
 			},
 		},
-	}),
-})
+	})
+	stringBoxObject = graphql.NewObject(graphql.ObjectConfig{
+		Name: "StringBox",
+		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
+			return []*graphql.Interface{someBoxInterface}
+		}),
+		Fields: graphql.Fields{
+			"scalar": &graphql.Field{
+				Type: graphql.String,
+			},
+			"unrelatedField": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+	_ = graphql.NewObject(graphql.ObjectConfig{
+		Name: "IntBox",
+		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
+			return []*graphql.Interface{someBoxInterface}
+		}),
+		Fields: graphql.Fields{
+			"scalar": &graphql.Field{
+				Type: graphql.Int,
+			},
+			"unrelatedField": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+	var nonNullStringBox1Interface = graphql.NewInterface(graphql.InterfaceConfig{
+		Name: "NonNullStringBox1",
+		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+			return stringBoxObject
+		},
+		Fields: graphql.Fields{
+			"scalar": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+		},
+	})
+	_ = graphql.NewObject(graphql.ObjectConfig{
+		Name: "NonNullStringBox1Impl",
+		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
+			return []*graphql.Interface{someBoxInterface, nonNullStringBox1Interface}
+		}),
+		Fields: graphql.Fields{
+			"scalar": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"unrelatedField": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+	var nonNullStringBox2Interface = graphql.NewInterface(graphql.InterfaceConfig{
+		Name: "NonNullStringBox2",
+		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+			return stringBoxObject
+		},
+		Fields: graphql.Fields{
+			"scalar": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+		},
+	})
+	_ = graphql.NewObject(graphql.ObjectConfig{
+		Name: "NonNullStringBox2Impl",
+		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
+			return []*graphql.Interface{someBoxInterface, nonNullStringBox2Interface}
+		}),
+		Fields: graphql.Fields{
+			"scalar": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"unrelatedField": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
 
-func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_ConflictingScalarReturnTypes(t *testing.T) {
+	var connectionObject = graphql.NewObject(graphql.ObjectConfig{
+		Name: "Connection",
+		Fields: graphql.Fields{
+			"edges": &graphql.Field{
+				Type: graphql.NewList(graphql.NewObject(graphql.ObjectConfig{
+					Name: "Edge",
+					Fields: graphql.Fields{
+						"node": &graphql.Field{
+							Type: graphql.NewObject(graphql.ObjectConfig{
+								Name: "Node",
+								Fields: graphql.Fields{
+									"id": &graphql.Field{
+										Type: graphql.ID,
+									},
+									"name": &graphql.Field{
+										Type: graphql.String,
+									},
+								},
+							}),
+						},
+					},
+				})),
+			},
+		},
+	})
+	var err error
+	schema, err = graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "QueryRoot",
+			Fields: graphql.Fields{
+				"someBox": &graphql.Field{
+					Type: someBoxInterface,
+				},
+				"connection": &graphql.Field{
+					Type: connectionObject,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_ConflictingReturnTypesWhichPotentiallyOverlap(t *testing.T) {
+	// This is invalid since an object could potentially be both the Object
+	// type IntBox and the interface type NonNullStringBox1. While that
+	// condition does not exist in the current schema, the schema could
+	// expand in the future to allow this. Thus it is invalid.
 	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
-          boxUnion {
+          someBox {
+            ...on IntBox {
+              scalar
+            }
+            ...on NonNullStringBox1 {
+              scalar
+            }
+          }
+        }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(
+			`Fields "scalar" conflict because they return differing types Int and String!.`,
+			5, 15,
+			8, 15),
+	})
+}
+func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_AllowsDiffereingReturnTypesWhichCannotOverlap(t *testing.T) {
+	// This is valid since an object cannot be both an IntBox and a StringBox.
+	testutil.ExpectPassesRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+        {
+          someBox {
             ...on IntBox {
               scalar
             }
@@ -347,22 +459,28 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Conf
             }
           }
         }
-    `, []gqlerrors.FormattedError{
-		testutil.RuleError(
-			`Fields "scalar" conflict because they return differing types Int and String.`,
-			5, 15, 8, 15),
-	})
+    `)
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_SameWrappedScalarReturnTypes(t *testing.T) {
 	testutil.ExpectPassesRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
-          boxUnion {
+          someBox {
             ...on NonNullStringBox1 {
               scalar
             }
             ...on NonNullStringBox2 {
               scalar
             }
+          }
+        }
+    `)
+}
+func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_AllowsInlineTypelessFragments(t *testing.T) {
+	testutil.ExpectPassesRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+        {
+          a
+          ... {
+            a
           }
         }
     `)
@@ -391,13 +509,18 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Comp
 		testutil.RuleError(
 			`Fields "edges" conflict because subfields "node" conflict because subfields "id" conflict because `+
 				`id and name are different fields.`,
-			14, 11, 5, 13, 15, 13, 6, 15, 16, 15, 7, 17),
+			14, 11,
+			15, 13,
+			16, 15,
+			5, 13,
+			6, 15,
+			7, 17),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_IgnoresUnknownTypes(t *testing.T) {
 	testutil.ExpectPassesRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
-          boxUnion {
+          someBox {
             ...on UnknownType {
               scalar
             }

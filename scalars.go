@@ -8,6 +8,11 @@ import (
 	"github.com/graphql-go/graphql/language/ast"
 )
 
+// As per the GraphQL Spec, Integers are only treated as valid when a valid
+// 32-bit signed integer, providing the broadest support across platforms.
+//
+// n.b. JavaScript's integers are safe between -(2^53 - 1) and 2^53 - 1 because
+// they are internally represented as IEEE 754 doubles.
 func coerceInt(value interface{}) interface{} {
 	switch value := value.(type) {
 	case bool:
@@ -16,6 +21,9 @@ func coerceInt(value interface{}) interface{} {
 		}
 		return 0
 	case int:
+		if value < int(math.MinInt32) || value > int(math.MaxInt32) {
+			return nil
+		}
 		return value
 	case int8:
 		return int(value)
@@ -29,6 +37,9 @@ func coerceInt(value interface{}) interface{} {
 		}
 		return int(value)
 	case uint:
+		if value > math.MaxInt32 {
+			return nil
+		}
 		return int(value)
 	case uint8:
 		return int(value)
@@ -68,8 +79,10 @@ func coerceInt(value interface{}) interface{} {
 }
 
 // Int is the GraphQL Integer type definition.
-var Int *Scalar = NewScalar(ScalarConfig{
-	Name:       "Int",
+var Int = NewScalar(ScalarConfig{
+	Name: "Int",
+	Description: "The `Int` scalar type represents non-fractional signed whole numeric " +
+		"values. Int can represent values between -(2^31) and 2^31 - 1. ",
 	Serialize:  coerceInt,
 	ParseValue: coerceInt,
 	ParseLiteral: func(valueAST ast.Value) interface{} {
@@ -107,8 +120,11 @@ func coerceFloat32(value interface{}) interface{} {
 }
 
 // Float is the GraphQL float type definition.
-var Float *Scalar = NewScalar(ScalarConfig{
-	Name:       "Float",
+var Float = NewScalar(ScalarConfig{
+	Name: "Float",
+	Description: "The `Float` scalar type represents signed double-precision fractional " +
+		"values as specified by " +
+		"[IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point). ",
 	Serialize:  coerceFloat32,
 	ParseValue: coerceFloat32,
 	ParseLiteral: func(valueAST ast.Value) interface{} {
@@ -131,8 +147,11 @@ func coerceString(value interface{}) interface{} {
 }
 
 // String is the GraphQL string type definition
-var String *Scalar = NewScalar(ScalarConfig{
-	Name:       "String",
+var String = NewScalar(ScalarConfig{
+	Name: "String",
+	Description: "The `String` scalar type represents textual data, represented as UTF-8 " +
+		"character sequences. The String type is most often used by GraphQL to " +
+		"represent free-form human-readable text.",
 	Serialize:  coerceString,
 	ParseValue: coerceString,
 	ParseLiteral: func(valueAST ast.Value) interface{} {
@@ -174,10 +193,11 @@ func coerceBool(value interface{}) interface{} {
 }
 
 // Boolean is the GraphQL boolean type definition
-var Boolean *Scalar = NewScalar(ScalarConfig{
-	Name:       "Boolean",
-	Serialize:  coerceBool,
-	ParseValue: coerceBool,
+var Boolean = NewScalar(ScalarConfig{
+	Name:        "Boolean",
+	Description: "The `Boolean` scalar type represents `true` or `false`.",
+	Serialize:   coerceBool,
+	ParseValue:  coerceBool,
 	ParseLiteral: func(valueAST ast.Value) interface{} {
 		switch valueAST := valueAST.(type) {
 		case *ast.BooleanValue:
@@ -188,8 +208,13 @@ var Boolean *Scalar = NewScalar(ScalarConfig{
 })
 
 // ID is the GraphQL id type definition
-var ID *Scalar = NewScalar(ScalarConfig{
-	Name:       "ID",
+var ID = NewScalar(ScalarConfig{
+	Name: "ID",
+	Description: "The `ID` scalar type represents a unique identifier, often used to " +
+		"refetch an object or as key for a cache. The ID type appears in a JSON " +
+		"response as a String; however, it is not intended to be human-readable. " +
+		"When expected as an input type, any string (such as `\"4\"`) or integer " +
+		"(such as `4`) input value will be accepted as an ID.",
 	Serialize:  coerceString,
 	ParseValue: coerceString,
 	ParseLiteral: func(valueAST ast.Value) interface{} {

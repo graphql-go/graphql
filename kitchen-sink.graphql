@@ -12,6 +12,12 @@ query namedQuery($foo: ComplexFooType, $bar: Bar = DefaultBarValue) {
         }
       }
     }
+    ... @skip(unless: $foo) {
+      id
+    }
+    ... {
+      id
+    }
   }
 }
 
@@ -19,6 +25,19 @@ mutation favPost {
   fav(post: 123) @defer {
     post {
       id
+    }
+  }
+}
+
+subscription PostFavSubscription($input: StoryLikeSubscribeInput) {
+  postFavSubscribe(input: $input) {
+    post {
+      favers {
+        count
+      }
+      favSentence {
+        text
+      }
     }
   }
 }

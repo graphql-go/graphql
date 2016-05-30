@@ -108,7 +108,7 @@ func TestValidate_NoUndefinedVariables_VariableNotDefined(t *testing.T) {
         field(a: $a, b: $b, c: $c, d: $d)
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Variable "$d" is not defined.`, 3, 39),
+		testutil.RuleError(`Variable "$d" is not defined by operation "Foo".`, 3, 39, 2, 7),
 	})
 }
 func TestValidate_NoUndefinedVariables_VariableNotDefinedByUnnamedQuery(t *testing.T) {
@@ -117,7 +117,7 @@ func TestValidate_NoUndefinedVariables_VariableNotDefinedByUnnamedQuery(t *testi
         field(a: $a)
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Variable "$a" is not defined.`, 3, 18),
+		testutil.RuleError(`Variable "$a" is not defined.`, 3, 18, 2, 7),
 	})
 }
 func TestValidate_NoUndefinedVariables_MultipleVariablesNotDefined(t *testing.T) {
@@ -126,8 +126,8 @@ func TestValidate_NoUndefinedVariables_MultipleVariablesNotDefined(t *testing.T)
         field(a: $a, b: $b, c: $c)
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Variable "$a" is not defined.`, 3, 18),
-		testutil.RuleError(`Variable "$c" is not defined.`, 3, 32),
+		testutil.RuleError(`Variable "$a" is not defined by operation "Foo".`, 3, 18, 2, 7),
+		testutil.RuleError(`Variable "$c" is not defined by operation "Foo".`, 3, 32, 2, 7),
 	})
 }
 func TestValidate_NoUndefinedVariables_VariableInFragmentNotDefinedByUnnamedQuery(t *testing.T) {
@@ -139,7 +139,7 @@ func TestValidate_NoUndefinedVariables_VariableInFragmentNotDefinedByUnnamedQuer
         field(a: $a)
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Variable "$a" is not defined.`, 6, 18),
+		testutil.RuleError(`Variable "$a" is not defined.`, 6, 18, 2, 7),
 	})
 }
 func TestValidate_NoUndefinedVariables_VariableInFragmentNotDefinedByOperation(t *testing.T) {

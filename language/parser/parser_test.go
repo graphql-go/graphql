@@ -10,6 +10,7 @@ import (
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/location"
+	"github.com/graphql-go/graphql/language/printer"
 	"github.com/graphql-go/graphql/language/source"
 )
 
@@ -137,7 +138,7 @@ fragment MissingOn Type
 func TestParseProvidesUsefulErrorsWhenUsingSource(t *testing.T) {
 	test := errorMessageTest{
 		source.NewSource(&source.Source{Body: "query", Name: "MyQuery.graphql"}),
-		`Syntax Error MyQuery.graphql (1:6) Expected Name, found EOF`,
+		`Syntax Error MyQuery.graphql (1:6) Expected {, found EOF`,
 		false,
 	}
 	testErrorMessage(t, test)
@@ -156,15 +157,6 @@ func TestParsesConstantDefaultValues(t *testing.T) {
 	test := errorMessageTest{
 		`query Foo($x: Complex = { a: { b: [ $var ] } }) { field }`,
 		`Syntax Error GraphQL (1:37) Unexpected $`,
-		false,
-	}
-	testErrorMessage(t, test)
-}
-
-func TestDuplicatedKeysInInputObject(t *testing.T) {
-	test := errorMessageTest{
-		`{ field(arg: { a: 1, a: 2 }) }'`,
-		`Syntax Error GraphQL (1:22) Duplicate input object field a.`,
 		false,
 	}
 	testErrorMessage(t, test)
@@ -197,6 +189,83 @@ func TestDoesNotAllowNullAsValue(t *testing.T) {
 	testErrorMessage(t, test)
 }
 
+func TestParsesMultiByteCharacters(t *testing.T) {
+
+	doc := `
+        # This comment has a \u0A0A multi-byte character.
+        { field(arg: "Has a \u0A0A multi-byte character.") }
+	`
+	astDoc := parse(t, doc)
+
+	expectedASTDoc := ast.NewDocument(&ast.Document{
+		Loc: ast.NewLocation(&ast.Location{
+			Start: 67,
+			End:   121,
+		}),
+		Definitions: []ast.Node{
+			ast.NewOperationDefinition(&ast.OperationDefinition{
+				Loc: ast.NewLocation(&ast.Location{
+					Start: 67,
+					End:   119,
+				}),
+				Operation: "query",
+				SelectionSet: ast.NewSelectionSet(&ast.SelectionSet{
+					Loc: ast.NewLocation(&ast.Location{
+						Start: 67,
+						End:   119,
+					}),
+					Selections: []ast.Selection{
+						ast.NewField(&ast.Field{
+							Loc: ast.NewLocation(&ast.Location{
+								Start: 67,
+								End:   117,
+							}),
+							Name: ast.NewName(&ast.Name{
+								Loc: ast.NewLocation(&ast.Location{
+									Start: 69,
+									End:   74,
+								}),
+								Value: "field",
+							}),
+							Arguments: []*ast.Argument{
+								ast.NewArgument(&ast.Argument{
+									Loc: ast.NewLocation(&ast.Location{
+										Start: 75,
+										End:   116,
+									}),
+									Name: ast.NewName(&ast.Name{
+
+										Loc: ast.NewLocation(&ast.Location{
+											Start: 75,
+											End:   78,
+										}),
+										Value: "arg",
+									}),
+									Value: ast.NewStringValue(&ast.StringValue{
+
+										Loc: ast.NewLocation(&ast.Location{
+											Start: 80,
+											End:   116,
+										}),
+										Value: "Has a \u0A0A multi-byte character.",
+									}),
+								}),
+							},
+						}),
+					},
+				}),
+			}),
+		},
+	})
+
+	astDocQuery := printer.Print(astDoc)
+	expectedASTDocQuery := printer.Print(expectedASTDoc)
+
+	if !reflect.DeepEqual(astDocQuery, expectedASTDocQuery) {
+		t.Fatalf("unexpected document, expected: %v, got: %v", astDocQuery, expectedASTDocQuery)
+	}
+}
+
 func TestParsesKitchenSink(t *testing.T) {
 	b, err := ioutil.ReadFile("../../kitchen-sink.graphql")
 	if err != nil {
@@ -215,6 +284,7 @@ func TestAllowsNonKeywordsAnywhereNameIsAllowed(t *testing.T) {
 		"fragment",
 		"query",
 		"mutation",
+		"subscription",
 		"true",
 		"false",
 	}
@@ -239,7 +309,56 @@ func TestAllowsNonKeywordsAnywhereNameIsAllowed(t *testing.T) {
 	}
 }
 
-func TestParsesExperimentalSubscriptionFeature(t *testing.T) {
+//
+//func TestParsesExperimentalSubscriptionFeature(t *testing.T) {
+//	source := `
+//      subscription Foo {
+//        subscriptionField
+//      }
+//    `
+//	_, err := Parse(ParseParams{Source: source})
+//	if err != nil {
+//		t.Fatalf("unexpected error: %v", err)
+//	}
+//}
+
+func TestParsesAnonymousMutationOperations(t *testing.T) {
+	source := `
+      mutation {
+        mutationField
+      }
+    `
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestParsesAnonymousSubscriptionOperations(t *testing.T) {
+	source := `
+      subscription {
+        subscriptionField
+      }
+    `
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestParsesNamedMutationOperations(t *testing.T) {
+	source := `
+      mutation Foo {
+        mutationField
+      }
+    `
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestParsesNamedSubscriptionOperations(t *testing.T) {
 	source := `
       subscription Foo {
         subscriptionField

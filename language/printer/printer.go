@@ -147,35 +147,38 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 			op := node.Operation
 			name := fmt.Sprintf("%v", node.Name)
 
-			defs := wrap("(", join(toSliceString(node.VariableDefinitions), ", "), ")")
+			varDefs := wrap("(", join(toSliceString(node.VariableDefinitions), ", "), ")")
 			directives := join(toSliceString(node.Directives), " ")
 			selectionSet := fmt.Sprintf("%v", node.SelectionSet)
+			// Anonymous queries with no directives or variable definitions can use
+			// the query short form.
 			str := ""
-			if name == "" {
+			if name == "" && directives == "" && varDefs == "" && op == "query" {
 				str = selectionSet
 			} else {
 				str = join([]string{
 					op,
-					join([]string{name, defs}, ""),
+					join([]string{name, varDefs}, ""),
 					directives,
 					selectionSet,
 				}, " ")
 			}
 			return visitor.ActionUpdate, str
 		case map[string]interface{}:
+
 			op := getMapValueString(node, "Operation")
 			name := getMapValueString(node, "Name")
 
-			defs := wrap("(", join(toSliceString(getMapValue(node, "VariableDefinitions")), ", "), ")")
+			varDefs := wrap("(", join(toSliceString(getMapValue(node, "VariableDefinitions")), ", "), ")")
 			directives := join(toSliceString(getMapValue(node, "Directives")), " ")
 			selectionSet := getMapValueString(node, "SelectionSet")
 			str := ""
-			if name == "" {
+			if name == "" && directives == "" && varDefs == "" && op == "query" {
 				str = selectionSet
 			} else {
 				str = join([]string{
 					op,
-					join([]string{name, defs}, ""),
+					join([]string{name, varDefs}, ""),
 					directives,
 					selectionSet,
 				}, " ")
@@ -275,7 +278,13 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 			typeCondition := getMapValueString(node, "TypeCondition")
 			directives := toSliceString(getMapValue(node, "Directives"))
 			selectionSet := getMapValueString(node, "SelectionSet")
-			return visitor.ActionUpdate, "... on " + typeCondition + " " + wrap("", join(directives, " "), " ") + selectionSet
+			return visitor.ActionUpdate,
+				join([]string{
+					"...",
+					wrap("on ", typeCondition, ""),
+					join(directives, " "),
+					selectionSet,
+				}, " ")
 		}
 		return visitor.ActionNoChange, nil
 	},

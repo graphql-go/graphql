@@ -11,6 +11,8 @@ import (
  * of the current field and type definitions at any point in a GraphQL document
  * AST during a recursive descent by calling `enter(node)` and `leave(node)`.
  */
+type fieldDefFn func(schema *Schema, parentType Type, fieldAST *ast.Field) *FieldDefinition
+
 type TypeInfo struct {
 	schema          *Schema
 	typeStack       []Output
@@ -19,11 +21,26 @@ type TypeInfo struct {
 	fieldDefStack   []*FieldDefinition
 	directive       *Directive
 	argument        *Argument
+	getFieldDef     fieldDefFn
 }
 
-func NewTypeInfo(schema *Schema) *TypeInfo {
+type TypeInfoConfig struct {
+	Schema *Schema
+
+	// NOTE: this experimental optional second parameter is only needed in order
+	// to support non-spec-compliant codebases. You should never need to use it.
+	// It may disappear in the future.
+	FieldDefFn fieldDefFn
+}
+
+func NewTypeInfo(opts *TypeInfoConfig) *TypeInfo {
+	getFieldDef := opts.FieldDefFn
+	if getFieldDef == nil {
+		getFieldDef = DefaultTypeInfoFieldDef
+	}
 	return &TypeInfo{
-		schema: schema,
+		schema:      opts.Schema,
+		getFieldDef: getFieldDef,
 	}
 }
 
@@ -69,7 +86,7 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 	switch node := node.(type) {
 	case *ast.SelectionSet:
 		namedType := GetNamed(ti.Type())
-		var compositeType Composite = nil
+		var compositeType Composite
 		if IsCompositeType(namedType) {
 			compositeType, _ = namedType.(Composite)
 		}
@@ -78,7 +95,7 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 		parentType := ti.ParentType()
 		var fieldDef *FieldDefinition
 		if parentType != nil {
-			fieldDef = TypeInfoFieldDef(*schema, parentType.(Type), node)
+			fieldDef = ti.getFieldDef(schema, parentType.(Type), node)
 		}
 		ti.fieldDefStack = append(ti.fieldDefStack, fieldDef)
 		if fieldDef != nil {
@@ -97,14 +114,26 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 			ttype = schema.QueryType()
 		} else if node.Operation == "mutation" {
 			ttype = schema.MutationType()
+		} else if node.Operation == "subscription" {
+			ttype = schema.SubscriptionType()
 		}
 		ti.typeStack = append(ti.typeStack, ttype)
 	case *ast.InlineFragment:
-		ttype, _ = typeFromAST(*schema, node.TypeCondition)
-		ti.typeStack = append(ti.typeStack, ttype)
+		typeConditionAST := node.TypeCondition
+		if typeConditionAST != nil {
+			ttype, _ = typeFromAST(*schema, node.TypeCondition)
+			ti.typeStack = append(ti.typeStack, ttype)
+		} else {
+			ti.typeStack = append(ti.typeStack, ti.Type())
+		}
 	case *ast.FragmentDefinition:
-		ttype, _ = typeFromAST(*schema, node.TypeCondition)
-		ti.typeStack = append(ti.typeStack, ttype)
+		typeConditionAST := node.TypeCondition
+		if typeConditionAST != nil {
+			ttype, _ = typeFromAST(*schema, typeConditionAST)
+			ti.typeStack = append(ti.typeStack, ttype)
+		} else {
+			ti.typeStack = append(ti.typeStack, ti.Type())
+		}
 	case *ast.VariableDefinition:
 		ttype, _ = typeFromAST(*schema, node.Type)
 		ti.inputTypeStack = append(ti.inputTypeStack, ttype)
@@ -163,12 +192,18 @@ func (ti *TypeInfo) Leave(node ast.Node) {
 	switch kind {
 	case kinds.SelectionSet:
 		// pop ti.parentTypeStack
-		_, ti.parentTypeStack = ti.parentTypeStack[len(ti.parentTypeStack)-1], ti.parentTypeStack[:len(ti.parentTypeStack)-1]
+		if len(ti.parentTypeStack) > 0 {
+			_, ti.parentTypeStack = ti.parentTypeStack[len(ti.parentTypeStack)-1], ti.parentTypeStack[:len(ti.parentTypeStack)-1]
+		}
 	case kinds.Field:
 		// pop ti.fieldDefStack
-		_, ti.fieldDefStack = ti.fieldDefStack[len(ti.fieldDefStack)-1], ti.fieldDefStack[:len(ti.fieldDefStack)-1]
+		if len(ti.fieldDefStack) > 0 {
+			_, ti.fieldDefStack = ti.fieldDefStack[len(ti.fieldDefStack)-1], ti.fieldDefStack[:len(ti.fieldDefStack)-1]
+		}
 		// pop ti.typeStack
-		_, ti.typeStack = ti.typeStack[len(ti.typeStack)-1], ti.typeStack[:len(ti.typeStack)-1]
+		if len(ti.typeStack) > 0 {
+			_, ti.typeStack = ti.typeStack[len(ti.typeStack)-1], ti.typeStack[:len(ti.typeStack)-1]
+		}
 	case kinds.Directive:
 		ti.directive = nil
 	case kinds.OperationDefinition:
@@ -177,28 +212,34 @@ func (ti *TypeInfo) Leave(node ast.Node) {
 		fallthrough
 	case kinds.FragmentDefinition:
 		// pop ti.typeStack
-		_, ti.typeStack = ti.typeStack[len(ti.typeStack)-1], ti.typeStack[:len(ti.typeStack)-1]
+		if len(ti.typeStack) > 0 {
+			_, ti.typeStack = ti.typeStack[len(ti.typeStack)-1], ti.typeStack[:len(ti.typeStack)-1]
+		}
 	case kinds.VariableDefinition:
 		// pop ti.inputTypeStack
-		_, ti.inputTypeStack = ti.inputTypeStack[len(ti.inputTypeStack)-1], ti.inputTypeStack[:len(ti.inputTypeStack)-1]
+		if len(ti.inputTypeStack) > 0 {
+			_, ti.inputTypeStack = ti.inputTypeStack[len(ti.inputTypeStack)-1], ti.inputTypeStack[:len(ti.inputTypeStack)-1]
+		}
 	case kinds.Argument:
 		ti.argument = nil
 		// pop ti.inputTypeStack
-		_, ti.inputTypeStack = ti.inputTypeStack[len(ti.inputTypeStack)-1], ti.inputTypeStack[:len(ti.inputTypeStack)-1]
+		if len(ti.inputTypeStack) > 0 {
+			_, ti.inputTypeStack = ti.inputTypeStack[len(ti.inputTypeStack)-1], ti.inputTypeStack[:len(ti.inputTypeStack)-1]
+		}
 	case kinds.ListValue:
 		fallthrough
 	case kinds.ObjectField:
 		// pop ti.inputTypeStack
-		_, ti.inputTypeStack = ti.inputTypeStack[len(ti.inputTypeStack)-1], ti.inputTypeStack[:len(ti.inputTypeStack)-1]
+		if len(ti.inputTypeStack) > 0 {
+			_, ti.inputTypeStack = ti.inputTypeStack[len(ti.inputTypeStack)-1], ti.inputTypeStack[:len(ti.inputTypeStack)-1]
+		}
 	}
 }
 
-/**
- * Not exactly the same as the executor's definition of FieldDef, in this
- * statically evaluated environment we do not always have an Object type,
- * and need to handle Interface and Union types.
- */
-func TypeInfoFieldDef(schema Schema, parentType Type, fieldAST *ast.Field) *FieldDefinition {
+// DefaultTypeInfoFieldDef Not exactly the same as the executor's definition of FieldDef, in this
+// statically evaluated environment we do not always have an Object type,
+// and need to handle Interface and Union types.
+func DefaultTypeInfoFieldDef(schema *Schema, parentType Type, fieldAST *ast.Field) *FieldDefinition {
 	name := ""
 	if fieldAST.Name != nil {
 		name = fieldAST.Name.Value

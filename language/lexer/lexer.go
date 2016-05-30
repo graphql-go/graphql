@@ -23,7 +23,6 @@ const (
 	PIPE
 	BRACE_R
 	NAME
-	VARIABLE
 	INT
 	FLOAT
 	STRING
@@ -50,7 +49,6 @@ func init() {
 	TokenKind[PIPE] = PIPE
 	TokenKind[BRACE_R] = BRACE_R
 	TokenKind[NAME] = NAME
-	TokenKind[VARIABLE] = VARIABLE
 	TokenKind[INT] = INT
 	TokenKind[FLOAT] = FLOAT
 	TokenKind[STRING] = STRING
@@ -69,12 +67,13 @@ func init() {
 	tokenDescription[TokenKind[PIPE]] = "|"
 	tokenDescription[TokenKind[BRACE_R]] = "}"
 	tokenDescription[TokenKind[NAME]] = "Name"
-	tokenDescription[TokenKind[VARIABLE]] = "Variable"
 	tokenDescription[TokenKind[INT]] = "Int"
 	tokenDescription[TokenKind[FLOAT]] = "Float"
 	tokenDescription[TokenKind[STRING]] = "String"
 }
 
+// Token is a representation of a lexed Token. Value only appears for non-punctuation
+// tokens: NAME, INT, FLOAT, and STRING.
 type Token struct {
 	Kind  int
 	Start int
@@ -103,6 +102,12 @@ func Lex(s *source.Source) Lexer {
 	}
 }
 
+func runeStringValueAt(body string, start, end int) string {
+	// convert body string to runes, to handle unicode
+	bodyRunes := []rune(body)
+	return string(bodyRunes[start:end])
+}
+
 // Reads an alphanumeric + underscore name from the source.
 // [_A-Za-z][_0-9A-Za-z]*
 func readName(source *source.Source, position int) Token {
@@ -111,17 +116,18 @@ func readName(source *source.Source, position int) Token {
 	end := position + 1
 	for {
 		code := charCodeAt(body, end)
-		if (end != bodyLength) && (code == 95 ||
-			code >= 48 && code <= 57 ||
-			code >= 65 && code <= 90 ||
-			code >= 97 && code <= 122) {
-			end += 1
+		if (end != bodyLength) && code != 0 &&
+			(code == 95 || // _
+				code >= 48 && code <= 57 || // 0-9
+				code >= 65 && code <= 90 || // A-Z
+				code >= 97 && code <= 122) { // a-z
+			end++
 			continue
 		} else {
 			break
 		}
 	}
-	return makeToken(TokenKind[NAME], position, end, body[position:end])
+	return makeToken(TokenKind[NAME], position, end, runeStringValueAt(body, position, end))
 }
 
 // Reads a number token from the source file, either a float
@@ -134,14 +140,14 @@ func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 	position := start
 	isFloat := false
 	if code == 45 { // -
-		position += 1
+		position++
 		code = charCodeAt(body, position)
 	}
 	if code == 48 { // 0
-		position += 1
+		position++
 		code = charCodeAt(body, position)
 		if code >= 48 && code <= 57 {
-			description := fmt.Sprintf("Invalid number, unexpected digit after 0: \"%c\".", code)
+			description := fmt.Sprintf("Invalid number, unexpected digit after 0: %v.", printCharCode(code))
 			return Token{}, gqlerrors.NewSyntaxError(s, position, description)
 		}
 	} else {
@@ -154,7 +160,7 @@ func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 	}
 	if code == 46 { // .
 		isFloat = true
-		position += 1
+		position++
 		code = charCodeAt(body, position)
 		p, err := readDigits(s, position, code)
 		if err != nil {
@@ -165,10 +171,10 @@ func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 	}
 	if code == 69 || code == 101 { // E e
 		isFloat = true
-		position += 1
+		position++
 		code = charCodeAt(body, position)
 		if code == 43 || code == 45 { // + -
-			position += 1
+			position++
 			code = charCodeAt(body, position)
 		}
 		p, err := readDigits(s, position, code)
@@ -181,7 +187,7 @@ func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 	if isFloat {
 		kind = TokenKind[FLOAT]
 	}
-	return makeToken(kind, start, position, body[start:position]), nil
+	return makeToken(kind, start, position, runeStringValueAt(body, start, position)), nil
 }
 
 // Returns the new position in the source after reading digits.
@@ -192,7 +198,7 @@ func readDigits(s *source.Source, start int, firstCode rune) (int, error) {
 	if code >= 48 && code <= 57 { // 0 - 9
 		for {
 			if code >= 48 && code <= 57 { // 0 - 9
-				position += 1
+				position++
 				code = charCodeAt(body, position)
 				continue
 			} else {
@@ -202,11 +208,7 @@ func readDigits(s *source.Source, start int, firstCode rune) (int, error) {
 		return position, nil
 	}
 	var description string
-	if code != 0 {
-		description = fmt.Sprintf("Invalid number, expected digit but got: \"%c\".", code)
-	} else {
-		description = fmt.Sprintf("Invalid number, expected digit but got: EOF.")
-	}
+	description = fmt.Sprintf("Invalid number, expected digit but got: %v.", printCharCode(code))
 	return position, gqlerrors.NewSyntaxError(s, position, description)
 }
 
@@ -218,8 +220,17 @@ func readString(s *source.Source, start int) (Token, error) {
 	var value string
 	for {
 		code = charCodeAt(body, position)
-		if position < len(body) && code != 34 && code != 10 && code != 13 && code != 0x2028 && code != 0x2029 {
-			position += 1
+		if position < len(body) &&
+			// not LineTerminator
+			code != 0x000A && code != 0x000D &&
+			// not Quote (")
+			code != 34 {
+
+			// SourceCharacter
+			if code < 0x0020 && code != 0x0009 {
+				return Token{}, gqlerrors.NewSyntaxError(s, position, fmt.Sprintf(`Invalid character within String: %v.`, printCharCode(code)))
+			}
+			position++
 			if code == 92 { // \
 				value += body[chunkStart : position-1]
 				code = charCodeAt(body, position)
@@ -248,7 +259,7 @@ func readString(s *source.Source, start int) (Token, error) {
 				case 116:
 					value += "\t"
 					break
-				case 117:
+				case 117: // u
 					charCode := uniCharCode(
 						charCodeAt(body, position+1),
 						charCodeAt(body, position+2),
@@ -256,15 +267,18 @@ func readString(s *source.Source, start int) (Token, error) {
 						charCodeAt(body, position+4),
 					)
 					if charCode < 0 {
-						return Token{}, gqlerrors.NewSyntaxError(s, position, "Bad character escape sequence.")
+						return Token{}, gqlerrors.NewSyntaxError(s, position,
+							fmt.Sprintf("Invalid character escape sequence: "+
+								"\\u%v", body[position+1:position+5]))
 					}
 					value += fmt.Sprintf("%c", charCode)
 					position += 4
 					break
 				default:
-					return Token{}, gqlerrors.NewSyntaxError(s, position, "Bad character escape sequence.")
+					return Token{}, gqlerrors.NewSyntaxError(s, position,
+						fmt.Sprintf(`Invalid character escape sequence: \\%c.`, code))
 				}
-				position += 1
+				position++
 				chunkStart = position
 			}
 			continue
@@ -272,10 +286,10 @@ func readString(s *source.Source, start int) (Token, error) {
 			break
 		}
 	}
-	if code != 34 {
+	if code != 34 { // quote (")
 		return Token{}, gqlerrors.NewSyntaxError(s, position, "Unterminated string.")
 	}
-	value += body[chunkStart:position]
+	value += runeStringValueAt(body, chunkStart, position)
 	return makeToken(TokenKind[STRING], start, position+1, value), nil
 }
 
@@ -299,25 +313,44 @@ func char2hex(a rune) int {
 		return int(a) - 48
 	} else if a >= 65 && a <= 70 { // A-F
 		return int(a) - 55
-	} else if a >= 97 && a <= 102 { // a-f
+	} else if a >= 97 && a <= 102 {
+		// a-f
 		return int(a) - 87
-	} else {
-		return -1
 	}
+	return -1
 }
 
 func makeToken(kind int, start int, end int, value string) Token {
 	return Token{Kind: kind, Start: start, End: end, Value: value}
 }
 
+func printCharCode(code rune) string {
+	// NaN/undefined represents access beyond the end of the file.
+	if code < 0 {
+		return "<EOF>"
+	}
+	// print as ASCII for printable range
+	if code >= 0x0020 && code < 0x007F {
+		return fmt.Sprintf(`"%c"`, code)
+	}
+	// Otherwise print the escaped form. e.g. `"\\u0007"`
+	return fmt.Sprintf(`"\\u%04X"`, code)
+}
+
 func readToken(s *source.Source, fromPosition int) (Token, error) {
 	body := s.Body
 	bodyLength := len(body)
 	position := positionAfterWhitespace(body, fromPosition)
-	code := charCodeAt(body, position)
 	if position >= bodyLength {
 		return makeToken(TokenKind[EOF], position, position, ""), nil
 	}
+	code := charCodeAt(body, position)
+
+	// SourceCharacter
+	if code < 0x0020 && code != 0x0009 && code != 0x000A && code != 0x000D {
+		return Token{}, gqlerrors.NewSyntaxError(s, position, fmt.Sprintf(`Invalid character %v`, printCharCode(code)))
+	}
+
 	switch code {
 	// !
 	case 33:
@@ -376,9 +409,8 @@ func readToken(s *source.Source, fromPosition int) (Token, error) {
 		token, err := readNumber(s, position, code)
 		if err != nil {
 			return token, err
-		} else {
-			return token, nil
 		}
+		return token, nil
 	// "
 	case 34:
 		token, err := readString(s, position)
@@ -387,7 +419,7 @@ func readToken(s *source.Source, fromPosition int) (Token, error) {
 		}
 		return token, nil
 	}
-	description := fmt.Sprintf("Unexpected character \"%c\".", code)
+	description := fmt.Sprintf("Unexpected character %v.", printCharCode(code))
 	return Token{}, gqlerrors.NewSyntaxError(s, position, description)
 }
 
@@ -395,9 +427,9 @@ func charCodeAt(body string, position int) rune {
 	r := []rune(body)
 	if len(r) > position {
 		return r[position]
-	} else {
-		return 0
 	}
+	return -1
+
 }
 
 // Reads from body starting at startPosition until it finds a non-whitespace
@@ -409,20 +441,27 @@ func positionAfterWhitespace(body string, startPosition int) int {
 	for {
 		if position < bodyLength {
 			code := charCodeAt(body, position)
-			if code == 32 || // space
-				code == 44 || // comma
-				code == 160 || // '\xa0'
-				code == 0x2028 || // line separator
-				code == 0x2029 || // paragraph separator
-				code > 8 && code < 14 { // whitespace
-				position += 1
+
+			// Skip Ignored
+			if code == 0xFEFF || // BOM
+				// White Space
+				code == 0x0009 || // tab
+				code == 0x0020 || // space
+				// Line Terminator
+				code == 0x000A || // new line
+				code == 0x000D || // carriage return
+				// Comma
+				code == 0x002C {
+				position++
 			} else if code == 35 { // #
-				position += 1
+				position++
 				for {
 					code := charCodeAt(body, position)
 					if position < bodyLength &&
-						code != 10 && code != 13 && code != 0x2028 && code != 0x2029 {
-						position += 1
+						code != 0 &&
+						// SourceCharacter but not LineTerminator
+						(code > 0x001F || code == 0x0009) && code != 0x000A && code != 0x000D {
+						position++
 						continue
 					} else {
 						break
@@ -442,9 +481,8 @@ func positionAfterWhitespace(body string, startPosition int) int {
 func GetTokenDesc(token Token) string {
 	if token.Value == "" {
 		return GetTokenKindDesc(token.Kind)
-	} else {
-		return fmt.Sprintf("%s \"%s\"", GetTokenKindDesc(token.Kind), token.Value)
 	}
+	return fmt.Sprintf("%s \"%s\"", GetTokenKindDesc(token.Kind), token.Value)
 }
 
 func GetTokenKindDesc(kind int) string {

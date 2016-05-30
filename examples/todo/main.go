@@ -75,12 +75,12 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 				text, _ := params.Args["text"].(string)
 
 				// figure out new id
-				newId := RandStringRunes(8)
+				newID := RandStringRunes(8)
 
 				// perform mutation operation here
 				// for e.g. create a Todo and save to DB.
 				newTodo := Todo{
-					ID:   newId,
+					ID:   newID,
 					Text: text,
 					Done: false,
 				}

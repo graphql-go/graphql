@@ -5,6 +5,7 @@ var IntrospectionQuery = `
     __schema {
       queryType { name }
       mutationType { name }
+      subscriptionType { name }
       types {
         ...FullType
       }
@@ -25,7 +26,7 @@ var IntrospectionQuery = `
     kind
     name
     description
-    fields {
+    fields(includeDeprecated: true) {
       name
       description
       args {
@@ -43,7 +44,7 @@ var IntrospectionQuery = `
     interfaces {
       ...TypeRef
     }
-    enumValues {
+    enumValues(includeDeprecated: true) {
       name
       description
       isDeprecated
