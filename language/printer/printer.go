@@ -571,6 +571,22 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		}
 		return visitor.ActionNoChange, nil
 	},
+	"DirectiveDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+		switch node := p.Node.(type) {
+		case *ast.DirectiveDefinition:
+			args := wrap("(", join(toSliceString(node.Arguments), ", "), ")")
+			str := fmt.Sprintf("directive @%v%v on %v", node.Name, args, join(toSliceString(node.Locations), " | "))
+			return visitor.ActionUpdate, str
+		case map[string]interface{}:
+			name := getMapValueString(node, "Name")
+			locations := toSliceString(getMapValue(node, "Locations"))
+			args := toSliceString(getMapValue(node, "Arguments"))
+			argsStr := wrap("(", join(args, ", "), ")")
+			str := fmt.Sprintf("directive @%v%v on %v", name, argsStr, join(locations, " | "))
+			return visitor.ActionUpdate, str
+		}
+		return visitor.ActionNoChange, nil
+	},
 }
 
 func Print(astNode ast.Node) (printed interface{}) {

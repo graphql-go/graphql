@@ -117,6 +117,7 @@ var QueryDocumentKeys = KeyMap{
 		"Fields",
 	},
 	"TypeExtensionDefinition": []string{"Definition"},
+	"DirectiveDefinition":     []string{"Name", "Arguments", "Locations"},
 }
 
 type stack struct {

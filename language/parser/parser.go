@@ -175,6 +175,12 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
 					return nil, err
 				}
 				nodes = append(nodes, node)
+			case "directive":
+				node, err := parseDirectiveDefinition(parser)
+				if err != nil {
+					return nil, err
+				}
+				nodes = append(nodes, node)
 			default:
 				if err := unexpected(parser, lexer.Token{}); err != nil {
 					return nil, err
@@ -1194,6 +1200,71 @@ func parseTypeExtensionDefinition(parser *Parser) (*ast.TypeExtensionDefinition,
 		Loc:        loc(parser, start),
 		Definition: definition,
 	}), nil
+}
+
+/**
+ * DirectiveDefinition :
+ *   - directive @ Name ArgumentsDefinition? on DirectiveLocations
+ */
+func parseDirectiveDefinition(parser *Parser) (*ast.DirectiveDefinition, error) {
+	start := parser.Token.Start
+	_, err := expectKeyWord(parser, "directive")
+	if err != nil {
+		return nil, err
+	}
+	_, err = expect(parser, lexer.TokenKind[lexer.AT])
+	if err != nil {
+		return nil, err
+	}
+	name, err := parseName(parser)
+	if err != nil {
+		return nil, err
+	}
+	args, err := parseArgumentDefs(parser)
+	if err != nil {
+		return nil, err
+	}
+	_, err = expectKeyWord(parser, "on")
+	if err != nil {
+		return nil, err
+	}
+	locations, err := parseDirectiveLocations(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	return ast.NewDirectiveDefinition(&ast.DirectiveDefinition{
+		Loc:       loc(parser, start),
+		Name:      name,
+		Arguments: args,
+		Locations: locations,
+	}), nil
+}
+
+/**
+ * DirectiveLocations :
+ *   - Name
+ *   - DirectiveLocations | Name
+ */
+
+func parseDirectiveLocations(parser *Parser) ([]*ast.Name, error) {
+	locations := []*ast.Name{}
+	for {
+		name, err := parseName(parser)
+		if err != nil {
+			return locations, err
+		}
+		locations = append(locations, name)
+
+		hasPipe, err := skip(parser, lexer.TokenKind[lexer.PIPE])
+		if err != nil {
+			return locations, err
+		}
+		if !hasPipe {
+			break
+		}
+	}
+	return locations, nil
 }
 
 /* Core parsing utility functions */

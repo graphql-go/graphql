@@ -21,10 +21,15 @@ type Directive struct {
 	err error
 }
 
-func NewDirective(config *Directive) *Directive {
-	if config == nil {
-		config = &Directive{}
-	}
+// DirectiveConfig options for creating a new GraphQLDirective
+type DirectiveConfig struct {
+	Name        string              `json:"name"`
+	Description string              `json:"description"`
+	Locations   []string            `json:"locations"`
+	Args        FieldConfigArgument `json:"args"`
+}
+
+func NewDirective(config DirectiveConfig) *Directive {
 	dir := &Directive{}
 
 	// Ensure directive is named
@@ -48,15 +53,31 @@ func NewDirective(config *Directive) *Directive {
 		return dir
 	}
 
+	args := []*Argument{}
+
+	for argName, argConfig := range config.Args {
+		err := assertValidName(argName)
+		if err != nil {
+			dir.err = err
+			return dir
+		}
+		args = append(args, &Argument{
+			PrivateName:        argName,
+			PrivateDescription: argConfig.Description,
+			Type:               argConfig.Type,
+			DefaultValue:       argConfig.DefaultValue,
+		})
+	}
+
 	dir.Name = config.Name
 	dir.Description = config.Description
 	dir.Locations = config.Locations
-	dir.Args = config.Args
+	dir.Args = args
 	return dir
 }
 
 // IncludeDirective is used to conditionally include fields or fragments
-var IncludeDirective = NewDirective(&Directive{
+var IncludeDirective = NewDirective(DirectiveConfig{
 	Name: "include",
 	Description: "Directs the executor to include this field or fragment only when " +
 		"the `if` argument is true.",
@@ -65,25 +86,23 @@ var IncludeDirective = NewDirective(&Directive{
 		DirectiveLocationFragmentSpread,
 		DirectiveLocationInlineFragment,
 	},
-	Args: []*Argument{
-		&Argument{
-			PrivateName:        "if",
-			Type:               NewNonNull(Boolean),
-			PrivateDescription: "Included when true.",
+	Args: FieldConfigArgument{
+		"if": &ArgumentConfig{
+			Type:        NewNonNull(Boolean),
+			Description: "Included when true.",
 		},
 	},
 })
 
 // SkipDirective Used to conditionally skip (exclude) fields or fragments
-var SkipDirective = NewDirective(&Directive{
+var SkipDirective = NewDirective(DirectiveConfig{
 	Name: "skip",
 	Description: "Directs the executor to skip this field or fragment when the `if` " +
 		"argument is true.",
-	Args: []*Argument{
-		&Argument{
-			PrivateName:        "if",
-			Type:               NewNonNull(Boolean),
-			PrivateDescription: "Skipped when true.",
+	Args: FieldConfigArgument{
+		"if": &ArgumentConfig{
+			Type:        NewNonNull(Boolean),
+			Description: "Skipped when true.",
 		},
 	},
 	Locations: []string{

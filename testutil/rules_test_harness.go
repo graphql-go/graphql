@@ -459,7 +459,7 @@ func init() {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: queryRoot,
 		Directives: []*graphql.Directive{
-			graphql.NewDirective(&graphql.Directive{
+			graphql.NewDirective(graphql.DirectiveConfig{
 				Name:      "operationOnly",
 				Locations: []string{graphql.DirectiveLocationQuery},
 			}),
