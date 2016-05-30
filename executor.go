@@ -633,8 +633,13 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	}
 
 	// Not reachable
+	err := invariant(false,
+		fmt.Sprintf(`Cannot complete value of unexpected type "%v."`, returnType),
+	)
+	if err != nil {
+		panic(gqlerrors.FormatError(err))
+	}
 	return nil
-
 }
 
 // completeObjectValue completes value of an Abstract type (Union / Interface) by determining the runtime type
