@@ -15,9 +15,7 @@ type Definition interface {
 // Ensure that all definition types implements Definition interface
 var _ Definition = (*OperationDefinition)(nil)
 var _ Definition = (*FragmentDefinition)(nil)
-var _ Definition = (*TypeExtensionDefinition)(nil)
-var _ Definition = (*DirectiveDefinition)(nil)
-var _ Definition = (Definition)(nil)
+var _ Definition = (TypeSystemDefinition)(nil)
 
 // OperationDefinition implements Node, Definition
 type OperationDefinition struct {

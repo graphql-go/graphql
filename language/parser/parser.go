@@ -133,6 +133,12 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
 					return nil, err
 				}
 				nodes = append(nodes, node)
+			case "scalar":
+				node, err := parseScalarTypeDefinition(parser)
+				if err != nil {
+					return nil, err
+				}
+				nodes = append(nodes, node)
 			case "type":
 				node, err := parseObjectTypeDefinition(parser)
 				if err != nil {
@@ -147,12 +153,6 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
 				nodes = append(nodes, node)
 			case "union":
 				node, err := parseUnionTypeDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
-			case "scalar":
-				node, err := parseScalarTypeDefinition(parser)
 				if err != nil {
 					return nil, err
 				}
@@ -861,6 +861,26 @@ func parseNamed(parser *Parser) (*ast.Named, error) {
 /* Implements the parsing rules in the Type Definition section. */
 
 /**
+ * ScalarTypeDefinition : scalar Name
+ */
+func parseScalarTypeDefinition(parser *Parser) (*ast.ScalarDefinition, error) {
+	start := parser.Token.Start
+	_, err := expectKeyWord(parser, "scalar")
+	if err != nil {
+		return nil, err
+	}
+	name, err := parseName(parser)
+	if err != nil {
+		return nil, err
+	}
+	def := ast.NewScalarDefinition(&ast.ScalarDefinition{
+		Name: name,
+		Loc:  loc(parser, start),
+	})
+	return def, nil
+}
+
+/**
  * ObjectTypeDefinition : type Name ImplementsInterfaces? { FieldDefinition+ }
  */
 func parseObjectTypeDefinition(parser *Parser) (*ast.ObjectDefinition, error) {
@@ -1086,26 +1106,6 @@ func parseUnionMembers(parser *Parser) ([]*ast.Named, error) {
 }
 
 /**
- * ScalarTypeDefinition : scalar Name
- */
-func parseScalarTypeDefinition(parser *Parser) (*ast.ScalarDefinition, error) {
-	start := parser.Token.Start
-	_, err := expectKeyWord(parser, "scalar")
-	if err != nil {
-		return nil, err
-	}
-	name, err := parseName(parser)
-	if err != nil {
-		return nil, err
-	}
-	def := ast.NewScalarDefinition(&ast.ScalarDefinition{
-		Name: name,
-		Loc:  loc(parser, start),
-	})
-	return def, nil
-}
-
-/**
  * EnumTypeDefinition : enum Name { EnumValueDefinition+ }
  */
 func parseEnumTypeDefinition(parser *Parser) (*ast.EnumDefinition, error) {
@@ -1246,7 +1246,6 @@ func parseDirectiveDefinition(parser *Parser) (*ast.DirectiveDefinition, error) 
  *   - Name
  *   - DirectiveLocations | Name
  */
-
 func parseDirectiveLocations(parser *Parser) ([]*ast.Name, error) {
 	locations := []*ast.Name{}
 	for {

@@ -130,6 +130,8 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		}
 		return visitor.ActionNoChange, nil
 	},
+
+	// Document
 	"Document": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case *ast.Document:
@@ -258,6 +260,8 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		}
 		return visitor.ActionNoChange, nil
 	},
+
+	// Fragments
 	"FragmentSpread": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case *ast.InlineFragment:
@@ -306,6 +310,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		return visitor.ActionNoChange, nil
 	},
 
+	// Value
 	"IntValue": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case *ast.IntValue:
@@ -383,6 +388,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		return visitor.ActionNoChange, nil
 	},
 
+	// Directive
 	"Directive": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case *ast.Directive:
@@ -397,6 +403,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		return visitor.ActionNoChange, nil
 	},
 
+	// Type
 	"Named": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case *ast.Named:
@@ -425,6 +432,20 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		return visitor.ActionNoChange, nil
 	},
 
+	// Type System Definitions
+	"ScalarDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+		switch node := p.Node.(type) {
+		case *ast.ScalarDefinition:
+			name := fmt.Sprintf("%v", node.Name)
+			str := "scalar " + name
+			return visitor.ActionUpdate, str
+		case map[string]interface{}:
+			name := getMapValueString(node, "Name")
+			str := "scalar " + name
+			return visitor.ActionUpdate, str
+		}
+		return visitor.ActionNoChange, nil
+	},
 	"ObjectDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case *ast.ObjectDefinition:
@@ -502,19 +523,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 			name := getMapValueString(node, "Name")
 			types := toSliceString(getMapValue(node, "Types"))
 			str := "union " + name + " = " + join(types, " | ")
-			return visitor.ActionUpdate, str
-		}
-		return visitor.ActionNoChange, nil
-	},
-	"ScalarDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
-		switch node := p.Node.(type) {
-		case *ast.ScalarDefinition:
-			name := fmt.Sprintf("%v", node.Name)
-			str := "scalar " + name
-			return visitor.ActionUpdate, str
-		case map[string]interface{}:
-			name := getMapValueString(node, "Name")
-			str := "scalar " + name
 			return visitor.ActionUpdate, str
 		}
 		return visitor.ActionNoChange, nil

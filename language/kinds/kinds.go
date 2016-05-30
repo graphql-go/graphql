@@ -36,13 +36,15 @@ const (
 	List    = "List"    // previously ListType
 	NonNull = "NonNull" // previously NonNull
 
+	// Type System Definitions
+
 	// Types Definitions
+	ScalarDefinition      = "ScalarDefinition" // previously ScalarTypeDefinition
 	ObjectDefinition      = "ObjectDefinition" // previously ObjectTypeDefinition
 	FieldDefinition       = "FieldDefinition"
 	InputValueDefinition  = "InputValueDefinition"
 	InterfaceDefinition   = "InterfaceDefinition" // previously InterfaceTypeDefinition
 	UnionDefinition       = "UnionDefinition"     // previously UnionTypeDefinition
-	ScalarDefinition      = "ScalarDefinition"    // previously ScalarTypeDefinition
 	EnumDefinition        = "EnumDefinition"      // previously EnumTypeDefinition
 	EnumValueDefinition   = "EnumValueDefinition"
 	InputObjectDefinition = "InputObjectDefinition" // previously InputObjectTypeDefinition
