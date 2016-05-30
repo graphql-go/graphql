@@ -106,7 +106,7 @@ func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error)
 	}
 
 	if operation == nil {
-		if p.OperationName == "" {
+		if p.OperationName != "" {
 			return nil, fmt.Errorf(`Unknown operation named "%v".`, p.OperationName)
 		}
 		return nil, fmt.Errorf(`Must provide an operation`)
