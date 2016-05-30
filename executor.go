@@ -594,6 +594,8 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		panic(gqlerrors.FormatError(err))
 	}
 
+	// If field type is NonNull, complete for inner type, and throw field error
+	// if result is null.
 	if returnType, ok := returnType.(*NonNull); ok {
 		completed := completeValue(eCtx, returnType.OfType, fieldASTs, info, result)
 		if completed == nil {
@@ -606,6 +608,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		return completed
 	}
 
+	// If result value is null-ish (null, undefined, or NaN) then return null.
 	if isNullish(result) {
 		return nil
 	}
@@ -615,8 +618,8 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		return completeListValue(eCtx, returnType, fieldASTs, info, result)
 	}
 
-	// If field type is Scalar or Enum, serialize to a valid value, returning
-	// null if serialization is not possible.
+	// If field type is a leaf type, Scalar or Enum, serialize to a valid value,
+	// returning null if serialization is not possible.
 	if returnType, ok := returnType.(*Scalar); ok {
 		return completeLeafValue(eCtx, returnType, fieldASTs, info, result)
 	}
@@ -624,15 +627,18 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		return completeLeafValue(eCtx, returnType, fieldASTs, info, result)
 	}
 
-	if returnType, ok := returnType.(*Object); ok {
-		return completeObjectValue(eCtx, returnType, fieldASTs, info, result)
-	}
-
+	// If field type is an abstract type, Interface or Union, determine the
+	// runtime Object type and complete for that type.
 	if returnType, ok := returnType.(Abstract); ok {
 		return completeAbstractValue(eCtx, returnType, fieldASTs, info, result)
 	}
 
-	// Not reachable
+	// If field type is Object, execute and complete all sub-selections.
+	if returnType, ok := returnType.(*Object); ok {
+		return completeObjectValue(eCtx, returnType, fieldASTs, info, result)
+	}
+
+	// Not reachable. All possible output types have been considered.
 	err := invariant(false,
 		fmt.Sprintf(`Cannot complete value of unexpected type "%v."`, returnType),
 	)
@@ -642,7 +648,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	return nil
 }
 
-// completeObjectValue completes value of an Abstract type (Union / Interface) by determining the runtime type
+// completeAbstractValue completes value of an Abstract type (Union / Interface) by determining the runtime type
 // of that value, then completing based on that type.
 func completeAbstractValue(eCtx *ExecutionContext, returnType Abstract, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
 
@@ -664,6 +670,8 @@ func completeAbstractValue(eCtx *ExecutionContext, returnType Abstract, fieldAST
 
 	return completeObjectValue(eCtx, runtimeType, fieldASTs, info, result)
 }
+
+// completeObjectValue complete an Object value by executing all sub-selections.
 func completeObjectValue(eCtx *ExecutionContext, returnType *Object, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
 
 	// If there is an isTypeOf predicate function, call it with the
