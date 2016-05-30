@@ -585,8 +585,6 @@ func completeValueCatchingError(eCtx *ExecutionContext, returnType Type, fieldAS
 
 func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
 
-	// TODO: explore resolving go-routines in completeValue
-
 	resultVal := reflect.ValueOf(result)
 	if resultVal.IsValid() && resultVal.Type().Kind() == reflect.Func {
 		if propertyFn, ok := result.(func() interface{}); ok {
@@ -626,12 +624,14 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		return completeLeafValue(eCtx, returnType, fieldASTs, info, result)
 	}
 
+	if returnType, ok := returnType.(*Object); ok {
+		return completeObjectValue(eCtx, returnType, fieldASTs, info, result)
+	}
+
 	// ast.Field type must be Object, Interface or Union and expect sub-selections.
 	var runtimeType *Object
-	switch returnType := returnType.(type) {
-	case *Object:
-		runtimeType = returnType
-	case Abstract:
+
+	if returnType, ok := returnType.(Abstract); ok {
 		runtimeType = returnType.ObjectType(result, info)
 		if runtimeType != nil && !returnType.IsPossibleType(runtimeType) {
 			panic(gqlerrors.NewFormattedError(
@@ -640,16 +640,24 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 			))
 		}
 	}
+
 	if runtimeType == nil {
 		return nil
 	}
 
+	return completeObjectValue(eCtx, runtimeType, fieldASTs, info, result)
+
+}
+
+// completeObjectValue completes an Object value by evaluating all sub-selections
+func completeObjectValue(eCtx *ExecutionContext, returnType *Object, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
+
 	// If there is an isTypeOf predicate function, call it with the
 	// current result. If isTypeOf returns false, then raise an error rather
 	// than continuing execution.
-	if runtimeType.IsTypeOf != nil && !runtimeType.IsTypeOf(result, info) {
+	if returnType.IsTypeOf != nil && !returnType.IsTypeOf(result, info) {
 		panic(gqlerrors.NewFormattedError(
-			fmt.Sprintf(`Expected value of type "%v" but got: %T.`, runtimeType, result),
+			fmt.Sprintf(`Expected value of type "%v" but got: %T.`, returnType, result),
 		))
 	}
 
@@ -664,7 +672,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		if selectionSet != nil {
 			innerParams := CollectFieldsParams{
 				ExeContext:           eCtx,
-				RuntimeType:          runtimeType,
+				RuntimeType:          returnType,
 				SelectionSet:         selectionSet,
 				Fields:               subFieldASTs,
 				VisitedFragmentNames: visitedFragmentNames,
@@ -674,7 +682,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	}
 	executeFieldsParams := ExecuteFieldsParams{
 		ExecutionContext: eCtx,
-		ParentType:       runtimeType,
+		ParentType:       returnType,
 		Source:           result,
 		Fields:           subFieldASTs,
 	}
