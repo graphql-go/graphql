@@ -37,6 +37,8 @@ const (
 	NonNull = "NonNull" // previously NonNull
 
 	// Type System Definitions
+	SchemaDefinition        = "SchemaDefinition"
+	OperationTypeDefinition = "OperationTypeDefinition"
 
 	// Types Definitions
 	ScalarDefinition      = "ScalarDefinition" // previously ScalarTypeDefinition

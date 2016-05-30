@@ -544,13 +544,13 @@ func getLocationForAppliedNode(appliedTo ast.Node) string {
 	kind := appliedTo.GetKind()
 	if kind == kinds.OperationDefinition {
 		appliedTo, _ := appliedTo.(*ast.OperationDefinition)
-		if appliedTo.Operation == "query" {
+		if appliedTo.Operation == ast.OperationTypeQuery {
 			return DirectiveLocationQuery
 		}
-		if appliedTo.Operation == "mutation" {
+		if appliedTo.Operation == ast.OperationTypeMutation {
 			return DirectiveLocationMutation
 		}
-		if appliedTo.Operation == "subscription" {
+		if appliedTo.Operation == ast.OperationTypeSubscription {
 			return DirectiveLocationSubscription
 		}
 	}

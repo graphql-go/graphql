@@ -6,6 +6,7 @@ import (
 
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/visitor"
+	"github.com/kr/pretty"
 	"reflect"
 )
 
@@ -146,7 +147,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 	"OperationDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case *ast.OperationDefinition:
-			op := node.Operation
+			op := string(node.Operation)
 			name := fmt.Sprintf("%v", node.Name)
 
 			varDefs := wrap("(", join(toSliceString(node.VariableDefinitions), ", "), ")")
@@ -155,7 +156,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 			// Anonymous queries with no directives or variable definitions can use
 			// the query short form.
 			str := ""
-			if name == "" && directives == "" && varDefs == "" && op == "query" {
+			if name == "" && directives == "" && varDefs == "" && op == ast.OperationTypeQuery {
 				str = selectionSet
 			} else {
 				str = join([]string{
@@ -175,7 +176,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 			directives := join(toSliceString(getMapValue(node, "Directives")), " ")
 			selectionSet := getMapValueString(node, "SelectionSet")
 			str := ""
-			if name == "" && directives == "" && varDefs == "" && op == "query" {
+			if name == "" && directives == "" && varDefs == "" && op == ast.OperationTypeQuery {
 				str = selectionSet
 			} else {
 				str = join([]string{
@@ -433,6 +434,35 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 	},
 
 	// Type System Definitions
+	"SchemaDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+		pretty.Println("===SchemaDefinitions", p.Node)
+		switch node := p.Node.(type) {
+		case *ast.SchemaDefinition:
+			operationTypesBlock := block(node.OperationTypes)
+			str := fmt.Sprintf("schema %v", operationTypesBlock)
+			return visitor.ActionUpdate, str
+		case map[string]interface{}:
+			operationTypes := toSliceString(getMapValue(node, "OperationTypes"))
+			operationTypesBlock := block(operationTypes)
+			str := fmt.Sprintf("schema %v", operationTypesBlock)
+			return visitor.ActionUpdate, str
+		}
+		return visitor.ActionNoChange, nil
+	},
+	"OperationTypeDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
+		pretty.Println("===OperationTypeDefinition", p.Node)
+		switch node := p.Node.(type) {
+		case *ast.OperationTypeDefinition:
+			str := fmt.Sprintf("%v: %v", node.Operation, node.Type)
+			return visitor.ActionUpdate, str
+		case map[string]interface{}:
+			operation := getMapValueString(node, "Operation")
+			ttype := getMapValueString(node, "Type")
+			str := fmt.Sprintf("%v: %v", operation, ttype)
+			return visitor.ActionUpdate, str
+		}
+		return visitor.ActionNoChange, nil
+	},
 	"ScalarDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case *ast.ScalarDefinition:

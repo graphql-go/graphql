@@ -15,7 +15,14 @@ type Definition interface {
 // Ensure that all definition types implements Definition interface
 var _ Definition = (*OperationDefinition)(nil)
 var _ Definition = (*FragmentDefinition)(nil)
-var _ Definition = (TypeSystemDefinition)(nil)
+var _ Definition = (TypeSystemDefinition)(nil) // experimental non-spec addition.
+
+// Note: subscription is an experimental non-spec addition.
+const (
+	OperationTypeQuery        = "query"
+	OperationTypeMutation     = "mutation"
+	OperationTypeSubscription = "subscription"
+)
 
 // OperationDefinition implements Node, Definition
 type OperationDefinition struct {

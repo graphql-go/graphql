@@ -27,9 +27,76 @@ type TypeSystemDefinition interface {
 	GetLoc() *Location
 }
 
+var _ TypeSystemDefinition = (*SchemaDefinition)(nil)
 var _ TypeSystemDefinition = (TypeDefinition)(nil)
 var _ TypeSystemDefinition = (*TypeExtensionDefinition)(nil)
 var _ TypeSystemDefinition = (*DirectiveDefinition)(nil)
+
+// SchemaDefinition implements Node, Definition
+type SchemaDefinition struct {
+	Kind           string
+	Loc            *Location
+	OperationTypes []*OperationTypeDefinition
+}
+
+func NewSchemaDefinition(def *SchemaDefinition) *SchemaDefinition {
+	if def == nil {
+		def = &SchemaDefinition{}
+	}
+	return &SchemaDefinition{
+		Kind:           kinds.SchemaDefinition,
+		Loc:            def.Loc,
+		OperationTypes: def.OperationTypes,
+	}
+}
+
+func (def *SchemaDefinition) GetKind() string {
+	return def.Kind
+}
+
+func (def *SchemaDefinition) GetLoc() *Location {
+	return def.Loc
+}
+
+func (def *SchemaDefinition) GetVariableDefinitions() []*VariableDefinition {
+	return []*VariableDefinition{}
+}
+
+func (def *SchemaDefinition) GetSelectionSet() *SelectionSet {
+	return &SelectionSet{}
+}
+
+func (def *SchemaDefinition) GetOperation() string {
+	return ""
+}
+
+// ScalarDefinition implements Node, Definition
+type OperationTypeDefinition struct {
+	Kind      string
+	Loc       *Location
+	Operation string
+	Type      *Named
+}
+
+func NewOperationTypeDefinition(def *OperationTypeDefinition) *OperationTypeDefinition {
+	if def == nil {
+		def = &OperationTypeDefinition{}
+	}
+	return &OperationTypeDefinition{
+		Kind:      kinds.OperationTypeDefinition,
+		Loc:       def.Loc,
+		Operation: def.Operation,
+		Type:      def.Type,
+	}
+}
+
+func (def *OperationTypeDefinition) GetKind() string {
+	return def.Kind
+}
+
+func (def *OperationTypeDefinition) GetLoc() *Location {
+	return def.Loc
+}
 
 // ScalarDefinition implements Node, Definition
 type ScalarDefinition struct {

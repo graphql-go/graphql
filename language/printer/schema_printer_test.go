@@ -53,7 +53,12 @@ func TestSchemaPrinter_PrintsKitchenSink(t *testing.T) {
 
 	query := string(b)
 	astDoc := parse(t, query)
-	expected := `type Foo implements Bar {
+	expected := `schema {
+  query: QueryType
+  mutation: MutationType
+}
+
+type Foo implements Bar {
   one: Type
   two(argument: InputType!): Type
   three(argument: InputType, other: String): Int
