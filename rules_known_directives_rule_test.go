@@ -79,8 +79,8 @@ func TestValidate_KnownDirectives_WithMisplacedDirectives(t *testing.T) {
         ...Frag @operationOnly
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Directive "include" may not be used on "operation".`, 2, 17),
-		testutil.RuleError(`Directive "operationOnly" may not be used on "field".`, 3, 14),
-		testutil.RuleError(`Directive "operationOnly" may not be used on "fragment".`, 4, 17),
+		testutil.RuleError(`Directive "include" may not be used on QUERY.`, 2, 17),
+		testutil.RuleError(`Directive "operationOnly" may not be used on FIELD.`, 3, 14),
+		testutil.RuleError(`Directive "operationOnly" may not be used on FRAGMENT_SPREAD.`, 4, 17),
 	})
 }

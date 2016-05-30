@@ -460,8 +460,8 @@ func init() {
 		Query: queryRoot,
 		Directives: []*graphql.Directive{
 			graphql.NewDirective(&graphql.Directive{
-				Name:        "operationOnly",
-				OnOperation: true,
+				Name:      "operationOnly",
+				Locations: []string{graphql.DirectiveLocationQuery},
 			}),
 			graphql.IncludeDirective,
 			graphql.SkipDirective,

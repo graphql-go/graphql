@@ -461,6 +461,10 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 	}
 }
 
+func MisplaceDirectiveMessage(directiveName string, location string) string {
+	return fmt.Sprintf(`Directive "%v" may not be used on %v.`, directiveName, location)
+}
+
 // KnownDirectivesRule Known directives
 //
 // A GraphQL document is only valid if all `@directives` are known by the
@@ -501,26 +505,26 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 							return action, result
 						}
 
-						if appliedTo.GetKind() == kinds.OperationDefinition && directiveDef.OnOperation == false {
+						candidateLocation := getLocationForAppliedNode(appliedTo)
+
+						directiveHasLocation := false
+						for _, loc := range directiveDef.Locations {
+							if loc == candidateLocation {
+								directiveHasLocation = true
+								break
+							}
+						}
+
+						if candidateLocation == "" {
 							reportError(
 								context,
-								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "operation"),
+								MisplaceDirectiveMessage(nodeName, node.GetKind()),
 								[]ast.Node{node},
 							)
-						}
-						if appliedTo.GetKind() == kinds.Field && directiveDef.OnField == false {
+						} else if !directiveHasLocation {
 							reportError(
 								context,
-								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "field"),
-								[]ast.Node{node},
-							)
-						}
-						if (appliedTo.GetKind() == kinds.FragmentSpread ||
-							appliedTo.GetKind() == kinds.InlineFragment ||
-							appliedTo.GetKind() == kinds.FragmentDefinition) && directiveDef.OnFragment == false {
-							reportError(
-								context,
-								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "fragment"),
+								MisplaceDirectiveMessage(nodeName, candidateLocation),
 								[]ast.Node{node},
 							)
 						}
@@ -534,6 +538,35 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 	return &ValidationRuleInstance{
 		VisitorOpts: visitorOpts,
 	}
+}
+
+func getLocationForAppliedNode(appliedTo ast.Node) string {
+	kind := appliedTo.GetKind()
+	if kind == kinds.OperationDefinition {
+		appliedTo, _ := appliedTo.(*ast.OperationDefinition)
+		if appliedTo.Operation == "query" {
+			return DirectiveLocationQuery
+		}
+		if appliedTo.Operation == "mutation" {
+			return DirectiveLocationMutation
+		}
+		if appliedTo.Operation == "subscription" {
+			return DirectiveLocationSubscription
+		}
+	}
+	if kind == kinds.Field {
+		return DirectiveLocationField
+	}
+	if kind == kinds.FragmentSpread {
+		return DirectiveLocationFragmentSpread
+	}
+	if kind == kinds.InlineFragment {
+		return DirectiveLocationInlineFragment
+	}
+	if kind == kinds.FragmentDefinition {
+		return DirectiveLocationFragmentDefinition
+	}
+	return ""
 }
 
 // KnownFragmentNamesRule Known fragment names

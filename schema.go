@@ -62,6 +62,12 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 			SkipDirective,
 		}
 	}
+	// Ensure directive definitions are error-free
+	for _, dir := range schema.directives {
+		if dir.err != nil {
+			return schema, dir.err
+		}
+	}
 
 	// Build type map now to detect any errors within this schema.
 	typeMap := TypeMap{}

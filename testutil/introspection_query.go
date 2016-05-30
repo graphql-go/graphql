@@ -12,12 +12,10 @@ var IntrospectionQuery = `
       directives {
         name
         description
+		locations
         args {
           ...InputValue
         }
-        onOperation
-        onFragment
-        onField
       }
     }
   }
