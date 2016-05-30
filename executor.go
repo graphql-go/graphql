@@ -620,18 +620,10 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	// If field type is Scalar or Enum, serialize to a valid value, returning
 	// null if serialization is not possible.
 	if returnType, ok := returnType.(*Scalar); ok {
-		serializedResult := returnType.Serialize(result)
-		if isNullish(serializedResult) {
-			return nil
-		}
-		return serializedResult
+		return completeLeafValue(eCtx, returnType, fieldASTs, info, result)
 	}
 	if returnType, ok := returnType.(*Enum); ok {
-		serializedResult := returnType.Serialize(result)
-		if isNullish(serializedResult) {
-			return nil
-		}
-		return serializedResult
+		return completeLeafValue(eCtx, returnType, fieldASTs, info, result)
 	}
 
 	// ast.Field type must be Object, Interface or Union and expect sub-selections.
@@ -690,6 +682,13 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 
 	return results.Data
 
+}
+func completeLeafValue(eCtx *ExecutionContext, returnType Leaf, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
+	serializedResult := returnType.Serialize(result)
+	if isNullish(serializedResult) {
+		return nil
+	}
+	return serializedResult
 }
 
 // completeListValue complete a list value by completeing each item in the list with the inner type

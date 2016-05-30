@@ -77,6 +77,18 @@ func IsOutputType(ttype Type) bool {
 	return false
 }
 
+// Leaf interface for types that may be leaf values
+type Leaf interface {
+	Name() string
+	Description() string
+	String() string
+	Error() error
+	Serialize(value interface{}) interface{}
+}
+
+var _ Leaf = (*Scalar)(nil)
+var _ Leaf = (*Enum)(nil)
+
 // IsLeafType determines if given type is a leaf value
 func IsLeafType(ttype Type) bool {
 	named := GetNamed(ttype)
