@@ -143,7 +143,6 @@ func IsCompositeType(ttype interface{}) bool {
 // Abstract interface for types that may describe the parent context of a selection set.
 type Abstract interface {
 	Name() string
-	ObjectType(value interface{}, info ResolveInfo) *Object
 	PossibleTypes() []*Object
 	IsPossibleType(ttype *Object) bool
 }
@@ -760,30 +759,11 @@ func (it *Interface) IsPossibleType(ttype *Object) bool {
 	}
 	return false
 }
-func (it *Interface) ObjectType(value interface{}, info ResolveInfo) *Object {
-	if it.ResolveType != nil {
-		return it.ResolveType(value, info)
-	}
-	return getTypeOf(value, info, it)
-}
 func (it *Interface) String() string {
 	return it.PrivateName
 }
 func (it *Interface) Error() error {
 	return it.err
-}
-
-func getTypeOf(value interface{}, info ResolveInfo, abstractType Abstract) *Object {
-	possibleTypes := abstractType.PossibleTypes()
-	for _, possibleType := range possibleTypes {
-		if possibleType.IsTypeOf == nil {
-			continue
-		}
-		if res := possibleType.IsTypeOf(value, info); res {
-			return possibleType
-		}
-	}
-	return nil
 }
 
 // Union Type Definition
@@ -900,12 +880,6 @@ func (ut *Union) IsPossibleType(ttype *Object) bool {
 		return val
 	}
 	return false
-}
-func (ut *Union) ObjectType(value interface{}, info ResolveInfo) *Object {
-	if ut.ResolveType != nil {
-		return ut.ResolveType(value, info)
-	}
-	return getTypeOf(value, info, ut)
 }
 func (ut *Union) String() string {
 	return ut.PrivateName

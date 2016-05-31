@@ -654,14 +654,19 @@ func completeAbstractValue(eCtx *ExecutionContext, returnType Abstract, fieldAST
 
 	var runtimeType *Object
 
-	if returnType, ok := returnType.(Abstract); ok {
-		runtimeType = returnType.ObjectType(result, info)
-		if runtimeType != nil && !returnType.IsPossibleType(runtimeType) {
-			panic(gqlerrors.NewFormattedError(
-				fmt.Sprintf(`Runtime Object type "%v" is not a possible type `+
-					`for "%v".`, runtimeType, returnType),
-			))
-		}
+	if unionReturnType, ok := returnType.(*Union); ok && unionReturnType.ResolveType != nil {
+		runtimeType = unionReturnType.ResolveType(result, info)
+	} else if interfaceReturnType, ok := returnType.(*Interface); ok && interfaceReturnType.ResolveType != nil {
+		runtimeType = interfaceReturnType.ResolveType(result, info)
+	} else {
+		runtimeType = defaultResolveTypeFn(result, info, returnType)
+	}
+
+	if runtimeType != nil && !returnType.IsPossibleType(runtimeType) {
+		panic(gqlerrors.NewFormattedError(
+			fmt.Sprintf(`Runtime Object type "%v" is not a possible type `+
+				`for "%v".`, runtimeType, returnType),
+		))
 	}
 
 	if runtimeType == nil {
@@ -749,6 +754,26 @@ func completeListValue(eCtx *ExecutionContext, returnType *List, fieldASTs []*as
 	return completedResults
 }
 
+// defaultResolveTypeFn If a resolveType function is not given, then a default resolve behavior is
+// used which tests each possible type for the abstract type by calling
+// isTypeOf for the object being coerced, returning the first type that matches.
+func defaultResolveTypeFn(value interface{}, info ResolveInfo, abstractType Abstract) *Object {
+	possibleTypes := abstractType.PossibleTypes()
+	for _, possibleType := range possibleTypes {
+		if possibleType.IsTypeOf == nil {
+			continue
+		}
+		if res := possibleType.IsTypeOf(value, info); res {
+			return possibleType
+		}
+	}
+	return nil
+}
+
+// defaultResolveFn If a resolve function is not given, then a default resolve behavior is used
+// which takes the property of the source object of the same name as the field
+// and returns it as the result, or if it's a function, returns the result
+// of calling that function.
 func defaultResolveFn(p ResolveParams) (interface{}, error) {
 	// try to resolve p.Source as a struct first
 	sourceVal := reflect.ValueOf(p.Source)
