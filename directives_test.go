@@ -515,3 +515,66 @@ func TestDirectivesWorksOnFragmentUnlessTrueOmitsFragment(t *testing.T) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
+
+func TestDirectivesWorksWithSkipAndIncludeDirectives_IncludeAndNoSkip(t *testing.T) {
+	query := `{ a, b @include(if: true) @skip(if: false) }`
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"a": "a",
+			"b": "b",
+		},
+	}
+	result := executeDirectivesTestQuery(t, query)
+	if len(result.Errors) != 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
+func TestDirectivesWorksWithSkipAndIncludeDirectives_IncludeAndSkip(t *testing.T) {
+	query := `{ a, b @include(if: true) @skip(if: true) }`
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"a": "a",
+		},
+	}
+	result := executeDirectivesTestQuery(t, query)
+	if len(result.Errors) != 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+func TestDirectivesWorksWithSkipAndIncludeDirectives_NoIncludeAndSkip(t *testing.T) {
+	query := `{ a, b @include(if: false) @skip(if: true) }`
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"a": "a",
+		},
+	}
+	result := executeDirectivesTestQuery(t, query)
+	if len(result.Errors) != 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+func TestDirectivesWorksWithSkipAndIncludeDirectives_NoIncludeOrSkip(t *testing.T) {
+	query := `{ a, b @include(if: false) @skip(if: false) }`
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"a": "a",
+		},
+	}
+	result := executeDirectivesTestQuery(t, query)
+	if len(result.Errors) != 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}

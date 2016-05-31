@@ -371,12 +371,11 @@ func shouldIncludeNode(eCtx *ExecutionContext, directives []*ast.Directive) bool
 		if err != nil {
 			return defaultReturnValue
 		}
-		if skipIf, ok := argValues["if"]; ok {
-			if boolSkipIf, ok := skipIf.(bool); ok {
-				return !boolSkipIf
+		if skipIf, ok := argValues["if"].(bool); ok {
+			if skipIf {
+				return false
 			}
 		}
-		return defaultReturnValue
 	}
 	for _, directive := range directives {
 		if directive == nil || directive.Name == nil {
