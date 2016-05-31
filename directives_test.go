@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/gqlerrors"
+	"github.com/graphql-go/graphql/language/location"
 	"github.com/graphql-go/graphql/testutil"
 )
 
@@ -35,6 +37,120 @@ func executeDirectivesTestQuery(t *testing.T, doc string) *graphql.Result {
 		Root:   directivesTestData,
 	}
 	return testutil.TestExecute(t, ep)
+}
+
+func TestDirectives_DirectivesMustBeNamed(t *testing.T) {
+	invalidDirective := graphql.NewDirective(graphql.DirectiveConfig{
+		Locations: []string{
+			graphql.DirectiveLocationField,
+		},
+	})
+	_, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "TestType",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{
+					Type: graphql.String,
+				},
+			},
+		}),
+		Directives: []*graphql.Directive{invalidDirective},
+	})
+	expectedErr := gqlerrors.FormattedError{
+		Message:   "Directive must be named.",
+		Locations: []location.SourceLocation{},
+	}
+	if !reflect.DeepEqual(expectedErr, err) {
+		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, err))
+	}
+}
+
+func TestDirectives_DirectiveNameMustBeValid(t *testing.T) {
+	invalidDirective := graphql.NewDirective(graphql.DirectiveConfig{
+		Name: "123invalid name",
+		Locations: []string{
+			graphql.DirectiveLocationField,
+		},
+	})
+	_, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "TestType",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{
+					Type: graphql.String,
+				},
+			},
+		}),
+		Directives: []*graphql.Directive{invalidDirective},
+	})
+	expectedErr := gqlerrors.FormattedError{
+		Message:   `Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "123invalid name" does not.`,
+		Locations: []location.SourceLocation{},
+	}
+	if !reflect.DeepEqual(expectedErr, err) {
+		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, err))
+	}
+}
+
+func TestDirectives_DirectiveNameMustProvideLocations(t *testing.T) {
+	invalidDirective := graphql.NewDirective(graphql.DirectiveConfig{
+		Name: "skip",
+	})
+	_, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "TestType",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{
+					Type: graphql.String,
+				},
+			},
+		}),
+		Directives: []*graphql.Directive{invalidDirective},
+	})
+	expectedErr := gqlerrors.FormattedError{
+		Message:   `Must provide locations for directive.`,
+		Locations: []location.SourceLocation{},
+	}
+	if !reflect.DeepEqual(expectedErr, err) {
+		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, err))
+	}
+}
+
+func TestDirectives_DirectiveArgNamesMustBeValid(t *testing.T) {
+	invalidDirective := graphql.NewDirective(graphql.DirectiveConfig{
+		Name: "skip",
+		Description: "Directs the executor to skip this field or fragment when the `if` " +
+			"argument is true.",
+		Args: graphql.FieldConfigArgument{
+			"123if": &graphql.ArgumentConfig{
+				Type:        graphql.NewNonNull(graphql.Boolean),
+				Description: "Skipped when true.",
+			},
+		},
+		Locations: []string{
+			graphql.DirectiveLocationField,
+			graphql.DirectiveLocationFragmentSpread,
+			graphql.DirectiveLocationInlineFragment,
+		},
+	})
+	_, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "TestType",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{
+					Type: graphql.String,
+				},
+			},
+		}),
+		Directives: []*graphql.Directive{invalidDirective},
+	})
+	expectedErr := gqlerrors.FormattedError{
+		Message:   `Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "123if" does not.`,
+		Locations: []location.SourceLocation{},
+	}
+	if !reflect.DeepEqual(expectedErr, err) {
+		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, err))
+	}
 }
 
 func TestDirectivesWorksWithoutDirectives(t *testing.T) {
