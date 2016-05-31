@@ -70,7 +70,7 @@ func init() {
 	})
 	var dogType = graphql.NewObject(graphql.ObjectConfig{
 		Name: "Dog",
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 			return true
 		},
 		Fields: graphql.Fields{
@@ -146,7 +146,7 @@ func init() {
 
 	var catType = graphql.NewObject(graphql.ObjectConfig{
 		Name: "Cat",
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 			return true
 		},
 		Fields: graphql.Fields{
@@ -182,7 +182,7 @@ func init() {
 			dogType,
 			catType,
 		},
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			// not used for validation
 			return nil
 		},
@@ -198,7 +198,7 @@ func init() {
 
 	var humanType = graphql.NewObject(graphql.ObjectConfig{
 		Name: "Human",
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 			return true
 		},
 		Interfaces: []*graphql.Interface{
@@ -229,7 +229,7 @@ func init() {
 
 	var alienType = graphql.NewObject(graphql.ObjectConfig{
 		Name: "Alien",
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 			return true
 		},
 		Interfaces: []*graphql.Interface{
@@ -259,7 +259,7 @@ func init() {
 			dogType,
 			humanType,
 		},
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			// not used for validation
 			return nil
 		},
@@ -270,7 +270,7 @@ func init() {
 			alienType,
 			humanType,
 		},
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			// not used for validation
 			return nil
 		},

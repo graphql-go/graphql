@@ -291,7 +291,7 @@ var schema graphql.Schema
 func init() {
 	someBoxInterface = graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "SomeBox",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return stringBoxObject
 		},
 		Fields: graphql.Fields{
@@ -330,7 +330,7 @@ func init() {
 	})
 	var nonNullStringBox1Interface = graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "NonNullStringBox1",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return stringBoxObject
 		},
 		Fields: graphql.Fields{
@@ -355,7 +355,7 @@ func init() {
 	})
 	var nonNullStringBox2Interface = graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "NonNullStringBox2",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return stringBoxObject
 		},
 		Fields: graphql.Fields{

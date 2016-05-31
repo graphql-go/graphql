@@ -29,7 +29,7 @@ var someObjectType = graphql.NewObject(graphql.ObjectConfig{
 })
 var objectWithIsTypeOf = graphql.NewObject(graphql.ObjectConfig{
 	Name: "ObjectWithIsTypeOf",
-	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+	IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 		return true
 	},
 	Fields: graphql.Fields{
@@ -40,7 +40,7 @@ var objectWithIsTypeOf = graphql.NewObject(graphql.ObjectConfig{
 })
 var someUnionType = graphql.NewUnion(graphql.UnionConfig{
 	Name: "SomeUnion",
-	ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+	ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 		return nil
 	},
 	Types: []*graphql.Object{
@@ -49,7 +49,7 @@ var someUnionType = graphql.NewUnion(graphql.UnionConfig{
 })
 var someInterfaceType = graphql.NewInterface(graphql.InterfaceConfig{
 	Name: "SomeInterface",
-	ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+	ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 		return nil
 	},
 	Fields: graphql.Fields{
@@ -181,7 +181,7 @@ func schemaWithUnionOfType(ttype *graphql.Object) (graphql.Schema, error) {
 
 	badObjectType := graphql.NewUnion(graphql.UnionConfig{
 		Name: "BadUnion",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Types: []*graphql.Object{ttype},
@@ -389,7 +389,7 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichHaveS
 
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -548,7 +548,7 @@ func TestTypeSystem_FieldsArgsMustBeObjects_AcceptsAnObjectTypeWithFieldArgs(t *
 func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithArrayInterfaces(t *testing.T) {
 	anotherInterfaceType := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -576,7 +576,7 @@ func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithArrayInte
 func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithInterfacesAsFunctionReturningAnArray(t *testing.T) {
 	anotherInterfaceType := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -602,7 +602,7 @@ func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithInterface
 func TestTypeSystem_UnionTypesMustBeArray_AcceptsAUnionTypeWithArrayTypes(t *testing.T) {
 	_, err := schemaWithFieldType(graphql.NewUnion(graphql.UnionConfig{
 		Name: "SomeUnion",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Types: []*graphql.Object{
@@ -616,7 +616,7 @@ func TestTypeSystem_UnionTypesMustBeArray_AcceptsAUnionTypeWithArrayTypes(t *tes
 func TestTypeSystem_UnionTypesMustBeArray_RejectsAUnionTypeWithoutTypes(t *testing.T) {
 	_, err := schemaWithFieldType(graphql.NewUnion(graphql.UnionConfig{
 		Name: "SomeUnion",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 	}))
@@ -628,7 +628,7 @@ func TestTypeSystem_UnionTypesMustBeArray_RejectsAUnionTypeWithoutTypes(t *testi
 func TestTypeSystem_UnionTypesMustBeArray_RejectsAUnionTypeWithEmptyTypes(t *testing.T) {
 	_, err := schemaWithFieldType(graphql.NewUnion(graphql.UnionConfig{
 		Name: "SomeUnion",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Types: []*graphql.Object{},
@@ -692,7 +692,7 @@ func TestTypeSystem_InputObjectsMustHaveFields_RejectsAnInputObjectTypeWithEmpty
 func TestTypeSystem_ObjectTypesMustBeAssertable_AcceptsAnObjectTypeWithAnIsTypeOfFunction(t *testing.T) {
 	_, err := schemaWithFieldType(graphql.NewObject(graphql.ObjectConfig{
 		Name: "AnotherObject",
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 			return true
 		},
 		Fields: graphql.Fields{
@@ -710,7 +710,7 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceTypeDefinin
 
 	anotherInterfaceType := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -745,7 +745,7 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceWithImpleme
 	_, err := schemaWithFieldType(graphql.NewObject(graphql.ObjectConfig{
 		Name:       "SomeObject",
 		Interfaces: []*graphql.Interface{anotherInterfaceType},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 			return true
 		},
 		Fields: graphql.Fields{
@@ -763,7 +763,7 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceTypeDefinin
 
 	anotherInterfaceType := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -775,7 +775,7 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceTypeDefinin
 	_, err := schemaWithFieldType(graphql.NewObject(graphql.ObjectConfig{
 		Name:       "SomeObject",
 		Interfaces: []*graphql.Interface{anotherInterfaceType},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 			return true
 		},
 		Fields: graphql.Fields{
@@ -794,7 +794,7 @@ func TestTypeSystem_UnionTypesMustBeResolvable_AcceptsAUnionTypeDefiningResolveT
 	_, err := schemaWithFieldType(graphql.NewUnion(graphql.UnionConfig{
 		Name:  "SomeUnion",
 		Types: []*graphql.Object{someObjectType},
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 	}))
@@ -817,7 +817,7 @@ func TestTypeSystem_UnionTypesMustBeResolvable_AcceptsAUnionTypeDefiningResolveT
 	_, err := schemaWithFieldType(graphql.NewUnion(graphql.UnionConfig{
 		Name:  "SomeUnion",
 		Types: []*graphql.Object{objectWithIsTypeOf},
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 	}))
@@ -985,7 +985,7 @@ func TestTypeSystem_ObjectFieldsMustHaveOutputTypes_RejectsAnEmptyObjectFieldTyp
 func TestTypeSystem_ObjectsCanOnlyImplementInterfaces_AcceptsAnObjectImplementingAnInterface(t *testing.T) {
 	anotherInterfaceType := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -1123,7 +1123,7 @@ func TestTypeSystem_NonNullMustAcceptGraphQLTypes_RejectsNilAsNonNullableType(t 
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhichImplementsAnInterface(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -1159,7 +1159,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhichImplementsAnInterfaceAlongWithMoreFields(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -1198,7 +1198,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhichImpementsAnInterfaceFieldAlongWithAdditionalOptionalArguments(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -1237,7 +1237,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWhichImplementsAnInterfaceFieldAlongWithAdditionalRequiredArguments(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -1277,7 +1277,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWhi
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMissingAnInterfaceField(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -1310,7 +1310,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMis
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWithAnIncorrectlyTypedInterfaceField(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -1356,7 +1356,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -1385,7 +1385,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWit
 	var anotherInterface *graphql.Interface
 	anotherInterface = graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: (graphql.FieldsThunk)(func() graphql.Fields {
@@ -1416,7 +1416,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWit
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWithASubtypedInterfaceField_Union(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -1442,7 +1442,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWit
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMissingAnInterfaceArgument(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -1474,7 +1474,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMis
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWithAnIncorrectlyTypedInterfaceArgument(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -1511,7 +1511,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWithAnEquivalentlyModifiedInterfaceField(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -1537,7 +1537,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWit
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWithANonListInterfaceFieldListType(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -1565,7 +1565,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWithAListInterfaceFieldNonListType(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -1593,7 +1593,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWithSubsetNonNullInterfaceFieldType(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{
@@ -1620,7 +1620,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWit
 func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWithASupersetNullableInterfaceFieldType(t *testing.T) {
 	anotherInterface := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "AnotherInterface",
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return nil
 		},
 		Fields: graphql.Fields{

@@ -41,8 +41,8 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 		Interfaces: []*graphql.Interface{
 			petType,
 		},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*testDog)
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
+			_, ok := p.Value.(*testDog)
 			return ok
 		},
 		Fields: graphql.Fields{
@@ -72,8 +72,8 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 		Interfaces: []*graphql.Interface{
 			petType,
 		},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*testCat)
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
+			_, ok := p.Value.(*testCat)
 			return ok
 		},
 		Fields: graphql.Fields{
@@ -162,8 +162,8 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 
 	dogType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Dog",
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*testDog)
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
+			_, ok := p.Value.(*testDog)
 			return ok
 		},
 		Fields: graphql.Fields{
@@ -177,8 +177,8 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 	})
 	catType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Cat",
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*testCat)
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
+			_, ok := p.Value.(*testCat)
 			return ok
 		},
 		Fields: graphql.Fields{
@@ -270,14 +270,14 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 				Type: graphql.String,
 			},
 		},
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
-			if _, ok := value.(*testCat); ok {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
+			if _, ok := p.Value.(*testCat); ok {
 				return catType
 			}
-			if _, ok := value.(*testDog); ok {
+			if _, ok := p.Value.(*testDog); ok {
 				return dogType
 			}
-			if _, ok := value.(*testHuman); ok {
+			if _, ok := p.Value.(*testHuman); ok {
 				return humanType
 			}
 			return nil
@@ -425,14 +425,14 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 		Types: []*graphql.Object{
 			dogType, catType,
 		},
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
-			if _, ok := value.(*testCat); ok {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
+			if _, ok := p.Value.(*testCat); ok {
 				return catType
 			}
-			if _, ok := value.(*testDog); ok {
+			if _, ok := p.Value.(*testDog); ok {
 				return dogType
 			}
-			if _, ok := value.(*testHuman); ok {
+			if _, ok := p.Value.(*testHuman); ok {
 				return humanType
 			}
 			return nil

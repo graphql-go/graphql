@@ -114,7 +114,7 @@ var blogSubscription = graphql.NewObject(graphql.ObjectConfig{
 
 var objectType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Object",
-	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+	IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 		return true
 	},
 })
@@ -352,7 +352,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesSubTypesInTheTypeMap(t *
 			},
 		},
 		Interfaces: []*graphql.Interface{someInterface},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 			return true
 		},
 	})
@@ -396,7 +396,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesThunkSubtypesInTheTypeMa
 		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
 			return []*graphql.Interface{someInterface}
 		}),
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 			return true
 		},
 	})

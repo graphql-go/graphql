@@ -1261,8 +1261,8 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 
 	specialType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "SpecialType",
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			if _, ok := value.(testSpecialType); ok {
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
+			if _, ok := p.Value.(testSpecialType); ok {
 				return true
 			}
 			return false
