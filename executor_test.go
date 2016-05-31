@@ -405,6 +405,56 @@ func TestCorrectlyThreadsArguments(t *testing.T) {
 	}
 }
 
+func TestThreadsRootValueContextCorrectly(t *testing.T) {
+
+	query := `
+      query Example { a }
+    `
+
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Type",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{
+					Type: graphql.String,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						val, _ := p.Info.RootValue.(map[string]interface{})["stringKey"].(string)
+						return val, nil
+					},
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	// parse query
+	ast := testutil.TestParse(t, query)
+
+	// execute
+	ep := graphql.ExecuteParams{
+		Schema: schema,
+		AST:    ast,
+		Root: map[string]interface{}{
+			"stringKey": "stringValue",
+		},
+	}
+	result := testutil.TestExecute(t, ep)
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"a": "stringValue",
+		},
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
 func TestThreadsContextCorrectly(t *testing.T) {
 
 	query := `
