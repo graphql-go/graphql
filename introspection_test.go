@@ -790,6 +790,10 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 							},
 						},
 					},
+					// deprecated, but included for coverage till removed
+					"onOperation": false,
+					"onFragment":  true,
+					"onField":     true,
 				},
 				map[string]interface{}{
 					"name": "skip",
@@ -813,6 +817,10 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 							},
 						},
 					},
+					// deprecated, but included for coverage till removed
+					"onOperation": false,
+					"onFragment":  true,
+					"onField":     true,
 				},
 			},
 		},

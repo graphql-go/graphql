@@ -16,6 +16,10 @@ var IntrospectionQuery = `
         args {
           ...InputValue
         }
+        # deprecated, but included for coverage till removed
+		onOperation
+        onFragment
+        onField
       }
     }
   }
