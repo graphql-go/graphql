@@ -286,6 +286,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReportsDeepConflictToNearestCommo
 
 var someBoxInterface *graphql.Interface
 var stringBoxObject *graphql.Object
+var intBoxObject *graphql.Object
 var schema graphql.Schema
 
 func init() {
@@ -294,39 +295,72 @@ func init() {
 		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
 			return stringBoxObject
 		},
-		Fields: graphql.Fields{
-			"unrelatedField": &graphql.Field{
-				Type: graphql.String,
-			},
-		},
+		Fields: graphql.FieldsThunk(func() graphql.Fields {
+			return graphql.Fields{
+				"deepBox": &graphql.Field{
+					Type: someBoxInterface,
+				},
+				"unrelatedField": &graphql.Field{
+					Type: graphql.String,
+				},
+			}
+		}),
 	})
 	stringBoxObject = graphql.NewObject(graphql.ObjectConfig{
 		Name: "StringBox",
 		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
 			return []*graphql.Interface{someBoxInterface}
 		}),
-		Fields: graphql.Fields{
-			"scalar": &graphql.Field{
-				Type: graphql.String,
-			},
-			"unrelatedField": &graphql.Field{
-				Type: graphql.String,
-			},
-		},
+		Fields: graphql.FieldsThunk(func() graphql.Fields {
+			return graphql.Fields{
+				"scalar": &graphql.Field{
+					Type: graphql.String,
+				},
+				"deepBox": &graphql.Field{
+					Type: stringBoxObject,
+				},
+				"unrelatedField": &graphql.Field{
+					Type: graphql.String,
+				},
+				"listStringBox": &graphql.Field{
+					Type: graphql.NewList(stringBoxObject),
+				},
+				"stringBox": &graphql.Field{
+					Type: stringBoxObject,
+				},
+				"intBox": &graphql.Field{
+					Type: intBoxObject,
+				},
+			}
+		}),
 	})
-	IntBox := graphql.NewObject(graphql.ObjectConfig{
+	intBoxObject = graphql.NewObject(graphql.ObjectConfig{
 		Name: "IntBox",
 		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
 			return []*graphql.Interface{someBoxInterface}
 		}),
-		Fields: graphql.Fields{
-			"scalar": &graphql.Field{
-				Type: graphql.Int,
-			},
-			"unrelatedField": &graphql.Field{
-				Type: graphql.String,
-			},
-		},
+		Fields: graphql.FieldsThunk(func() graphql.Fields {
+			return graphql.Fields{
+				"scalar": &graphql.Field{
+					Type: graphql.Int,
+				},
+				"deepBox": &graphql.Field{
+					Type: someBoxInterface,
+				},
+				"unrelatedField": &graphql.Field{
+					Type: graphql.String,
+				},
+				"listStringBox": &graphql.Field{
+					Type: graphql.NewList(stringBoxObject),
+				},
+				"stringBox": &graphql.Field{
+					Type: stringBoxObject,
+				},
+				"intBox": &graphql.Field{
+					Type: intBoxObject,
+				},
+			}
+		}),
 	})
 	var nonNullStringBox1Interface = graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "NonNullStringBox1",
@@ -350,6 +384,9 @@ func init() {
 			},
 			"unrelatedField": &graphql.Field{
 				Type: graphql.String,
+			},
+			"deepBox": &graphql.Field{
+				Type: someBoxInterface,
 			},
 		},
 	})
@@ -375,6 +412,9 @@ func init() {
 			},
 			"unrelatedField": &graphql.Field{
 				Type: graphql.String,
+			},
+			"deepBox": &graphql.Field{
+				Type: someBoxInterface,
 			},
 		},
 	})
@@ -418,7 +458,8 @@ func init() {
 			},
 		}),
 		Types: []graphql.Type{
-			IntBox,
+			intBoxObject,
+			stringBoxObject,
 			NonNullStringBox1Impl,
 			NonNullStringBox2Impl,
 		},
@@ -446,20 +487,172 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Conf
         }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(
-			`Fields "scalar" conflict because they return differing types Int and String!.`,
+			`Fields "scalar" conflict because they return conflicting types Int and String!.`,
 			5, 15,
 			8, 15),
 	})
 }
-func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_AllowsDiffereingReturnTypesWhichCannotOverlap(t *testing.T) {
-	// This is valid since an object cannot be both an IntBox and a StringBox.
+func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_CompatibleReturnShapesOnDifferentReturnTypes(t *testing.T) {
+	// In this case `deepBox` returns `SomeBox` in the first usage, and
+	// `StringBox` in the second usage. These return types are not the same!
+	// however this is valid because the return *shapes* are compatible.
+	testutil.ExpectPassesRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+      {
+        someBox {
+          ... on SomeBox {
+            deepBox {
+              unrelatedField
+            }
+          }
+          ... on StringBox {
+            deepBox {
+              unrelatedField
+            }
+          }
+        }
+      }
+    `)
+}
+func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_DisallowsDifferingReturnTypesDespiteNoOverlap(t *testing.T) {
+	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+        {
+          someBox {
+            ... on IntBox {
+              scalar
+            }
+            ... on StringBox {
+              scalar
+            }
+          }
+        }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(
+			`Fields "scalar" conflict because they return conflicting types Int and String.`,
+			5, 15,
+			8, 15),
+	})
+}
+func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_DisallowsDifferingReturnTypeNullabilityDespiteNoOverlap(t *testing.T) {
+	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+        {
+          someBox {
+            ... on NonNullStringBox1 {
+              scalar
+            }
+            ... on StringBox {
+              scalar
+            }
+          }
+        }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(
+			`Fields "scalar" conflict because they return conflicting types String! and String.`,
+			5, 15,
+			8, 15),
+	})
+}
+func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_DisallowsDifferingReturnTypeListDespiteNoOverlap(t *testing.T) {
+	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+        {
+          someBox {
+            ... on IntBox {
+              box: listStringBox {
+                scalar
+              }
+            }
+            ... on StringBox {
+              box: stringBox {
+                scalar
+              }
+            }
+          }
+        }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(
+			`Fields "box" conflict because they return conflicting types [StringBox] and StringBox.`,
+			5, 15,
+			10, 15),
+	})
+
+	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+        {
+          someBox {
+            ... on IntBox {
+              box: stringBox {
+                scalar
+              }
+            }
+            ... on StringBox {
+              box: listStringBox {
+                scalar
+              }
+            }
+          }
+        }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(
+			`Fields "box" conflict because they return conflicting types StringBox and [StringBox].`,
+			5, 15,
+			10, 15),
+	})
+}
+func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_DisallowsDifferingSubfields(t *testing.T) {
+	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+        {
+          someBox {
+            ... on IntBox {
+              box: stringBox {
+                val: scalar
+                val: unrelatedField
+              }
+            }
+            ... on StringBox {
+              box: stringBox {
+                val: scalar
+              }
+            }
+          }
+        }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(
+			`Fields "val" conflict because scalar and unrelatedField are different fields.`,
+			6, 17,
+			7, 17),
+	})
+}
+func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_DisallowsDifferingDeepReturnTypesDespiteNoOverlap(t *testing.T) {
+	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+        {
+          someBox {
+            ... on IntBox {
+              box: stringBox {
+                scalar
+              }
+            }
+            ... on StringBox {
+              box: intBox {
+                scalar
+              }
+            }
+          }
+        }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(
+			`Fields "box" conflict because subfields "scalar" conflict because they return conflicting types String and Int.`,
+			5, 15,
+			6, 17,
+			10, 15,
+			11, 17),
+	})
+}
+func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_AllowsNonConflictingOverlappingTypes(t *testing.T) {
 	testutil.ExpectPassesRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
           someBox {
-            ...on IntBox {
-              scalar
+            ... on IntBox {
+              scalar: unrelatedField
             }
-            ...on StringBox {
+            ... on StringBox {
               scalar
             }
           }

@@ -1245,6 +1245,40 @@ func sameType(typeA, typeB Type) bool {
 	return false
 }
 
+// Two types conflict if both types could not apply to a value simultaneously.
+// Composite types are ignored as their individual field types will be compared
+// later recursively. However List and Non-Null types must match.
+func doTypesConflict(type1 Output, type2 Output) bool {
+	if type1, ok := type1.(*List); ok {
+		if type2, ok := type2.(*List); ok {
+			return doTypesConflict(type1.OfType, type2.OfType)
+		}
+		return true
+	}
+	if type2, ok := type2.(*List); ok {
+		if type1, ok := type1.(*List); ok {
+			return doTypesConflict(type1.OfType, type2.OfType)
+		}
+		return true
+	}
+	if type1, ok := type1.(*NonNull); ok {
+		if type2, ok := type2.(*NonNull); ok {
+			return doTypesConflict(type1.OfType, type2.OfType)
+		}
+		return true
+	}
+	if type2, ok := type2.(*NonNull); ok {
+		if type1, ok := type1.(*NonNull); ok {
+			return doTypesConflict(type1.OfType, type2.OfType)
+		}
+		return true
+	}
+	if IsLeafType(type1) || IsLeafType(type2) {
+		return type1 != type2
+	}
+	return false
+}
+
 // OverlappingFieldsCanBeMergedRule Overlapping fields can be merged
 //
 // A selection set is only valid if all fields (including spreading any
@@ -1252,9 +1286,12 @@ func sameType(typeA, typeB Type) bool {
 // without ambiguity.
 func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRuleInstance {
 
+	var getSubfieldMap func(ast1 *ast.Field, type1 Output, ast2 *ast.Field, type2 Output) map[string][]*fieldDefPair
+	var subfieldConflicts func(conflicts []*conflict, responseName string, ast1 *ast.Field, ast2 *ast.Field) *conflict
+	var findConflicts func(parentFieldsAreMutuallyExclusive bool, fieldMap map[string][]*fieldDefPair) (conflicts []*conflict)
+
 	comparedSet := newPairSet()
-	var findConflicts func(fieldMap map[string][]*fieldDefPair) (conflicts []*conflict)
-	findConflict := func(responseName string, field *fieldDefPair, field2 *fieldDefPair) *conflict {
+	findConflict := func(parentFieldsAreMutuallyExclusive bool, responseName string, field *fieldDefPair, field2 *fieldDefPair) *conflict {
 
 		parentType1 := field.ParentType
 		ast1 := field.Field
@@ -1269,46 +1306,21 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 			return nil
 		}
 
-		// If the statically known parent types could not possibly apply at the same
-		// time, then it is safe to permit them to diverge as they will not present
-		// any ambiguity by differing.
-		// It is known that two parent types could never overlap if they are
-		// different Object types. Interface or Union types might overlap - if not
-		// in the current state of the schema, then perhaps in some future version,
-		// thus may not safely diverge.
-		if parentType1 != parentType2 {
-			_, ok1 := parentType1.(*Object)
-			_, ok2 := parentType2.(*Object)
-			if ok1 && ok2 {
-				return nil
-			}
-		}
-
 		// Memoize, do not report the same issue twice.
+		// Note: Two overlapping ASTs could be encountered both when
+		// `parentFieldsAreMutuallyExclusive` is true and is false, which could
+		// produce different results (when `true` being a subset of `false`).
+		// However we do not need to include this piece of information when
+		// memoizing since this rule visits leaf fields before their parent fields,
+		// ensuring that `parentFieldsAreMutuallyExclusive` is `false` the first
+		// time two overlapping fields are encountered, ensuring that the full
+		// set of validation rules are always checked when necessary.
 		if comparedSet.Has(ast1, ast2) {
 			return nil
 		}
 		comparedSet.Add(ast1, ast2)
 
-		name1 := ""
-		if ast1.Name != nil {
-			name1 = ast1.Name.Value
-		}
-		name2 := ""
-		if ast2.Name != nil {
-			name2 = ast2.Name.Value
-		}
-		if name1 != name2 {
-			return &conflict{
-				Reason: conflictReason{
-					Name:    responseName,
-					Message: fmt.Sprintf(`%v and %v are different fields`, name1, name2),
-				},
-				FieldsLeft:  []ast.Node{ast1},
-				FieldsRight: []ast.Node{ast2},
-			}
-		}
-
+		// The return type for each field.
 		var type1 Type
 		var type2 Type
 		if def1 != nil {
@@ -1318,27 +1330,74 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 			type2 = def2.Type
 		}
 
-		if type1 != nil && type2 != nil && !sameType(type1, type2) {
-			return &conflict{
-				Reason: conflictReason{
-					Name:    responseName,
-					Message: fmt.Sprintf(`they return differing types %v and %v`, type1, type2),
-				},
-				FieldsLeft:  []ast.Node{ast1},
-				FieldsRight: []ast.Node{ast2},
+		// If it is known that two fields could not possibly apply at the same
+		// time, due to the parent types, then it is safe to permit them to diverge
+		// in aliased field or arguments used as they will not present any ambiguity
+		// by differing.
+		// It is known that two parent types could never overlap if they are
+		// different Object types. Interface or Union types might overlap - if not
+		// in the current state of the schema, then perhaps in some future version,
+		// thus may not safely diverge.
+		_, isParentType1Object := parentType1.(*Object)
+		_, isParentType2Object := parentType2.(*Object)
+		fieldsAreMutuallyExclusive := parentFieldsAreMutuallyExclusive || parentType1 != parentType2 && isParentType1Object && isParentType2Object
+
+		if !fieldsAreMutuallyExclusive {
+			// Two aliases must refer to the same field.
+			name1 := ""
+			name2 := ""
+
+			if ast1.Name != nil {
+				name1 = ast1.Name.Value
+			}
+			if ast2.Name != nil {
+				name2 = ast2.Name.Value
+			}
+			if name1 != name2 {
+				return &conflict{
+					Reason: conflictReason{
+						Name:    responseName,
+						Message: fmt.Sprintf(`%v and %v are different fields`, name1, name2),
+					},
+					FieldsLeft:  []ast.Node{ast1},
+					FieldsRight: []ast.Node{ast2},
+				}
+			}
+
+			// Two field calls must have the same arguments.
+			if !sameArguments(ast1.Arguments, ast2.Arguments) {
+				return &conflict{
+					Reason: conflictReason{
+						Name:    responseName,
+						Message: `they have differing arguments`,
+					},
+					FieldsLeft:  []ast.Node{ast1},
+					FieldsRight: []ast.Node{ast2},
+				}
 			}
 		}
-		if !sameArguments(ast1.Arguments, ast2.Arguments) {
+
+		if type1 != nil && type2 != nil && doTypesConflict(type1, type2) {
 			return &conflict{
 				Reason: conflictReason{
 					Name:    responseName,
-					Message: `they have differing arguments`,
+					Message: fmt.Sprintf(`they return conflicting types %v and %v`, type1, type2),
 				},
 				FieldsLeft:  []ast.Node{ast1},
 				FieldsRight: []ast.Node{ast2},
 			}
 		}
 
+		subFieldMap := getSubfieldMap(ast1, type1, ast2, type2)
+		if subFieldMap != nil {
+			conflicts := findConflicts(fieldsAreMutuallyExclusive, subFieldMap)
+			return subfieldConflicts(conflicts, responseName, ast1, ast2)
+		}
+
+		return nil
+	}
+
+	getSubfieldMap = func(ast1 *ast.Field, type1 Output, ast2 *ast.Field, type2 Output) map[string][]*fieldDefPair {
 		selectionSet1 := ast1.SelectionSet
 		selectionSet2 := ast2.SelectionSet
 		if selectionSet1 != nil && selectionSet2 != nil {
@@ -1357,32 +1416,34 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 				visitedFragmentNames,
 				subfieldMap,
 			)
-			conflicts := findConflicts(subfieldMap)
-			if len(conflicts) > 0 {
-
-				conflictReasons := []conflictReason{}
-				conflictFieldsLeft := []ast.Node{ast1}
-				conflictFieldsRight := []ast.Node{ast2}
-				for _, c := range conflicts {
-					conflictReasons = append(conflictReasons, c.Reason)
-					conflictFieldsLeft = append(conflictFieldsLeft, c.FieldsLeft...)
-					conflictFieldsRight = append(conflictFieldsRight, c.FieldsRight...)
-				}
-
-				return &conflict{
-					Reason: conflictReason{
-						Name:    responseName,
-						Message: conflictReasons,
-					},
-					FieldsLeft:  conflictFieldsLeft,
-					FieldsRight: conflictFieldsRight,
-				}
-			}
+			return subfieldMap
 		}
 		return nil
 	}
 
-	findConflicts = func(fieldMap map[string][]*fieldDefPair) (conflicts []*conflict) {
+	subfieldConflicts = func(conflicts []*conflict, responseName string, ast1 *ast.Field, ast2 *ast.Field) *conflict {
+		if len(conflicts) > 0 {
+			conflictReasons := []conflictReason{}
+			conflictFieldsLeft := []ast.Node{ast1}
+			conflictFieldsRight := []ast.Node{ast2}
+			for _, c := range conflicts {
+				conflictReasons = append(conflictReasons, c.Reason)
+				conflictFieldsLeft = append(conflictFieldsLeft, c.FieldsLeft...)
+				conflictFieldsRight = append(conflictFieldsRight, c.FieldsRight...)
+			}
+
+			return &conflict{
+				Reason: conflictReason{
+					Name:    responseName,
+					Message: conflictReasons,
+				},
+				FieldsLeft:  conflictFieldsLeft,
+				FieldsRight: conflictFieldsRight,
+			}
+		}
+		return nil
+	}
+	findConflicts = func(parentFieldsAreMutuallyExclusive bool, fieldMap map[string][]*fieldDefPair) (conflicts []*conflict) {
 
 		// ensure field traversal
 		orderedName := sort.StringSlice{}
@@ -1395,7 +1456,7 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 			fields, _ := fieldMap[responseName]
 			for _, fieldA := range fields {
 				for _, fieldB := range fields {
-					c := findConflict(responseName, fieldA, fieldB)
+					c := findConflict(parentFieldsAreMutuallyExclusive, responseName, fieldA, fieldB)
 					if c != nil {
 						conflicts = append(conflicts, c)
 					}
@@ -1429,6 +1490,9 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
 			kinds.SelectionSet: visitor.NamedVisitFuncs{
+				// Note: we validate on the reverse traversal so deeper conflicts will be
+				// caught first, for correct calculation of mutual exclusivity and for
+				// clearer error messages.
 				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if selectionSet, ok := p.Node.(*ast.SelectionSet); ok && selectionSet != nil {
 						parentType, _ := context.ParentType().(Named)
@@ -1439,7 +1503,7 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 							nil,
 							nil,
 						)
-						conflicts := findConflicts(fieldMap)
+						conflicts := findConflicts(false, fieldMap)
 						if len(conflicts) > 0 {
 							for _, c := range conflicts {
 								responseName := c.Reason.Name
