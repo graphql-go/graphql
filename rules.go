@@ -67,7 +67,7 @@ func reportError(context *ValidationContext, message string, nodes []ast.Node) (
 func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Argument: visitor.NamedVisitFuncs{
+			kinds.Argument: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if argAST, ok := p.Node.(*ast.Argument); ok {
 						value := argAST.Value
@@ -111,7 +111,7 @@ func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInsta
 func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.VariableDefinition: visitor.NamedVisitFuncs{
+			kinds.VariableDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if varDefAST, ok := p.Node.(*ast.VariableDefinition); ok {
 						name := ""
@@ -196,7 +196,7 @@ func UndefinedFieldMessage(fieldName string, ttypeName string, suggestedTypes []
 func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Field: visitor.NamedVisitFuncs{
+			kinds.Field: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					var action = visitor.ActionNoChange
 					var result interface{}
@@ -214,9 +214,9 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 									nodeName = node.Name.Value
 								}
 
-								if ttype, ok := ttype.(Abstract); ok {
-									siblingInterfaces := getSiblingInterfacesIncludingField(ttype, nodeName)
-									implementations := getImplementationsIncludingField(ttype, nodeName)
+								if ttype, ok := ttype.(Abstract); ok && IsAbstractType(ttype) {
+									siblingInterfaces := getSiblingInterfacesIncludingField(context.Schema(), ttype, nodeName)
+									implementations := getImplementationsIncludingField(context.Schema(), ttype, nodeName)
 									suggestedMaps := map[string]bool{}
 									for _, s := range siblingInterfaces {
 										if _, ok := suggestedMaps[s]; !ok {
@@ -253,10 +253,10 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 }
 
 // Return implementations of `type` that include `fieldName` as a valid field.
-func getImplementationsIncludingField(ttype Abstract, fieldName string) []string {
+func getImplementationsIncludingField(schema *Schema, ttype Abstract, fieldName string) []string {
 
 	result := []string{}
-	for _, t := range ttype.PossibleTypes() {
+	for _, t := range schema.PossibleTypes(ttype) {
 		fields := t.Fields()
 		if _, ok := fields[fieldName]; ok {
 			result = append(result, fmt.Sprintf(`%v`, t.Name()))
@@ -271,8 +271,8 @@ func getImplementationsIncludingField(ttype Abstract, fieldName string) []string
 // that they implement. If those interfaces include `field` as a valid field,
 // return them, sorted by how often the implementations include the other
 // interface.
-func getSiblingInterfacesIncludingField(ttype Abstract, fieldName string) []string {
-	implementingObjects := ttype.PossibleTypes()
+func getSiblingInterfacesIncludingField(schema *Schema, ttype Abstract, fieldName string) []string {
+	implementingObjects := schema.PossibleTypes(ttype)
 
 	result := []string{}
 	suggestedInterfaceSlice := []*suggestedInterface{}
@@ -339,7 +339,7 @@ func (s suggestedInterfaceSortedSlice) Less(i, j int) bool {
 func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.InlineFragment: visitor.NamedVisitFuncs{
+			kinds.InlineFragment: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.InlineFragment); ok {
 						ttype := context.Type()
@@ -354,7 +354,7 @@ func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleIn
 					return visitor.ActionNoChange, nil
 				},
 			},
-			kinds.FragmentDefinition: visitor.NamedVisitFuncs{
+			kinds.FragmentDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.FragmentDefinition); ok {
 						ttype := context.Type()
@@ -387,7 +387,7 @@ func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleIn
 func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Argument: visitor.NamedVisitFuncs{
+			kinds.Argument: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					var action = visitor.ActionNoChange
 					var result interface{}
@@ -461,6 +461,10 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 	}
 }
 
+func MisplaceDirectiveMessage(directiveName string, location string) string {
+	return fmt.Sprintf(`Directive "%v" may not be used on %v.`, directiveName, location)
+}
+
 // KnownDirectivesRule Known directives
 //
 // A GraphQL document is only valid if all `@directives` are known by the
@@ -468,7 +472,7 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Directive: visitor.NamedVisitFuncs{
+			kinds.Directive: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					var action = visitor.ActionNoChange
 					var result interface{}
@@ -501,26 +505,26 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 							return action, result
 						}
 
-						if appliedTo.GetKind() == kinds.OperationDefinition && directiveDef.OnOperation == false {
+						candidateLocation := getLocationForAppliedNode(appliedTo)
+
+						directiveHasLocation := false
+						for _, loc := range directiveDef.Locations {
+							if loc == candidateLocation {
+								directiveHasLocation = true
+								break
+							}
+						}
+
+						if candidateLocation == "" {
 							reportError(
 								context,
-								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "operation"),
+								MisplaceDirectiveMessage(nodeName, node.GetKind()),
 								[]ast.Node{node},
 							)
-						}
-						if appliedTo.GetKind() == kinds.Field && directiveDef.OnField == false {
+						} else if !directiveHasLocation {
 							reportError(
 								context,
-								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "field"),
-								[]ast.Node{node},
-							)
-						}
-						if (appliedTo.GetKind() == kinds.FragmentSpread ||
-							appliedTo.GetKind() == kinds.InlineFragment ||
-							appliedTo.GetKind() == kinds.FragmentDefinition) && directiveDef.OnFragment == false {
-							reportError(
-								context,
-								fmt.Sprintf(`Directive "%v" may not be used on "%v".`, nodeName, "fragment"),
+								MisplaceDirectiveMessage(nodeName, candidateLocation),
 								[]ast.Node{node},
 							)
 						}
@@ -536,6 +540,35 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 	}
 }
 
+func getLocationForAppliedNode(appliedTo ast.Node) string {
+	kind := appliedTo.GetKind()
+	if kind == kinds.OperationDefinition {
+		appliedTo, _ := appliedTo.(*ast.OperationDefinition)
+		if appliedTo.Operation == ast.OperationTypeQuery {
+			return DirectiveLocationQuery
+		}
+		if appliedTo.Operation == ast.OperationTypeMutation {
+			return DirectiveLocationMutation
+		}
+		if appliedTo.Operation == ast.OperationTypeSubscription {
+			return DirectiveLocationSubscription
+		}
+	}
+	if kind == kinds.Field {
+		return DirectiveLocationField
+	}
+	if kind == kinds.FragmentSpread {
+		return DirectiveLocationFragmentSpread
+	}
+	if kind == kinds.InlineFragment {
+		return DirectiveLocationInlineFragment
+	}
+	if kind == kinds.FragmentDefinition {
+		return DirectiveLocationFragmentDefinition
+	}
+	return ""
+}
+
 // KnownFragmentNamesRule Known fragment names
 //
 // A GraphQL document is only valid if all `...Fragment` fragment spreads refer
@@ -543,7 +576,7 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 func KnownFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.FragmentSpread: visitor.NamedVisitFuncs{
+			kinds.FragmentSpread: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					var action = visitor.ActionNoChange
 					var result interface{}
@@ -580,27 +613,27 @@ func KnownFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 func KnownTypeNamesRule(context *ValidationContext) *ValidationRuleInstance {
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.ObjectDefinition: visitor.NamedVisitFuncs{
+			kinds.ObjectDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					return visitor.ActionSkip, nil
 				},
 			},
-			kinds.InterfaceDefinition: visitor.NamedVisitFuncs{
+			kinds.InterfaceDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					return visitor.ActionSkip, nil
 				},
 			},
-			kinds.UnionDefinition: visitor.NamedVisitFuncs{
+			kinds.UnionDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					return visitor.ActionSkip, nil
 				},
 			},
-			kinds.InputObjectDefinition: visitor.NamedVisitFuncs{
+			kinds.InputObjectDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					return visitor.ActionSkip, nil
 				},
 			},
-			kinds.Named: visitor.NamedVisitFuncs{
+			kinds.Named: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.Named); ok {
 						typeNameValue := ""
@@ -635,7 +668,7 @@ func LoneAnonymousOperationRule(context *ValidationContext) *ValidationRuleInsta
 	var operationCount = 0
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Document: visitor.NamedVisitFuncs{
+			kinds.Document: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.Document); ok {
 						operationCount = 0
@@ -648,7 +681,7 @@ func LoneAnonymousOperationRule(context *ValidationContext) *ValidationRuleInsta
 					return visitor.ActionNoChange, nil
 				},
 			},
-			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.OperationDefinition); ok {
 						if node.Name == nil && operationCount > 1 {
@@ -778,12 +811,12 @@ func NoFragmentCyclesRule(context *ValidationContext) *ValidationRuleInstance {
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					return visitor.ActionSkip, nil
 				},
 			},
-			kinds.FragmentDefinition: visitor.NamedVisitFuncs{
+			kinds.FragmentDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.FragmentDefinition); ok && node != nil {
 						nodeName := ""
@@ -820,7 +853,7 @@ func NoUndefinedVariablesRule(context *ValidationContext) *ValidationRuleInstanc
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: {
 				Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 					variableNameDefined = map[string]bool{}
 					return visitor.ActionNoChange, nil
@@ -856,7 +889,7 @@ func NoUndefinedVariablesRule(context *ValidationContext) *ValidationRuleInstanc
 					return visitor.ActionNoChange, nil
 				},
 			},
-			kinds.VariableDefinition: visitor.NamedVisitFuncs{
+			kinds.VariableDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.VariableDefinition); ok && node != nil {
 						variableName := ""
@@ -886,7 +919,7 @@ func NoUnusedFragmentsRule(context *ValidationContext) *ValidationRuleInstance {
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.OperationDefinition); ok && node != nil {
 						operationDefs = append(operationDefs, node)
@@ -894,7 +927,7 @@ func NoUnusedFragmentsRule(context *ValidationContext) *ValidationRuleInstance {
 					return visitor.ActionSkip, nil
 				},
 			},
-			kinds.FragmentDefinition: visitor.NamedVisitFuncs{
+			kinds.FragmentDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.FragmentDefinition); ok && node != nil {
 						fragmentDefs = append(fragmentDefs, node)
@@ -902,7 +935,7 @@ func NoUnusedFragmentsRule(context *ValidationContext) *ValidationRuleInstance {
 					return visitor.ActionSkip, nil
 				},
 			},
-			kinds.Document: visitor.NamedVisitFuncs{
+			kinds.Document: {
 				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 					fragmentNameUsed := map[string]bool{}
 					for _, operation := range operationDefs {
@@ -958,7 +991,7 @@ func NoUnusedVariablesRule(context *ValidationContext) *ValidationRuleInstance {
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: {
 				Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 					variableDefs = []*ast.VariableDefinition{}
 					return visitor.ActionNoChange, nil
@@ -1000,7 +1033,7 @@ func NoUnusedVariablesRule(context *ValidationContext) *ValidationRuleInstance {
 					return visitor.ActionNoChange, nil
 				},
 			},
-			kinds.VariableDefinition: visitor.NamedVisitFuncs{
+			kinds.VariableDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if def, ok := p.Node.(*ast.VariableDefinition); ok && def != nil {
 						variableDefs = append(variableDefs, def)
@@ -1212,6 +1245,40 @@ func sameType(typeA, typeB Type) bool {
 	return false
 }
 
+// Two types conflict if both types could not apply to a value simultaneously.
+// Composite types are ignored as their individual field types will be compared
+// later recursively. However List and Non-Null types must match.
+func doTypesConflict(type1 Output, type2 Output) bool {
+	if type1, ok := type1.(*List); ok {
+		if type2, ok := type2.(*List); ok {
+			return doTypesConflict(type1.OfType, type2.OfType)
+		}
+		return true
+	}
+	if type2, ok := type2.(*List); ok {
+		if type1, ok := type1.(*List); ok {
+			return doTypesConflict(type1.OfType, type2.OfType)
+		}
+		return true
+	}
+	if type1, ok := type1.(*NonNull); ok {
+		if type2, ok := type2.(*NonNull); ok {
+			return doTypesConflict(type1.OfType, type2.OfType)
+		}
+		return true
+	}
+	if type2, ok := type2.(*NonNull); ok {
+		if type1, ok := type1.(*NonNull); ok {
+			return doTypesConflict(type1.OfType, type2.OfType)
+		}
+		return true
+	}
+	if IsLeafType(type1) || IsLeafType(type2) {
+		return type1 != type2
+	}
+	return false
+}
+
 // OverlappingFieldsCanBeMergedRule Overlapping fields can be merged
 //
 // A selection set is only valid if all fields (including spreading any
@@ -1219,9 +1286,12 @@ func sameType(typeA, typeB Type) bool {
 // without ambiguity.
 func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRuleInstance {
 
+	var getSubfieldMap func(ast1 *ast.Field, type1 Output, ast2 *ast.Field, type2 Output) map[string][]*fieldDefPair
+	var subfieldConflicts func(conflicts []*conflict, responseName string, ast1 *ast.Field, ast2 *ast.Field) *conflict
+	var findConflicts func(parentFieldsAreMutuallyExclusive bool, fieldMap map[string][]*fieldDefPair) (conflicts []*conflict)
+
 	comparedSet := newPairSet()
-	var findConflicts func(fieldMap map[string][]*fieldDefPair) (conflicts []*conflict)
-	findConflict := func(responseName string, field *fieldDefPair, field2 *fieldDefPair) *conflict {
+	findConflict := func(parentFieldsAreMutuallyExclusive bool, responseName string, field *fieldDefPair, field2 *fieldDefPair) *conflict {
 
 		parentType1 := field.ParentType
 		ast1 := field.Field
@@ -1236,46 +1306,21 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 			return nil
 		}
 
-		// If the statically known parent types could not possibly apply at the same
-		// time, then it is safe to permit them to diverge as they will not present
-		// any ambiguity by differing.
-		// It is known that two parent types could never overlap if they are
-		// different Object types. Interface or Union types might overlap - if not
-		// in the current state of the schema, then perhaps in some future version,
-		// thus may not safely diverge.
-		if parentType1 != parentType2 {
-			_, ok1 := parentType1.(*Object)
-			_, ok2 := parentType2.(*Object)
-			if ok1 && ok2 {
-				return nil
-			}
-		}
-
 		// Memoize, do not report the same issue twice.
+		// Note: Two overlapping ASTs could be encountered both when
+		// `parentFieldsAreMutuallyExclusive` is true and is false, which could
+		// produce different results (when `true` being a subset of `false`).
+		// However we do not need to include this piece of information when
+		// memoizing since this rule visits leaf fields before their parent fields,
+		// ensuring that `parentFieldsAreMutuallyExclusive` is `false` the first
+		// time two overlapping fields are encountered, ensuring that the full
+		// set of validation rules are always checked when necessary.
 		if comparedSet.Has(ast1, ast2) {
 			return nil
 		}
 		comparedSet.Add(ast1, ast2)
 
-		name1 := ""
-		if ast1.Name != nil {
-			name1 = ast1.Name.Value
-		}
-		name2 := ""
-		if ast2.Name != nil {
-			name2 = ast2.Name.Value
-		}
-		if name1 != name2 {
-			return &conflict{
-				Reason: conflictReason{
-					Name:    responseName,
-					Message: fmt.Sprintf(`%v and %v are different fields`, name1, name2),
-				},
-				FieldsLeft:  []ast.Node{ast1},
-				FieldsRight: []ast.Node{ast2},
-			}
-		}
-
+		// The return type for each field.
 		var type1 Type
 		var type2 Type
 		if def1 != nil {
@@ -1285,27 +1330,74 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 			type2 = def2.Type
 		}
 
-		if type1 != nil && type2 != nil && !sameType(type1, type2) {
-			return &conflict{
-				Reason: conflictReason{
-					Name:    responseName,
-					Message: fmt.Sprintf(`they return differing types %v and %v`, type1, type2),
-				},
-				FieldsLeft:  []ast.Node{ast1},
-				FieldsRight: []ast.Node{ast2},
+		// If it is known that two fields could not possibly apply at the same
+		// time, due to the parent types, then it is safe to permit them to diverge
+		// in aliased field or arguments used as they will not present any ambiguity
+		// by differing.
+		// It is known that two parent types could never overlap if they are
+		// different Object types. Interface or Union types might overlap - if not
+		// in the current state of the schema, then perhaps in some future version,
+		// thus may not safely diverge.
+		_, isParentType1Object := parentType1.(*Object)
+		_, isParentType2Object := parentType2.(*Object)
+		fieldsAreMutuallyExclusive := parentFieldsAreMutuallyExclusive || parentType1 != parentType2 && isParentType1Object && isParentType2Object
+
+		if !fieldsAreMutuallyExclusive {
+			// Two aliases must refer to the same field.
+			name1 := ""
+			name2 := ""
+
+			if ast1.Name != nil {
+				name1 = ast1.Name.Value
+			}
+			if ast2.Name != nil {
+				name2 = ast2.Name.Value
+			}
+			if name1 != name2 {
+				return &conflict{
+					Reason: conflictReason{
+						Name:    responseName,
+						Message: fmt.Sprintf(`%v and %v are different fields`, name1, name2),
+					},
+					FieldsLeft:  []ast.Node{ast1},
+					FieldsRight: []ast.Node{ast2},
+				}
+			}
+
+			// Two field calls must have the same arguments.
+			if !sameArguments(ast1.Arguments, ast2.Arguments) {
+				return &conflict{
+					Reason: conflictReason{
+						Name:    responseName,
+						Message: `they have differing arguments`,
+					},
+					FieldsLeft:  []ast.Node{ast1},
+					FieldsRight: []ast.Node{ast2},
+				}
 			}
 		}
-		if !sameArguments(ast1.Arguments, ast2.Arguments) {
+
+		if type1 != nil && type2 != nil && doTypesConflict(type1, type2) {
 			return &conflict{
 				Reason: conflictReason{
 					Name:    responseName,
-					Message: `they have differing arguments`,
+					Message: fmt.Sprintf(`they return conflicting types %v and %v`, type1, type2),
 				},
 				FieldsLeft:  []ast.Node{ast1},
 				FieldsRight: []ast.Node{ast2},
 			}
 		}
 
+		subFieldMap := getSubfieldMap(ast1, type1, ast2, type2)
+		if subFieldMap != nil {
+			conflicts := findConflicts(fieldsAreMutuallyExclusive, subFieldMap)
+			return subfieldConflicts(conflicts, responseName, ast1, ast2)
+		}
+
+		return nil
+	}
+
+	getSubfieldMap = func(ast1 *ast.Field, type1 Output, ast2 *ast.Field, type2 Output) map[string][]*fieldDefPair {
 		selectionSet1 := ast1.SelectionSet
 		selectionSet2 := ast2.SelectionSet
 		if selectionSet1 != nil && selectionSet2 != nil {
@@ -1324,32 +1416,34 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 				visitedFragmentNames,
 				subfieldMap,
 			)
-			conflicts := findConflicts(subfieldMap)
-			if len(conflicts) > 0 {
-
-				conflictReasons := []conflictReason{}
-				conflictFieldsLeft := []ast.Node{ast1}
-				conflictFieldsRight := []ast.Node{ast2}
-				for _, c := range conflicts {
-					conflictReasons = append(conflictReasons, c.Reason)
-					conflictFieldsLeft = append(conflictFieldsLeft, c.FieldsLeft...)
-					conflictFieldsRight = append(conflictFieldsRight, c.FieldsRight...)
-				}
-
-				return &conflict{
-					Reason: conflictReason{
-						Name:    responseName,
-						Message: conflictReasons,
-					},
-					FieldsLeft:  conflictFieldsLeft,
-					FieldsRight: conflictFieldsRight,
-				}
-			}
+			return subfieldMap
 		}
 		return nil
 	}
 
-	findConflicts = func(fieldMap map[string][]*fieldDefPair) (conflicts []*conflict) {
+	subfieldConflicts = func(conflicts []*conflict, responseName string, ast1 *ast.Field, ast2 *ast.Field) *conflict {
+		if len(conflicts) > 0 {
+			conflictReasons := []conflictReason{}
+			conflictFieldsLeft := []ast.Node{ast1}
+			conflictFieldsRight := []ast.Node{ast2}
+			for _, c := range conflicts {
+				conflictReasons = append(conflictReasons, c.Reason)
+				conflictFieldsLeft = append(conflictFieldsLeft, c.FieldsLeft...)
+				conflictFieldsRight = append(conflictFieldsRight, c.FieldsRight...)
+			}
+
+			return &conflict{
+				Reason: conflictReason{
+					Name:    responseName,
+					Message: conflictReasons,
+				},
+				FieldsLeft:  conflictFieldsLeft,
+				FieldsRight: conflictFieldsRight,
+			}
+		}
+		return nil
+	}
+	findConflicts = func(parentFieldsAreMutuallyExclusive bool, fieldMap map[string][]*fieldDefPair) (conflicts []*conflict) {
 
 		// ensure field traversal
 		orderedName := sort.StringSlice{}
@@ -1362,7 +1456,7 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 			fields, _ := fieldMap[responseName]
 			for _, fieldA := range fields {
 				for _, fieldB := range fields {
-					c := findConflict(responseName, fieldA, fieldB)
+					c := findConflict(parentFieldsAreMutuallyExclusive, responseName, fieldA, fieldB)
 					if c != nil {
 						conflicts = append(conflicts, c)
 					}
@@ -1395,7 +1489,10 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.SelectionSet: visitor.NamedVisitFuncs{
+			kinds.SelectionSet: {
+				// Note: we validate on the reverse traversal so deeper conflicts will be
+				// caught first, for correct calculation of mutual exclusivity and for
+				// clearer error messages.
 				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if selectionSet, ok := p.Node.(*ast.SelectionSet); ok && selectionSet != nil {
 						parentType, _ := context.ParentType().(Named)
@@ -1406,7 +1503,7 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 							nil,
 							nil,
 						)
-						conflicts := findConflicts(fieldMap)
+						conflicts := findConflicts(false, fieldMap)
 						if len(conflicts) > 0 {
 							for _, c := range conflicts {
 								responseName := c.Reason.Name
@@ -1443,7 +1540,7 @@ func getFragmentType(context *ValidationContext, name string) Type {
 	return ttype
 }
 
-func doTypesOverlap(t1 Type, t2 Type) bool {
+func doTypesOverlap(schema *Schema, t1 Type, t2 Type) bool {
 	if t1 == t2 {
 		return true
 	}
@@ -1452,7 +1549,7 @@ func doTypesOverlap(t1 Type, t2 Type) bool {
 			return false
 		}
 		if t2, ok := t2.(Abstract); ok {
-			for _, ttype := range t2.PossibleTypes() {
+			for _, ttype := range schema.PossibleTypes(t2) {
 				if ttype == t1 {
 					return true
 				}
@@ -1462,7 +1559,7 @@ func doTypesOverlap(t1 Type, t2 Type) bool {
 	}
 	if t1, ok := t1.(Abstract); ok {
 		if _, ok := t2.(*Object); ok {
-			for _, ttype := range t1.PossibleTypes() {
+			for _, ttype := range schema.PossibleTypes(t1) {
 				if ttype == t2 {
 					return true
 				}
@@ -1470,11 +1567,11 @@ func doTypesOverlap(t1 Type, t2 Type) bool {
 			return false
 		}
 		t1TypeNames := map[string]bool{}
-		for _, ttype := range t1.PossibleTypes() {
+		for _, ttype := range schema.PossibleTypes(t1) {
 			t1TypeNames[ttype.Name()] = true
 		}
 		if t2, ok := t2.(Abstract); ok {
-			for _, ttype := range t2.PossibleTypes() {
+			for _, ttype := range schema.PossibleTypes(t2) {
 				if hasT1TypeName, _ := t1TypeNames[ttype.Name()]; hasT1TypeName {
 					return true
 				}
@@ -1494,13 +1591,13 @@ func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInst
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.InlineFragment: visitor.NamedVisitFuncs{
+			kinds.InlineFragment: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.InlineFragment); ok && node != nil {
 						fragType := context.Type()
 						parentType, _ := context.ParentType().(Type)
 
-						if fragType != nil && parentType != nil && !doTypesOverlap(fragType, parentType) {
+						if fragType != nil && parentType != nil && !doTypesOverlap(context.Schema(), fragType, parentType) {
 							reportError(
 								context,
 								fmt.Sprintf(`Fragment cannot be spread here as objects of `+
@@ -1512,7 +1609,7 @@ func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInst
 					return visitor.ActionNoChange, nil
 				},
 			},
-			kinds.FragmentSpread: visitor.NamedVisitFuncs{
+			kinds.FragmentSpread: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.FragmentSpread); ok && node != nil {
 						fragName := ""
@@ -1521,7 +1618,7 @@ func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInst
 						}
 						fragType := getFragmentType(context, fragName)
 						parentType, _ := context.ParentType().(Type)
-						if fragType != nil && parentType != nil && !doTypesOverlap(fragType, parentType) {
+						if fragType != nil && parentType != nil && !doTypesOverlap(context.Schema(), fragType, parentType) {
 							reportError(
 								context,
 								fmt.Sprintf(`Fragment "%v" cannot be spread here as objects of `+
@@ -1548,7 +1645,7 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Field: visitor.NamedVisitFuncs{
+			kinds.Field: {
 				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
 					// Validate on leave to allow for deeper errors to appear first.
 					if fieldAST, ok := p.Node.(*ast.Field); ok && fieldAST != nil {
@@ -1588,7 +1685,7 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 					return visitor.ActionNoChange, nil
 				},
 			},
-			kinds.Directive: visitor.NamedVisitFuncs{
+			kinds.Directive: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					// Validate on leave to allow for deeper errors to appear first.
 
@@ -1644,7 +1741,7 @@ func ScalarLeafsRule(context *ValidationContext) *ValidationRuleInstance {
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Field: visitor.NamedVisitFuncs{
+			kinds.Field: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.Field); ok && node != nil {
 						nodeName := ""
@@ -1689,19 +1786,19 @@ func UniqueArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Field: visitor.NamedVisitFuncs{
+			kinds.Field: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					knownArgNames = map[string]*ast.Name{}
 					return visitor.ActionNoChange, nil
 				},
 			},
-			kinds.Directive: visitor.NamedVisitFuncs{
+			kinds.Directive: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					knownArgNames = map[string]*ast.Name{}
 					return visitor.ActionNoChange, nil
 				},
 			},
-			kinds.Argument: visitor.NamedVisitFuncs{
+			kinds.Argument: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.Argument); ok {
 						argName := ""
@@ -1736,12 +1833,12 @@ func UniqueFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					return visitor.ActionSkip, nil
 				},
 			},
-			kinds.FragmentDefinition: visitor.NamedVisitFuncs{
+			kinds.FragmentDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.FragmentDefinition); ok && node != nil {
 						fragmentName := ""
@@ -1826,7 +1923,7 @@ func UniqueOperationNamesRule(context *ValidationContext) *ValidationRuleInstanc
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.OperationDefinition); ok && node != nil {
 						operationName := ""
@@ -1911,7 +2008,7 @@ func VariablesAreInputTypesRule(context *ValidationContext) *ValidationRuleInsta
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.VariableDefinition: visitor.NamedVisitFuncs{
+			kinds.VariableDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.VariableDefinition); ok && node != nil {
 						ttype, _ := typeFromAST(*context.Schema(), node.Type)
@@ -1958,7 +2055,7 @@ func VariablesInAllowedPositionRule(context *ValidationContext) *ValidationRuleI
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: {
 				Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 					varDefMap = map[string]*ast.VariableDefinition{}
 					return visitor.ActionNoChange, nil
@@ -1978,7 +2075,7 @@ func VariablesInAllowedPositionRule(context *ValidationContext) *ValidationRuleI
 								if err != nil {
 									varType = nil
 								}
-								if varType != nil && !isTypeSubTypeOf(effectiveType(varType, varDef), usage.Type) {
+								if varType != nil && !isTypeSubTypeOf(context.Schema(), effectiveType(varType, varDef), usage.Type) {
 									reportError(
 										context,
 										fmt.Sprintf(`Variable "$%v" of type "%v" used in position `+
@@ -1993,7 +2090,7 @@ func VariablesInAllowedPositionRule(context *ValidationContext) *ValidationRuleI
 					return visitor.ActionNoChange, nil
 				},
 			},
-			kinds.VariableDefinition: visitor.NamedVisitFuncs{
+			kinds.VariableDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if varDefAST, ok := p.Node.(*ast.VariableDefinition); ok {
 						defName := ""

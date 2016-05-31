@@ -627,6 +627,28 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 							"deprecationReason": nil,
 						},
 						map[string]interface{}{
+							"name": "locations",
+							"args": []interface{}{},
+							"type": map[string]interface{}{
+								"kind": "NON_NULL",
+								"name": nil,
+								"ofType": map[string]interface{}{
+									"kind": "LIST",
+									"name": nil,
+									"ofType": map[string]interface{}{
+										"kind": "NON_NULL",
+										"name": nil,
+										"ofType": map[string]interface{}{
+											"kind": "ENUM",
+											"name": "__DirectiveLocation",
+										},
+									},
+								},
+							},
+							"isDeprecated":      false,
+							"deprecationReason": nil,
+						},
+						map[string]interface{}{
 							"name": "args",
 							"args": []interface{}{},
 							"type": map[string]interface{}{
@@ -660,8 +682,8 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 									"ofType": nil,
 								},
 							},
-							"isDeprecated":      false,
-							"deprecationReason": nil,
+							"isDeprecated":      true,
+							"deprecationReason": "Use `locations`.",
 						},
 						map[string]interface{}{
 							"name": "onFragment",
@@ -675,8 +697,8 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 									"ofType": nil,
 								},
 							},
-							"isDeprecated":      false,
-							"deprecationReason": nil,
+							"isDeprecated":      true,
+							"deprecationReason": "Use `locations`.",
 						},
 						map[string]interface{}{
 							"name": "onField",
@@ -690,8 +712,8 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 									"ofType": nil,
 								},
 							},
-							"isDeprecated":      false,
-							"deprecationReason": nil,
+							"isDeprecated":      true,
+							"deprecationReason": "Use `locations`.",
 						},
 					},
 					"inputFields":   nil,
@@ -699,10 +721,60 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 					"enumValues":    nil,
 					"possibleTypes": nil,
 				},
+				map[string]interface{}{
+					"kind":        "ENUM",
+					"name":        "__DirectiveLocation",
+					"fields":      nil,
+					"inputFields": nil,
+					"interfaces":  nil,
+					"enumValues": []interface{}{
+						map[string]interface{}{
+							"name":              "QUERY",
+							"isDeprecated":      false,
+							"deprecationReason": nil,
+						},
+						map[string]interface{}{
+							"name":              "MUTATION",
+							"isDeprecated":      false,
+							"deprecationReason": nil,
+						},
+						map[string]interface{}{
+							"name":              "SUBSCRIPTION",
+							"isDeprecated":      false,
+							"deprecationReason": nil,
+						},
+						map[string]interface{}{
+							"name":              "FIELD",
+							"isDeprecated":      false,
+							"deprecationReason": nil,
+						},
+						map[string]interface{}{
+							"name":              "FRAGMENT_DEFINITION",
+							"isDeprecated":      false,
+							"deprecationReason": nil,
+						},
+						map[string]interface{}{
+							"name":              "FRAGMENT_SPREAD",
+							"isDeprecated":      false,
+							"deprecationReason": nil,
+						},
+						map[string]interface{}{
+							"name":              "INLINE_FRAGMENT",
+							"isDeprecated":      false,
+							"deprecationReason": nil,
+						},
+					},
+					"possibleTypes": nil,
+				},
 			},
 			"directives": []interface{}{
 				map[string]interface{}{
 					"name": "include",
+					"locations": []interface{}{
+						"FIELD",
+						"FRAGMENT_SPREAD",
+						"INLINE_FRAGMENT",
+					},
 					"args": []interface{}{
 						map[string]interface{}{
 							"defaultValue": nil,
@@ -718,12 +790,18 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 							},
 						},
 					},
+					// deprecated, but included for coverage till removed
 					"onOperation": false,
 					"onFragment":  true,
 					"onField":     true,
 				},
 				map[string]interface{}{
 					"name": "skip",
+					"locations": []interface{}{
+						"FIELD",
+						"FRAGMENT_SPREAD",
+						"INLINE_FRAGMENT",
+					},
 					"args": []interface{}{
 						map[string]interface{}{
 							"defaultValue": nil,
@@ -739,6 +817,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 							},
 						},
 					},
+					// deprecated, but included for coverage till removed
 					"onOperation": false,
 					"onFragment":  true,
 					"onField":     true,
@@ -1222,11 +1301,11 @@ func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testin
     `
 	expected := &graphql.Result{
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Field "__type" argument "name" of type "String!" ` +
 					`is required but not provided.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{Line: 3, Column: 9},
+					{Line: 3, Column: 9},
 				},
 			},
 		},

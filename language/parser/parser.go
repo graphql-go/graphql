@@ -133,6 +133,20 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
 					return nil, err
 				}
 				nodes = append(nodes, node)
+
+			// Note: the Type System IDL is an experimental non-spec addition.
+			case "schema":
+				node, err := parseSchemaDefinition(parser)
+				if err != nil {
+					return nil, err
+				}
+				nodes = append(nodes, node)
+			case "scalar":
+				node, err := parseScalarTypeDefinition(parser)
+				if err != nil {
+					return nil, err
+				}
+				nodes = append(nodes, node)
 			case "type":
 				node, err := parseObjectTypeDefinition(parser)
 				if err != nil {
@@ -151,12 +165,6 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
 					return nil, err
 				}
 				nodes = append(nodes, node)
-			case "scalar":
-				node, err := parseScalarTypeDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
 			case "enum":
 				node, err := parseEnumTypeDefinition(parser)
 				if err != nil {
@@ -171,6 +179,12 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
 				nodes = append(nodes, node)
 			case "extend":
 				node, err := parseTypeExtensionDefinition(parser)
+				if err != nil {
+					return nil, err
+				}
+				nodes = append(nodes, node)
+			case "directive":
+				node, err := parseDirectiveDefinition(parser)
 				if err != nil {
 					return nil, err
 				}
@@ -198,8 +212,6 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
  * OperationDefinition :
  *  - SelectionSet
  *  - OperationType Name? VariableDefinitions? Directives? SelectionSet
- *
- * OperationType : one of query mutation
  */
 func parseOperationDefinition(parser *Parser) (*ast.OperationDefinition, error) {
 	start := parser.Token.Start
@@ -209,27 +221,17 @@ func parseOperationDefinition(parser *Parser) (*ast.OperationDefinition, error) 
 			return nil, err
 		}
 		return ast.NewOperationDefinition(&ast.OperationDefinition{
-			Operation:    "query",
+			Operation:    ast.OperationTypeQuery,
 			Directives:   []*ast.Directive{},
 			SelectionSet: selectionSet,
 			Loc:          loc(parser, start),
 		}), nil
 	}
-	operationToken, err := expect(parser, lexer.TokenKind[lexer.NAME])
+	operation, err := parseOperationType(parser)
 	if err != nil {
 		return nil, err
 	}
-	operation := ""
-	switch operationToken.Value {
-	case "mutation":
-		fallthrough
-	case "subscription":
-		fallthrough
-	case "query":
-		operation = operationToken.Value
-	default:
-		return nil, unexpected(parser, operationToken)
-	}
+
 	var name *ast.Name
 	if peek(parser, lexer.TokenKind[lexer.NAME]) {
 		name, err = parseName(parser)
@@ -254,6 +256,26 @@ func parseOperationDefinition(parser *Parser) (*ast.OperationDefinition, error) 
 		SelectionSet:        selectionSet,
 		Loc:                 loc(parser, start),
 	}), nil
+}
+
+/**
+ * OperationType : one of query mutation subscription
+ */
+func parseOperationType(parser *Parser) (string, error) {
+	operationToken, err := expect(parser, lexer.TokenKind[lexer.NAME])
+	if err != nil {
+		return "", err
+	}
+	switch operationToken.Value {
+	case ast.OperationTypeQuery:
+		return operationToken.Value, nil
+	case ast.OperationTypeMutation:
+		return operationToken.Value, nil
+	case ast.OperationTypeSubscription:
+		return operationToken.Value, nil
+	default:
+		return "", unexpected(parser, operationToken)
+	}
 }
 
 /**
@@ -855,6 +877,80 @@ func parseNamed(parser *Parser) (*ast.Named, error) {
 /* Implements the parsing rules in the Type Definition section. */
 
 /**
+ * SchemaDefinition : schema { OperationTypeDefinition+ }
+ *
+ * OperationTypeDefinition : OperationType : NamedType
+ */
+func parseSchemaDefinition(parser *Parser) (*ast.SchemaDefinition, error) {
+	start := parser.Token.Start
+	_, err := expectKeyWord(parser, "schema")
+	if err != nil {
+		return nil, err
+	}
+	operationTypesI, err := many(
+		parser,
+		lexer.TokenKind[lexer.BRACE_L],
+		parseOperationTypeDefinition,
+		lexer.TokenKind[lexer.BRACE_R],
+	)
+	if err != nil {
+		return nil, err
+	}
+	operationTypes := []*ast.OperationTypeDefinition{}
+	for _, op := range operationTypesI {
+		if op, ok := op.(*ast.OperationTypeDefinition); ok {
+			operationTypes = append(operationTypes, op)
+		}
+	}
+	def := ast.NewSchemaDefinition(&ast.SchemaDefinition{
+		OperationTypes: operationTypes,
+		Loc:            loc(parser, start),
+	})
+	return def, nil
+}
+
+func parseOperationTypeDefinition(parser *Parser) (interface{}, error) {
+	start := parser.Token.Start
+	operation, err := parseOperationType(parser)
+	if err != nil {
+		return nil, err
+	}
+	_, err = expect(parser, lexer.TokenKind[lexer.COLON])
+	if err != nil {
+		return nil, err
+	}
+	ttype, err := parseNamed(parser)
+	if err != nil {
+		return nil, err
+	}
+	return ast.NewOperationTypeDefinition(&ast.OperationTypeDefinition{
+		Operation: operation,
+		Type:      ttype,
+		Loc:       loc(parser, start),
+	}), nil
+}
+
+/**
+ * ScalarTypeDefinition : scalar Name
+ */
+func parseScalarTypeDefinition(parser *Parser) (*ast.ScalarDefinition, error) {
+	start := parser.Token.Start
+	_, err := expectKeyWord(parser, "scalar")
+	if err != nil {
+		return nil, err
+	}
+	name, err := parseName(parser)
+	if err != nil {
+		return nil, err
+	}
+	def := ast.NewScalarDefinition(&ast.ScalarDefinition{
+		Name: name,
+		Loc:  loc(parser, start),
+	})
+	return def, nil
+}
+
+/**
  * ObjectTypeDefinition : type Name ImplementsInterfaces? { FieldDefinition+ }
  */
 func parseObjectTypeDefinition(parser *Parser) (*ast.ObjectDefinition, error) {
@@ -1080,26 +1176,6 @@ func parseUnionMembers(parser *Parser) ([]*ast.Named, error) {
 }
 
 /**
- * ScalarTypeDefinition : scalar Name
- */
-func parseScalarTypeDefinition(parser *Parser) (*ast.ScalarDefinition, error) {
-	start := parser.Token.Start
-	_, err := expectKeyWord(parser, "scalar")
-	if err != nil {
-		return nil, err
-	}
-	name, err := parseName(parser)
-	if err != nil {
-		return nil, err
-	}
-	def := ast.NewScalarDefinition(&ast.ScalarDefinition{
-		Name: name,
-		Loc:  loc(parser, start),
-	})
-	return def, nil
-}
-
-/**
  * EnumTypeDefinition : enum Name { EnumValueDefinition+ }
  */
 func parseEnumTypeDefinition(parser *Parser) (*ast.EnumDefinition, error) {
@@ -1194,6 +1270,70 @@ func parseTypeExtensionDefinition(parser *Parser) (*ast.TypeExtensionDefinition,
 		Loc:        loc(parser, start),
 		Definition: definition,
 	}), nil
+}
+
+/**
+ * DirectiveDefinition :
+ *   - directive @ Name ArgumentsDefinition? on DirectiveLocations
+ */
+func parseDirectiveDefinition(parser *Parser) (*ast.DirectiveDefinition, error) {
+	start := parser.Token.Start
+	_, err := expectKeyWord(parser, "directive")
+	if err != nil {
+		return nil, err
+	}
+	_, err = expect(parser, lexer.TokenKind[lexer.AT])
+	if err != nil {
+		return nil, err
+	}
+	name, err := parseName(parser)
+	if err != nil {
+		return nil, err
+	}
+	args, err := parseArgumentDefs(parser)
+	if err != nil {
+		return nil, err
+	}
+	_, err = expectKeyWord(parser, "on")
+	if err != nil {
+		return nil, err
+	}
+	locations, err := parseDirectiveLocations(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	return ast.NewDirectiveDefinition(&ast.DirectiveDefinition{
+		Loc:       loc(parser, start),
+		Name:      name,
+		Arguments: args,
+		Locations: locations,
+	}), nil
+}
+
+/**
+ * DirectiveLocations :
+ *   - Name
+ *   - DirectiveLocations | Name
+ */
+func parseDirectiveLocations(parser *Parser) ([]*ast.Name, error) {
+	locations := []*ast.Name{}
+	for {
+		name, err := parseName(parser)
+		if err != nil {
+			return locations, err
+		}
+		locations = append(locations, name)
+
+		hasPipe, err := skip(parser, lexer.TokenKind[lexer.PIPE])
+		if err != nil {
+			return locations, err
+		}
+		if !hasPipe {
+			break
+		}
+	}
+	return locations, nil
 }
 
 /* Core parsing utility functions */

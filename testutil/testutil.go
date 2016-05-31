@@ -133,8 +133,8 @@ func init() {
 				Description: "Which movies they appear in.",
 			},
 		},
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
-			if character, ok := value.(StarWarsChar); ok {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
+			if character, ok := p.Value.(StarWarsChar); ok {
 				id, _ := strconv.Atoi(character.ID)
 				human := GetHuman(id)
 				if human.ID != "" {

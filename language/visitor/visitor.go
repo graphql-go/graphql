@@ -83,6 +83,10 @@ var QueryDocumentKeys = KeyMap{
 	"List":    []string{"Type"},
 	"NonNull": []string{"Type"},
 
+	"SchemaDefinition":        []string{"OperationTypes"},
+	"OperationTypeDefinition": []string{"Type"},
+
+	"ScalarDefinition": []string{"Name"},
 	"ObjectDefinition": []string{
 		"Name",
 		"Interfaces",
@@ -106,7 +110,6 @@ var QueryDocumentKeys = KeyMap{
 		"Name",
 		"Types",
 	},
-	"ScalarDefinition": []string{"Name"},
 	"EnumDefinition": []string{
 		"Name",
 		"Values",
@@ -116,7 +119,10 @@ var QueryDocumentKeys = KeyMap{
 		"Name",
 		"Fields",
 	},
+
 	"TypeExtensionDefinition": []string{"Definition"},
+
+	"DirectiveDefinition": []string{"Name", "Arguments", "Locations"},
 }
 
 type stack struct {

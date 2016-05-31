@@ -251,6 +251,33 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_DoesNotUseIncorrectV
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
+func TestVariables_ObjectsAndNullability_UsingInlineStructs_ProperlyRunsParseLiteralOnComplexScalarTypes(t *testing.T) {
+	doc := `
+        {
+          fieldWithObjectInput(input: {a: "foo", d: "SerializedValue"})
+        }
+	`
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"fieldWithObjectInput": `{"a":"foo","d":"DeserializedValue"}`,
+		},
+	}
+	// parse query
+	ast := testutil.TestParse(t, doc)
+
+	// execute
+	ep := graphql.ExecuteParams{
+		Schema: variablesTestSchema,
+		AST:    ast,
+	}
+	result := testutil.TestExecute(t, ep)
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
 
 func testVariables_ObjectsAndNullability_UsingVariables_GetAST(t *testing.T) *ast.Document {
 	doc := `
@@ -390,11 +417,11 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnNullForNestedNon
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" got invalid value {"a":"foo","b":"bar","c":null}.` +
 					"\nIn field \"c\": Expected \"String!\", found null.",
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -425,10 +452,10 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnIncorrectType(t 
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: "Variable \"$input\" got invalid value \"foo bar\".\nExpected \"TestInputObject\", found not an object.",
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -462,11 +489,11 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNested
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" got invalid value {"a":"foo","b":"bar"}.` +
 					"\nIn field \"c\": Expected \"String!\", found null.",
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -501,7 +528,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnDeepNestedErrors
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" got invalid value {"na":{"a":"foo"}}.` +
 					"\nIn field \"na\": In field \"c\": Expected \"String!\", found null." +
 					"\nIn field \"nb\": Expected \"String!\", found null.",
@@ -547,11 +574,11 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknow
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" got invalid value {"a":"foo","b":"bar","c":"baz","extra":"dog"}.` +
 					"\nIn field \"extra\": Unknown field.",
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -758,10 +785,10 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeOmittedIn
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$value" of required type "String!" was not provided.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 31,
 					},
 				},
@@ -797,10 +824,10 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeSetToNull
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$value" of required type "String!" was not provided.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 31,
 					},
 				},
@@ -1025,10 +1052,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListsToBeNull(t *testi
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" of required type "[String]!" was not provided.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -1182,12 +1209,12 @@ func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" got invalid value ` +
 					`["A",null,"B"].` +
 					"\nIn element #1: Expected \"String!\", found null.",
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -1222,10 +1249,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToBeNull
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" of required type "[String!]!" was not provided.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -1290,12 +1317,12 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContai
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" got invalid value ` +
 					`["A",null,"B"].` +
 					"\nIn element #1: Expected \"String!\", found null.",
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -1332,10 +1359,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowInvalidTypesToBeUsedAsValues(
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" expected value of type "TestType!" which cannot be used as an input type.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},
@@ -1370,10 +1397,10 @@ func TestVariables_ListsAndNullability_DoesNotAllowUnknownTypesToBeUsedAsValues(
 	expected := &graphql.Result{
 		Data: nil,
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Variable "$input" expected value of type "UnknownType!" which cannot be used as an input type.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 17,
 					},
 				},

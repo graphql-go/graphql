@@ -5,7 +5,6 @@ import (
 )
 
 type Definition interface {
-	// TODO: determine the minimal set of interface for `Definition`
 	GetOperation() string
 	GetVariableDefinitions() []*VariableDefinition
 	GetSelectionSet() *SelectionSet
@@ -16,8 +15,14 @@ type Definition interface {
 // Ensure that all definition types implements Definition interface
 var _ Definition = (*OperationDefinition)(nil)
 var _ Definition = (*FragmentDefinition)(nil)
-var _ Definition = (*TypeExtensionDefinition)(nil)
-var _ Definition = (Definition)(nil)
+var _ Definition = (TypeSystemDefinition)(nil) // experimental non-spec addition.
+
+// Note: subscription is an experimental non-spec addition.
+const (
+	OperationTypeQuery        = "query"
+	OperationTypeMutation     = "mutation"
+	OperationTypeSubscription = "subscription"
+)
 
 // OperationDefinition implements Node, Definition
 type OperationDefinition struct {
@@ -190,5 +195,47 @@ func (def *TypeExtensionDefinition) GetSelectionSet() *SelectionSet {
 }
 
 func (def *TypeExtensionDefinition) GetOperation() string {
+	return ""
+}
+
+// DirectiveDefinition implements Node, Definition
+type DirectiveDefinition struct {
+	Kind      string
+	Loc       *Location
+	Name      *Name
+	Arguments []*InputValueDefinition
+	Locations []*Name
+}
+
+func NewDirectiveDefinition(def *DirectiveDefinition) *DirectiveDefinition {
+	if def == nil {
+		def = &DirectiveDefinition{}
+	}
+	return &DirectiveDefinition{
+		Kind:      kinds.DirectiveDefinition,
+		Loc:       def.Loc,
+		Name:      def.Name,
+		Arguments: def.Arguments,
+		Locations: def.Locations,
+	}
+}
+
+func (def *DirectiveDefinition) GetKind() string {
+	return def.Kind
+}
+
+func (def *DirectiveDefinition) GetLoc() *Location {
+	return def.Loc
+}
+
+func (def *DirectiveDefinition) GetVariableDefinitions() []*VariableDefinition {
+	return []*VariableDefinition{}
+}
+
+func (def *DirectiveDefinition) GetSelectionSet() *SelectionSet {
+	return &SelectionSet{}
+}
+
+func (def *DirectiveDefinition) GetOperation() string {
 	return ""
 }

@@ -27,6 +27,7 @@ var inputValueType *Object
 var enumValueType *Object
 
 var typeKindEnum *Enum
+var directiveLocationEnum *Enum
 
 var SchemaMetaFieldDef *FieldDefinition
 var TypeMetaFieldDef *FieldDefinition
@@ -76,6 +77,42 @@ func init() {
 				Value: TypeKindNonNull,
 				Description: "Indicates this type is a non-null. " +
 					"`ofType` is a valid field.",
+			},
+		},
+	})
+
+	directiveLocationEnum = NewEnum(EnumConfig{
+		Name: "__DirectiveLocation",
+		Description: "A Directive can be adjacent to many parts of the GraphQL language, a " +
+			"__DirectiveLocation describes one such possible adjacencies.",
+		Values: EnumValueConfigMap{
+			"QUERY": &EnumValueConfig{
+				Value:       DirectiveLocationQuery,
+				Description: "Location adjacent to a query operation.",
+			},
+			"MUTATION": &EnumValueConfig{
+				Value:       DirectiveLocationMutation,
+				Description: "Location adjacent to a mutation operation.",
+			},
+			"SUBSCRIPTION": &EnumValueConfig{
+				Value:       DirectiveLocationSubscription,
+				Description: "Location adjacent to a subscription operation.",
+			},
+			"FIELD": &EnumValueConfig{
+				Value:       DirectiveLocationField,
+				Description: "Location adjacent to a field.",
+			},
+			"FRAGMENT_DEFINITION": &EnumValueConfig{
+				Value:       DirectiveLocationFragmentDefinition,
+				Description: "Location adjacent to a fragment definition.",
+			},
+			"FRAGMENT_SPREAD": &EnumValueConfig{
+				Value:       DirectiveLocationFragmentSpread,
+				Description: "Location adjacent to a fragment spread.",
+			},
+			"INLINE_FRAGMENT": &EnumValueConfig{
+				Value:       DirectiveLocationInlineFragment,
+				Description: "Location adjacent to an inline fragment.",
 			},
 		},
 	})
@@ -228,19 +265,72 @@ func init() {
 			"description": &Field{
 				Type: String,
 			},
+			"locations": &Field{
+				Type: NewNonNull(NewList(
+					NewNonNull(directiveLocationEnum),
+				)),
+			},
 			"args": &Field{
 				Type: NewNonNull(NewList(
 					NewNonNull(inputValueType),
 				)),
 			},
+			// NOTE: the following three fields are deprecated and are no longer part
+			// of the GraphQL specification.
 			"onOperation": &Field{
-				Type: NewNonNull(Boolean),
+				DeprecationReason: "Use `locations`.",
+				Type:              NewNonNull(Boolean),
+				Resolve: func(p ResolveParams) (interface{}, error) {
+					if dir, ok := p.Source.(*Directive); ok {
+						res := false
+						for _, loc := range dir.Locations {
+							if loc == DirectiveLocationQuery ||
+								loc == DirectiveLocationMutation ||
+								loc == DirectiveLocationSubscription {
+								res = true
+								break
+							}
+						}
+						return res, nil
+					}
+					return false, nil
+				},
 			},
 			"onFragment": &Field{
-				Type: NewNonNull(Boolean),
+				DeprecationReason: "Use `locations`.",
+				Type:              NewNonNull(Boolean),
+				Resolve: func(p ResolveParams) (interface{}, error) {
+					if dir, ok := p.Source.(*Directive); ok {
+						res := false
+						for _, loc := range dir.Locations {
+							if loc == DirectiveLocationFragmentSpread ||
+								loc == DirectiveLocationInlineFragment ||
+								loc == DirectiveLocationFragmentDefinition {
+								res = true
+								break
+							}
+						}
+						return res, nil
+					}
+					return false, nil
+				},
 			},
 			"onField": &Field{
-				Type: NewNonNull(Boolean),
+				DeprecationReason: "Use `locations`.",
+				Type:              NewNonNull(Boolean),
+				Resolve: func(p ResolveParams) (interface{}, error) {
+					if dir, ok := p.Source.(*Directive); ok {
+						res := false
+						for _, loc := range dir.Locations {
+							if loc == DirectiveLocationField {
+								res = true
+								break
+							}
+						}
+						return res, nil
+					}
+					return false, nil
+				},
 			},
 		},
 	})
@@ -401,9 +491,9 @@ func init() {
 		Resolve: func(p ResolveParams) (interface{}, error) {
 			switch ttype := p.Source.(type) {
 			case *Interface:
-				return ttype.PossibleTypes(), nil
+				return p.Info.Schema.PossibleTypes(ttype), nil
 			case *Union:
-				return ttype.PossibleTypes(), nil
+				return p.Info.Schema.PossibleTypes(ttype), nil
 			}
 			return nil, nil
 		},
@@ -469,7 +559,7 @@ func init() {
 		Type:        typeType,
 		Description: "Request the type information of a single type.",
 		Args: []*Argument{
-			&Argument{
+			{
 				PrivateName: "name",
 				Type:        NewNonNull(String),
 			},

@@ -4,13 +4,141 @@ import (
 	"github.com/graphql-go/graphql/language/kinds"
 )
 
-// Ensure that all typeDefinition types implements Definition interface
-var _ Definition = (*ObjectDefinition)(nil)
-var _ Definition = (*InterfaceDefinition)(nil)
-var _ Definition = (*UnionDefinition)(nil)
-var _ Definition = (*ScalarDefinition)(nil)
-var _ Definition = (*EnumDefinition)(nil)
-var _ Definition = (*InputObjectDefinition)(nil)
+type TypeDefinition interface {
+	GetOperation() string
+	GetVariableDefinitions() []*VariableDefinition
+	GetSelectionSet() *SelectionSet
+	GetKind() string
+	GetLoc() *Location
+}
+
+var _ TypeDefinition = (*ScalarDefinition)(nil)
+var _ TypeDefinition = (*ObjectDefinition)(nil)
+var _ TypeDefinition = (*InterfaceDefinition)(nil)
+var _ TypeDefinition = (*UnionDefinition)(nil)
+var _ TypeDefinition = (*EnumDefinition)(nil)
+var _ TypeDefinition = (*InputObjectDefinition)(nil)
+
+type TypeSystemDefinition interface {
+	GetOperation() string
+	GetVariableDefinitions() []*VariableDefinition
+	GetSelectionSet() *SelectionSet
+	GetKind() string
+	GetLoc() *Location
+}
+
+var _ TypeSystemDefinition = (*SchemaDefinition)(nil)
+var _ TypeSystemDefinition = (TypeDefinition)(nil)
+var _ TypeSystemDefinition = (*TypeExtensionDefinition)(nil)
+var _ TypeSystemDefinition = (*DirectiveDefinition)(nil)
+
+// SchemaDefinition implements Node, Definition
+type SchemaDefinition struct {
+	Kind           string
+	Loc            *Location
+	OperationTypes []*OperationTypeDefinition
+}
+
+func NewSchemaDefinition(def *SchemaDefinition) *SchemaDefinition {
+	if def == nil {
+		def = &SchemaDefinition{}
+	}
+	return &SchemaDefinition{
+		Kind:           kinds.SchemaDefinition,
+		Loc:            def.Loc,
+		OperationTypes: def.OperationTypes,
+	}
+}
+
+func (def *SchemaDefinition) GetKind() string {
+	return def.Kind
+}
+
+func (def *SchemaDefinition) GetLoc() *Location {
+	return def.Loc
+}
+
+func (def *SchemaDefinition) GetVariableDefinitions() []*VariableDefinition {
+	return []*VariableDefinition{}
+}
+
+func (def *SchemaDefinition) GetSelectionSet() *SelectionSet {
+	return &SelectionSet{}
+}
+
+func (def *SchemaDefinition) GetOperation() string {
+	return ""
+}
+
+// ScalarDefinition implements Node, Definition
+type OperationTypeDefinition struct {
+	Kind      string
+	Loc       *Location
+	Operation string
+	Type      *Named
+}
+
+func NewOperationTypeDefinition(def *OperationTypeDefinition) *OperationTypeDefinition {
+	if def == nil {
+		def = &OperationTypeDefinition{}
+	}
+	return &OperationTypeDefinition{
+		Kind:      kinds.OperationTypeDefinition,
+		Loc:       def.Loc,
+		Operation: def.Operation,
+		Type:      def.Type,
+	}
+}
+
+func (def *OperationTypeDefinition) GetKind() string {
+	return def.Kind
+}
+
+func (def *OperationTypeDefinition) GetLoc() *Location {
+	return def.Loc
+}
+
+// ScalarDefinition implements Node, Definition
+type ScalarDefinition struct {
+	Kind string
+	Loc  *Location
+	Name *Name
+}
+
+func NewScalarDefinition(def *ScalarDefinition) *ScalarDefinition {
+	if def == nil {
+		def = &ScalarDefinition{}
+	}
+	return &ScalarDefinition{
+		Kind: kinds.ScalarDefinition,
+		Loc:  def.Loc,
+		Name: def.Name,
+	}
+}
+
+func (def *ScalarDefinition) GetKind() string {
+	return def.Kind
+}
+
+func (def *ScalarDefinition) GetLoc() *Location {
+	return def.Loc
+}
+
+func (def *ScalarDefinition) GetName() *Name {
+	return def.Name
+}
+
+func (def *ScalarDefinition) GetVariableDefinitions() []*VariableDefinition {
+	return []*VariableDefinition{}
+}
+
+func (def *ScalarDefinition) GetSelectionSet() *SelectionSet {
+	return &SelectionSet{}
+}
+
+func (def *ScalarDefinition) GetOperation() string {
+	return ""
+}
 
 // ObjectDefinition implements Node, Definition
 type ObjectDefinition struct {
@@ -203,48 +331,6 @@ func (def *UnionDefinition) GetSelectionSet() *SelectionSet {
 }
 
 func (def *UnionDefinition) GetOperation() string {
-	return ""
-}
-
-// ScalarDefinition implements Node, Definition
-type ScalarDefinition struct {
-	Kind string
-	Loc  *Location
-	Name *Name
-}
-
-func NewScalarDefinition(def *ScalarDefinition) *ScalarDefinition {
-	if def == nil {
-		def = &ScalarDefinition{}
-	}
-	return &ScalarDefinition{
-		Kind: kinds.ScalarDefinition,
-		Loc:  def.Loc,
-		Name: def.Name,
-	}
-}
-
-func (def *ScalarDefinition) GetKind() string {
-	return def.Kind
-}
-
-func (def *ScalarDefinition) GetLoc() *Location {
-	return def.Loc
-}
-
-func (def *ScalarDefinition) GetName() *Name {
-	return def.Name
-}
-
-func (def *ScalarDefinition) GetVariableDefinitions() []*VariableDefinition {
-	return []*VariableDefinition{}
-}
-
-func (def *ScalarDefinition) GetSelectionSet() *SelectionSet {
-	return &SelectionSet{}
-}
-
-func (def *ScalarDefinition) GetOperation() string {
 	return ""
 }
 

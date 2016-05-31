@@ -12,10 +12,12 @@ var IntrospectionQuery = `
       directives {
         name
         description
+		locations
         args {
           ...InputValue
         }
-        onOperation
+        # deprecated, but included for coverage till removed
+		onOperation
         onFragment
         onField
       }

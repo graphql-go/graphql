@@ -77,6 +77,18 @@ func IsOutputType(ttype Type) bool {
 	return false
 }
 
+// Leaf interface for types that may be leaf values
+type Leaf interface {
+	Name() string
+	Description() string
+	String() string
+	Error() error
+	Serialize(value interface{}) interface{}
+}
+
+var _ Leaf = (*Scalar)(nil)
+var _ Leaf = (*Enum)(nil)
+
 // IsLeafType determines if given type is a leaf value
 func IsLeafType(ttype Type) bool {
 	named := GetNamed(ttype)
@@ -131,13 +143,20 @@ func IsCompositeType(ttype interface{}) bool {
 // Abstract interface for types that may describe the parent context of a selection set.
 type Abstract interface {
 	Name() string
-	ObjectType(value interface{}, info ResolveInfo) *Object
-	PossibleTypes() []*Object
-	IsPossibleType(ttype *Object) bool
 }
 
 var _ Abstract = (*Interface)(nil)
 var _ Abstract = (*Union)(nil)
+
+func IsAbstractType(ttype interface{}) bool {
+	if _, ok := ttype.(*Interface); ok {
+		return true
+	}
+	if _, ok := ttype.(*Union); ok {
+		return true
+	}
+	return false
+}
 
 // Nullable interface for types that can accept null as a value.
 type Nullable interface {
@@ -350,7 +369,22 @@ type Object struct {
 	err error
 }
 
-type IsTypeOfFn func(value interface{}, info ResolveInfo) bool
+// IsTypeOfParams Params for IsTypeOfFn()
+type IsTypeOfParams struct {
+	// Value that needs to be resolve.
+	// Use this to decide which GraphQLObject this value maps to.
+	Value interface{}
+
+	// Info is a collection of information about the current execution state.
+	Info ResolveInfo
+
+	// Context argument is a context value that is provided to every resolve function within an execution.
+	// It is commonly
+	// used to represent an authenticated user, or request-specific caches.
+	Context context.Context
+}
+
+type IsTypeOfFn func(p IsTypeOfParams) bool
 
 type InterfacesThunk func() []*Interface
 
@@ -381,21 +415,6 @@ func NewObject(config ObjectConfig) *Object {
 	objectType.PrivateDescription = config.Description
 	objectType.IsTypeOf = config.IsTypeOf
 	objectType.typeConfig = config
-
-	/*
-			addImplementationToInterfaces()
-			Update the interfaces to know about this implementation.
-			This is an rare and unfortunate use of mutation in the type definition
-		 	implementations, but avoids an expensive "getPossibleTypes"
-		 	implementation for Interface
-	*/
-	interfaces := objectType.Interfaces()
-	if interfaces == nil {
-		return objectType
-	}
-	for _, iface := range interfaces {
-		iface.implementations = append(iface.implementations, objectType)
-	}
 
 	return objectType
 }
@@ -556,14 +575,19 @@ func defineFieldMap(ttype Named, fields Fields) (FieldDefinitionMap, error) {
 }
 
 // ResolveParams Params for FieldResolveFn()
-// TODO: clean up GQLFRParams fields
 type ResolveParams struct {
+	// Source is the source value
 	Source interface{}
-	Args   map[string]interface{}
-	Info   ResolveInfo
-	Schema Schema
-	//This can be used to provide per-request state
-	//from the application.
+
+	// Args is a map of arguments for current GraphQL request
+	Args map[string]interface{}
+
+	// Info is a collection of information about the current execution state.
+	Info ResolveInfo
+
+	// Context argument is a context value that is provided to every resolve function within an execution.
+	// It is commonly
+	// used to represent an authenticated user, or request-specific caches.
 	Context context.Context
 }
 
@@ -660,12 +684,9 @@ type Interface struct {
 	PrivateDescription string `json:"description"`
 	ResolveType        ResolveTypeFn
 
-	typeConfig      InterfaceConfig
-	fields          FieldDefinitionMap
-	implementations []*Object
-	possibleTypes   map[string]bool
-
-	err error
+	typeConfig InterfaceConfig
+	fields     FieldDefinitionMap
+	err        error
 }
 type InterfaceConfig struct {
 	Name        string      `json:"name"`
@@ -674,7 +695,22 @@ type InterfaceConfig struct {
 	Description string `json:"description"`
 }
 
-type ResolveTypeFn func(value interface{}, info ResolveInfo) *Object
+// ResolveTypeParams Params for ResolveTypeFn()
+type ResolveTypeParams struct {
+	// Value that needs to be resolve.
+	// Use this to decide which GraphQLObject this value maps to.
+	Value interface{}
+
+	// Info is a collection of information about the current execution state.
+	Info ResolveInfo
+
+	// Context argument is a context value that is provided to every resolve function within an execution.
+	// It is commonly
+	// used to represent an authenticated user, or request-specific caches.
+	Context context.Context
+}
+
+type ResolveTypeFn func(p ResolveTypeParams) *Object
 
 func NewInterface(config InterfaceConfig) *Interface {
 	it := &Interface{}
@@ -693,7 +729,6 @@ func NewInterface(config InterfaceConfig) *Interface {
 	it.PrivateDescription = config.Description
 	it.ResolveType = config.ResolveType
 	it.typeConfig = config
-	it.implementations = []*Object{}
 
 	return it
 }
@@ -726,52 +761,11 @@ func (it *Interface) Fields() (fields FieldDefinitionMap) {
 	it.fields = fields
 	return it.fields
 }
-func (it *Interface) PossibleTypes() []*Object {
-	return it.implementations
-}
-func (it *Interface) IsPossibleType(ttype *Object) bool {
-	if ttype == nil {
-		return false
-	}
-	if len(it.possibleTypes) == 0 {
-		possibleTypes := map[string]bool{}
-		for _, possibleType := range it.PossibleTypes() {
-			if possibleType == nil {
-				continue
-			}
-			possibleTypes[possibleType.PrivateName] = true
-		}
-		it.possibleTypes = possibleTypes
-	}
-	if val, ok := it.possibleTypes[ttype.PrivateName]; ok {
-		return val
-	}
-	return false
-}
-func (it *Interface) ObjectType(value interface{}, info ResolveInfo) *Object {
-	if it.ResolveType != nil {
-		return it.ResolveType(value, info)
-	}
-	return getTypeOf(value, info, it)
-}
 func (it *Interface) String() string {
 	return it.PrivateName
 }
 func (it *Interface) Error() error {
 	return it.err
-}
-
-func getTypeOf(value interface{}, info ResolveInfo, abstractType Abstract) *Object {
-	possibleTypes := abstractType.PossibleTypes()
-	for _, possibleType := range possibleTypes {
-		if possibleType.IsTypeOf == nil {
-			continue
-		}
-		if res := possibleType.IsTypeOf(value, info); res {
-			return possibleType
-		}
-	}
-	return nil
 }
 
 // Union Type Definition
@@ -865,35 +859,8 @@ func NewUnion(config UnionConfig) *Union {
 
 	return objectType
 }
-func (ut *Union) PossibleTypes() []*Object {
+func (ut *Union) Types() []*Object {
 	return ut.types
-}
-func (ut *Union) IsPossibleType(ttype *Object) bool {
-
-	if ttype == nil {
-		return false
-	}
-	if len(ut.possibleTypes) == 0 {
-		possibleTypes := map[string]bool{}
-		for _, possibleType := range ut.PossibleTypes() {
-			if possibleType == nil {
-				continue
-			}
-			possibleTypes[possibleType.PrivateName] = true
-		}
-		ut.possibleTypes = possibleTypes
-	}
-
-	if val, ok := ut.possibleTypes[ttype.PrivateName]; ok {
-		return val
-	}
-	return false
-}
-func (ut *Union) ObjectType(value interface{}, info ResolveInfo) *Object {
-	if ut.ResolveType != nil {
-		return ut.ResolveType(value, info)
-	}
-	return getTypeOf(value, info, ut)
 }
 func (ut *Union) String() string {
 	return ut.PrivateName

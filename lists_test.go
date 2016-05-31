@@ -255,10 +255,10 @@ func TestLists_NonNullListOfNullableObjectsReturnsNull(t *testing.T) {
 			"nest": nil,
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: "Cannot return null for non-nullable field DataType.test.",
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line:   1,
 						Column: 10,
 					},
@@ -325,10 +325,10 @@ func TestLists_NonNullListOfNullableFunc_ReturnsNull(t *testing.T) {
 			"nest": nil,
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: "Cannot return null for non-nullable field DataType.test.",
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line:   1,
 						Column: 10,
 					},
@@ -421,10 +421,10 @@ func TestLists_NullableListOfNonNullObjects_ContainsNull(t *testing.T) {
 			},
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: "Cannot return null for non-nullable field DataType.test.",
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line:   1,
 						Column: 10,
 					},
@@ -486,10 +486,10 @@ func TestLists_NullableListOfNonNullFunc_ContainsNull(t *testing.T) {
 			},
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: "Cannot return null for non-nullable field DataType.test.",
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line:   1,
 						Column: 10,
 					},
@@ -597,10 +597,10 @@ func TestLists_NonNullListOfNonNullObjects_ContainsNull(t *testing.T) {
 			"nest": nil,
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: "Cannot return null for non-nullable field DataType.test.",
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line:   1,
 						Column: 10,
 					},
@@ -618,10 +618,10 @@ func TestLists_NonNullListOfNonNullObjects_ReturnsNull(t *testing.T) {
 			"nest": nil,
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: "Cannot return null for non-nullable field DataType.test.",
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line:   1,
 						Column: 10,
 					},
@@ -669,10 +669,10 @@ func TestLists_NonNullListOfNonNullFunc_ContainsNull(t *testing.T) {
 			"nest": nil,
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: "Cannot return null for non-nullable field DataType.test.",
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line:   1,
 						Column: 10,
 					},
@@ -695,10 +695,10 @@ func TestLists_NonNullListOfNonNullFunc_ReturnsNull(t *testing.T) {
 			"nest": nil,
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: "Cannot return null for non-nullable field DataType.test.",
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line:   1,
 						Column: 10,
 					},
@@ -772,7 +772,7 @@ func TestLists_UserErrorExpectIterableButDidNotGetOne(t *testing.T) {
 			},
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message:   "User Error: expected iterable, but did not find one for field DataType.test.",
 				Locations: []location.SourceLocation{},
 			},
