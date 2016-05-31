@@ -621,7 +621,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	// If field type is a leaf type, Scalar or Enum, serialize to a valid value,
 	// returning null if serialization is not possible.
 	if returnType, ok := returnType.(*Scalar); ok {
-		return completeLeafValue(eCtx, returnType, fieldASTs, info, result)
+		return completeLeafValue(returnType, result)
 	}
 	if returnType, ok := returnType.(*Enum); ok {
 		return completeLeafValue(returnType, result)
