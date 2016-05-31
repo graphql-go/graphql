@@ -674,11 +674,14 @@ func completeAbstractValue(eCtx *ExecutionContext, returnType Abstract, fieldAST
 		runtimeType = defaultResolveTypeFn(resolveTypeParams, returnType)
 	}
 
-	if runtimeType == nil {
-		return nil
+	err := invariant(runtimeType != nil,
+		fmt.Sprintf(`Could not determine runtime type of value "%v" for field %v.%v.`, result, info.ParentType, info.FieldName),
+	)
+	if err != nil {
+		panic(err)
 	}
 
-	if runtimeType != nil && !eCtx.Schema.IsPossibleType(returnType, runtimeType) {
+	if !eCtx.Schema.IsPossibleType(returnType, runtimeType) {
 		panic(gqlerrors.NewFormattedError(
 			fmt.Sprintf(`Runtime Object type "%v" is not a possible type `+
 				`for "%v".`, runtimeType, returnType),
