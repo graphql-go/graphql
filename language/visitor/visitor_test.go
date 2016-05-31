@@ -442,7 +442,7 @@ func TestVisitor_AllowsANamedFunctionsVisitorAPI(t *testing.T) {
 
 	v := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			"Name": visitor.NamedVisitFuncs{
+			"Name": {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					switch node := p.Node.(type) {
 					case *ast.Name:
@@ -451,7 +451,7 @@ func TestVisitor_AllowsANamedFunctionsVisitorAPI(t *testing.T) {
 					return visitor.ActionNoChange, nil
 				},
 			},
-			"SelectionSet": visitor.NamedVisitFuncs{
+			"SelectionSet": {
 				Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 					switch node := p.Node.(type) {
 					case *ast.SelectionSet:

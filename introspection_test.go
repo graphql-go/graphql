@@ -1301,11 +1301,11 @@ func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testin
     `
 	expected := &graphql.Result{
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message: `Field "__type" argument "name" of type "String!" ` +
 					`is required but not provided.`,
 				Locations: []location.SourceLocation{
-					location.SourceLocation{Line: 3, Column: 9},
+					{Line: 3, Column: 9},
 				},
 			},
 		},

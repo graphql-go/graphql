@@ -369,7 +369,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 			},
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message:   `Runtime Object type "Human" is not a possible type for "Pet".`,
 				Locations: []location.SourceLocation{},
 			},
@@ -487,7 +487,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 			},
 		},
 		Errors: []gqlerrors.FormattedError{
-			gqlerrors.FormattedError{
+			{
 				Message:   `Runtime Object type "Human" is not a possible type for "Pet".`,
 				Locations: []location.SourceLocation{},
 			},

@@ -426,17 +426,17 @@ func TestTypeSystem_DefinitionExample_StringifiesSimpleTypes(t *testing.T) {
 		expected string
 	}
 	tests := []Test{
-		Test{graphql.Int, "Int"},
-		Test{blogArticle, "Article"},
-		Test{interfaceType, "Interface"},
-		Test{unionType, "Union"},
-		Test{enumType, "Enum"},
-		Test{inputObjectType, "InputObject"},
-		Test{graphql.NewNonNull(graphql.Int), "Int!"},
-		Test{graphql.NewList(graphql.Int), "[Int]"},
-		Test{graphql.NewNonNull(graphql.NewList(graphql.Int)), "[Int]!"},
-		Test{graphql.NewList(graphql.NewNonNull(graphql.Int)), "[Int!]"},
-		Test{graphql.NewList(graphql.NewList(graphql.Int)), "[[Int]]"},
+		{graphql.Int, "Int"},
+		{blogArticle, "Article"},
+		{interfaceType, "Interface"},
+		{unionType, "Union"},
+		{enumType, "Enum"},
+		{inputObjectType, "InputObject"},
+		{graphql.NewNonNull(graphql.Int), "Int!"},
+		{graphql.NewList(graphql.Int), "[Int]"},
+		{graphql.NewNonNull(graphql.NewList(graphql.Int)), "[Int]!"},
+		{graphql.NewList(graphql.NewNonNull(graphql.Int)), "[Int!]"},
+		{graphql.NewList(graphql.NewList(graphql.Int)), "[[Int]]"},
 	}
 	for _, test := range tests {
 		ttypeStr := fmt.Sprintf("%v", test.ttype)
@@ -452,12 +452,12 @@ func TestTypeSystem_DefinitionExample_IdentifiesInputTypes(t *testing.T) {
 		expected bool
 	}
 	tests := []Test{
-		Test{graphql.Int, true},
-		Test{objectType, false},
-		Test{interfaceType, false},
-		Test{unionType, false},
-		Test{enumType, true},
-		Test{inputObjectType, true},
+		{graphql.Int, true},
+		{objectType, false},
+		{interfaceType, false},
+		{unionType, false},
+		{enumType, true},
+		{inputObjectType, true},
 	}
 	for _, test := range tests {
 		ttypeStr := fmt.Sprintf("%v", test.ttype)
@@ -479,12 +479,12 @@ func TestTypeSystem_DefinitionExample_IdentifiesOutputTypes(t *testing.T) {
 		expected bool
 	}
 	tests := []Test{
-		Test{graphql.Int, true},
-		Test{objectType, true},
-		Test{interfaceType, true},
-		Test{unionType, true},
-		Test{enumType, true},
-		Test{inputObjectType, false},
+		{graphql.Int, true},
+		{objectType, true},
+		{interfaceType, true},
+		{unionType, true},
+		{enumType, true},
+		{inputObjectType, false},
 	}
 	for _, test := range tests {
 		ttypeStr := fmt.Sprintf("%v", test.ttype)

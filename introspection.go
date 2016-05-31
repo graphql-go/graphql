@@ -559,7 +559,7 @@ func init() {
 		Type:        typeType,
 		Description: "Request the type information of a single type.",
 		Args: []*Argument{
-			&Argument{
+			{
 				PrivateName: "name",
 				Type:        NewNonNull(String),
 			},

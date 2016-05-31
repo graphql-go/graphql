@@ -843,7 +843,7 @@ func defaultResolveFn(p ResolveParams) (interface{}, error) {
 	return nil, nil
 }
 
-// This method looks up the field on the given type defintion.
+// This method looks up the field on the given type definition.
 // It has special casing for the two introspection fields, __schema
 // and __typename. __typename is special because it can always be
 // queried as a field, even in situations where no other fields
