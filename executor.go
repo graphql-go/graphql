@@ -573,14 +573,6 @@ func completeValueCatchingError(eCtx *ExecutionContext, returnType Type, fieldAS
 		return completed
 	}
 	completed = completeValue(eCtx, returnType, fieldASTs, info, result)
-	resultVal := reflect.ValueOf(completed)
-	if resultVal.IsValid() && resultVal.Type().Kind() == reflect.Func {
-		if propertyFn, ok := completed.(func() interface{}); ok {
-			return propertyFn()
-		}
-		err := gqlerrors.NewFormattedError("Error resolving func. Expected `func() interface{}` signature")
-		panic(gqlerrors.FormatError(err))
-	}
 	return completed
 }
 
