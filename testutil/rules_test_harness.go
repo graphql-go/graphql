@@ -466,6 +466,12 @@ func init() {
 			graphql.IncludeDirective,
 			graphql.SkipDirective,
 		},
+		Types: []graphql.Type{
+			catType,
+			dogType,
+			humanType,
+			alienType,
+		},
 	})
 	if err != nil {
 		panic(err)

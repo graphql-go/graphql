@@ -113,6 +113,7 @@ func schemaWithFieldType(ttype graphql.Output) (graphql.Schema, error) {
 				},
 			},
 		}),
+		Types: []graphql.Type{ttype},
 	})
 }
 func schemaWithInputObject(ttype graphql.Input) (graphql.Schema, error) {
@@ -173,6 +174,7 @@ func schemaWithObjectImplementingType(implementedType *graphql.Interface) (graph
 				},
 			},
 		}),
+		Types: []graphql.Type{badObjectType},
 	})
 }
 func schemaWithUnionOfType(ttype *graphql.Object) (graphql.Schema, error) {
@@ -396,7 +398,7 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichHaveS
 			},
 		},
 	})
-	_ = graphql.NewObject(graphql.ObjectConfig{
+	FirstBadObject := graphql.NewObject(graphql.ObjectConfig{
 		Name: "BadObject",
 		Interfaces: []*graphql.Interface{
 			anotherInterface,
@@ -407,7 +409,7 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichHaveS
 			},
 		},
 	})
-	_ = graphql.NewObject(graphql.ObjectConfig{
+	SecondBadObject := graphql.NewObject(graphql.ObjectConfig{
 		Name: "BadObject",
 		Interfaces: []*graphql.Interface{
 			anotherInterface,
@@ -428,6 +430,7 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichHaveS
 	})
 	_, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: queryType,
+		Types: []graphql.Type{FirstBadObject, SecondBadObject},
 	})
 	expectedError := `Schema must contain unique named types but contains multiple types named "BadObject".`
 	if err == nil || err.Error() != expectedError {

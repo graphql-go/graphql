@@ -425,8 +425,11 @@ func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment ast.Node, ttype
 		if conditionalType.Name() == ttype.Name() {
 			return true
 		}
-		if conditionalType, ok := conditionalType.(Abstract); ok {
-			return conditionalType.IsPossibleType(ttype)
+		if conditionalType, ok := conditionalType.(*Interface); ok {
+			return eCtx.Schema.IsPossibleType(conditionalType, ttype)
+		}
+		if conditionalType, ok := conditionalType.(*Union); ok {
+			return eCtx.Schema.IsPossibleType(conditionalType, ttype)
 		}
 	case *ast.InlineFragment:
 		typeConditionAST := fragment.TypeCondition
@@ -443,8 +446,11 @@ func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment ast.Node, ttype
 		if conditionalType.Name() == ttype.Name() {
 			return true
 		}
-		if conditionalType, ok := conditionalType.(Abstract); ok {
-			return conditionalType.IsPossibleType(ttype)
+		if conditionalType, ok := conditionalType.(*Interface); ok {
+			return eCtx.Schema.IsPossibleType(conditionalType, ttype)
+		}
+		if conditionalType, ok := conditionalType.(*Union); ok {
+			return eCtx.Schema.IsPossibleType(conditionalType, ttype)
 		}
 	}
 
@@ -539,6 +545,7 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	result, resolveFnError = resolveFn(ResolveParams{
 		Source:  source,
 		Args:    args,
+		Schema:  eCtx.Schema,
 		Info:    info,
 		Context: eCtx.Context,
 	})
@@ -629,7 +636,10 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 
 	// If field type is an abstract type, Interface or Union, determine the
 	// runtime Object type and complete for that type.
-	if returnType, ok := returnType.(Abstract); ok {
+	if returnType, ok := returnType.(*Union); ok {
+		return completeAbstractValue(eCtx, returnType, fieldASTs, info, result)
+	}
+	if returnType, ok := returnType.(*Interface); ok {
 		return completeAbstractValue(eCtx, returnType, fieldASTs, info, result)
 	}
 
@@ -666,7 +676,7 @@ func completeAbstractValue(eCtx *ExecutionContext, returnType Abstract, fieldAST
 		return nil
 	}
 
-	if runtimeType != nil && !returnType.IsPossibleType(runtimeType) {
+	if runtimeType != nil && !eCtx.Schema.IsPossibleType(returnType, runtimeType) {
 		panic(gqlerrors.NewFormattedError(
 			fmt.Sprintf(`Runtime Object type "%v" is not a possible type `+
 				`for "%v".`, runtimeType, returnType),
@@ -758,7 +768,7 @@ func completeListValue(eCtx *ExecutionContext, returnType *List, fieldASTs []*as
 // used which tests each possible type for the abstract type by calling
 // isTypeOf for the object being coerced, returning the first type that matches.
 func defaultResolveTypeFn(value interface{}, info ResolveInfo, abstractType Abstract) *Object {
-	possibleTypes := abstractType.PossibleTypes()
+	possibleTypes := info.Schema.PossibleTypes(abstractType)
 	for _, possibleType := range possibleTypes {
 		if possibleType.IsTypeOf == nil {
 			continue

@@ -491,9 +491,9 @@ func init() {
 		Resolve: func(p ResolveParams) (interface{}, error) {
 			switch ttype := p.Source.(type) {
 			case *Interface:
-				return ttype.PossibleTypes(), nil
+				return p.Schema.PossibleTypes(ttype), nil
 			case *Union:
-				return ttype.PossibleTypes(), nil
+				return p.Schema.PossibleTypes(ttype), nil
 			}
 			return nil, nil
 		},

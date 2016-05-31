@@ -314,7 +314,7 @@ func init() {
 			},
 		},
 	})
-	_ = graphql.NewObject(graphql.ObjectConfig{
+	IntBox := graphql.NewObject(graphql.ObjectConfig{
 		Name: "IntBox",
 		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
 			return []*graphql.Interface{someBoxInterface}
@@ -339,7 +339,7 @@ func init() {
 			},
 		},
 	})
-	_ = graphql.NewObject(graphql.ObjectConfig{
+	NonNullStringBox1Impl := graphql.NewObject(graphql.ObjectConfig{
 		Name: "NonNullStringBox1Impl",
 		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
 			return []*graphql.Interface{someBoxInterface, nonNullStringBox1Interface}
@@ -364,7 +364,7 @@ func init() {
 			},
 		},
 	})
-	_ = graphql.NewObject(graphql.ObjectConfig{
+	NonNullStringBox2Impl := graphql.NewObject(graphql.ObjectConfig{
 		Name: "NonNullStringBox2Impl",
 		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
 			return []*graphql.Interface{someBoxInterface, nonNullStringBox2Interface}
@@ -417,6 +417,11 @@ func init() {
 				},
 			},
 		}),
+		Types: []graphql.Type{
+			IntBox,
+			NonNullStringBox1Impl,
+			NonNullStringBox2Impl,
+		},
 	})
 	if err != nil {
 		panic(err)

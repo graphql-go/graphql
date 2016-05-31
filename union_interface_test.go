@@ -111,6 +111,7 @@ var personType = graphql.NewObject(graphql.ObjectConfig{
 
 var unionInterfaceTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 	Query: personType,
+	Types: []graphql.Type{petType},
 })
 
 var garfield = &testCat2{"Garfield", false}
@@ -206,8 +207,8 @@ func TestUnionIntersectionTypes_CanIntrospectOnUnionAndIntersectionTypes(t *test
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	if !testutil.ContainSubset(expected.Data.(map[string]interface{}), result.Data.(map[string]interface{})) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
 }
 func TestUnionIntersectionTypes_ExecutesUsingUnionTypes(t *testing.T) {

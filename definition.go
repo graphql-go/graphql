@@ -143,12 +143,20 @@ func IsCompositeType(ttype interface{}) bool {
 // Abstract interface for types that may describe the parent context of a selection set.
 type Abstract interface {
 	Name() string
-	PossibleTypes() []*Object
-	IsPossibleType(ttype *Object) bool
 }
 
 var _ Abstract = (*Interface)(nil)
 var _ Abstract = (*Union)(nil)
+
+func IsAbstractType(ttype interface{}) bool {
+	if _, ok := ttype.(*Interface); ok {
+		return true
+	}
+	if _, ok := ttype.(*Union); ok {
+		return true
+	}
+	return false
+}
 
 // Nullable interface for types that can accept null as a value.
 type Nullable interface {
@@ -392,21 +400,6 @@ func NewObject(config ObjectConfig) *Object {
 	objectType.PrivateDescription = config.Description
 	objectType.IsTypeOf = config.IsTypeOf
 	objectType.typeConfig = config
-
-	/*
-			addImplementationToInterfaces()
-			Update the interfaces to know about this implementation.
-			This is an rare and unfortunate use of mutation in the type definition
-		 	implementations, but avoids an expensive "getPossibleTypes"
-		 	implementation for Interface
-	*/
-	interfaces := objectType.Interfaces()
-	if interfaces == nil {
-		return objectType
-	}
-	for _, iface := range interfaces {
-		iface.implementations = append(iface.implementations, objectType)
-	}
 
 	return objectType
 }
@@ -671,11 +664,8 @@ type Interface struct {
 	PrivateDescription string `json:"description"`
 	ResolveType        ResolveTypeFn
 
-	typeConfig      InterfaceConfig
-	fields          FieldDefinitionMap
-	implementations []*Object
-	possibleTypes   map[string]bool
-
+	typeConfig InterfaceConfig
+	fields     FieldDefinitionMap
 	err error
 }
 type InterfaceConfig struct {
@@ -704,7 +694,6 @@ func NewInterface(config InterfaceConfig) *Interface {
 	it.PrivateDescription = config.Description
 	it.ResolveType = config.ResolveType
 	it.typeConfig = config
-	it.implementations = []*Object{}
 
 	return it
 }
@@ -736,28 +725,6 @@ func (it *Interface) Fields() (fields FieldDefinitionMap) {
 	it.err = err
 	it.fields = fields
 	return it.fields
-}
-func (it *Interface) PossibleTypes() []*Object {
-	return it.implementations
-}
-func (it *Interface) IsPossibleType(ttype *Object) bool {
-	if ttype == nil {
-		return false
-	}
-	if len(it.possibleTypes) == 0 {
-		possibleTypes := map[string]bool{}
-		for _, possibleType := range it.PossibleTypes() {
-			if possibleType == nil {
-				continue
-			}
-			possibleTypes[possibleType.PrivateName] = true
-		}
-		it.possibleTypes = possibleTypes
-	}
-	if val, ok := it.possibleTypes[ttype.PrivateName]; ok {
-		return val
-	}
-	return false
 }
 func (it *Interface) String() string {
 	return it.PrivateName
@@ -857,29 +824,8 @@ func NewUnion(config UnionConfig) *Union {
 
 	return objectType
 }
-func (ut *Union) PossibleTypes() []*Object {
+func (ut *Union) Types() []*Object {
 	return ut.types
-}
-func (ut *Union) IsPossibleType(ttype *Object) bool {
-
-	if ttype == nil {
-		return false
-	}
-	if len(ut.possibleTypes) == 0 {
-		possibleTypes := map[string]bool{}
-		for _, possibleType := range ut.PossibleTypes() {
-			if possibleType == nil {
-				continue
-			}
-			possibleTypes[possibleType.PrivateName] = true
-		}
-		ut.possibleTypes = possibleTypes
-	}
-
-	if val, ok := ut.possibleTypes[ttype.PrivateName]; ok {
-		return val
-	}
-	return false
 }
 func (ut *Union) String() string {
 	return ut.PrivateName

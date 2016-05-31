@@ -365,6 +365,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesSubTypesInTheTypeMap(t *
 				},
 			},
 		}),
+		Types: []graphql.Type{someSubType},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error, got: %v", err)
@@ -408,6 +409,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesThunkSubtypesInTheTypeMa
 				},
 			},
 		}),
+		Types: []graphql.Type{someSubType},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error, got: %v", err)
