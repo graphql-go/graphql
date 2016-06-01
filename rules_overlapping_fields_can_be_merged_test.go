@@ -74,7 +74,9 @@ func TestValidate_OverlappingFieldsCanBeMerged_SameAliasesWithDifferentFieldTarg
         fido: nickname
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Fields "fido" conflict because name and nickname are different fields.`, 3, 9, 4, 9),
+		testutil.RuleError(`Fields "fido" conflict because name and nickname are different fields. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
+			3, 9, 4, 9),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_SameAliasesAllowedOnNonOverlappingFields(t *testing.T) {
@@ -96,7 +98,9 @@ func TestValidate_OverlappingFieldsCanBeMerged_AliasMaskingDirectFieldAccess(t *
         name
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Fields "name" conflict because nickname and name are different fields.`, 3, 9, 4, 9),
+		testutil.RuleError(`Fields "name" conflict because nickname and name are different fields. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
+			3, 9, 4, 9),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_DifferentArgs_SecondAddsAnArgument(t *testing.T) {
@@ -106,7 +110,9 @@ func TestValidate_OverlappingFieldsCanBeMerged_DifferentArgs_SecondAddsAnArgumen
         doesKnowCommand(dogCommand: HEEL)
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Fields "doesKnowCommand" conflict because they have differing arguments.`, 3, 9, 4, 9),
+		testutil.RuleError(`Fields "doesKnowCommand" conflict because they have differing arguments. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
+			3, 9, 4, 9),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_DifferentArgs_SecondMissingAnArgument(t *testing.T) {
@@ -116,7 +122,9 @@ func TestValidate_OverlappingFieldsCanBeMerged_DifferentArgs_SecondMissingAnArgu
         doesKnowCommand
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Fields "doesKnowCommand" conflict because they have differing arguments.`, 3, 9, 4, 9),
+		testutil.RuleError(`Fields "doesKnowCommand" conflict because they have differing arguments. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
+			3, 9, 4, 9),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ConflictingArgs(t *testing.T) {
@@ -126,7 +134,9 @@ func TestValidate_OverlappingFieldsCanBeMerged_ConflictingArgs(t *testing.T) {
         doesKnowCommand(dogCommand: HEEL)
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Fields "doesKnowCommand" conflict because they have differing arguments.`, 3, 9, 4, 9),
+		testutil.RuleError(`Fields "doesKnowCommand" conflict because they have differing arguments. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
+			3, 9, 4, 9),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_AllowDifferentArgsWhereNoConflictIsPossible(t *testing.T) {
@@ -156,7 +166,9 @@ func TestValidate_OverlappingFieldsCanBeMerged_EncountersConflictInFragments(t *
         x: b
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Fields "x" conflict because a and b are different fields.`, 7, 9, 10, 9),
+		testutil.RuleError(`Fields "x" conflict because a and b are different fields. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
+			7, 9, 10, 9),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReportsEachConflictOnce(t *testing.T) {
@@ -183,9 +195,15 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReportsEachConflictOnce(t *testin
         x: b
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Fields "x" conflict because a and b are different fields.`, 18, 9, 21, 9),
-		testutil.RuleError(`Fields "x" conflict because a and c are different fields.`, 18, 9, 14, 11),
-		testutil.RuleError(`Fields "x" conflict because b and c are different fields.`, 21, 9, 14, 11),
+		testutil.RuleError(`Fields "x" conflict because a and b are different fields. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
+			18, 9, 21, 9),
+		testutil.RuleError(`Fields "x" conflict because a and c are different fields. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
+			18, 9, 14, 11),
+		testutil.RuleError(`Fields "x" conflict because b and c are different fields. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
+			21, 9, 14, 11),
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_DeepConflict(t *testing.T) {
@@ -199,7 +217,8 @@ func TestValidate_OverlappingFieldsCanBeMerged_DeepConflict(t *testing.T) {
         }
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Fields "field" conflict because subfields "x" conflict because a and b are different fields.`,
+		testutil.RuleError(`Fields "field" conflict because subfields "x" conflict because a and b are different fields. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
 			3, 9,
 			4, 11,
 			6, 9,
@@ -219,9 +238,9 @@ func TestValidate_OverlappingFieldsCanBeMerged_DeepConflictWithMultipleIssues(t 
         }
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(
-			`Fields "field" conflict because subfields "x" conflict because a and b are different fields and `+
-				`subfields "y" conflict because c and d are different fields.`,
+		testutil.RuleError(`Fields "field" conflict because subfields "x" conflict because a and b are different fields and `+
+			`subfields "y" conflict because c and d are different fields. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
 			3, 9,
 			4, 11,
 			5, 11,
@@ -245,9 +264,9 @@ func TestValidate_OverlappingFieldsCanBeMerged_VeryDeepConflict(t *testing.T) {
         }
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(
-			`Fields "field" conflict because subfields "deepField" conflict because subfields "x" conflict because `+
-				`a and b are different fields.`,
+		testutil.RuleError(`Fields "field" conflict because subfields "deepField" conflict because subfields "x" conflict because `+
+			`a and b are different fields. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
 			3, 9,
 			4, 11,
 			5, 13,
@@ -274,9 +293,9 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReportsDeepConflictToNearestCommo
         }
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(
-			`Fields "deepField" conflict because subfields "x" conflict because `+
-				`a and b are different fields.`,
+		testutil.RuleError(`Fields "deepField" conflict because subfields "x" conflict because `+
+			`a and b are different fields. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
 			4, 11,
 			5, 13,
 			7, 11,
@@ -486,8 +505,8 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Conf
           }
         }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(
-			`Fields "scalar" conflict because they return conflicting types Int and String!.`,
+		testutil.RuleError(`Fields "scalar" conflict because they return conflicting types Int and String!. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
 			5, 15,
 			8, 15),
 	})
@@ -526,8 +545,8 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Disa
           }
         }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(
-			`Fields "scalar" conflict because they return conflicting types Int and String.`,
+		testutil.RuleError(`Fields "scalar" conflict because they return conflicting types Int and String. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
 			5, 15,
 			8, 15),
 	})
@@ -545,8 +564,8 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Disa
           }
         }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(
-			`Fields "scalar" conflict because they return conflicting types String! and String.`,
+		testutil.RuleError(`Fields "scalar" conflict because they return conflicting types String! and String. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
 			5, 15,
 			8, 15),
 	})
@@ -568,8 +587,8 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Disa
           }
         }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(
-			`Fields "box" conflict because they return conflicting types [StringBox] and StringBox.`,
+		testutil.RuleError(`Fields "box" conflict because they return conflicting types [StringBox] and StringBox. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
 			5, 15,
 			10, 15),
 	})
@@ -590,8 +609,8 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Disa
           }
         }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(
-			`Fields "box" conflict because they return conflicting types StringBox and [StringBox].`,
+		testutil.RuleError(`Fields "box" conflict because they return conflicting types StringBox and [StringBox]. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
 			5, 15,
 			10, 15),
 	})
@@ -614,8 +633,8 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Disa
           }
         }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(
-			`Fields "val" conflict because scalar and unrelatedField are different fields.`,
+		testutil.RuleError(`Fields "val" conflict because scalar and unrelatedField are different fields. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
 			6, 17,
 			7, 17),
 	})
@@ -637,8 +656,8 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Disa
           }
         }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(
-			`Fields "box" conflict because subfields "scalar" conflict because they return conflicting types String and Int.`,
+		testutil.RuleError(`Fields "box" conflict because subfields "scalar" conflict because they return conflicting types String and Int. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
 			5, 15,
 			6, 17,
 			10, 15,
@@ -704,9 +723,9 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Comp
           }
         }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(
-			`Fields "edges" conflict because subfields "node" conflict because subfields "id" conflict because `+
-				`id and name are different fields.`,
+		testutil.RuleError(`Fields "edges" conflict because subfields "node" conflict because subfields "id" conflict because `+
+			`id and name are different fields. `+
+			`Use different aliases on the fields to fetch both if this was intentional.`,
 			14, 11,
 			15, 13,
 			16, 15,
