@@ -182,10 +182,6 @@ func init() {
 			dogType,
 			catType,
 		},
-		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
-			// not used for validation
-			return nil
-		},
 	})
 	var intelligentInterface = graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "Intelligent",
