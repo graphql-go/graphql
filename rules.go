@@ -1510,8 +1510,8 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 								reason := c.Reason
 								reportError(
 									context,
-									fmt.Sprintf(
-										`Fields "%v" conflict because %v.`,
+									fmt.Sprintf(`Fields "%v" conflict because %v. `+
+										`Use different aliases on the fields to fetch both if this was intentional.`,
 										responseName,
 										reasonMessage(reason),
 									),
