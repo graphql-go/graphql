@@ -172,15 +172,6 @@ func quoteStrings(slice []string) []string {
 }
 func UndefinedFieldMessage(fieldName string, ttypeName string, suggestedTypes []string, suggestedFields []string) string {
 
-	quoteStrings := func(slice []string) []string {
-		quoted := []string{}
-		for _, s := range slice {
-			quoted = append(quoted, fmt.Sprintf(`"%v"`, s))
-		}
-		return quoted
-	}
-
-	// construct helpful (but long) message
 	message := fmt.Sprintf(`Cannot query field "%v" on type "%v".`, fieldName, ttypeName)
 	const MaxLength = 5
 	if len(suggestedTypes) > 0 {
