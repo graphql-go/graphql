@@ -92,11 +92,13 @@ func wrap(start, maybeString, end string) string {
 	}
 	return start + maybeString + end
 }
+
+// Given array, print each item on its own line, wrapped in an indented "{ }" block.
 func block(maybeArray interface{}) string {
-	if maybeArray == nil {
-		return ""
-	}
 	s := toSliceString(maybeArray)
+	if len(s) == 0 {
+		return "{}"
+	}
 	return indent("{\n"+join(s, "\n")) + "\n}"
 }
 
