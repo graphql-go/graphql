@@ -14,16 +14,26 @@ type SchemaConfig struct {
 
 type TypeMap map[string]Type
 
-//Schema Definition
-//A Schema is created by supplying the root types of each type of operation,
-//query, mutation (optional) and subscription (optional). A schema definition is then supplied to the
-//validator and executor.
-//Example:
-//    myAppSchema, err := NewSchema(SchemaConfig({
-//      Query: MyAppQueryRootType,
-//      Mutation: MyAppMutationRootType,
-//      Subscription: MyAppSubscriptionRootType,
-//    });
+// Schema Definition
+// A Schema is created by supplying the root types of each type of operation,
+// query, mutation (optional) and subscription (optional). A schema definition is then supplied to the
+// validator and executor.
+// Example:
+//     myAppSchema, err := NewSchema(SchemaConfig({
+//       Query: MyAppQueryRootType,
+//       Mutation: MyAppMutationRootType,
+//       Subscription: MyAppSubscriptionRootType,
+//     });
+// Note: If an array of `directives` are provided to GraphQLSchema, that will be
+// the exact list of directives represented and allowed. If `directives` is not
+// provided then a default set of the built-in `[ @include, @skip ]` directives
+// will be used. If you wish to provide *additional// directives to these
+// built-ins, you must explicitly declare them. Example:
+//     directives: [
+//       myCustomDirective,
+//       GraphQLIncludeDirective,
+//       GraphQLSkipDirective
+//     ]
 type Schema struct {
 	typeMap    TypeMap
 	directives []*Directive
@@ -454,8 +464,8 @@ func isEqualType(typeA Type, typeB Type) bool {
 }
 
 /**
- * Provided a type and a super type, return true if the first type is either
- * equal or a subset of the second super type (covariant).
+ // Provided a type and a super type, return true if the first type is either
+ // equal or a subset of the second super type (covariant).
  */
 func isTypeSubTypeOf(schema *Schema, maybeSubType Type, superType Type) bool {
 	// Equivalent type is a valid subtype
