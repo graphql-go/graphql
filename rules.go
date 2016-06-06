@@ -171,32 +171,32 @@ func quoteStrings(slice []string) []string {
 	}
 	return quoted
 }
+
+// quotedOrList Given [ A, B, C ] return '"A", "B", or "C"'.
+// Notice oxford comma
 func quotedOrList(slice []string) string {
+	maxLength := 5
+	if len(slice) == 0 {
+		return ""
+	}
 	quoted := quoteStrings(slice)
-	if len(quoted) > 1 {
-		return fmt.Sprintf("%v or %v", strings.Join(quoted[0:len(quoted)-1], ", "), quoted[len(quoted)-1])
+	if maxLength > len(quoted) {
+		maxLength = len(quoted)
+	}
+	if maxLength > 2 {
+		return fmt.Sprintf("%v, or %v", strings.Join(quoted[0:maxLength-1], ", "), quoted[maxLength-1])
+	}
+	if maxLength > 1 {
+		return fmt.Sprintf("%v or %v", strings.Join(quoted[0:maxLength-1], ", "), quoted[maxLength-1])
 	}
 	return quoted[0]
 }
 func UndefinedFieldMessage(fieldName string, ttypeName string, suggestedTypeNames []string, suggestedFieldNames []string) string {
 	message := fmt.Sprintf(`Cannot query field "%v" on type "%v".`, fieldName, ttypeName)
-	const MaxLength = 5
 	if len(suggestedTypeNames) > 0 {
-		suggestions := ""
-		if len(suggestedTypeNames) > MaxLength {
-			suggestions = quotedOrList(suggestedTypeNames[0:MaxLength])
-		} else {
-			suggestions = quotedOrList(suggestedTypeNames)
-		}
-		message = fmt.Sprintf(`%v Did you mean to use an inline fragment on %v?`, message, suggestions)
+		message = fmt.Sprintf(`%v Did you mean to use an inline fragment on %v?`, message, quotedOrList(suggestedTypeNames))
 	} else if len(suggestedFieldNames) > 0 {
-		suggestions := ""
-		if len(suggestedFieldNames) > MaxLength {
-			suggestions = quotedOrList(suggestedFieldNames[0:MaxLength])
-		} else {
-			suggestions = quotedOrList(suggestedFieldNames)
-		}
-		message = fmt.Sprintf(`%v Did you mean %v?`, message, suggestions)
+		message = fmt.Sprintf(`%v Did you mean %v?`, message, quotedOrList(suggestedFieldNames))
 	}
 	return message
 }
@@ -412,8 +412,7 @@ func unknownArgMessage(argName string, fieldName string, parentTypeName string, 
 	message := fmt.Sprintf(`Unknown argument "%v" on field "%v" of type "%v".`, argName, fieldName, parentTypeName)
 
 	if len(suggestedArgs) > 0 {
-		suggestions := strings.Join(quoteStrings(suggestedArgs), ", ")
-		message = fmt.Sprintf(`%v Perhaps you meant %v?`, message, suggestions)
+		message = fmt.Sprintf(`%v Did you mean %v?`, message, quotedOrList(suggestedArgs))
 	}
 
 	return message
@@ -423,8 +422,7 @@ func unknownDirectiveArgMessage(argName string, directiveName string, suggestedA
 	message := fmt.Sprintf(`Unknown argument "%v" on directive "@%v".`, argName, directiveName)
 
 	if len(suggestedArgs) > 0 {
-		suggestions := strings.Join(quoteStrings(suggestedArgs), ", ")
-		message = fmt.Sprintf(`%v Perhaps you meant %v?`, message, suggestions)
+		message = fmt.Sprintf(`%v Did you mean %v?`, message, quotedOrList(suggestedArgs))
 	}
 
 	return message
@@ -662,16 +660,8 @@ func KnownFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 
 func unknownTypeMessage(typeName string, suggestedTypes []string) string {
 	message := fmt.Sprintf(`Unknown type "%v".`, typeName)
-
-	const MaxLength = 5
 	if len(suggestedTypes) > 0 {
-		suggestions := ""
-		if len(suggestedTypes) < MaxLength {
-			suggestions = strings.Join(quoteStrings(suggestedTypes), ", ")
-		} else {
-			suggestions = strings.Join(quoteStrings(suggestedTypes[0:MaxLength]), ", ")
-		}
-		message = fmt.Sprintf(`%v Perhaps you meant one of the following: %v?`, message, suggestions)
+		message = fmt.Sprintf(`%v Did you mean %v?`, message, quotedOrList(suggestedTypes))
 	}
 
 	return message
