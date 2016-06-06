@@ -463,10 +463,8 @@ func isEqualType(typeA Type, typeB Type) bool {
 	return false
 }
 
-/**
- // Provided a type and a super type, return true if the first type is either
- // equal or a subset of the second super type (covariant).
- */
+// isTypeSubTypeOf Provided a type and a super type, return true if the first type is either
+// equal or a subset of the second super type (covariant).
 func isTypeSubTypeOf(schema *Schema, maybeSubType Type, superType Type) bool {
 	// Equivalent type is a valid subtype
 	if maybeSubType == superType {
