@@ -120,6 +120,9 @@ var _ Output = (*NonNull)(nil)
 // Composite interface for types that may describe the parent context of a selection set.
 type Composite interface {
 	Name() string
+	Description() string
+	String() string
+	Error() error
 }
 
 var _ Composite = (*Object)(nil)
