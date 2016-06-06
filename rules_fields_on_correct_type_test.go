@@ -167,7 +167,7 @@ func TestValidate_FieldsOnCorrectType_DefinedImplementorsQueriedOnUnion(t *testi
         name
       }
     `, []gqlerrors.FormattedError{
-		testutil.RuleError(`Cannot query field "name" on type "CatOrDog". Did you mean to use an inline fragment on "Being", "Pet", "Canine", "Cat" or "Dog"?`, 3, 9),
+		testutil.RuleError(`Cannot query field "name" on type "CatOrDog". Did you mean to use an inline fragment on "Being", "Pet", "Canine", "Cat", or "Dog"?`, 3, 9),
 	})
 }
 func TestValidate_FieldsOnCorrectType_ValidFieldInInlineFragment(t *testing.T) {
@@ -220,7 +220,7 @@ func TestValidate_FieldsOnCorrectTypeErrorMessage_OnlyShowsOneSetOfSuggestionsAt
 func TestValidate_FieldsOnCorrectTypeErrorMessage_LimitLotsOfTypeSuggestions(t *testing.T) {
 	message := graphql.UndefinedFieldMessage("f", "T", []string{"A", "B", "C", "D", "E", "F"}, []string{})
 	expected := `Cannot query field "f" on type "T". ` +
-		`Did you mean to use an inline fragment on "A", "B", "C", "D" or "E"?`
+		`Did you mean to use an inline fragment on "A", "B", "C", "D", or "E"?`
 	if message != expected {
 		t.Fatalf("Unexpected message, expected: %v, got %v", expected, message)
 	}
@@ -231,7 +231,7 @@ func TestValidate_FieldsOnCorrectTypeErrorMessage_LimitLotsOfFieldSuggestions(t 
 		"f", "T", []string{}, []string{"z", "y", "x", "w", "v", "u"},
 	)
 	expected := `Cannot query field "f" on type "T". ` +
-		`Did you mean "z", "y", "x", "w" or "v"?`
+		`Did you mean "z", "y", "x", "w", or "v"?`
 	if message != expected {
 		t.Fatalf("Unexpected message, expected: %v, got %v", expected, message)
 	}
