@@ -115,6 +115,10 @@ func TestValidate_KnownDirectives_WithinSchemaLanguage_WithWellPlacedDirectives(
         input MyInput @onInputObject {
           myField: Int @onInputFieldDefinition
         }
+
+        schema @onSchema {
+          query: MyQuery
+        }
     `)
 }
 
@@ -139,6 +143,10 @@ func TestValidate_KnownDirectives_WithinSchemaLanguage_WithMisplacedDirectives(t
         input MyInput @onEnum {
           myField: Int @onArgumentDefinition
         }
+
+        schema @onObject {
+          query: MyQuery
+        }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Directive "onInterface" may not be used on OBJECT.`, 2, 43),
 		testutil.RuleError(`Directive "onInputFieldDefinition" may not be used on ARGUMENT_DEFINITION.`, 3, 30),
@@ -152,5 +160,6 @@ func TestValidate_KnownDirectives_WithinSchemaLanguage_WithMisplacedDirectives(t
 		testutil.RuleError(`Directive "onUnion" may not be used on ENUM_VALUE.`, 15, 20),
 		testutil.RuleError(`Directive "onEnum" may not be used on INPUT_OBJECT.`, 18, 23),
 		testutil.RuleError(`Directive "onArgumentDefinition" may not be used on INPUT_FIELD_DEFINITION.`, 19, 24),
+		testutil.RuleError(`Directive "onObject" may not be used on SCHEMA.`, 22, 16),
 	})
 }

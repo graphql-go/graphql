@@ -877,13 +877,17 @@ func parseNamed(parser *Parser) (*ast.Named, error) {
 /* Implements the parsing rules in the Type Definition section. */
 
 /**
- * SchemaDefinition : schema { OperationTypeDefinition+ }
+ * SchemaDefinition : schema Directives? { OperationTypeDefinition+ }
  *
  * OperationTypeDefinition : OperationType : NamedType
  */
 func parseSchemaDefinition(parser *Parser) (*ast.SchemaDefinition, error) {
 	start := parser.Token.Start
 	_, err := expectKeyWord(parser, "schema")
+	if err != nil {
+		return nil, err
+	}
+	directives, err := parseDirectives(parser)
 	if err != nil {
 		return nil, err
 	}
@@ -902,11 +906,11 @@ func parseSchemaDefinition(parser *Parser) (*ast.SchemaDefinition, error) {
 			operationTypes = append(operationTypes, op)
 		}
 	}
-	def := ast.NewSchemaDefinition(&ast.SchemaDefinition{
+	return ast.NewSchemaDefinition(&ast.SchemaDefinition{
 		OperationTypes: operationTypes,
+		Directives:     directives,
 		Loc:            loc(parser, start),
-	})
-	return def, nil
+	}), nil
 }
 
 func parseOperationTypeDefinition(parser *Parser) (interface{}, error) {
