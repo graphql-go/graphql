@@ -1381,6 +1381,55 @@ func doTypesConflict(type1 Output, type2 Output) bool {
 	return false
 }
 
+// getSubfieldMap Given two overlapping fields, produce the combined collection of subfields.
+func getSubfieldMap(context *ValidationContext, ast1 *ast.Field, type1 Output, ast2 *ast.Field, type2 Output) map[string][]*fieldDefPair {
+	selectionSet1 := ast1.SelectionSet
+	selectionSet2 := ast2.SelectionSet
+	if selectionSet1 != nil && selectionSet2 != nil {
+		visitedFragmentNames := map[string]bool{}
+		subfieldMap := collectFieldASTsAndDefs(
+			context,
+			GetNamed(type1),
+			selectionSet1,
+			visitedFragmentNames,
+			nil,
+		)
+		subfieldMap = collectFieldASTsAndDefs(
+			context,
+			GetNamed(type2),
+			selectionSet2,
+			visitedFragmentNames,
+			subfieldMap,
+		)
+		return subfieldMap
+	}
+	return nil
+}
+
+// subfieldConflicts Given a series of Conflicts which occurred between two sub-fields, generate a single Conflict.
+func subfieldConflicts(conflicts []*conflict, responseName string, ast1 *ast.Field, ast2 *ast.Field) *conflict {
+	if len(conflicts) > 0 {
+		conflictReasons := []conflictReason{}
+		conflictFieldsLeft := []ast.Node{ast1}
+		conflictFieldsRight := []ast.Node{ast2}
+		for _, c := range conflicts {
+			conflictReasons = append(conflictReasons, c.Reason)
+			conflictFieldsLeft = append(conflictFieldsLeft, c.FieldsLeft...)
+			conflictFieldsRight = append(conflictFieldsRight, c.FieldsRight...)
+		}
+
+		return &conflict{
+			Reason: conflictReason{
+				Name:    responseName,
+				Message: conflictReasons,
+			},
+			FieldsLeft:  conflictFieldsLeft,
+			FieldsRight: conflictFieldsRight,
+		}
+	}
+	return nil
+}
+
 // OverlappingFieldsCanBeMergedRule Overlapping fields can be merged
 //
 // A selection set is only valid if all fields (including spreading any
@@ -1388,8 +1437,6 @@ func doTypesConflict(type1 Output, type2 Output) bool {
 // without ambiguity.
 func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRuleInstance {
 
-	var getSubfieldMap func(ast1 *ast.Field, type1 Output, ast2 *ast.Field, type2 Output) map[string][]*fieldDefPair
-	var subfieldConflicts func(conflicts []*conflict, responseName string, ast1 *ast.Field, ast2 *ast.Field) *conflict
 	var findConflicts func(parentFieldsAreMutuallyExclusive bool, fieldMap map[string][]*fieldDefPair) (conflicts []*conflict)
 
 	comparedSet := newPairSet()
@@ -1490,7 +1537,7 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 			}
 		}
 
-		subFieldMap := getSubfieldMap(ast1, type1, ast2, type2)
+		subFieldMap := getSubfieldMap(context, ast1, type1, ast2, type2)
 		if subFieldMap != nil {
 			conflicts := findConflicts(fieldsAreMutuallyExclusive, subFieldMap)
 			return subfieldConflicts(conflicts, responseName, ast1, ast2)
@@ -1499,52 +1546,6 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 		return nil
 	}
 
-	getSubfieldMap = func(ast1 *ast.Field, type1 Output, ast2 *ast.Field, type2 Output) map[string][]*fieldDefPair {
-		selectionSet1 := ast1.SelectionSet
-		selectionSet2 := ast2.SelectionSet
-		if selectionSet1 != nil && selectionSet2 != nil {
-			visitedFragmentNames := map[string]bool{}
-			subfieldMap := collectFieldASTsAndDefs(
-				context,
-				GetNamed(type1),
-				selectionSet1,
-				visitedFragmentNames,
-				nil,
-			)
-			subfieldMap = collectFieldASTsAndDefs(
-				context,
-				GetNamed(type2),
-				selectionSet2,
-				visitedFragmentNames,
-				subfieldMap,
-			)
-			return subfieldMap
-		}
-		return nil
-	}
-
-	subfieldConflicts = func(conflicts []*conflict, responseName string, ast1 *ast.Field, ast2 *ast.Field) *conflict {
-		if len(conflicts) > 0 {
-			conflictReasons := []conflictReason{}
-			conflictFieldsLeft := []ast.Node{ast1}
-			conflictFieldsRight := []ast.Node{ast2}
-			for _, c := range conflicts {
-				conflictReasons = append(conflictReasons, c.Reason)
-				conflictFieldsLeft = append(conflictFieldsLeft, c.FieldsLeft...)
-				conflictFieldsRight = append(conflictFieldsRight, c.FieldsRight...)
-			}
-
-			return &conflict{
-				Reason: conflictReason{
-					Name:    responseName,
-					Message: conflictReasons,
-				},
-				FieldsLeft:  conflictFieldsLeft,
-				FieldsRight: conflictFieldsRight,
-			}
-		}
-		return nil
-	}
 	findConflicts = func(parentFieldsAreMutuallyExclusive bool, fieldMap map[string][]*fieldDefPair) (conflicts []*conflict) {
 
 		// ensure field traversal
