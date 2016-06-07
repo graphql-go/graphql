@@ -24,6 +24,16 @@ const (
 	DirectiveLocationInputFieldDefinition = "INPUT_FIELD_DEFINITION"
 )
 
+// DefaultDeprecationReason Constant string used for default reason for a deprecation.
+const DefaultDeprecationReason = "No longer supported"
+
+// SpecifiedRules The full list of specified directives.
+const SpecifiedDirectives = []*Directive{
+	IncludeDirective,
+	SkipDirective,
+	DeprecatedDirective,
+}
+
 // Directive structs are used by the GraphQL runtime as a way of modifying execution
 // behavior. Type system creators will usually not create these directly.
 type Directive struct {
@@ -90,8 +100,8 @@ func NewDirective(config DirectiveConfig) *Directive {
 	return dir
 }
 
-// IncludeDirective is used to conditionally include fields or fragments
-var IncludeDirective = NewDirective(DirectiveConfig{
+// IncludeDirective is used to conditionally include fields or fragments.
+const IncludeDirective = NewDirective(DirectiveConfig{
 	Name: "include",
 	Description: "Directs the executor to include this field or fragment only when " +
 		"the `if` argument is true.",
@@ -108,8 +118,8 @@ var IncludeDirective = NewDirective(DirectiveConfig{
 	},
 })
 
-// SkipDirective Used to conditionally skip (exclude) fields or fragments
-var SkipDirective = NewDirective(DirectiveConfig{
+// SkipDirective Used to conditionally skip (exclude) fields or fragments.
+const SkipDirective = NewDirective(DirectiveConfig{
 	Name: "skip",
 	Description: "Directs the executor to skip this field or fragment when the `if` " +
 		"argument is true.",
@@ -123,5 +133,24 @@ var SkipDirective = NewDirective(DirectiveConfig{
 		DirectiveLocationField,
 		DirectiveLocationFragmentSpread,
 		DirectiveLocationInlineFragment,
+	},
+})
+
+// DeprecatedDirective  Used to declare element of a GraphQL schema as deprecated.
+const DeprecatedDirective = NewDirective(DirectiveConfig{
+	Name:        "deprecated",
+	Description: "Marks an element of a GraphQL schema as no longer supported.",
+	Args: FieldConfigArgument{
+		"reason": &ArgumentConfig{
+			Type: String,
+			Description: "Explains why this element was deprecated, usually also including a " +
+				"suggestion for how to access supported similar data. Formatted" +
+				"in [Markdown](https://daringfireball.net/projects/markdown/).",
+			DefaultValue: DefaultDeprecationReason,
+		},
+	},
+	Locations: []string{
+		DirectiveLocationFieldDefinition,
+		DirectiveLocationEnumValue,
 	},
 })
