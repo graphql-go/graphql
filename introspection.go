@@ -136,7 +136,7 @@ func init() {
 				Description: "Location adjacent to an inline fragment.",
 			},
 			"SCHEMA": &EnumValueConfig{
-				Value: DirectiveLocationSchema,
+				Value:       DirectiveLocationSchema,
 				Description: "Location adjacent to a schema definition.",
 			},
 			"SCALAR": &EnumValueConfig{

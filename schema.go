@@ -26,14 +26,14 @@ type TypeMap map[string]Type
 //     });
 // Note: If an array of `directives` are provided to GraphQLSchema, that will be
 // the exact list of directives represented and allowed. If `directives` is not
-// provided then a default set of the built-in `[ @include, @skip ]` directives
-// will be used. If you wish to provide *additional// directives to these
-// built-ins, you must explicitly declare them. Example:
-//     directives: [
-//       myCustomDirective,
-//       GraphQLIncludeDirective,
-//       GraphQLSkipDirective
-//     ]
+// provided then a default set of the specified directives (e.g. @include and
+// @skip) will be used. If you wish to provide *additional* directives to these
+// specified directives, you must explicitly declare them. Example:
+//
+//     const MyAppSchema = new GraphQLSchema({
+//       ...
+//       directives: specifiedDirectives.concat([ myCustomDirective ]),
+//     })
 type Schema struct {
 	typeMap    TypeMap
 	directives []*Directive
@@ -67,13 +67,10 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 	schema.mutationType = config.Mutation
 	schema.subscriptionType = config.Subscription
 
-	// Provide `@include() and `@skip()` directives by default.
+	// Provide specified directives (e.g. @include and @skip) by default.
 	schema.directives = config.Directives
 	if len(schema.directives) == 0 {
-		schema.directives = []*Directive{
-			IncludeDirective,
-			SkipDirective,
-		}
+		schema.directives = SpecifiedDirectives
 	}
 	// Ensure directive definitions are error-free
 	for _, dir := range schema.directives {
