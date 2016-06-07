@@ -28,7 +28,7 @@ const (
 const DefaultDeprecationReason = "No longer supported"
 
 // SpecifiedRules The full list of specified directives.
-const SpecifiedDirectives = []*Directive{
+var SpecifiedDirectives = []*Directive{
 	IncludeDirective,
 	SkipDirective,
 	DeprecatedDirective,
@@ -101,7 +101,7 @@ func NewDirective(config DirectiveConfig) *Directive {
 }
 
 // IncludeDirective is used to conditionally include fields or fragments.
-const IncludeDirective = NewDirective(DirectiveConfig{
+var IncludeDirective = NewDirective(DirectiveConfig{
 	Name: "include",
 	Description: "Directs the executor to include this field or fragment only when " +
 		"the `if` argument is true.",
@@ -119,7 +119,7 @@ const IncludeDirective = NewDirective(DirectiveConfig{
 })
 
 // SkipDirective Used to conditionally skip (exclude) fields or fragments.
-const SkipDirective = NewDirective(DirectiveConfig{
+var SkipDirective = NewDirective(DirectiveConfig{
 	Name: "skip",
 	Description: "Directs the executor to skip this field or fragment when the `if` " +
 		"argument is true.",
@@ -137,7 +137,7 @@ const SkipDirective = NewDirective(DirectiveConfig{
 })
 
 // DeprecatedDirective  Used to declare element of a GraphQL schema as deprecated.
-const DeprecatedDirective = NewDirective(DirectiveConfig{
+var DeprecatedDirective = NewDirective(DirectiveConfig{
 	Name:        "deprecated",
 	Description: "Marks an element of a GraphQL schema as no longer supported.",
 	Args: FieldConfigArgument{
