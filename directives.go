@@ -1,6 +1,7 @@
 package graphql
 
 const (
+	// Operations
 	DirectiveLocationQuery              = "QUERY"
 	DirectiveLocationMutation           = "MUTATION"
 	DirectiveLocationSubscription       = "SUBSCRIPTION"
@@ -8,6 +9,18 @@ const (
 	DirectiveLocationFragmentDefinition = "FRAGMENT_DEFINITION"
 	DirectiveLocationFragmentSpread     = "FRAGMENT_SPREAD"
 	DirectiveLocationInlineFragment     = "INLINE_FRAGMENT"
+
+	// Schema Definitions
+	DirectiveLocationScalar               = "SCALAR"
+	DirectiveLocationObject               = "OBJECT"
+	DirectiveLocationFieldDefinition      = "FIELD_DEFINITION"
+	DirectiveLocationArgumentDefinition   = "ARGUMENT_DEFINITION"
+	DirectiveLocationInterface            = "INTERFACE"
+	DirectiveLocationUnion                = "UNION"
+	DirectiveLocationEnum                 = "ENUM"
+	DirectiveLocationEnumValue            = "ENUM_VALUE"
+	DirectiveLocationInputObject          = "INPUT_OBJECT"
+	DirectiveLocationInputFieldDefinition = "INPUT_FIELD_DEFINITION"
 )
 
 // Directive structs are used by the GraphQL runtime as a way of modifying execution

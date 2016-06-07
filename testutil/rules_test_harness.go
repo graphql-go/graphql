@@ -455,12 +455,76 @@ func init() {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: queryRoot,
 		Directives: []*graphql.Directive{
-			graphql.NewDirective(graphql.DirectiveConfig{
-				Name:      "operationOnly",
-				Locations: []string{graphql.DirectiveLocationQuery},
-			}),
 			graphql.IncludeDirective,
 			graphql.SkipDirective,
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onQuery",
+				Locations: []string{graphql.DirectiveLocationQuery},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onMutation",
+				Locations: []string{graphql.DirectiveLocationMutation},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onSubscription",
+				Locations: []string{graphql.DirectiveLocationSubscription},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onField",
+				Locations: []string{graphql.DirectiveLocationField},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onFragmentDefinition",
+				Locations: []string{graphql.DirectiveLocationFragmentDefinition},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onFragmentSpread",
+				Locations: []string{graphql.DirectiveLocationFragmentSpread},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onInlineFragment",
+				Locations: []string{graphql.DirectiveLocationInlineFragment},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onScalar",
+				Locations: []string{graphql.DirectiveLocationScalar},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onObject",
+				Locations: []string{graphql.DirectiveLocationObject},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onFieldDefinition",
+				Locations: []string{graphql.DirectiveLocationFieldDefinition},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onArgumentDefinition",
+				Locations: []string{graphql.DirectiveLocationArgumentDefinition},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onInterface",
+				Locations: []string{graphql.DirectiveLocationInterface},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onUnion",
+				Locations: []string{graphql.DirectiveLocationUnion},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onEnum",
+				Locations: []string{graphql.DirectiveLocationEnum},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onEnumValue",
+				Locations: []string{graphql.DirectiveLocationEnumValue},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onInputObject",
+				Locations: []string{graphql.DirectiveLocationInputObject},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onInputFieldDefinition",
+				Locations: []string{graphql.DirectiveLocationInputFieldDefinition},
+			}),
 		},
 		Types: []graphql.Type{
 			catType,
