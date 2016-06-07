@@ -94,8 +94,8 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 	if schema.SubscriptionType() != nil {
 		initialTypes = append(initialTypes, schema.SubscriptionType())
 	}
-	if schemaType != nil {
-		initialTypes = append(initialTypes, schemaType)
+	if SchemaType != nil {
+		initialTypes = append(initialTypes, SchemaType)
 	}
 
 	for _, ttype := range config.Types {
