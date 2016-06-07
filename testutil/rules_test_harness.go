@@ -486,6 +486,10 @@ func init() {
 				Locations: []string{graphql.DirectiveLocationInlineFragment},
 			}),
 			graphql.NewDirective(graphql.DirectiveConfig{
+				Name:      "onSchema",
+				Locations: []string{graphql.DirectiveLocationSchema},
+			}),
+			graphql.NewDirective(graphql.DirectiveConfig{
 				Name:      "onScalar",
 				Locations: []string{graphql.DirectiveLocationScalar},
 			}),

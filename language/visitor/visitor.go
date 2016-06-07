@@ -83,7 +83,10 @@ var QueryDocumentKeys = KeyMap{
 	"List":    []string{"Type"},
 	"NonNull": []string{"Type"},
 
-	"SchemaDefinition":        []string{"OperationTypes"},
+	"SchemaDefinition": []string{
+		"Directives",
+		"OperationTypes",
+	},
 	"OperationTypeDefinition": []string{"Type"},
 
 	"ScalarDefinition": []string{

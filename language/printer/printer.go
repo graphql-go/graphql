@@ -455,13 +455,27 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 	"SchemaDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case *ast.SchemaDefinition:
-			operationTypesBlock := block(node.OperationTypes)
-			str := fmt.Sprintf("schema %v", operationTypesBlock)
+			directives := []string{}
+			for _, directive := range node.Directives {
+				directives = append(directives, fmt.Sprintf("%v", directive.Name))
+			}
+			str := join([]string{
+				"schema",
+				join(directives, " "),
+				block(node.OperationTypes),
+			}, " ")
 			return visitor.ActionUpdate, str
 		case map[string]interface{}:
 			operationTypes := toSliceString(getMapValue(node, "OperationTypes"))
-			operationTypesBlock := block(operationTypes)
-			str := fmt.Sprintf("schema %v", operationTypesBlock)
+			directives := []string{}
+			for _, directive := range getMapSliceValue(node, "Directives") {
+				directives = append(directives, fmt.Sprintf("%v", directive))
+			}
+			str := join([]string{
+				"schema",
+				join(directives, " "),
+				block(operationTypes),
+			}, " ")
 			return visitor.ActionUpdate, str
 		}
 		return visitor.ActionNoChange, nil

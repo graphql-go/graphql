@@ -617,6 +617,9 @@ func getDirectiveLocationForASTPath(ancestors []ast.Node) string {
 	if kind == kinds.FragmentDefinition {
 		return DirectiveLocationFragmentDefinition
 	}
+	if kind == kinds.SchemaDefinition {
+		return DirectiveLocationSchema
+	}
 	if kind == kinds.ScalarDefinition {
 		return DirectiveLocationScalar
 	}

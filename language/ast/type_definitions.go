@@ -36,6 +36,7 @@ var _ TypeSystemDefinition = (*DirectiveDefinition)(nil)
 type SchemaDefinition struct {
 	Kind           string
 	Loc            *Location
+	Directives     []*Directive
 	OperationTypes []*OperationTypeDefinition
 }
 
@@ -46,6 +47,7 @@ func NewSchemaDefinition(def *SchemaDefinition) *SchemaDefinition {
 	return &SchemaDefinition{
 		Kind:           kinds.SchemaDefinition,
 		Loc:            def.Loc,
+		Directives:     def.Directives,
 		OperationTypes: def.OperationTypes,
 	}
 }
