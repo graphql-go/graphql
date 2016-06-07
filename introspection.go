@@ -135,6 +135,46 @@ func init() {
 				Value:       DirectiveLocationInlineFragment,
 				Description: "Location adjacent to an inline fragment.",
 			},
+			"SCALAR": &EnumValueConfig{
+				Value:       DirectiveLocationScalar,
+				Description: "Location adjacent to a scalar definition.",
+			},
+			"OBJECT": &EnumValueConfig{
+				Value:       DirectiveLocationObject,
+				Description: "Location adjacent to a object definition.",
+			},
+			"FIELD_DEFINITION": &EnumValueConfig{
+				Value:       DirectiveLocationFieldDefinition,
+				Description: "Location adjacent to a field definition.",
+			},
+			"ARGUMENT_DEFINITION": &EnumValueConfig{
+				Value:       DirectiveLocationArgumentDefinition,
+				Description: "Location adjacent to an argument definition.",
+			},
+			"INTERFACE": &EnumValueConfig{
+				Value:       DirectiveLocationInterface,
+				Description: "Location adjacent to an interface definition.",
+			},
+			"UNION": &EnumValueConfig{
+				Value:       DirectiveLocationUnion,
+				Description: "Location adjacent to a union definition.",
+			},
+			"ENUM": &EnumValueConfig{
+				Value:       DirectiveLocationEnum,
+				Description: "Location adjacent to an enum definition.",
+			},
+			"ENUM_VALUE": &EnumValueConfig{
+				Value:       DirectiveLocationEnumValue,
+				Description: "Location adjacent to an enum value definition.",
+			},
+			"INPUT_OBJECT": &EnumValueConfig{
+				Value:       DirectiveLocationInputObject,
+				Description: "Location adjacent to an input object type definition.",
+			},
+			"INPUT_FIELD_DEFINITION": &EnumValueConfig{
+				Value:       DirectiveLocationInputFieldDefinition,
+				Description: "Location adjacent to an input object field definition.",
+			},
 		},
 	})
 

@@ -549,15 +549,7 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 							)
 						}
 
-						var appliedTo ast.Node
-						if len(p.Ancestors) > 0 {
-							appliedTo = p.Ancestors[len(p.Ancestors)-1]
-						}
-						if appliedTo == nil {
-							return action, result
-						}
-
-						candidateLocation := getLocationForAppliedNode(appliedTo)
+						candidateLocation := getDirectiveLocationForASTPath(p.Ancestors)
 
 						directiveHasLocation := false
 						for _, loc := range directiveDef.Locations {
@@ -592,7 +584,14 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 	}
 }
 
-func getLocationForAppliedNode(appliedTo ast.Node) string {
+func getDirectiveLocationForASTPath(ancestors []ast.Node) string {
+	var appliedTo ast.Node
+	if len(ancestors) > 0 {
+		appliedTo = ancestors[len(ancestors)-1]
+	}
+	if appliedTo == nil {
+		return ""
+	}
 	kind := appliedTo.GetKind()
 	if kind == kinds.OperationDefinition {
 		appliedTo, _ := appliedTo.(*ast.OperationDefinition)
@@ -617,6 +616,41 @@ func getLocationForAppliedNode(appliedTo ast.Node) string {
 	}
 	if kind == kinds.FragmentDefinition {
 		return DirectiveLocationFragmentDefinition
+	}
+	if kind == kinds.ScalarDefinition {
+		return DirectiveLocationScalar
+	}
+	if kind == kinds.ObjectDefinition {
+		return DirectiveLocationObject
+	}
+	if kind == kinds.FieldDefinition {
+		return DirectiveLocationFieldDefinition
+	}
+	if kind == kinds.InterfaceDefinition {
+		return DirectiveLocationInterface
+	}
+	if kind == kinds.UnionDefinition {
+		return DirectiveLocationUnion
+	}
+	if kind == kinds.EnumDefinition {
+		return DirectiveLocationEnum
+	}
+	if kind == kinds.EnumValueDefinition {
+		return DirectiveLocationEnumValue
+	}
+	if kind == kinds.InputObjectDefinition {
+		return DirectiveLocationInputObject
+	}
+	if kind == kinds.InputValueDefinition {
+		var parentNode ast.Node
+		if len(ancestors) >= 3 {
+			parentNode = ancestors[len(ancestors)-3]
+		}
+		if parentNode.GetKind() == kinds.InputObjectDefinition {
+			return DirectiveLocationInputFieldDefinition
+		} else {
+			return DirectiveLocationArgumentDefinition
+		}
 	}
 	return ""
 }
