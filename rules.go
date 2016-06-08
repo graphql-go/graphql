@@ -858,7 +858,7 @@ func NoFragmentCyclesRule(context *ValidationContext) *ValidationRuleInstance {
 		}
 		visitedFrags[fragmentName] = true
 
-		spreadNodes := context.FragmentSpreads(fragment)
+		spreadNodes := context.FragmentSpreads(fragment.SelectionSet)
 		if len(spreadNodes) == 0 {
 			return
 		}
