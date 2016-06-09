@@ -820,13 +820,34 @@ func completeListValue(eCtx *ExecutionContext, returnType *List, fieldASTs []*as
 		panic(gqlerrors.FormatError(err))
 	}
 
+	// concurrently resolve list elements
 	itemType := returnType.OfType
-	completedResults := []interface{}{}
+	wg := sync.WaitGroup{}
+	completedResults := make([]interface{}, resultVal.Len())
+	panics := make(chan interface{}, resultVal.Len())
 	for i := 0; i < resultVal.Len(); i++ {
-		val := resultVal.Index(i).Interface()
-		completedItem := completeValueCatchingError(eCtx, itemType, fieldASTs, info, val)
-		completedResults = append(completedResults, completedItem)
+		wg.Add(1)
+		go func(j int) {
+			defer func() {
+				if r := recover(); r != nil {
+					panics <- r
+				}
+				wg.Done()
+			}()
+			val := resultVal.Index(j).Interface()
+			completedResults[j] = completeValueCatchingError(eCtx, itemType, fieldASTs, info, val)
+		}(i)
 	}
+
+	// wait for all routines to complete and then perform clean up
+	wg.Wait()
+	close(panics)
+
+	// re-panic if a goroutine panicked
+	for p := range panics {
+		panic(p)
+	}
+
 	return completedResults
 }
 
