@@ -15,7 +15,7 @@ import (
 
 func expectValid(t *testing.T, schema *graphql.Schema, queryString string) {
 	source := source.NewSource(&source.Source{
-		Body: queryString,
+		Body: []byte(queryString),
 		Name: "GraphQL request",
 	})
 	AST, err := parser.Parse(parser.ParseParams{Source: source})

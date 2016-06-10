@@ -5,7 +5,7 @@ const (
 )
 
 type Source struct {
-	Body string
+	Body []byte
 	Name string
 }
 
