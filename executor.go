@@ -274,51 +274,39 @@ func executeFields(p ExecuteFieldsParams) *Result {
 		p.Fields = map[string][]*ast.Field{}
 	}
 
-	type resolvedChanResult struct {
-		responseName string
-		resolved     interface{}
-		state        resolveFieldResultState
-		panicErr     error
-	}
-
 	// concurrently resolve fields
-	var wg sync.WaitGroup
-	resolvedChan := make(chan resolvedChanResult, len(p.Fields))
+	wg := sync.WaitGroup{}
+	mtx := sync.Mutex{}
+	finalResults := make(map[string]interface{}, len(p.Fields))
+	panics := make(chan interface{}, len(p.Fields))
 	for responseName, fieldASTs := range p.Fields {
 		wg.Add(1)
-		go func(responseName string, fieldASTs []*ast.Field) (resolved interface{}, state resolveFieldResultState, panicErr error) {
+		go func(responseName string, fieldASTs []*ast.Field) {
 			defer func() {
 				if r := recover(); r != nil {
-					if r, ok := r.(error); ok {
-						// recover panic that was thrown by resolveFields(),
-						// indicating that we should short-circuit traversal chain later
-						panicErr = r
-					}
+					panics <- r
 				}
-				resolvedChan <- resolvedChanResult{responseName, resolved, state, panicErr}
 				wg.Done()
 			}()
-			resolved, state = resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
-			return resolved, state, panicErr
+			resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+			if state.hasNoFieldDefs {
+				return
+			}
+			mtx.Lock()
+			finalResults[responseName] = resolved
+			mtx.Unlock()
 		}(responseName, fieldASTs)
 	}
 
 	// wait for all routines to complete and then perform clean up
 	wg.Wait()
-	close(resolvedChan)
+	close(panics)
 
-	// iterate through resolved results
-	finalResults := map[string]interface{}{}
-	for result := range resolvedChan {
-		if result.panicErr != nil {
-			// short-circuit field resolution traversal chain
-			panic(result.panicErr)
-		}
-		if result.state.hasNoFieldDefs {
-			continue
-		}
-		finalResults[result.responseName] = result.resolved
+	// re-panic if a goroutine panicked
+	for p := range panics {
+		panic(p)
 	}
+
 	return &Result{
 		Data:   finalResults,
 		Errors: p.ExecutionContext.Errors(),
