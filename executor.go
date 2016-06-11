@@ -106,10 +106,10 @@ func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error)
 	}
 
 	if operation == nil {
-		if p.OperationName == "" {
+		if p.OperationName != "" {
 			return nil, fmt.Errorf(`Unknown operation named "%v".`, p.OperationName)
 		}
-		return nil, fmt.Errorf(`Must provide an operation`)
+		return nil, fmt.Errorf(`Must provide an operation.`)
 	}
 
 	variableValues, err := getVariableValues(p.Schema, operation.GetVariableDefinitions(), p.Args)
@@ -152,7 +152,7 @@ func executeOperation(p ExecuteOperationParams) *Result {
 		Fields:           fields,
 	}
 
-	if p.Operation.GetOperation() == "mutation" {
+	if p.Operation.GetOperation() == ast.OperationTypeMutation {
 		return executeFieldsSerially(executeFieldsParams)
 	}
 	return executeFields(executeFieldsParams)
@@ -166,9 +166,9 @@ func getOperationRootType(schema Schema, operation ast.Definition) (*Object, err
 	}
 
 	switch operation.GetOperation() {
-	case "query":
+	case ast.OperationTypeQuery:
 		return schema.QueryType(), nil
-	case "mutation":
+	case ast.OperationTypeMutation:
 		mutationType := schema.MutationType()
 		if mutationType.PrivateName == "" {
 			return nil, gqlerrors.NewError(
@@ -181,7 +181,7 @@ func getOperationRootType(schema Schema, operation ast.Definition) (*Object, err
 			)
 		}
 		return mutationType, nil
-	case "subscription":
+	case ast.OperationTypeSubscription:
 		subscriptionType := schema.SubscriptionType()
 		if subscriptionType.PrivateName == "" {
 			return nil, gqlerrors.NewError(
@@ -327,8 +327,7 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 			}
 
 			if fragment, ok := fragment.(*ast.FragmentDefinition); ok {
-				if !shouldIncludeNode(p.ExeContext, fragment.Directives) ||
-					!doesFragmentConditionMatch(p.ExeContext, fragment, p.RuntimeType) {
+				if !doesFragmentConditionMatch(p.ExeContext, fragment, p.RuntimeType) {
 					continue
 				}
 				innerParams := CollectFieldsParams{
@@ -371,12 +370,11 @@ func shouldIncludeNode(eCtx *ExecutionContext, directives []*ast.Directive) bool
 		if err != nil {
 			return defaultReturnValue
 		}
-		if skipIf, ok := argValues["if"]; ok {
-			if boolSkipIf, ok := skipIf.(bool); ok {
-				return !boolSkipIf
+		if skipIf, ok := argValues["if"].(bool); ok {
+			if skipIf == true {
+				return false
 			}
 		}
-		return defaultReturnValue
 	}
 	for _, directive := range directives {
 		if directive == nil || directive.Name == nil {
@@ -396,12 +394,11 @@ func shouldIncludeNode(eCtx *ExecutionContext, directives []*ast.Directive) bool
 		if err != nil {
 			return defaultReturnValue
 		}
-		if includeIf, ok := argValues["if"]; ok {
-			if boolIncludeIf, ok := includeIf.(bool); ok {
-				return boolIncludeIf
+		if includeIf, ok := argValues["if"].(bool); ok {
+			if includeIf == false {
+				return false
 			}
 		}
-		return defaultReturnValue
 	}
 	return defaultReturnValue
 }
@@ -425,8 +422,11 @@ func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment ast.Node, ttype
 		if conditionalType.Name() == ttype.Name() {
 			return true
 		}
-		if conditionalType, ok := conditionalType.(Abstract); ok {
-			return conditionalType.IsPossibleType(ttype)
+		if conditionalType, ok := conditionalType.(*Interface); ok {
+			return eCtx.Schema.IsPossibleType(conditionalType, ttype)
+		}
+		if conditionalType, ok := conditionalType.(*Union); ok {
+			return eCtx.Schema.IsPossibleType(conditionalType, ttype)
 		}
 	case *ast.InlineFragment:
 		typeConditionAST := fragment.TypeCondition
@@ -443,8 +443,11 @@ func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment ast.Node, ttype
 		if conditionalType.Name() == ttype.Name() {
 			return true
 		}
-		if conditionalType, ok := conditionalType.(Abstract); ok {
-			return conditionalType.IsPossibleType(ttype)
+		if conditionalType, ok := conditionalType.(*Interface); ok {
+			return eCtx.Schema.IsPossibleType(conditionalType, ttype)
+		}
+		if conditionalType, ok := conditionalType.(*Union); ok {
+			return eCtx.Schema.IsPossibleType(conditionalType, ttype)
 		}
 	}
 
@@ -520,8 +523,6 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	// TODO: find a way to memoize, in case this field is within a List type.
 	args, _ := getArgumentValues(fieldDef.Args, fieldAST.Arguments, eCtx.VariableValues)
 
-	// The resolve function's optional third argument is a collection of
-	// information about the current execution state.
 	info := ResolveInfo{
 		FieldName:      fieldName,
 		FieldASTs:      fieldASTs,
@@ -572,20 +573,10 @@ func completeValueCatchingError(eCtx *ExecutionContext, returnType Type, fieldAS
 		return completed
 	}
 	completed = completeValue(eCtx, returnType, fieldASTs, info, result)
-	resultVal := reflect.ValueOf(completed)
-	if resultVal.IsValid() && resultVal.Type().Kind() == reflect.Func {
-		if propertyFn, ok := completed.(func() interface{}); ok {
-			return propertyFn()
-		}
-		err := gqlerrors.NewFormattedError("Error resolving func. Expected `func() interface{}` signature")
-		panic(gqlerrors.FormatError(err))
-	}
 	return completed
 }
 
 func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
-
-	// TODO: explore resolving go-routines in completeValue
 
 	resultVal := reflect.ValueOf(result)
 	if resultVal.IsValid() && resultVal.Type().Kind() == reflect.Func {
@@ -596,6 +587,8 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		panic(gqlerrors.FormatError(err))
 	}
 
+	// If field type is NonNull, complete for inner type, and throw field error
+	// if result is null.
 	if returnType, ok := returnType.(*NonNull); ok {
 		completed := completeValue(eCtx, returnType.OfType, fieldASTs, info, result)
 		if completed == nil {
@@ -608,79 +601,102 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		return completed
 	}
 
+	// If result value is null-ish (null, undefined, or NaN) then return null.
 	if isNullish(result) {
 		return nil
 	}
 
 	// If field type is List, complete each item in the list with the inner type
 	if returnType, ok := returnType.(*List); ok {
-
-		resultVal := reflect.ValueOf(result)
-		parentTypeName := ""
-		if info.ParentType != nil {
-			parentTypeName = info.ParentType.Name()
-		}
-		err := invariant(
-			resultVal.IsValid() && resultVal.Type().Kind() == reflect.Slice,
-			fmt.Sprintf("User Error: expected iterable, but did not find one "+
-				"for field %v.%v.", parentTypeName, info.FieldName),
-		)
-		if err != nil {
-			panic(gqlerrors.FormatError(err))
-		}
-
-		itemType := returnType.OfType
-		completedResults := []interface{}{}
-		for i := 0; i < resultVal.Len(); i++ {
-			val := resultVal.Index(i).Interface()
-			completedItem := completeValueCatchingError(eCtx, itemType, fieldASTs, info, val)
-			completedResults = append(completedResults, completedItem)
-		}
-		return completedResults
+		return completeListValue(eCtx, returnType, fieldASTs, info, result)
 	}
 
-	// If field type is Scalar or Enum, serialize to a valid value, returning
-	// null if serialization is not possible.
+	// If field type is a leaf type, Scalar or Enum, serialize to a valid value,
+	// returning null if serialization is not possible.
 	if returnType, ok := returnType.(*Scalar); ok {
-		serializedResult := returnType.Serialize(result)
-		if isNullish(serializedResult) {
-			return nil
-		}
-		return serializedResult
+		return completeLeafValue(returnType, result)
 	}
 	if returnType, ok := returnType.(*Enum); ok {
-		serializedResult := returnType.Serialize(result)
-		if isNullish(serializedResult) {
-			return nil
-		}
-		return serializedResult
+		return completeLeafValue(returnType, result)
 	}
 
-	// ast.Field type must be Object, Interface or Union and expect sub-selections.
+	// If field type is an abstract type, Interface or Union, determine the
+	// runtime Object type and complete for that type.
+	if returnType, ok := returnType.(*Union); ok {
+		return completeAbstractValue(eCtx, returnType, fieldASTs, info, result)
+	}
+	if returnType, ok := returnType.(*Interface); ok {
+		return completeAbstractValue(eCtx, returnType, fieldASTs, info, result)
+	}
+
+	// If field type is Object, execute and complete all sub-selections.
+	if returnType, ok := returnType.(*Object); ok {
+		return completeObjectValue(eCtx, returnType, fieldASTs, info, result)
+	}
+
+	// Not reachable. All possible output types have been considered.
+	err := invariant(false,
+		fmt.Sprintf(`Cannot complete value of unexpected type "%v."`, returnType),
+	)
+	if err != nil {
+		panic(gqlerrors.FormatError(err))
+	}
+	return nil
+}
+
+// completeAbstractValue completes value of an Abstract type (Union / Interface) by determining the runtime type
+// of that value, then completing based on that type.
+func completeAbstractValue(eCtx *ExecutionContext, returnType Abstract, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
+
 	var runtimeType *Object
-	switch returnType := returnType.(type) {
-	case *Object:
-		runtimeType = returnType
-	case Abstract:
-		runtimeType = returnType.ObjectType(result, info)
-		if runtimeType != nil && !returnType.IsPossibleType(runtimeType) {
-			panic(gqlerrors.NewFormattedError(
-				fmt.Sprintf(`Runtime Object type "%v" is not a possible type `+
-					`for "%v".`, runtimeType, returnType),
-			))
-		}
+
+	resolveTypeParams := ResolveTypeParams{
+		Value:   result,
+		Info:    info,
+		Context: eCtx.Context,
 	}
-	if runtimeType == nil {
-		return nil
+	if unionReturnType, ok := returnType.(*Union); ok && unionReturnType.ResolveType != nil {
+		runtimeType = unionReturnType.ResolveType(resolveTypeParams)
+	} else if interfaceReturnType, ok := returnType.(*Interface); ok && interfaceReturnType.ResolveType != nil {
+		runtimeType = interfaceReturnType.ResolveType(resolveTypeParams)
+	} else {
+		runtimeType = defaultResolveTypeFn(resolveTypeParams, returnType)
 	}
+
+	err := invariant(runtimeType != nil,
+		fmt.Sprintf(`Could not determine runtime type of value "%v" for field %v.%v.`, result, info.ParentType, info.FieldName),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	if !eCtx.Schema.IsPossibleType(returnType, runtimeType) {
+		panic(gqlerrors.NewFormattedError(
+			fmt.Sprintf(`Runtime Object type "%v" is not a possible type `+
+				`for "%v".`, runtimeType, returnType),
+		))
+	}
+
+	return completeObjectValue(eCtx, runtimeType, fieldASTs, info, result)
+}
+
+// completeObjectValue complete an Object value by executing all sub-selections.
+func completeObjectValue(eCtx *ExecutionContext, returnType *Object, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
 
 	// If there is an isTypeOf predicate function, call it with the
 	// current result. If isTypeOf returns false, then raise an error rather
 	// than continuing execution.
-	if runtimeType.IsTypeOf != nil && !runtimeType.IsTypeOf(result, info) {
-		panic(gqlerrors.NewFormattedError(
-			fmt.Sprintf(`Expected value of type "%v" but got: %T.`, runtimeType, result),
-		))
+	if returnType.IsTypeOf != nil {
+		p := IsTypeOfParams{
+			Value:   result,
+			Info:    info,
+			Context: eCtx.Context,
+		}
+		if !returnType.IsTypeOf(p) {
+			panic(gqlerrors.NewFormattedError(
+				fmt.Sprintf(`Expected value of type "%v" but got: %T.`, returnType, result),
+			))
+		}
 	}
 
 	// Collect sub-fields to execute to complete this value.
@@ -694,7 +710,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		if selectionSet != nil {
 			innerParams := CollectFieldsParams{
 				ExeContext:           eCtx,
-				RuntimeType:          runtimeType,
+				RuntimeType:          returnType,
 				SelectionSet:         selectionSet,
 				Fields:               subFieldASTs,
 				VisitedFragmentNames: visitedFragmentNames,
@@ -704,7 +720,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	}
 	executeFieldsParams := ExecuteFieldsParams{
 		ExecutionContext: eCtx,
-		ParentType:       runtimeType,
+		ParentType:       returnType,
 		Source:           result,
 		Fields:           subFieldASTs,
 	}
@@ -714,6 +730,66 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 
 }
 
+// completeLeafValue complete a leaf value (Scalar / Enum) by serializing to a valid value, returning nil if serialization is not possible.
+func completeLeafValue(returnType Leaf, result interface{}) interface{} {
+	serializedResult := returnType.Serialize(result)
+	if isNullish(serializedResult) {
+		return nil
+	}
+	return serializedResult
+}
+
+// completeListValue complete a list value by completing each item in the list with the inner type
+func completeListValue(eCtx *ExecutionContext, returnType *List, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
+	resultVal := reflect.ValueOf(result)
+	parentTypeName := ""
+	if info.ParentType != nil {
+		parentTypeName = info.ParentType.Name()
+	}
+	err := invariant(
+		resultVal.IsValid() && resultVal.Type().Kind() == reflect.Slice,
+		fmt.Sprintf("User Error: expected iterable, but did not find one "+
+			"for field %v.%v.", parentTypeName, info.FieldName),
+	)
+	if err != nil {
+		panic(gqlerrors.FormatError(err))
+	}
+
+	itemType := returnType.OfType
+	completedResults := []interface{}{}
+	for i := 0; i < resultVal.Len(); i++ {
+		val := resultVal.Index(i).Interface()
+		completedItem := completeValueCatchingError(eCtx, itemType, fieldASTs, info, val)
+		completedResults = append(completedResults, completedItem)
+	}
+	return completedResults
+}
+
+// defaultResolveTypeFn If a resolveType function is not given, then a default resolve behavior is
+// used which tests each possible type for the abstract type by calling
+// isTypeOf for the object being coerced, returning the first type that matches.
+func defaultResolveTypeFn(p ResolveTypeParams, abstractType Abstract) *Object {
+	possibleTypes := p.Info.Schema.PossibleTypes(abstractType)
+	for _, possibleType := range possibleTypes {
+		if possibleType.IsTypeOf == nil {
+			continue
+		}
+		isTypeOfParams := IsTypeOfParams{
+			Value:   p.Value,
+			Info:    p.Info,
+			Context: p.Context,
+		}
+		if res := possibleType.IsTypeOf(isTypeOfParams); res {
+			return possibleType
+		}
+	}
+	return nil
+}
+
+// defaultResolveFn If a resolve function is not given, then a default resolve behavior is used
+// which takes the property of the source object of the same name as the field
+// and returns it as the result, or if it's a function, returns the result
+// of calling that function.
 func defaultResolveFn(p ResolveParams) (interface{}, error) {
 	// try to resolve p.Source as a struct first
 	sourceVal := reflect.ValueOf(p.Source)
@@ -767,7 +843,7 @@ func defaultResolveFn(p ResolveParams) (interface{}, error) {
 	return nil, nil
 }
 
-// This method looks up the field on the given type defintion.
+// This method looks up the field on the given type definition.
 // It has special casing for the two introspection fields, __schema
 // and __typename. __typename is special because it can always be
 // queried as a field, even in situations where no other fields

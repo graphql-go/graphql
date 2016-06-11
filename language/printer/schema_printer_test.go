@@ -53,7 +53,12 @@ func TestSchemaPrinter_PrintsKitchenSink(t *testing.T) {
 
 	query := string(b)
 	astDoc := parse(t, query)
-	expected := `type Foo implements Bar {
+	expected := `schema {
+  query: QueryType
+  mutation: MutationType
+}
+
+type Foo implements Bar {
   one: Type
   two(argument: InputType!): Type
   three(argument: InputType, other: String): Int
@@ -84,6 +89,10 @@ input InputType {
 extend type Foo {
   seven(argument: [String]): Type
 }
+
+directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 `
 	results := printer.Print(astDoc)
 	if !reflect.DeepEqual(expected, results) {

@@ -110,11 +110,11 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 		}
 		ti.directive = schema.Directive(nameVal)
 	case *ast.OperationDefinition:
-		if node.Operation == "query" {
+		if node.Operation == ast.OperationTypeQuery {
 			ttype = schema.QueryType()
-		} else if node.Operation == "mutation" {
+		} else if node.Operation == ast.OperationTypeMutation {
 			ttype = schema.MutationType()
-		} else if node.Operation == "subscription" {
+		} else if node.Operation == ast.OperationTypeSubscription {
 			ttype = schema.SubscriptionType()
 		}
 		ti.typeStack = append(ti.typeStack, ttype)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/testutil"
+	"golang.org/x/net/context"
 )
 
 type testNamedType interface {
@@ -49,8 +50,8 @@ var dogType = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.Boolean,
 		},
 	},
-	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-		_, ok := value.(*testDog2)
+	IsTypeOf: func(p graphql.IsTypeOfParams) bool {
+		_, ok := p.Value.(*testDog2)
 		return ok
 	},
 })
@@ -67,8 +68,8 @@ var catType = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.Boolean,
 		},
 	},
-	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-		_, ok := value.(*testCat2)
+	IsTypeOf: func(p graphql.IsTypeOfParams) bool {
+		_, ok := p.Value.(*testCat2)
 		return ok
 	},
 })
@@ -77,11 +78,11 @@ var petType = graphql.NewUnion(graphql.UnionConfig{
 	Types: []*graphql.Object{
 		dogType, catType,
 	},
-	ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
-		if _, ok := value.(*testCat2); ok {
+	ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
+		if _, ok := p.Value.(*testCat2); ok {
 			return catType
 		}
-		if _, ok := value.(*testDog2); ok {
+		if _, ok := p.Value.(*testDog2); ok {
 			return dogType
 		}
 		return nil
@@ -103,14 +104,15 @@ var personType = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.NewList(namedType),
 		},
 	},
-	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-		_, ok := value.(*testPerson)
+	IsTypeOf: func(p graphql.IsTypeOfParams) bool {
+		_, ok := p.Value.(*testPerson)
 		return ok
 	},
 })
 
 var unionInterfaceTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 	Query: personType,
+	Types: []graphql.Type{petType},
 })
 
 var garfield = &testCat2{"Garfield", false}
@@ -206,8 +208,8 @@ func TestUnionIntersectionTypes_CanIntrospectOnUnionAndIntersectionTypes(t *test
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	if !testutil.ContainSubset(expected.Data.(map[string]interface{}), result.Data.(map[string]interface{})) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
 	}
 }
 func TestUnionIntersectionTypes_ExecutesUsingUnionTypes(t *testing.T) {
@@ -497,6 +499,9 @@ func TestUnionIntersectionTypes_AllowsFragmentConditionsToBeAbstractTypes(t *tes
 }
 func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 
+	var encounteredContextValue string
+	var encounteredSchema graphql.Schema
+	var encounteredRootValue string
 	var personType2 *graphql.Object
 
 	namedType2 := graphql.NewInterface(graphql.InterfaceConfig{
@@ -506,7 +511,10 @@ func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 				Type: graphql.String,
 			},
 		},
-		ResolveType: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
+			encounteredSchema = p.Info.Schema
+			encounteredContextValue, _ = p.Context.Value("authToken").(string)
+			encounteredRootValue = p.Info.RootValue.(*testPerson).Name
 			return personType2
 		},
 	})
@@ -551,17 +559,29 @@ func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 	// parse query
 	ast := testutil.TestParse(t, doc)
 
+	// create context
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, "authToken", "contextStringValue123")
+
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: schema2,
-		AST:    ast,
-		Root:   john2,
+		Schema:  schema2,
+		AST:     ast,
+		Root:    john2,
+		Context: ctx,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
+
 	if !reflect.DeepEqual(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+	if !reflect.DeepEqual("contextStringValue123", encounteredContextValue) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff("contextStringValue123", encounteredContextValue))
+	}
+	if !reflect.DeepEqual("John", encounteredRootValue) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff("John", encounteredRootValue))
+	}
+	if !reflect.DeepEqual(schema2, encounteredSchema) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(schema2, encounteredSchema))
 	}
 }

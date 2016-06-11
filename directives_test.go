@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/gqlerrors"
+	"github.com/graphql-go/graphql/language/location"
 	"github.com/graphql-go/graphql/testutil"
 )
 
@@ -35,6 +37,120 @@ func executeDirectivesTestQuery(t *testing.T, doc string) *graphql.Result {
 		Root:   directivesTestData,
 	}
 	return testutil.TestExecute(t, ep)
+}
+
+func TestDirectives_DirectivesMustBeNamed(t *testing.T) {
+	invalidDirective := graphql.NewDirective(graphql.DirectiveConfig{
+		Locations: []string{
+			graphql.DirectiveLocationField,
+		},
+	})
+	_, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "TestType",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{
+					Type: graphql.String,
+				},
+			},
+		}),
+		Directives: []*graphql.Directive{invalidDirective},
+	})
+	expectedErr := gqlerrors.FormattedError{
+		Message:   "Directive must be named.",
+		Locations: []location.SourceLocation{},
+	}
+	if !reflect.DeepEqual(expectedErr, err) {
+		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, err))
+	}
+}
+
+func TestDirectives_DirectiveNameMustBeValid(t *testing.T) {
+	invalidDirective := graphql.NewDirective(graphql.DirectiveConfig{
+		Name: "123invalid name",
+		Locations: []string{
+			graphql.DirectiveLocationField,
+		},
+	})
+	_, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "TestType",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{
+					Type: graphql.String,
+				},
+			},
+		}),
+		Directives: []*graphql.Directive{invalidDirective},
+	})
+	expectedErr := gqlerrors.FormattedError{
+		Message:   `Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "123invalid name" does not.`,
+		Locations: []location.SourceLocation{},
+	}
+	if !reflect.DeepEqual(expectedErr, err) {
+		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, err))
+	}
+}
+
+func TestDirectives_DirectiveNameMustProvideLocations(t *testing.T) {
+	invalidDirective := graphql.NewDirective(graphql.DirectiveConfig{
+		Name: "skip",
+	})
+	_, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "TestType",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{
+					Type: graphql.String,
+				},
+			},
+		}),
+		Directives: []*graphql.Directive{invalidDirective},
+	})
+	expectedErr := gqlerrors.FormattedError{
+		Message:   `Must provide locations for directive.`,
+		Locations: []location.SourceLocation{},
+	}
+	if !reflect.DeepEqual(expectedErr, err) {
+		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, err))
+	}
+}
+
+func TestDirectives_DirectiveArgNamesMustBeValid(t *testing.T) {
+	invalidDirective := graphql.NewDirective(graphql.DirectiveConfig{
+		Name: "skip",
+		Description: "Directs the executor to skip this field or fragment when the `if` " +
+			"argument is true.",
+		Args: graphql.FieldConfigArgument{
+			"123if": &graphql.ArgumentConfig{
+				Type:        graphql.NewNonNull(graphql.Boolean),
+				Description: "Skipped when true.",
+			},
+		},
+		Locations: []string{
+			graphql.DirectiveLocationField,
+			graphql.DirectiveLocationFragmentSpread,
+			graphql.DirectiveLocationInlineFragment,
+		},
+	})
+	_, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "TestType",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{
+					Type: graphql.String,
+				},
+			},
+		}),
+		Directives: []*graphql.Directive{invalidDirective},
+	})
+	expectedErr := gqlerrors.FormattedError{
+		Message:   `Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "123if" does not.`,
+		Locations: []location.SourceLocation{},
+	}
+	if !reflect.DeepEqual(expectedErr, err) {
+		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, err))
+	}
 }
 
 func TestDirectivesWorksWithoutDirectives(t *testing.T) {
@@ -418,40 +534,8 @@ func TestDirectivesWorksOnAnonymousInlineFragmentUnlessTrueIncludesAnonymousInli
 	}
 }
 
-func TestDirectivesWorksOnFragmentIfFalseOmitsFragment(t *testing.T) {
-	query := `
-        query Q {
-          a
-          ...Frag
-        }
-        fragment Frag on TestType @include(if: false) {
-          b
-        }
-	`
-	expected := &graphql.Result{
-		Data: map[string]interface{}{
-			"a": "a",
-		},
-	}
-	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
-}
-
-func TestDirectivesWorksOnFragmentIfTrueIncludesFragment(t *testing.T) {
-	query := `
-        query Q {
-          a
-          ...Frag
-        }
-        fragment Frag on TestType @include(if: true) {
-          b
-        }
-	`
+func TestDirectivesWorksWithSkipAndIncludeDirectives_IncludeAndNoSkip(t *testing.T) {
+	query := `{ a, b @include(if: true) @skip(if: false) }`
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
@@ -467,20 +551,11 @@ func TestDirectivesWorksOnFragmentIfTrueIncludesFragment(t *testing.T) {
 	}
 }
 
-func TestDirectivesWorksOnFragmentUnlessFalseIncludesFragment(t *testing.T) {
-	query := `
-        query Q {
-          a
-          ...Frag
-        }
-        fragment Frag on TestType @skip(if: false) {
-          b
-        }
-	`
+func TestDirectivesWorksWithSkipAndIncludeDirectives_IncludeAndSkip(t *testing.T) {
+	query := `{ a, b @include(if: true) @skip(if: true) }`
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
-			"b": "b",
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
@@ -492,16 +567,24 @@ func TestDirectivesWorksOnFragmentUnlessFalseIncludesFragment(t *testing.T) {
 	}
 }
 
-func TestDirectivesWorksOnFragmentUnlessTrueOmitsFragment(t *testing.T) {
-	query := `
-        query Q {
-          a
-          ...Frag
-        }
-        fragment Frag on TestType @skip(if: true) {
-          b
-        }
-	`
+func TestDirectivesWorksWithSkipAndIncludeDirectives_NoIncludeAndSkip(t *testing.T) {
+	query := `{ a, b @include(if: false) @skip(if: true) }`
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"a": "a",
+		},
+	}
+	result := executeDirectivesTestQuery(t, query)
+	if len(result.Errors) != 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
+func TestDirectivesWorksWithSkipAndIncludeDirectives_NoIncludeOrSkip(t *testing.T) {
+	query := `{ a, b @include(if: false) @skip(if: false) }`
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"a": "a",
