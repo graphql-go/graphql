@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"regexp"
 
+	"strings"
+
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/location"
 	"github.com/graphql-go/graphql/language/source"
-	"strings"
 )
 
 func NewSyntaxError(s *source.Source, position int, description string) *Error {
@@ -44,7 +45,7 @@ func highlightSourceAtLocation(s *source.Source, l location.SourceLocation) stri
 	lineNum := fmt.Sprintf("%d", line)
 	nextLineNum := fmt.Sprintf("%d", (line + 1))
 	padLen := len(nextLineNum)
-	lines := regexp.MustCompile("\r\n|[\n\r]").Split(s.Body, -1)
+	lines := regexp.MustCompile("\r\n|[\n\r]").Split(string(s.Body), -1)
 	var highlight string
 	if line >= 2 {
 		highlight += fmt.Sprintf("%s: %s\n", lpad(padLen, prevLineNum), printLine(lines[line-2]))
