@@ -12,7 +12,7 @@ type intSerializationTest struct {
 	Value    interface{}
 	Expected interface{}
 }
-type float32SerializationTest struct {
+type float64SerializationTest struct {
 	Value    interface{}
 	Expected interface{}
 }
@@ -37,6 +37,12 @@ func TestTypeSystem_Scalar_SerializesOutputInt(t *testing.T) {
 		{float32(-1.1), -1},
 		{float32(1e5), 100000},
 		{float32(math.MaxFloat32), nil},
+		{float64(0.1), 0},
+		{float64(1.1), 1},
+		{float64(-1.1), -1},
+		{float64(1e5), 100000},
+		{float64(math.MaxFloat32), nil},
+		{float64(math.MaxFloat64), nil},
 		// Maybe a safe Go/Javascript `int`, but bigger than 2^32, so not
 		// representable as a GraphQL Int
 		{9876504321, nil},
@@ -71,34 +77,49 @@ func TestTypeSystem_Scalar_SerializesOutputInt(t *testing.T) {
 		{[]int{}, nil},
 	}
 
-	for _, test := range tests {
+	for i, test := range tests {
 		val := graphql.Int.Serialize(test.Value)
 		if val != test.Expected {
-			reflectedValue := reflect.ValueOf(test.Value)
-			t.Fatalf("Failed Int.Serialize(%v(%v)), expected: %v, got %v", reflectedValue.Type(), test.Value, test.Expected, val)
+			reflectedTestValue := reflect.ValueOf(test.Value)
+			reflectedExpectedValue := reflect.ValueOf(test.Expected)
+			reflectedValue := reflect.ValueOf(val)
+			t.Fatalf("Failed test #%d - Int.Serialize(%v(%v)), expected: %v(%v), got %v(%v)",
+				i, reflectedTestValue.Type(), test.Value,
+				reflectedExpectedValue.Type(), test.Expected,
+				reflectedValue.Type(), val,
+			)
 		}
 	}
 }
 
 func TestTypeSystem_Scalar_SerializesOutputFloat(t *testing.T) {
-	tests := []float32SerializationTest{
-		{int(1), float32(1.0)},
-		{int(0), float32(0.0)},
-		{int(-1), float32(-1.0)},
+	tests := []float64SerializationTest{
+		{int(1), 1.0},
+		{int(0), 0.0},
+		{int(-1), -1.0},
 		{float32(0.1), float32(0.1)},
 		{float32(1.1), float32(1.1)},
 		{float32(-1.1), float32(-1.1)},
-		{"-1.1", float32(-1.1)},
+		{float64(0.1), float64(0.1)},
+		{float64(1.1), float64(1.1)},
+		{float64(-1.1), float64(-1.1)},
+		{"-1.1", -1.1},
 		{"one", nil},
-		{false, float32(0.0)},
-		{true, float32(1.0)},
+		{false, 0.0},
+		{true, 1.0},
 	}
 
 	for i, test := range tests {
 		val := graphql.Float.Serialize(test.Value)
 		if val != test.Expected {
-			reflectedValue := reflect.ValueOf(test.Value)
-			t.Fatalf("Failed test #%d - Float.Serialize(%v(%v)), expected: %v, got %v", i, reflectedValue.Type(), test.Value, test.Expected, val)
+			reflectedTestValue := reflect.ValueOf(test.Value)
+			reflectedExpectedValue := reflect.ValueOf(test.Expected)
+			reflectedValue := reflect.ValueOf(val)
+			t.Fatalf("Failed test #%d - Float.Serialize(%v(%v)), expected: %v(%v), got %v(%v)",
+				i, reflectedTestValue.Type(), test.Value,
+				reflectedExpectedValue.Type(), test.Expected,
+				reflectedValue.Type(), val,
+			)
 		}
 	}
 }
@@ -108,6 +129,7 @@ func TestTypeSystem_Scalar_SerializesOutputStrings(t *testing.T) {
 		{"string", "string"},
 		{int(1), "1"},
 		{float32(-1.1), "-1.1"},
+		{float64(-1.1), "-1.1"},
 		{true, "true"},
 		{false, "false"},
 	}
