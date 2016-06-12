@@ -34,7 +34,7 @@ type Params struct {
 
 func Do(p Params) *Result {
 	source := source.NewSource(&source.Source{
-		Body: p.RequestString,
+		Body: []byte(p.RequestString),
 		Name: "GraphQL request",
 	})
 	AST, err := parser.Parse(parser.ParseParams{Source: source})

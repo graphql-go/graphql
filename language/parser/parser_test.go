@@ -17,7 +17,7 @@ import (
 func TestBadToken(t *testing.T) {
 	_, err := Parse(ParseParams{
 		Source: &source.Source{
-			Body: "query _ {\n  me {\n    id`\n  }\n}",
+			Body: []byte("query _ {\n  me {\n    id`\n  }\n}"),
 			Name: "GraphQL",
 		},
 	})
@@ -137,7 +137,10 @@ fragment MissingOn Type
 
 func TestParseProvidesUsefulErrorsWhenUsingSource(t *testing.T) {
 	test := errorMessageTest{
-		source.NewSource(&source.Source{Body: "query", Name: "MyQuery.graphql"}),
+		source.NewSource(&source.Source{
+			Body: []byte("query"),
+			Name: "MyQuery.graphql",
+		}),
 		`Syntax Error MyQuery.graphql (1:6) Expected {, found EOF`,
 		false,
 	}
@@ -189,7 +192,7 @@ func TestDoesNotAllowNullAsValue(t *testing.T) {
 	testErrorMessage(t, test)
 }
 
-func TestParsesMultiByteCharacters(t *testing.T) {
+func TestParsesMultiByteCharacters_Unicode(t *testing.T) {
 
 	doc := `
         # This comment has a \u0A0A multi-byte character.
@@ -266,6 +269,83 @@ func TestParsesMultiByteCharacters(t *testing.T) {
 	}
 }
 
+func TestParsesMultiByteCharacters_UnicodeText(t *testing.T) {
+
+	doc := `
+        # This comment has a фы世界 multi-byte character.
+        { field(arg: "Has a фы世界 multi-byte character.") }
+	`
+	astDoc := parse(t, doc)
+
+	expectedASTDoc := ast.NewDocument(&ast.Document{
+		Loc: ast.NewLocation(&ast.Location{
+			Start: 67,
+			End:   121,
+		}),
+		Definitions: []ast.Node{
+			ast.NewOperationDefinition(&ast.OperationDefinition{
+				Loc: ast.NewLocation(&ast.Location{
+					Start: 67,
+					End:   119,
+				}),
+				Operation: "query",
+				SelectionSet: ast.NewSelectionSet(&ast.SelectionSet{
+					Loc: ast.NewLocation(&ast.Location{
+						Start: 67,
+						End:   119,
+					}),
+					Selections: []ast.Selection{
+						ast.NewField(&ast.Field{
+							Loc: ast.NewLocation(&ast.Location{
+								Start: 67,
+								End:   117,
+							}),
+							Name: ast.NewName(&ast.Name{
+								Loc: ast.NewLocation(&ast.Location{
+									Start: 69,
+									End:   74,
+								}),
+								Value: "field",
+							}),
+							Arguments: []*ast.Argument{
+								ast.NewArgument(&ast.Argument{
+									Loc: ast.NewLocation(&ast.Location{
+										Start: 75,
+										End:   116,
+									}),
+									Name: ast.NewName(&ast.Name{
+
+										Loc: ast.NewLocation(&ast.Location{
+											Start: 75,
+											End:   78,
+										}),
+										Value: "arg",
+									}),
+									Value: ast.NewStringValue(&ast.StringValue{
+
+										Loc: ast.NewLocation(&ast.Location{
+											Start: 80,
+											End:   116,
+										}),
+										Value: "Has a фы世界 multi-byte character.",
+									}),
+								}),
+							},
+						}),
+					},
+				}),
+			}),
+		},
+	})
+
+	astDocQuery := printer.Print(astDoc)
+	expectedASTDocQuery := printer.Print(expectedASTDoc)
+
+	if !reflect.DeepEqual(astDocQuery, expectedASTDocQuery) {
+		t.Fatalf("unexpected document, expected: %v, got: %v", astDocQuery, expectedASTDocQuery)
+	}
+}
+
 func TestParsesKitchenSink(t *testing.T) {
 	b, err := ioutil.ReadFile("../../kitchen-sink.graphql")
 	if err != nil {
@@ -309,18 +389,17 @@ func TestAllowsNonKeywordsAnywhereNameIsAllowed(t *testing.T) {
 	}
 }
 
-//
-//func TestParsesExperimentalSubscriptionFeature(t *testing.T) {
-//	source := `
-//      subscription Foo {
-//        subscriptionField
-//      }
-//    `
-//	_, err := Parse(ParseParams{Source: source})
-//	if err != nil {
-//		t.Fatalf("unexpected error: %v", err)
-//	}
-//}
+func TestParsesExperimentalSubscriptionFeature(t *testing.T) {
+	source := `
+      subscription Foo {
+        subscriptionField
+      }
+    `
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
 
 func TestParsesAnonymousMutationOperations(t *testing.T) {
 	source := `
@@ -378,7 +457,9 @@ func TestParseCreatesAst(t *testing.T) {
   }
 }
 `
-	source := source.NewSource(&source.Source{Body: body})
+	source := source.NewSource(&source.Source{
+		Body: []byte(body),
+	})
 	document, err := Parse(
 		ParseParams{
 			Source: source,

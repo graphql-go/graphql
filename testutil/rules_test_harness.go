@@ -481,7 +481,7 @@ func init() {
 }
 func expectValidRule(t *testing.T, schema *graphql.Schema, rules []graphql.ValidationRuleFn, queryString string) {
 	source := source.NewSource(&source.Source{
-		Body: queryString,
+		Body: []byte(queryString),
 	})
 	AST, err := parser.Parse(parser.ParseParams{Source: source})
 	if err != nil {
@@ -498,7 +498,7 @@ func expectValidRule(t *testing.T, schema *graphql.Schema, rules []graphql.Valid
 }
 func expectInvalidRule(t *testing.T, schema *graphql.Schema, rules []graphql.ValidationRuleFn, queryString string, expectedErrors []gqlerrors.FormattedError) {
 	source := source.NewSource(&source.Source{
-		Body: queryString,
+		Body: []byte(queryString),
 	})
 	AST, err := parser.Parse(parser.ParseParams{Source: source})
 	if err != nil {
