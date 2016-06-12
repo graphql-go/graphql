@@ -739,10 +739,10 @@ input Hello {
 `,
 		Nodes: []ast.Node{},
 		Source: &source.Source{
-			Body: `
+			Body: []byte(`
 input Hello {
   world(foo: Int): String
-}`,
+}`),
 			Name: "GraphQL",
 		},
 		Positions: []int{22},

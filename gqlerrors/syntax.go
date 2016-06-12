@@ -3,7 +3,6 @@ package gqlerrors
 import (
 	"fmt"
 	"regexp"
-
 	"strings"
 
 	"github.com/graphql-go/graphql/language/ast"
