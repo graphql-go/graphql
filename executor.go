@@ -293,9 +293,6 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 				continue
 			}
 			name := getFieldEntryKey(selection)
-			if _, ok := fields[name]; !ok {
-				fields[name] = []*ast.Field{}
-			}
 			fields[name] = append(fields[name], selection)
 		case *ast.InlineFragment:
 
@@ -755,7 +752,7 @@ func completeListValue(eCtx *ExecutionContext, returnType *List, fieldASTs []*as
 	}
 
 	itemType := returnType.OfType
-	completedResults := []interface{}{}
+	completedResults := make([]interface{}, 0, resultVal.Len())
 	for i := 0; i < resultVal.Len(); i++ {
 		val := resultVal.Index(i).Interface()
 		completedItem := completeValueCatchingError(eCtx, itemType, fieldASTs, info, val)
