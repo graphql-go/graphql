@@ -7,11 +7,12 @@ import (
 	"reflect"
 	"strings"
 
+	"sort"
+
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/kinds"
 	"github.com/graphql-go/graphql/language/printer"
-	"sort"
 )
 
 // Prepares an object map of variableValues of the correct type based on the
@@ -439,6 +440,13 @@ func valueFromAST(valueAST ast.Value, ttype Input, variables map[string]interfac
 func invariant(condition bool, message string) error {
 	if !condition {
 		return gqlerrors.NewFormattedError(message)
+	}
+	return nil
+}
+
+func invariantf(condition bool, message string, args ...interface{}) error {
+	if !condition {
+		return gqlerrors.NewFormattedError(fmt.Sprintf(message, args...))
 	}
 	return nil
 }
