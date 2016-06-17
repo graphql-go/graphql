@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"regexp"
 
+	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 	"golang.org/x/net/context"
 )
@@ -1285,9 +1286,26 @@ func (gl *NonNull) Error() error {
 
 var NameRegExp, _ = regexp.Compile("^[_a-zA-Z][_a-zA-Z0-9]*$")
 
+func isNumber(r rune) bool {
+	return '0' <= r && r <= '9'
+}
+
+func isLetter(r rune) bool {
+	return ('a' <= r && r <= 'z') || ('A' <= r && r <= 'Z')
+}
+
 func assertValidName(name string) error {
-	return invariantf(
-		NameRegExp.MatchString(name),
-		`Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "%v" does not.`, name,
-	)
+	if len(name) == 0 {
+		return gqlerrors.NewFormattedError(
+			fmt.Sprintf(`Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "%v" does not.`, name))
+	}
+
+	for i, r := range name {
+		if !(r == '_' || isLetter(r) || (i != 0 && isNumber(r))) {
+			return gqlerrors.NewFormattedError(
+				fmt.Sprintf(`Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "%v" does not.`, name))
+		}
+	}
+
+	return nil
 }
