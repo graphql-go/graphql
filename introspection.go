@@ -3,6 +3,7 @@ package graphql
 import (
 	"fmt"
 	"reflect"
+	"sort"
 
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/printer"
@@ -453,11 +454,16 @@ func init() {
 					return nil, nil
 				}
 				fields := []*FieldDefinition{}
-				for _, field := range ttype.Fields() {
+				var fieldNames sort.StringSlice
+				for name, field := range ttype.Fields() {
 					if !includeDeprecated && field.DeprecationReason != "" {
 						continue
 					}
-					fields = append(fields, field)
+					fieldNames = append(fieldNames, name)
+				}
+				sort.Sort(fieldNames)
+				for _, name := range fieldNames {
+					fields = append(fields, ttype.Fields()[name])
 				}
 				return fields, nil
 			case *Interface:
