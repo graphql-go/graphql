@@ -1429,7 +1429,7 @@ func any(parser *Parser, openKind int, parseFn parseFn, closeKind int) ([]interf
 	var nodes []interface{}
 	_, err := expect(parser, openKind)
 	if err != nil {
-		return nodes, nil
+		return nodes, err
 	}
 	for {
 		if skp, err := skip(parser, closeKind); err != nil {
