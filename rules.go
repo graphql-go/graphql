@@ -2,13 +2,14 @@ package graphql
 
 import (
 	"fmt"
+	"sort"
+	"strings"
+
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/kinds"
 	"github.com/graphql-go/graphql/language/printer"
 	"github.com/graphql-go/graphql/language/visitor"
-	"sort"
-	"strings"
 )
 
 // SpecifiedRules set includes all validation rules defined by the GraphQL spec.
@@ -1919,7 +1920,7 @@ func UniqueInputFieldNamesRule(context *ValidationContext) *ValidationRuleInstan
 //
 // A GraphQL document is only valid if all defined operations have unique names.
 func UniqueOperationNamesRule(context *ValidationContext) *ValidationRuleInstance {
-	knownOperationNames := map[string]*ast.Name{}
+	knownOperationNames := make(map[string]ast.Node)
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
@@ -1930,14 +1931,18 @@ func UniqueOperationNamesRule(context *ValidationContext) *ValidationRuleInstanc
 						if node.Name != nil {
 							operationName = node.Name.Value
 						}
+						var errNode ast.Node = node
+						if node.Name != nil {
+							errNode = node.Name
+						}
 						if nameAST, ok := knownOperationNames[operationName]; ok {
 							reportError(
 								context,
 								fmt.Sprintf(`There can only be one operation named "%v".`, operationName),
-								[]ast.Node{nameAST, node.Name},
+								[]ast.Node{nameAST, errNode},
 							)
 						} else {
-							knownOperationNames[operationName] = node.Name
+							knownOperationNames[operationName] = errNode
 						}
 					}
 					return visitor.ActionSkip, nil
