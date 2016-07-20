@@ -214,30 +214,38 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 					var result interface{}
 					if node, ok := p.Node.(*ast.Field); ok {
 						ttype := context.ParentType()
-
-						if ttype != nil {
-							fieldDef := context.FieldDef()
-							if fieldDef == nil {
-								// This field doesn't exist, lets look for suggestions.
-								nodeName := ""
-								if node.Name != nil {
-									nodeName = node.Name.Value
-								}
-								// First determine if there are any suggested types to condition on.
-								suggestedTypeNames := getSuggestedTypeNames(context.Schema(), ttype, nodeName)
-
-								// If there are no suggested types, then perhaps this was a typo?
-								suggestedFieldNames := []string{}
-								if len(suggestedTypeNames) == 0 {
-									suggestedFieldNames = getSuggestedFieldNames(context.Schema(), ttype, nodeName)
-								}
-
-								reportError(
-									context,
-									UndefinedFieldMessage(nodeName, ttype.Name(), suggestedTypeNames, suggestedFieldNames),
-									[]ast.Node{node},
-								)
+						if ttype == nil {
+							return action, result
+						}
+						if t, ok := ttype.(*Object); ok && t == nil {
+							return action, result
+						}
+						if t, ok := ttype.(*Interface); ok && t == nil {
+							return action, result
+						}
+						if t, ok := ttype.(*Union); ok && t == nil {
+							return action, result
+						}
+						fieldDef := context.FieldDef()
+						if fieldDef == nil {
+							// This field doesn't exist, lets look for suggestions.
+							nodeName := ""
+							if node.Name != nil {
+								nodeName = node.Name.Value
 							}
+							// First determine if there are any suggested types to condition on.
+							suggestedTypeNames := getSuggestedTypeNames(context.Schema(), ttype, nodeName)
+
+							// If there are no suggested types, then perhaps this was a typo?
+							suggestedFieldNames := []string{}
+							if len(suggestedTypeNames) == 0 {
+								suggestedFieldNames = getSuggestedFieldNames(context.Schema(), ttype, nodeName)
+							}
+							reportError(
+								context,
+								UndefinedFieldMessage(nodeName, ttype.Name(), suggestedTypeNames, suggestedFieldNames),
+								[]ast.Node{node},
+							)
 						}
 					}
 					return action, result
