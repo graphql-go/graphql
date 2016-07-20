@@ -576,6 +576,16 @@ func TestParseCreatesAst(t *testing.T) {
 
 }
 
+func TestParseUnexpectedCharacter(t *testing.T) {
+	_, err := Parse(ParseParams{Source: "{t(d:[[~"})
+	expectedError := &gqlerrors.Error{
+		Message:   "Syntax Error GraphQL (1:8) Unexpected character \"~\".\n\n1: {t(d:[[~\n          ^\n",
+		Positions: []int{7},
+		Locations: []location.SourceLocation{{1, 8}},
+	}
+	checkError(t, err, expectedError)
+}
+
 type errorMessageTest struct {
 	source          interface{}
 	expectedMessage string
