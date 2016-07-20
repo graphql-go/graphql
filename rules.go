@@ -203,43 +203,54 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 					if node, ok := p.Node.(*ast.Field); ok {
 						ttype := context.ParentType()
 
-						if ttype != nil {
-							fieldDef := context.FieldDef()
-							if fieldDef == nil {
-								// This isn't valid. Let's find suggestions, if any.
-								suggestedTypes := []string{}
+						if ttype == nil {
+							return action, result
+						}
+						if t, ok := ttype.(*Object); ok && t == nil {
+							return action, result
+						}
+						if t, ok := ttype.(*Interface); ok && t == nil {
+							return action, result
+						}
+						if t, ok := ttype.(*Union); ok && t == nil {
+							return action, result
+						}
 
-								nodeName := ""
-								if node.Name != nil {
-									nodeName = node.Name.Value
-								}
+						fieldDef := context.FieldDef()
+						if fieldDef == nil {
+							// This isn't valid. Let's find suggestions, if any.
+							suggestedTypes := []string{}
 
-								if ttype, ok := ttype.(Abstract); ok && IsAbstractType(ttype) {
-									siblingInterfaces := getSiblingInterfacesIncludingField(context.Schema(), ttype, nodeName)
-									implementations := getImplementationsIncludingField(context.Schema(), ttype, nodeName)
-									suggestedMaps := map[string]bool{}
-									for _, s := range siblingInterfaces {
-										if _, ok := suggestedMaps[s]; !ok {
-											suggestedMaps[s] = true
-											suggestedTypes = append(suggestedTypes, s)
-										}
-									}
-									for _, s := range implementations {
-										if _, ok := suggestedMaps[s]; !ok {
-											suggestedMaps[s] = true
-											suggestedTypes = append(suggestedTypes, s)
-										}
-									}
-								}
-
-								message := UndefinedFieldMessage(nodeName, ttype.Name(), suggestedTypes)
-
-								reportError(
-									context,
-									message,
-									[]ast.Node{node},
-								)
+							nodeName := ""
+							if node.Name != nil {
+								nodeName = node.Name.Value
 							}
+
+							if ttype, ok := ttype.(Abstract); ok && IsAbstractType(ttype) {
+								siblingInterfaces := getSiblingInterfacesIncludingField(context.Schema(), ttype, nodeName)
+								implementations := getImplementationsIncludingField(context.Schema(), ttype, nodeName)
+								suggestedMaps := map[string]bool{}
+								for _, s := range siblingInterfaces {
+									if _, ok := suggestedMaps[s]; !ok {
+										suggestedMaps[s] = true
+										suggestedTypes = append(suggestedTypes, s)
+									}
+								}
+								for _, s := range implementations {
+									if _, ok := suggestedMaps[s]; !ok {
+										suggestedMaps[s] = true
+										suggestedTypes = append(suggestedTypes, s)
+									}
+								}
+							}
+
+							message := UndefinedFieldMessage(nodeName, ttype.Name(), suggestedTypes)
+
+							reportError(
+								context,
+								message,
+								[]ast.Node{node},
+							)
 						}
 					}
 					return action, result
