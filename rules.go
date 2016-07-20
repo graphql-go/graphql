@@ -2119,6 +2119,9 @@ func VariablesInAllowedPositionRule(context *ValidationContext) *ValidationRuleI
 func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 	// A value must be provided if the type is non-null.
 	if ttype, ok := ttype.(*NonNull); ok {
+		if e := ttype.Error(); e != nil {
+			return false, []string{e.Error()}
+		}
 		if valueAST == nil {
 			if ttype.OfType.Name() != "" {
 				return false, []string{fmt.Sprintf(`Expected "%v!", found null.`, ttype.OfType.Name())}
