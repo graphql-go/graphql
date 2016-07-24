@@ -43,6 +43,10 @@ var userDB = map[string]*user{
 		ID:   "2",
 		Name: "John",
 	},
+	"3": &user{
+		ID:   "3",
+		Name: "Kate",
+	},
 }
 
 var loaderKey = struct{}{}
@@ -62,14 +66,18 @@ func newLoader(sch *dataloader.Scheduler) *loader {
 			id := key.(string)
 			return dataloader.NewValue(postDB[id], nil)
 		})),
-		userLoader: dataloader.New(sch, dataloader.Parallel(func(key interface{}) dataloader.Value {
-			// In practice, we will make remote request (e.g. SQL) to fetch post.
+		userLoader: dataloader.New(sch, func(keys []interface{}) []dataloader.Value {
+			// In practice, we will make remote request (e.g. SQL) to fetch multiple users.
 			// Here we just fake it.
-			log.Print("Load user ", key)
+			log.Print("Batch load users ", keys)
 			time.Sleep(time.Second)
-			id := key.(string)
-			return dataloader.NewValue(userDB[id], nil)
-		})),
+			var ret []dataloader.Value
+			for _, key := range keys {
+				id := key.(string)
+				ret = append(ret, dataloader.NewValue(userDB[id], nil))
+			}
+			return ret
+		}),
 	}
 }
 
@@ -144,6 +152,22 @@ func CreateSchema() graphql.Schema {
 					}
 					dl := getDataLoader(p.Context)
 					return dl.postLoader.Load(id).Unbox()
+				},
+			},
+			"user": &graphql.Field{
+				Type: userType,
+				Args: graphql.FieldConfigArgument{
+					"id": &graphql.ArgumentConfig{
+						Type: graphql.String,
+					},
+				},
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					id, ok := p.Args["id"].(string)
+					if !ok {
+						return nil, nil
+					}
+					dl := getDataLoader(p.Context)
+					return dl.userLoader.Load(id).Unbox()
 				},
 			},
 		}})
