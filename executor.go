@@ -271,10 +271,11 @@ func executeFields(p ExecuteFieldsParams) *Result {
 
 	finalResults := map[string]interface{}{}
 	fs := make([]func(), 0, len(p.Fields))
+	undefined := struct{}{}
 	for responseName, fieldASTs := range p.Fields {
 		responseName := responseName
 		fieldASTs := fieldASTs
-		finalResults[responseName] = nil // preallocate to avoid race.
+		finalResults[responseName] = undefined // This is to avoid using lock.
 		fs = append(fs, func() {
 			resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
 			if state.hasNoFieldDefs {
@@ -285,6 +286,12 @@ func executeFields(p ExecuteFieldsParams) *Result {
 	}
 	p.ExecutionContext.Executor.RunMany(fs)
 
+	// Remove undefined keys.
+	for k, v := range finalResults {
+		if v == undefined {
+			delete(finalResults, k)
+		}
+	}
 	return &Result{
 		Data:   finalResults,
 		Errors: p.ExecutionContext.Errors,
