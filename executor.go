@@ -323,9 +323,6 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 				continue
 			}
 			name := getFieldEntryKey(selection)
-			if _, ok := fields[name]; !ok {
-				fields[name] = []*ast.Field{}
-			}
 			fields[name] = append(fields[name], selection)
 		case *ast.InlineFragment:
 
@@ -665,9 +662,7 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	}
 
 	// Not reachable. All possible output types have been considered.
-	err := invariant(false,
-		fmt.Sprintf(`Cannot complete value of unexpected type "%v."`, returnType),
-	)
+	err := invariantf(false, `Cannot complete value of unexpected type "%v."`, returnType)
 	if err != nil {
 		panic(gqlerrors.FormatError(err))
 	}
@@ -693,8 +688,9 @@ func completeAbstractValue(eCtx *ExecutionContext, returnType Abstract, fieldAST
 		runtimeType = defaultResolveTypeFn(resolveTypeParams, returnType)
 	}
 
-	err := invariant(runtimeType != nil,
-		fmt.Sprintf(`Could not determine runtime type of value "%v" for field %v.%v.`, result, info.ParentType, info.FieldName),
+	err := invariantf(runtimeType != nil,
+		`Could not determine runtime type of value "%v" for field %v.%v.`,
+		result, info.ParentType, info.FieldName,
 	)
 	if err != nil {
 		panic(err)
@@ -776,10 +772,10 @@ func completeListValue(eCtx *ExecutionContext, returnType *List, fieldASTs []*as
 	if info.ParentType != nil {
 		parentTypeName = info.ParentType.Name()
 	}
-	err := invariant(
+	err := invariantf(
 		resultVal.IsValid() && resultVal.Type().Kind() == reflect.Slice,
-		fmt.Sprintf("User Error: expected iterable, but did not find one "+
-			"for field %v.%v.", parentTypeName, info.FieldName),
+		"User Error: expected iterable, but did not find one "+
+			"for field %v.%v.", parentTypeName, info.FieldName,
 	)
 	if err != nil {
 		panic(gqlerrors.FormatError(err))

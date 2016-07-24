@@ -1,9 +1,5 @@
 package graphql
 
-import (
-	"fmt"
-)
-
 type SchemaConfig struct {
 	Query        *Object
 	Mutation     *Object
@@ -224,9 +220,9 @@ func typeMapReducer(schema *Schema, typeMap TypeMap, objectType Type) (TypeMap, 
 	}
 
 	if mappedObjectType, ok := typeMap[objectType.Name()]; ok {
-		err := invariant(
+		err := invariantf(
 			mappedObjectType == objectType,
-			fmt.Sprintf(`Schema must contain unique named types but contains multiple types named "%v".`, objectType.Name()),
+			`Schema must contain unique named types but contains multiple types named "%v".`, objectType.Name(),
 		)
 		if err != nil {
 			return typeMap, err
@@ -344,10 +340,10 @@ func assertObjectImplementsInterface(schema *Schema, object *Object, iface *Inte
 		ifaceField := ifaceFieldMap[fieldName]
 
 		// Assert interface field exists on object.
-		err := invariant(
+		err := invariantf(
 			objectField != nil,
-			fmt.Sprintf(`"%v" expects field "%v" but "%v" does not `+
-				`provide it.`, iface, fieldName, object),
+			`"%v" expects field "%v" but "%v" does not `+
+				`provide it.`, iface, fieldName, object,
 		)
 		if err != nil {
 			return err
@@ -355,12 +351,12 @@ func assertObjectImplementsInterface(schema *Schema, object *Object, iface *Inte
 
 		// Assert interface field type is satisfied by object field type, by being
 		// a valid subtype. (covariant)
-		err = invariant(
+		err = invariantf(
 			isTypeSubTypeOf(schema, objectField.Type, ifaceField.Type),
-			fmt.Sprintf(`%v.%v expects type "%v" but `+
+			`%v.%v expects type "%v" but `+
 				`%v.%v provides type "%v".`,
-				iface, fieldName, ifaceField.Type,
-				object, fieldName, objectField.Type),
+			iface, fieldName, ifaceField.Type,
+			object, fieldName, objectField.Type,
 		)
 		if err != nil {
 			return err
@@ -377,12 +373,12 @@ func assertObjectImplementsInterface(schema *Schema, object *Object, iface *Inte
 				}
 			}
 			// Assert interface field arg exists on object field.
-			err = invariant(
+			err = invariantf(
 				objectArg != nil,
-				fmt.Sprintf(`%v.%v expects argument "%v" but `+
+				`%v.%v expects argument "%v" but `+
 					`%v.%v does not provide it.`,
-					iface, fieldName, argName,
-					object, fieldName),
+				iface, fieldName, argName,
+				object, fieldName,
 			)
 			if err != nil {
 				return err
@@ -390,14 +386,13 @@ func assertObjectImplementsInterface(schema *Schema, object *Object, iface *Inte
 
 			// Assert interface field arg type matches object field arg type.
 			// (invariant)
-			err = invariant(
+			err = invariantf(
 				isEqualType(ifaceArg.Type, objectArg.Type),
-				fmt.Sprintf(
-					`%v.%v(%v:) expects type "%v" `+
-						`but %v.%v(%v:) provides `+
-						`type "%v".`,
-					iface, fieldName, argName, ifaceArg.Type,
-					object, fieldName, argName, objectArg.Type),
+				`%v.%v(%v:) expects type "%v" `+
+					`but %v.%v(%v:) provides `+
+					`type "%v".`,
+				iface, fieldName, argName, ifaceArg.Type,
+				object, fieldName, argName, objectArg.Type,
 			)
 			if err != nil {
 				return err
@@ -416,12 +411,12 @@ func assertObjectImplementsInterface(schema *Schema, object *Object, iface *Inte
 
 			if ifaceArg == nil {
 				_, ok := objectArg.Type.(*NonNull)
-				err = invariant(
+				err = invariantf(
 					!ok,
-					fmt.Sprintf(`%v.%v(%v:) is of required type `+
+					`%v.%v(%v:) is of required type `+
 						`"%v" but is not also provided by the interface %v.%v.`,
-						object, fieldName, argName,
-						objectArg.Type, iface, fieldName),
+					object, fieldName, argName,
+					objectArg.Type, iface, fieldName,
 				)
 				if err != nil {
 					return err
