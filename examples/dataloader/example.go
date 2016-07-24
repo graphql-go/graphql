@@ -186,6 +186,14 @@ type dataloaderExecutor struct {
 }
 
 func (e *dataloaderExecutor) RunMany(fs []func()) {
+	if len(fs) == 1 {
+		fs[0]()
+		return
+	}
+	if len(fs) == 0 {
+		return
+	}
+
 	wg := dataloader.NewWaitGroup(e.sch)
 	for i := range fs {
 		f := fs[i]
