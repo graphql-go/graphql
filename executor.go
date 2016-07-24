@@ -11,6 +11,20 @@ import (
 	"golang.org/x/net/context"
 )
 
+type Executor interface {
+	RunMany(f []func())
+}
+
+type SerialExecutor struct{}
+
+func (e *SerialExecutor) RunMany(fs []func()) {
+	for _, f := range fs {
+		f()
+	}
+}
+
+var defaultExecutor = &SerialExecutor{}
+
 type ExecuteParams struct {
 	Schema        Schema
 	Root          interface{}
@@ -21,10 +35,15 @@ type ExecuteParams struct {
 	// Context may be provided to pass application-specific per-request
 	// information to resolve functions.
 	Context context.Context
+
+	Executor Executor
 }
 
 func Execute(p ExecuteParams) (result *Result) {
 	result = &Result{}
+	if p.Executor == nil {
+		p.Executor = defaultExecutor
+	}
 
 	exeContext, err := buildExecutionContext(BuildExecutionCtxParams{
 		Schema:        p.Schema,
@@ -35,6 +54,7 @@ func Execute(p ExecuteParams) (result *Result) {
 		Errors:        nil,
 		Result:        result,
 		Context:       p.Context,
+		Executor:      p.Executor,
 	})
 
 	if err != nil {
@@ -69,6 +89,7 @@ type BuildExecutionCtxParams struct {
 	Errors        []gqlerrors.FormattedError
 	Result        *Result
 	Context       context.Context
+	Executor      Executor
 }
 type ExecutionContext struct {
 	Schema         Schema
@@ -78,6 +99,7 @@ type ExecutionContext struct {
 	VariableValues map[string]interface{}
 	Errors         []gqlerrors.FormattedError
 	Context        context.Context
+	Executor       Executor
 }
 
 func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error) {
@@ -124,6 +146,7 @@ func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error)
 	eCtx.VariableValues = variableValues
 	eCtx.Errors = p.Errors
 	eCtx.Context = p.Context
+	eCtx.Executor = p.Executor
 	return eCtx, nil
 }
 
@@ -247,13 +270,20 @@ func executeFields(p ExecuteFieldsParams) *Result {
 	}
 
 	finalResults := map[string]interface{}{}
+	fs := make([]func(), 0, len(p.Fields))
 	for responseName, fieldASTs := range p.Fields {
-		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
-		if state.hasNoFieldDefs {
-			continue
-		}
-		finalResults[responseName] = resolved
+		responseName := responseName
+		fieldASTs := fieldASTs
+		finalResults[responseName] = nil // preallocate to avoid race.
+		fs = append(fs, func() {
+			resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+			if state.hasNoFieldDefs {
+				return
+			}
+			finalResults[responseName] = resolved
+		})
 	}
+	p.ExecutionContext.Executor.RunMany(fs)
 
 	return &Result{
 		Data:   finalResults,
@@ -756,12 +786,17 @@ func completeListValue(eCtx *ExecutionContext, returnType *List, fieldASTs []*as
 	}
 
 	itemType := returnType.OfType
-	completedResults := []interface{}{}
+	completedResults := make([]interface{}, resultVal.Len())
+	fs := make([]func(), 0, resultVal.Len())
 	for i := 0; i < resultVal.Len(); i++ {
-		val := resultVal.Index(i).Interface()
-		completedItem := completeValueCatchingError(eCtx, itemType, fieldASTs, info, val)
-		completedResults = append(completedResults, completedItem)
+		i := i
+		fs = append(fs, func() {
+			val := resultVal.Index(i).Interface()
+			completedItem := completeValueCatchingError(eCtx, itemType, fieldASTs, info, val)
+			completedResults[i] = completedItem
+		})
 	}
+	eCtx.Executor.RunMany(fs)
 	return completedResults
 }
 
