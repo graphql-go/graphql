@@ -30,6 +30,10 @@ type Params struct {
 	// Context may be provided to pass application-specific per-request
 	// information to resolve functions.
 	Context context.Context
+
+	// Executor allows to control the behavior of how to perform resolving function that
+	// can be run concurrently. If not given, they will be executed serially.
+	Executor Executor
 }
 
 func Do(p Params) *Result {
@@ -58,5 +62,6 @@ func Do(p Params) *Result {
 		OperationName: p.OperationName,
 		Args:          p.VariableValues,
 		Context:       p.Context,
+		Executor:      p.Executor,
 	})
 }
