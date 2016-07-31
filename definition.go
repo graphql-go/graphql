@@ -579,6 +579,9 @@ type ResolveParams struct {
 	// Source is the source value
 	Source interface{}
 
+	// SourceStack is the stack of source from nested structure.
+	SourceStack []interface{}
+
 	// Args is a map of arguments for current GraphQL request
 	Args map[string]interface{}
 
@@ -589,6 +592,14 @@ type ResolveParams struct {
 	// It is commonly
 	// used to represent an authenticated user, or request-specific caches.
 	Context context.Context
+}
+
+// GetSource is convenient method to access source/source stack.
+func (p *ResolveParams) GetSource(i int) interface{} {
+	if i == 0 {
+		return p.Source
+	}
+	return p.SourceStack[len(p.SourceStack)-i]
 }
 
 type FieldResolveFn func(p ResolveParams) (interface{}, error)
