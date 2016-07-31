@@ -346,6 +346,87 @@ func TestThreadsSourceCorrectly(t *testing.T) {
 	}
 }
 
+func TestThreadsSourceStackCorrectly(t *testing.T) {
+
+	query := `
+      query Example { a { b c { d e } } }
+    `
+
+	data := map[string]interface{}{
+		"key": "value",
+	}
+
+	var resolvedSourceStack []interface{}
+
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Type",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{
+					Type: graphql.NewObject(graphql.ObjectConfig{
+						Name: "aType",
+						Fields: graphql.Fields{
+							"b": &graphql.Field{
+								Type: graphql.String,
+							},
+							"c": &graphql.Field{
+								Type: graphql.NewObject(graphql.ObjectConfig{
+									Name: "cType",
+									Fields: graphql.Fields{
+										"d": &graphql.Field{
+											Type: graphql.String,
+										},
+										"e": &graphql.Field{
+											Type: graphql.String,
+											Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+												resolvedSourceStack = p.SourceStack
+												mm := p.GetSource(1).(map[string]interface{})
+												return mm["b"], nil
+											},
+										},
+									},
+								}),
+							},
+						},
+					}),
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return map[string]interface{}{
+							"b": "b_value",
+							"c": map[string]interface{}{
+								"d": "d_value",
+							},
+						}, nil
+					},
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	// parse query
+	ast := testutil.TestParse(t, query)
+
+	// execute
+	ep := graphql.ExecuteParams{
+		Schema: schema,
+		Root:   data,
+		AST:    ast,
+	}
+	result := testutil.TestExecute(t, ep)
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+
+	if resolvedSourceStack[0].(map[string]interface{})["key"].(string) != "value" {
+		t.Error("Unexpected soruce stack: ", resolvedSourceStack)
+	}
+	if resolvedSourceStack[1].(map[string]interface{})["b"].(string) != "b_value" {
+		t.Error("Unexpected soruce stack: ", resolvedSourceStack)
+	}
+}
+
 func TestCorrectlyThreadsArguments(t *testing.T) {
 
 	query := `
