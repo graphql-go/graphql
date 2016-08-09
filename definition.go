@@ -580,9 +580,6 @@ type ResolveParams struct {
 	// Source is the source value
 	Source interface{}
 
-	// SourceStack is the stack of source from nested structure.
-	SourceStack []interface{}
-
 	// Args is a map of arguments for current GraphQL request
 	Args map[string]interface{}
 
@@ -595,12 +592,16 @@ type ResolveParams struct {
 	Context context.Context
 }
 
-// GetSource is convenient method to access source/source stack.
-func (p *ResolveParams) GetSource(i int) interface{} {
+// GetSource is convenient method to access stack.
+func (p *ResolveParams) Stack(i int) ExecuteStackFrame {
 	if i == 0 {
-		return p.Source
+		return ExecuteStackFrame{
+			Source:    p.Source,
+			FieldName: p.Info.FieldName,
+			FieldASTs: p.Info.FieldASTs,
+		}
 	}
-	return p.SourceStack[len(p.SourceStack)-i]
+	return p.Info.Stack[len(p.Info.Stack)-i]
 }
 
 type FieldResolveFn func(p ResolveParams) (interface{}, error)
@@ -615,6 +616,7 @@ type ResolveInfo struct {
 	RootValue      interface{}
 	Operation      ast.Definition
 	VariableValues map[string]interface{}
+	Stack          []ExecuteStackFrame
 }
 
 type Fields map[string]*Field

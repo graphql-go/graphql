@@ -346,7 +346,7 @@ func TestThreadsSourceCorrectly(t *testing.T) {
 	}
 }
 
-func TestThreadsSourceStackCorrectly(t *testing.T) {
+func TestThreadsStackCorrectly(t *testing.T) {
 
 	query := `
       query Example { a { b c { d e } } }
@@ -356,7 +356,7 @@ func TestThreadsSourceStackCorrectly(t *testing.T) {
 		"key": "value",
 	}
 
-	var resolvedSourceStack []interface{}
+	var resolvedStack []graphql.ExecuteStackFrame
 
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
@@ -379,8 +379,8 @@ func TestThreadsSourceStackCorrectly(t *testing.T) {
 										"e": &graphql.Field{
 											Type: graphql.String,
 											Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-												resolvedSourceStack = p.SourceStack
-												mm := p.GetSource(1).(map[string]interface{})
+												resolvedStack = p.Info.Stack
+												mm := p.Stack(1).Source.(map[string]interface{})
 												return mm["b"], nil
 											},
 										},
@@ -419,11 +419,17 @@ func TestThreadsSourceStackCorrectly(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
 
-	if resolvedSourceStack[0].(map[string]interface{})["key"].(string) != "value" {
-		t.Error("Unexpected soruce stack: ", resolvedSourceStack)
+	if resolvedStack[0].FieldName != "a" {
+		t.Errorf("Unexpected soruce stack: %+v", resolvedStack)
 	}
-	if resolvedSourceStack[1].(map[string]interface{})["b"].(string) != "b_value" {
-		t.Error("Unexpected soruce stack: ", resolvedSourceStack)
+	if resolvedStack[0].Source.(map[string]interface{})["key"].(string) != "value" {
+		t.Errorf("Unexpected soruce stack: %+v", resolvedStack)
+	}
+	if resolvedStack[1].FieldName != "c" {
+		t.Errorf("Unexpected soruce stack: %+v", resolvedStack)
+	}
+	if resolvedStack[1].Source.(map[string]interface{})["b"].(string) != "b_value" {
+		t.Errorf("Unexpected soruce stack: %+v", resolvedStack)
 	}
 }
 
