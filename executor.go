@@ -284,8 +284,9 @@ func executeFields(p ExecuteFieldsParams) *Result {
 	for responseName, fieldASTs := range p.Fields {
 		responseName := responseName
 		fieldASTs := fieldASTs
+		stack := append([]ExecuteStackFrame{}, p.Stack...)
 		fs = append(fs, func() {
-			resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, p.Stack, fieldASTs)
+			resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, stack, fieldASTs)
 			if state.hasNoFieldDefs {
 				return
 			}
@@ -803,6 +804,7 @@ func completeListValue(eCtx *ExecutionContext, returnType *List, fieldASTs []*as
 	fs := make([]func(), 0, resultVal.Len())
 	for i := 0; i < resultVal.Len(); i++ {
 		i := i
+		stack := append([]ExecuteStackFrame{}, stack...)
 		fs = append(fs, func() {
 			val := resultVal.Index(i).Interface()
 			completedItem := completeValueCatchingError(eCtx, itemType, fieldASTs, info, stack, val)
