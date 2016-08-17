@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
@@ -279,26 +280,21 @@ func executeFields(p ExecuteFieldsParams) *Result {
 
 	finalResults := map[string]interface{}{}
 	fs := make([]func(), 0, len(p.Fields))
-	var undefinedKeys []string
+	var resultsMu sync.Mutex
 	for responseName, fieldASTs := range p.Fields {
 		responseName := responseName
 		fieldASTs := fieldASTs
-		finalResults[responseName] = nil // This is to avoid using lock.
 		fs = append(fs, func() {
 			resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, p.Stack, fieldASTs)
 			if state.hasNoFieldDefs {
-				undefinedKeys = append(undefinedKeys, responseName)
 				return
 			}
+			resultsMu.Lock()
 			finalResults[responseName] = resolved
+			resultsMu.Unlock()
 		})
 	}
 	p.ExecutionContext.Executor.RunMany(fs)
-
-	// Remove undefined keys.
-	for _, key := range undefinedKeys {
-		delete(finalResults, key)
-	}
 	return &Result{
 		Data:   finalResults,
 		Errors: p.ExecutionContext.Errors,
