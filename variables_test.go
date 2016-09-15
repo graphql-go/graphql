@@ -533,7 +533,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnDeepNestedErrors
 					"\nIn field \"na\": In field \"c\": Expected \"String!\", found null." +
 					"\nIn field \"nb\": Expected \"String!\", found null.",
 				Locations: []location.SourceLocation{
-					location.SourceLocation{
+					{
 						Line: 2, Column: 19,
 					},
 				},

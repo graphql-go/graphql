@@ -146,12 +146,12 @@ func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleI
 					return visitor.ActionSkip, nil
 				},
 			},
-			kinds.SelectionSet: visitor.NamedVisitFuncs{
+			kinds.SelectionSet: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					return visitor.ActionSkip, nil
 				},
 			},
-			kinds.FragmentDefinition: visitor.NamedVisitFuncs{
+			kinds.FragmentDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					return visitor.ActionSkip, nil
 				},
@@ -1875,7 +1875,7 @@ func UniqueInputFieldNamesRule(context *ValidationContext) *ValidationRuleInstan
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.ObjectValue: visitor.NamedVisitFuncs{
+			kinds.ObjectValue: {
 				Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 					knownNameStack = append(knownNameStack, knownNames)
 					knownNames = map[string]*ast.Name{}
@@ -1887,7 +1887,7 @@ func UniqueInputFieldNamesRule(context *ValidationContext) *ValidationRuleInstan
 					return visitor.ActionNoChange, nil
 				},
 			},
-			kinds.ObjectField: visitor.NamedVisitFuncs{
+			kinds.ObjectField: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.ObjectField); ok {
 						fieldName := ""
@@ -1943,7 +1943,7 @@ func UniqueOperationNamesRule(context *ValidationContext) *ValidationRuleInstanc
 					return visitor.ActionSkip, nil
 				},
 			},
-			kinds.FragmentDefinition: visitor.NamedVisitFuncs{
+			kinds.FragmentDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					return visitor.ActionSkip, nil
 				},
@@ -1963,7 +1963,7 @@ func UniqueVariableNamesRule(context *ValidationContext) *ValidationRuleInstance
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.OperationDefinition); ok && node != nil {
 						knownVariableNames = map[string]*ast.Name{}
@@ -1971,7 +1971,7 @@ func UniqueVariableNamesRule(context *ValidationContext) *ValidationRuleInstance
 					return visitor.ActionNoChange, nil
 				},
 			},
-			kinds.VariableDefinition: visitor.NamedVisitFuncs{
+			kinds.VariableDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.VariableDefinition); ok && node != nil {
 						variableName := ""
