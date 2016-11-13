@@ -389,7 +389,7 @@ type IsTypeOfFn func(p IsTypeOfParams) bool
 type InterfacesThunk func() []*Interface
 
 type ObjectConfig struct {
-	Name        string      `json:"description"`
+	Name        string      `json:"name"`
 	Interfaces  interface{} `json:"interfaces"`
 	Fields      interface{} `json:"fields"`
 	IsTypeOf    IsTypeOfFn  `json:"isTypeOf"`
