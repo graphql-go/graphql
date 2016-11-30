@@ -800,10 +800,6 @@ func defaultResolveFn(p ResolveParams) (interface{}, error) {
 		return nil, nil
 	}
 	if sourceVal.Type().Kind() == reflect.Struct {
-		// find field based on struct's json tag
-		// we could potentially create a custom `graphql` tag, but its unnecessary at this point
-		// since graphql speaks to client in a json-like way anyway
-		// so json tags are a good way to start with
 		for i := 0; i < sourceVal.NumField(); i++ {
 			valueField := sourceVal.Field(i)
 			typeField := sourceVal.Type().Field(i)
@@ -812,15 +808,22 @@ func defaultResolveFn(p ResolveParams) (interface{}, error) {
 				return valueField.Interface(), nil
 			}
 			tag := typeField.Tag
-			jsonTag := tag.Get("json")
-			jsonOptions := strings.Split(jsonTag, ",")
-			if len(jsonOptions) == 0 {
+			checkTag := func(tagName string) bool {
+				t := tag.Get(tagName)
+				tOptions := strings.Split(t, ",")
+				if len(tOptions) == 0 {
+					return false
+				}
+				if tOptions[0] != p.Info.FieldName {
+					return false
+				}
+				return true
+			}
+			if checkTag("json") || checkTag("graphql") {
+				return valueField.Interface(), nil
+			} else {
 				continue
 			}
-			if jsonOptions[0] != p.Info.FieldName {
-				continue
-			}
-			return valueField.Interface(), nil
 		}
 		return nil, nil
 	}
