@@ -97,7 +97,7 @@ func TestParseProvidesUsefulErrors(t *testing.T) {
     ^
 `,
 		Positions: []int{1},
-		Locations: []location.SourceLocation{{1, 2}},
+		Locations: []location.SourceLocation{{Line: 1, Column: 2}},
 	}
 	checkError(t, err, expectedError)
 
