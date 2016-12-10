@@ -51,7 +51,7 @@ func TestVisitor_AllowsEditingANodeBothOnEnterAndOnLeave(t *testing.T) {
 	v := &visitor.VisitorOptions{
 
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.OperationDefinition: visitor.NamedVisitFuncs{
+			kinds.OperationDefinition: {
 				Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.OperationDefinition); ok {
 						selectionSet = node.SelectionSet
@@ -120,7 +120,7 @@ func TestVisitor_AllowsEditingTheRootNodeOnEnterAndOnLeave(t *testing.T) {
 	v := &visitor.VisitorOptions{
 
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.Document: visitor.NamedVisitFuncs{
+			kinds.Document: {
 				Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.Document); ok {
 						visited["didEnter"] = true
@@ -931,7 +931,7 @@ func TestVisitor_VisitInParallel_AllowsSkippingDifferentSubTrees(t *testing.T) {
 	}
 
 	v := []*visitor.VisitorOptions{
-		&visitor.VisitorOptions{
+		{
 			Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 				switch node := p.Node.(type) {
 				case *ast.Name:
@@ -960,7 +960,7 @@ func TestVisitor_VisitInParallel_AllowsSkippingDifferentSubTrees(t *testing.T) {
 				return visitor.ActionNoChange, nil
 			},
 		},
-		&visitor.VisitorOptions{
+		{
 			Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
 				switch node := p.Node.(type) {
 				case *ast.Name:
