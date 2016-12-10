@@ -1592,3 +1592,50 @@ func TestMutation_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %+v", result.Errors)
 	}
 }
+
+func TestGraphqlTag(t *testing.T) {
+	typeObjectType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Type",
+		Fields: graphql.Fields{
+			"fooBar": &graphql.Field{Type: graphql.String},
+		},
+	})
+	var baz = &graphql.Field{
+		Type:        typeObjectType,
+		Description: "typeObjectType",
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			t := struct {
+				FooBar string `graphql:"fooBar"`
+			}{"foo bar value"}
+			return t, nil
+		},
+	}
+	q := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Query",
+		Fields: graphql.Fields{
+			"baz": baz,
+		},
+	})
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: q,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error, got: %v", err)
+	}
+	query := "{ baz { fooBar } }"
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+	})
+	if len(result.Errors) != 0 {
+		t.Fatalf("wrong result, unexpected errors: %+v", result.Errors)
+	}
+	expectedData := map[string]interface{}{
+		"baz": map[string]interface{}{
+			"fooBar": "foo bar value",
+		},
+	}
+	if !reflect.DeepEqual(result.Data, expectedData) {
+		t.Fatalf("unexpected result, got: %+v, expected: %+v", expectedData, result.Data)
+	}
+}
