@@ -32,6 +32,7 @@ type ExecuteParams struct {
 	AST           *ast.Document
 	OperationName string
 	Args          map[string]interface{}
+	BlockMeta     bool
 
 	// Context may be provided to pass application-specific per-request
 	// information to resolve functions.
@@ -78,6 +79,7 @@ func Execute(p ExecuteParams) (result *Result) {
 		ExecutionContext: exeContext,
 		Root:             p.Root,
 		Operation:        exeContext.Operation,
+		BlockMeta:        p.BlockMeta,
 	})
 }
 
@@ -155,6 +157,7 @@ type ExecuteOperationParams struct {
 	ExecutionContext *ExecutionContext
 	Root             interface{}
 	Operation        ast.Definition
+	BlockMeta        bool
 }
 
 func executeOperation(p ExecuteOperationParams) *Result {
@@ -175,6 +178,7 @@ func executeOperation(p ExecuteOperationParams) *Result {
 		Source:           p.Root,
 		Stack:            nil,
 		Fields:           fields,
+		BlockMeta:        p.BlockMeta,
 	}
 
 	if p.Operation.GetOperation() == ast.OperationTypeMutation {
@@ -243,6 +247,7 @@ type ExecuteFieldsParams struct {
 	Source           interface{}
 	Stack            []ExecuteStackFrame
 	Fields           map[string][]*ast.Field
+	BlockMeta        bool
 }
 
 // Implements the "Evaluating selection sets" section of the spec for "write" mode.
@@ -256,7 +261,7 @@ func executeFieldsSerially(p ExecuteFieldsParams) *Result {
 
 	finalResults := map[string]interface{}{}
 	for responseName, fieldASTs := range p.Fields {
-		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, p.Stack, fieldASTs)
+		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, p.Stack, fieldASTs, p.BlockMeta)
 		if state.hasNoFieldDefs {
 			continue
 		}
@@ -286,7 +291,7 @@ func executeFields(p ExecuteFieldsParams) *Result {
 		fieldASTs := fieldASTs
 		stack := append([]ExecuteStackFrame{}, p.Stack...)
 		fs = append(fs, func() {
-			resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, stack, fieldASTs)
+			resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, stack, fieldASTs, p.BlockMeta)
 			if state.hasNoFieldDefs {
 				return
 			}
@@ -513,7 +518,7 @@ type resolveFieldResultState struct {
 // figures out the value that the field returns by calling its resolve function,
 // then calls completeValue to complete promises, serialize scalars, or execute
 // the sub-selection-set for objects.
-func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}, stack []ExecuteStackFrame, fieldASTs []*ast.Field) (result interface{}, resultState resolveFieldResultState) {
+func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}, stack []ExecuteStackFrame, fieldASTs []*ast.Field, blockMeta bool) (result interface{}, resultState resolveFieldResultState) {
 	// catch panic from resolveFn
 	var returnType Output
 	defer func() (interface{}, resolveFieldResultState) {
@@ -545,7 +550,7 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 		fieldName = fieldAST.Name.Value
 	}
 
-	fieldDef := getFieldDef(eCtx.Schema, parentType, fieldName)
+	fieldDef := getFieldDef(eCtx.Schema, parentType, fieldName, blockMeta)
 	if fieldDef == nil {
 		resultState.hasNoFieldDefs = true
 		return nil, resultState
@@ -900,18 +905,23 @@ func defaultResolveFn(p ResolveParams) (interface{}, error) {
 // are allowed, like on a Union. __schema could get automatically
 // added to the query type, but that would require mutating type
 // definitions, which would cause issues.
-func getFieldDef(schema Schema, parentType *Object, fieldName string) *FieldDefinition {
-
+func getFieldDef(schema Schema, parentType *Object, fieldName string, blockMeta bool) *FieldDefinition {
 	if parentType == nil {
 		return nil
 	}
 
 	if fieldName == SchemaMetaFieldDef.Name &&
 		schema.QueryType() == parentType {
+		if blockMeta {
+			return BlockedMetaFieldDef
+		}
 		return SchemaMetaFieldDef
 	}
 	if fieldName == TypeMetaFieldDef.Name &&
 		schema.QueryType() == parentType {
+		if blockMeta {
+			return BlockedMetaFieldDef
+		}
 		return TypeMetaFieldDef
 	}
 	if fieldName == TypeNameMetaFieldDef.Name {

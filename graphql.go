@@ -34,6 +34,9 @@ type Params struct {
 	// Executor allows to control the behavior of how to perform resolving function that
 	// can be run concurrently. If not given, they will be executed serially.
 	Executor Executor
+
+	// If true, introspection queries are blocked.
+	BlockIntrospection bool
 }
 
 func Do(p Params) *Result {
@@ -63,5 +66,6 @@ func Do(p Params) *Result {
 		Args:          p.VariableValues,
 		Context:       p.Context,
 		Executor:      p.Executor,
+		BlockMeta:     p.BlockIntrospection,
 	})
 }
