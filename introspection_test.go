@@ -1476,6 +1476,9 @@ func TestIntrospection_BlockedQuery(t *testing.T) {
 		Fields: graphql.Fields{
 			"onlyField": &graphql.Field{
 				Type: graphql.String,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return "foo", nil
+				},
 			},
 		},
 	})
@@ -1504,4 +1507,22 @@ func TestIntrospection_BlockedQuery(t *testing.T) {
 		},
 	}
 	testutil.EqualErrorMessage(expected, result, 0)
+
+	query = `{
+		onlyField
+	}`
+
+	result = g(t, graphql.Params{
+		Schema:             schema,
+		RequestString:      query,
+		BlockIntrospection: true,
+	})
+	expected = &graphql.Result{
+		Data: map[string]interface{}{
+			"onlyField": "foo",
+		},
+	}
+	if !reflect.DeepEqual(result, expected) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
 }
