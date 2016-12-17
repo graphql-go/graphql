@@ -1469,3 +1469,60 @@ func TestIntrospection_ExposesDescriptionsOnEnums(t *testing.T) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
+
+func TestIntrospection_BlockedQuery(t *testing.T) {
+	queryRoot := graphql.NewObject(graphql.ObjectConfig{
+		Name: "QueryRoot",
+		Fields: graphql.Fields{
+			"onlyField": &graphql.Field{
+				Type: graphql.String,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return "foo", nil
+				},
+			},
+		},
+	})
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: queryRoot,
+	})
+	if err != nil {
+		t.Fatalf("Error creating Schema: %v", err.Error())
+	}
+	query := `{
+  __schema {
+      queryType { name }
+  }
+}`
+	result := g(t, graphql.Params{
+		Schema:             schema,
+		RequestString:      query,
+		BlockIntrospection: true,
+	})
+	expected := &graphql.Result{
+		Data: nil,
+		Errors: []gqlerrors.FormattedError{
+			{
+				Message: "Introspection query not allowed.",
+			},
+		},
+	}
+	testutil.EqualErrorMessage(expected, result, 0)
+
+	query = `{
+		onlyField
+	}`
+
+	result = g(t, graphql.Params{
+		Schema:             schema,
+		RequestString:      query,
+		BlockIntrospection: true,
+	})
+	expected = &graphql.Result{
+		Data: map[string]interface{}{
+			"onlyField": "foo",
+		},
+	}
+	if !reflect.DeepEqual(result, expected) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}

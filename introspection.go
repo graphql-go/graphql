@@ -33,6 +33,7 @@ var directiveLocationEnum *Enum
 var SchemaMetaFieldDef *FieldDefinition
 var TypeMetaFieldDef *FieldDefinition
 var TypeNameMetaFieldDef *FieldDefinition
+var BlockedMetaFieldDef *FieldDefinition
 
 func init() {
 
@@ -589,6 +590,14 @@ func init() {
 		},
 	}
 
+	BlockedMetaFieldDef = &FieldDefinition{
+		Type:        NewNonNull(String),
+		Description: "Blocked introspection.",
+		Args:        []*Argument{},
+		Resolve: func(p ResolveParams) (interface{}, error) {
+			return "", fmt.Errorf("Introspection query not allowed.")
+		},
+	}
 }
 
 // Produces a GraphQL Value AST given a Golang value.
