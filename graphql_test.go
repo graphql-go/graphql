@@ -156,11 +156,13 @@ func TestThreadsContextFromParamsThrough(t *testing.T) {
 		t.Fatalf("wrong result, unexpected errors: %v", err.Error())
 	}
 	query := `{ value(key:"a") }`
+	formated := ""
 
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
-		RequestString: query,
-		Context:       context.WithValue(context.TODO(), "a", "xyz"),
+		Schema:               schema,
+		RequestString:        query,
+		Context:              context.WithValue(context.TODO(), "a", "xyz"),
+		CanonicalizedRequest: &formated,
 	})
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
@@ -169,5 +171,11 @@ func TestThreadsContextFromParamsThrough(t *testing.T) {
 	if !reflect.DeepEqual(result.Data, expected) {
 		t.Fatalf("wrong result, query: %v, graphql result diff: %v", query, testutil.Diff(expected, result))
 	}
-
+	expectedFormated := `{
+  value(key: "a")
+}
+`
+	if formated != expectedFormated {
+		t.Fatalf("Expected formated: %s. Got: %s", expectedFormated, formated)
+	}
 }

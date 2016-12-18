@@ -1,9 +1,12 @@
 package graphql
 
 import (
+	"fmt"
+
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/parser"
 	"github.com/graphql-go/graphql/language/source"
+	"github.com/skyfarliu/graphql/language/printer"
 	"golang.org/x/net/context"
 )
 
@@ -37,6 +40,9 @@ type Params struct {
 
 	// If true, introspection queries are blocked.
 	BlockIntrospection bool
+
+	// If not nil, Do() will canonicalize request string and populate it.
+	CanonicalizedRequest *string
 }
 
 func Do(p Params) *Result {
@@ -56,6 +62,10 @@ func Do(p Params) *Result {
 		return &Result{
 			Errors: validationResult.Errors,
 		}
+	}
+
+	if p.CanonicalizedRequest != nil {
+		*p.CanonicalizedRequest = fmt.Sprint(printer.Print(AST))
 	}
 
 	return Execute(ExecuteParams{
