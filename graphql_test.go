@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/testutil"
 	"golang.org/x/net/context"
 )
@@ -84,6 +85,23 @@ func TestQuery(t *testing.T) {
 
 func testGraphql(test T, p graphql.Params, t *testing.T) {
 	result := graphql.Do(p)
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(result, test.Expected) {
+		t.Fatalf("wrong result, query: %v, graphql result diff: %v", test.Query, testutil.Diff(test.Expected, result))
+	}
+
+	AST, err := graphql.Parse(p.RequestString)
+	if err != nil {
+		result = &graphql.Result{
+			Errors: gqlerrors.FormatErrors(err),
+		}
+	}
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	result = graphql.DoWithAST(p, AST)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}

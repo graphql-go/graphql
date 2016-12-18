@@ -2,6 +2,7 @@ package graphql
 
 import (
 	"github.com/graphql-go/graphql/gqlerrors"
+	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
 	"github.com/graphql-go/graphql/language/source"
 	"golang.org/x/net/context"
@@ -39,6 +40,34 @@ type Params struct {
 	BlockIntrospection bool
 }
 
+func Parse(requestString string) (*ast.Document, error) {
+	source := source.NewSource(&source.Source{
+		Body: []byte(requestString),
+		Name: "GraphQL request",
+	})
+	return parser.Parse(parser.ParseParams{Source: source})
+}
+
+func DoWithAST(p Params, AST *ast.Document) *Result {
+	validationResult := ValidateDocument(&p.Schema, AST, nil)
+	if !validationResult.IsValid {
+		return &Result{
+			Errors: validationResult.Errors,
+		}
+	}
+
+	return Execute(ExecuteParams{
+		Schema:        p.Schema,
+		Root:          p.RootObject,
+		AST:           AST,
+		OperationName: p.OperationName,
+		Args:          p.VariableValues,
+		Context:       p.Context,
+		Executor:      p.Executor,
+		BlockMeta:     p.BlockIntrospection,
+	})
+}
+
 func Do(p Params) *Result {
 	source := source.NewSource(&source.Source{
 		Body: []byte(p.RequestString),
@@ -50,8 +79,8 @@ func Do(p Params) *Result {
 			Errors: gqlerrors.FormatErrors(err),
 		}
 	}
-	validationResult := ValidateDocument(&p.Schema, AST, nil)
 
+	validationResult := ValidateDocument(&p.Schema, AST, nil)
 	if !validationResult.IsValid {
 		return &Result{
 			Errors: validationResult.Errors,
