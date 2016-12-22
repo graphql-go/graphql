@@ -40,6 +40,7 @@ type Params struct {
 	BlockIntrospection bool
 }
 
+// Parse parses reuqest string to an AST. It does not validate the AST.
 func Parse(requestString string) (*ast.Document, error) {
 	source := source.NewSource(&source.Source{
 		Body: []byte(requestString),
@@ -48,14 +49,20 @@ func Parse(requestString string) (*ast.Document, error) {
 	return parser.Parse(parser.ParseParams{Source: source})
 }
 
-func DoWithAST(p Params, AST *ast.Document) *Result {
-	validationResult := ValidateDocument(&p.Schema, AST, nil)
+// Validate validates the AST. If it's not valid, an error result
+// is returned, otherwise, it returns nil.
+func Validate(AST *ast.Document, schema *Schema) *Result {
+	validationResult := ValidateDocument(schema, AST, nil)
 	if !validationResult.IsValid {
 		return &Result{
 			Errors: validationResult.Errors,
 		}
 	}
+	return nil
+}
 
+// DoWithAST execute GraphQL request with a parsed and valid AST.
+func DoWithAST(p Params, AST *ast.Document) *Result {
 	return Execute(ExecuteParams{
 		Schema:        p.Schema,
 		Root:          p.RootObject,

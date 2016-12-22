@@ -925,9 +925,6 @@ func getFieldDef(schema Schema, parentType *Object, fieldName string, blockMeta 
 		return TypeMetaFieldDef
 	}
 	if fieldName == TypeNameMetaFieldDef.Name {
-		if blockMeta {
-			return BlockedMetaFieldDef
-		}
 		return TypeNameMetaFieldDef
 	}
 	return parentType.Fields()[fieldName]
