@@ -101,6 +101,10 @@ func testGraphql(test T, p graphql.Params, t *testing.T) {
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
+	result = graphql.Validate(AST, &p.Schema)
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
 	result = graphql.DoWithAST(p, AST)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
