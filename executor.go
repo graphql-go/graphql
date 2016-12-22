@@ -925,6 +925,9 @@ func getFieldDef(schema Schema, parentType *Object, fieldName string, blockMeta 
 		return TypeMetaFieldDef
 	}
 	if fieldName == TypeNameMetaFieldDef.Name {
+		// Always allow __typename to be inspected,
+		// since this information is used by some client
+		// for caching purpose.
 		return TypeNameMetaFieldDef
 	}
 	return parentType.Fields()[fieldName]
