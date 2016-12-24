@@ -2,10 +2,11 @@ package graphql_test
 
 import (
 	"encoding/json"
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/testutil"
 	"reflect"
 	"testing"
+
+	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/testutil"
 )
 
 func testSchema(t *testing.T, testField *graphql.Field) graphql.Schema {
@@ -118,8 +119,10 @@ func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_With
 
 	// For structs without JSON tags, it will map to upper-cased exported field names
 	type SubObjectWithoutJSONTags struct {
-		Str string
-		Int int
+		Str    string
+		StrPtr *string
+		Int    int
+		IntPtr *int
 	}
 
 	schema := testSchema(t, &graphql.Field{
@@ -127,8 +130,10 @@ func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_With
 			Name:        "SubObject",
 			Description: "Maps GraphQL Object `SubObject` to Go struct `SubObjectWithoutJSONTags`",
 			Fields: graphql.Fields{
-				"Str": &graphql.Field{Type: graphql.String},
-				"Int": &graphql.Field{Type: graphql.Int},
+				"Str":    &graphql.Field{Type: graphql.String},
+				"StrPtr": &graphql.Field{Type: graphql.String},
+				"Int":    &graphql.Field{Type: graphql.Int},
+				"IntPtr": &graphql.Field{Type: graphql.Int},
 			},
 		}),
 		Args: graphql.FieldConfigArgument{
@@ -139,8 +144,10 @@ func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_With
 			aStr, _ := p.Args["aStr"].(string)
 			aInt, _ := p.Args["aInt"].(int)
 			return &SubObjectWithoutJSONTags{
-				Str: aStr,
-				Int: aInt,
+				Str:    aStr,
+				StrPtr: &aStr,
+				Int:    aInt,
+				IntPtr: &aInt,
 			}, nil
 		},
 	})
@@ -162,13 +169,15 @@ func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_With
 
 	expected = map[string]interface{}{
 		"test": map[string]interface{}{
-			"Str": "String!",
-			"Int": 0,
+			"Str":    "String!",
+			"Int":    0,
+			"StrPtr": "String!",
+			"IntPtr": 0,
 		},
 	}
 	result = graphql.Do(graphql.Params{
 		Schema:        schema,
-		RequestString: `{ test(aStr: "String!") { Str, Int } }`,
+		RequestString: `{ test(aStr: "String!") { Str, Int, StrPtr, IntPtr } }`,
 	})
 	if !reflect.DeepEqual(expected, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result.Data))
@@ -176,13 +185,15 @@ func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_With
 
 	expected = map[string]interface{}{
 		"test": map[string]interface{}{
-			"Str": "String!",
-			"Int": -123,
+			"Str":    "String!",
+			"Int":    -123,
+			"StrPtr": "String!",
+			"IntPtr": -123,
 		},
 	}
 	result = graphql.Do(graphql.Params{
 		Schema:        schema,
-		RequestString: `{ test(aInt: -123, aStr: "String!") { Str, Int } }`,
+		RequestString: `{ test(aInt: -123, aStr: "String!") { Str, Int, StrPtr, IntPtr } }`,
 	})
 	if !reflect.DeepEqual(expected, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result.Data))
