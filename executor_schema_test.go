@@ -48,7 +48,11 @@ func getPic(id int, width, height string) *testPic {
 
 var johnSmith *testAuthor
 
-func article(id interface{}) *testArticle {
+func article(iid interface{}) *testArticle {
+	id := fmt.Sprint(iid)
+	if id == "not_found" {
+		return nil
+	}
 	return &testArticle{
 		Id:          fmt.Sprintf("%v", id),
 		IsPublished: "true",
@@ -139,6 +143,13 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 			"keywords": &graphql.Field{
 				Type: graphql.NewList(graphql.String),
 			},
+			"authorAndTitle": &graphql.Field{
+				Type: graphql.String,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					art := p.Source.(*testArticle)
+					return art.Author.Name + " " + art.Title, nil
+				},
+			},
 		},
 	})
 
@@ -210,6 +221,12 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
             }
           }
         }
+		nosuch: article(id: "not_found") {
+			author {
+				id
+			}
+			authorAndTitle
+		}
       }
 
       fragment articleFields on Article {
@@ -252,6 +269,7 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 				"id":          "1",
 				"isPublished": bool(true),
 			},
+			"nosuch": nil,
 			"feed": []interface{}{
 				map[string]interface{}{
 					"id":    "1",

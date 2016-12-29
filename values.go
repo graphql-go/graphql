@@ -318,6 +318,9 @@ func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
 
 // Returns true if a value is null, undefined, or NaN.
 func isNullish(value interface{}) bool {
+	if value == nil {
+		return true
+	}
 	if value, ok := value.(string); ok {
 		return value == ""
 	}
@@ -330,7 +333,10 @@ func isNullish(value interface{}) bool {
 	if value, ok := value.(float64); ok {
 		return math.IsNaN(value)
 	}
-	return value == nil
+
+	val := reflect.ValueOf(value)
+	kind := val.Kind()
+	return kind >= reflect.Chan && kind <= reflect.Slice && val.IsNil()
 }
 
 /**
