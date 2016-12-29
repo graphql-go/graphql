@@ -650,14 +650,19 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 		return completed
 	}
 
+	// If field type is List, complete each item in the list with the inner type.
+	// Note that since in Go, people often use nil list for empty list,
+	// so nil list is not returned as null, but as empty list.
+	if returnType, ok := returnType.(*List); ok {
+		if resultVal.Kind() != reflect.Slice && isNullish(result) {
+			return nil
+		}
+		return completeListValue(eCtx, returnType, fieldASTs, info, stack, result)
+	}
+
 	// If result value is null-ish (null, undefined, or NaN) then return null.
 	if isNullish(result) {
 		return nil
-	}
-
-	// If field type is List, complete each item in the list with the inner type
-	if returnType, ok := returnType.(*List); ok {
-		return completeListValue(eCtx, returnType, fieldASTs, info, stack, result)
 	}
 
 	// If field type is a leaf type, Scalar or Enum, serialize to a valid value,

@@ -36,6 +36,7 @@ type testArticle struct {
 	Body        string        `json:"body"`
 	Hidden      string        `json:"hidden"`
 	Keywords    []interface{} `json:"keywords"`
+	Labels      []interface{} `json:"labels"`
 }
 
 func getPic(id int, width, height string) *testPic {
@@ -63,6 +64,7 @@ func article(iid interface{}) *testArticle {
 		Keywords: []interface{}{
 			"foo", "bar", 1, true, nil,
 		},
+		Labels: nil,
 	}
 }
 
@@ -143,6 +145,9 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 			"keywords": &graphql.Field{
 				Type: graphql.NewList(graphql.String),
 			},
+			"labels": &graphql.Field{
+				Type: graphql.NewList(graphql.String),
+			},
 			"authorAndTitle": &graphql.Field{
 				Type: graphql.String,
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
@@ -218,6 +223,7 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
             recentArticle {
               ...articleFields,
               keywords
+			  labels
             }
           }
         }
@@ -257,6 +263,7 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 						"isPublished": bool(true),
 						"title":       "My Article 1",
 						"body":        "This is a post",
+						"labels":      []interface{}{},
 						"keywords": []interface{}{
 							"foo",
 							"bar",
