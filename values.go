@@ -53,10 +53,10 @@ func getArgumentValues(argDefs []*Argument, argASTs []*ast.Argument, variableVar
 			valueAST = argAST.Value
 		}
 		value := valueFromAST(valueAST, argDef.Type, variableVariables)
-		if isNullish(value) {
+		if isNullish(value, false) {
 			value = argDef.DefaultValue
 		}
-		if !isNullish(value) {
+		if !isNullish(value, false) {
 			results[name] = value
 		}
 	}
@@ -86,7 +86,7 @@ func getVariableValue(schema Schema, definitionAST *ast.VariableDefinition, inpu
 
 	isValid, messages := isValidInputValue(input, ttype)
 	if isValid {
-		if isNullish(input) {
+		if isNullish(input, false) {
 			defaultValue := definitionAST.DefaultValue
 			if defaultValue != nil {
 				variables := map[string]interface{}{}
@@ -96,7 +96,7 @@ func getVariableValue(schema Schema, definitionAST *ast.VariableDefinition, inpu
 		}
 		return coerceValue(ttype, input), nil
 	}
-	if isNullish(input) {
+	if isNullish(input, false) {
 		return "", gqlerrors.NewError(
 			fmt.Sprintf(`Variable "$%v" of required type `+
 				`"%v" was not provided.`, variable.Name.Value, printer.Print(definitionAST.Type)),
@@ -134,7 +134,7 @@ func coerceValue(ttype Input, value interface{}) interface{} {
 	if ttype, ok := ttype.(*NonNull); ok {
 		return coerceValue(ttype.OfType, value)
 	}
-	if isNullish(value) {
+	if isNullish(value, false) {
 		return nil
 	}
 	if ttype, ok := ttype.(*List); ok {
@@ -163,10 +163,10 @@ func coerceValue(ttype Input, value interface{}) interface{} {
 		for fieldName, field := range ttype.Fields() {
 			value, _ := valueMap[fieldName]
 			fieldValue := coerceValue(field.Type, value)
-			if isNullish(fieldValue) {
+			if isNullish(fieldValue, false) {
 				fieldValue = field.DefaultValue
 			}
-			if !isNullish(fieldValue) {
+			if !isNullish(fieldValue, false) {
 				obj[fieldName] = fieldValue
 			}
 		}
@@ -176,12 +176,12 @@ func coerceValue(ttype Input, value interface{}) interface{} {
 	switch ttype := ttype.(type) {
 	case *Scalar:
 		parsed := ttype.ParseValue(value)
-		if !isNullish(parsed) {
+		if !isNullish(parsed, false) {
 			return parsed
 		}
 	case *Enum:
 		parsed := ttype.ParseValue(value)
-		if !isNullish(parsed) {
+		if !isNullish(parsed, false) {
 			return parsed
 		}
 	}
@@ -223,7 +223,7 @@ func typeFromAST(schema Schema, inputTypeAST ast.Type) (Type, error) {
 // runtime values of query variables.
 func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
 	if ttype, ok := ttype.(*NonNull); ok {
-		if isNullish(value) {
+		if isNullish(value, false) {
 			if ttype.OfType.Name() != "" {
 				return false, []string{fmt.Sprintf(`Expected "%v!", found null.`, ttype.OfType.Name())}
 			}
@@ -232,7 +232,7 @@ func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
 		return isValidInputValue(value, ttype.OfType)
 	}
 
-	if isNullish(value) {
+	if isNullish(value, false) {
 		return true, nil
 	}
 
@@ -301,14 +301,14 @@ func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
 	switch ttype := ttype.(type) {
 	case *Scalar:
 		parsedVal := ttype.ParseValue(value)
-		if isNullish(parsedVal) {
+		if isNullish(parsedVal, false) {
 			return false, []string{fmt.Sprintf(`Expected type "%v", found "%v".`, ttype.Name(), value)}
 		}
 		return true, nil
 
 	case *Enum:
 		parsedVal := ttype.ParseValue(value)
-		if isNullish(parsedVal) {
+		if isNullish(parsedVal, false) {
 			return false, []string{fmt.Sprintf(`Expected type "%v", found "%v".`, ttype.Name(), value)}
 		}
 		return true, nil
@@ -317,12 +317,14 @@ func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
 }
 
 // Returns true if a value is null, undefined, or NaN.
-func isNullish(value interface{}) bool {
+func isNullish(value interface{}, emptyStringAsNull bool) bool {
 	if value == nil {
 		return true
 	}
-	if value, ok := value.(string); ok {
-		return value == ""
+	if emptyStringAsNull {
+		if value, ok := value.(string); ok {
+			return value == ""
+		}
 	}
 	if value, ok := value.(int); ok {
 		return math.IsNaN(float64(value))
@@ -418,10 +420,10 @@ func valueFromAST(valueAST ast.Value, ttype Input, variables map[string]interfac
 				continue
 			}
 			fieldValue := valueFromAST(fieldAST.Value, field.Type, variables)
-			if isNullish(fieldValue) {
+			if isNullish(fieldValue, false) {
 				fieldValue = field.DefaultValue
 			}
-			if !isNullish(fieldValue) {
+			if !isNullish(fieldValue, false) {
 				obj[fieldName] = fieldValue
 			}
 		}
@@ -431,12 +433,12 @@ func valueFromAST(valueAST ast.Value, ttype Input, variables map[string]interfac
 	switch ttype := ttype.(type) {
 	case *Scalar:
 		parsed := ttype.ParseLiteral(valueAST)
-		if !isNullish(parsed) {
+		if !isNullish(parsed, false) {
 			return parsed
 		}
 	case *Enum:
 		parsed := ttype.ParseLiteral(valueAST)
-		if !isNullish(parsed) {
+		if !isNullish(parsed, false) {
 			return parsed
 		}
 	}

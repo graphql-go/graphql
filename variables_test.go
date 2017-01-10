@@ -50,6 +50,9 @@ var testInputObject *graphql.InputObject = graphql.NewInputObject(graphql.InputO
 		"d": &graphql.InputObjectFieldConfig{
 			Type: testComplexScalar,
 		},
+		"e": &graphql.InputObjectFieldConfig{
+			Type: graphql.String,
+		},
 	},
 })
 
@@ -200,12 +203,12 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_ExecutesWithComplexI
 func TestVariables_ObjectsAndNullability_UsingInlineStructs_ProperlyParsesSingleValueToList(t *testing.T) {
 	doc := `
         {
-          fieldWithObjectInput(input: {a: "foo", b: "bar", c: "baz"})
+          fieldWithObjectInput(input: {a: "foo", b: "bar", c: "baz", e: ""})
         }
 	`
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
-			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz"}`,
+			"fieldWithObjectInput": `{"a":"foo","b":["bar"],"c":"baz","e":""}`,
 		},
 	}
 	// parse query

@@ -195,7 +195,7 @@ func init() {
 						if inputVal.DefaultValue == nil {
 							return nil, nil
 						}
-						if isNullish(inputVal.DefaultValue) {
+						if isNullish(inputVal.DefaultValue, false) {
 							return nil, nil
 						}
 						astVal := astFromValue(inputVal.DefaultValue, inputVal)
@@ -621,7 +621,7 @@ func astFromValue(value interface{}, ttype Type) ast.Value {
 		val := astFromValue(value, ttype.OfType)
 		return val
 	}
-	if isNullish(value) {
+	if isNullish(value, true) {
 		return nil
 	}
 	valueVal := reflect.ValueOf(value)

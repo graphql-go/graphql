@@ -654,14 +654,14 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	// Note that since in Go, people often use nil list for empty list,
 	// so nil list is not returned as null, but as empty list.
 	if returnType, ok := returnType.(*List); ok {
-		if resultVal.Kind() != reflect.Slice && isNullish(result) {
+		if resultVal.Kind() != reflect.Slice && isNullish(result, false) {
 			return nil
 		}
 		return completeListValue(eCtx, returnType, fieldASTs, info, stack, result)
 	}
 
 	// If result value is null-ish (null, undefined, or NaN) then return null.
-	if isNullish(result) {
+	if isNullish(result, true) {
 		return nil
 	}
 
@@ -793,7 +793,7 @@ func completeLeafValue(returnType Leaf, resultVal reflect.Value, result interfac
 		result = resultVal.Elem().Interface()
 	}
 	serializedResult := returnType.Serialize(result)
-	if isNullish(serializedResult) {
+	if isNullish(serializedResult, true) {
 		return nil
 	}
 	return serializedResult

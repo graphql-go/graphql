@@ -830,6 +830,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 		RequestString: testutil.IntrospectionQuery,
 	})
 	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expectedDataSubSet) {
+		t.Log(testutil.Diff(result.Data, expectedDataSubSet))
 		t.Fatalf("unexpected, result does not contain subset of expected data")
 	}
 }
