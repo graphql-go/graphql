@@ -76,6 +76,22 @@ var IntrospectionQuery = `
         ofType {
           kind
           name
+          ofType {
+            kind
+            name
+            ofType {
+              kind
+              name
+              ofType {
+                kind
+                name
+                ofType {
+                  kind
+                  name
+                }
+              }
+            }
+          }
         }
       }
     }

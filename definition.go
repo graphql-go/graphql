@@ -120,6 +120,9 @@ var _ Output = (*NonNull)(nil)
 // Composite interface for types that may describe the parent context of a selection set.
 type Composite interface {
 	Name() string
+	Description() string
+	String() string
+	Error() error
 }
 
 var _ Composite = (*Object)(nil)
@@ -389,7 +392,7 @@ type IsTypeOfFn func(p IsTypeOfParams) bool
 type InterfacesThunk func() []*Interface
 
 type ObjectConfig struct {
-	Name        string      `json:"description"`
+	Name        string      `json:"name"`
 	Interfaces  interface{} `json:"interfaces"`
 	Fields      interface{} `json:"fields"`
 	IsTypeOf    IsTypeOfFn  `json:"isTypeOf"`

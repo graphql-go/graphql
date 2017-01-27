@@ -717,7 +717,9 @@ func completeAbstractValue(eCtx *ExecutionContext, returnType Abstract, fieldAST
 	}
 
 	err := invariant(runtimeType != nil,
-		fmt.Sprintf(`Could not determine runtime type of value "%v" for field %v.%v.`, result, info.ParentType, info.FieldName),
+		fmt.Sprintf(`Abstract type %v must resolve to an Object type at runtime `+
+			`for field %v.%v with value "%v", received "%v".`,
+			returnType, info.ParentType, info.FieldName, result, runtimeType),
 	)
 	if err != nil {
 		panic(err)
@@ -874,10 +876,6 @@ func defaultResolveFn(p ResolveParams) (interface{}, error) {
 		return nil, nil
 	}
 	if sourceVal.Type().Kind() == reflect.Struct {
-		// find field based on struct's json tag
-		// we could potentially create a custom `graphql` tag, but its unnecessary at this point
-		// since graphql speaks to client in a json-like way anyway
-		// so json tags are a good way to start with
 		for i := 0; i < sourceVal.NumField(); i++ {
 			valueField := sourceVal.Field(i)
 			typeField := sourceVal.Type().Field(i)
@@ -886,15 +884,22 @@ func defaultResolveFn(p ResolveParams) (interface{}, error) {
 				return valueField.Interface(), nil
 			}
 			tag := typeField.Tag
-			jsonTag := tag.Get("json")
-			jsonOptions := strings.Split(jsonTag, ",")
-			if len(jsonOptions) == 0 {
+			checkTag := func(tagName string) bool {
+				t := tag.Get(tagName)
+				tOptions := strings.Split(t, ",")
+				if len(tOptions) == 0 {
+					return false
+				}
+				if tOptions[0] != p.Info.FieldName {
+					return false
+				}
+				return true
+			}
+			if checkTag("json") || checkTag("graphql") {
+				return valueField.Interface(), nil
+			} else {
 				continue
 			}
-			if jsonOptions[0] != p.Info.FieldName {
-				continue
-			}
-			return valueField.Interface(), nil
 		}
 		return nil, nil
 	}
