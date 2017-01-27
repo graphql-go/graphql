@@ -96,27 +96,27 @@ var Int = NewScalar(ScalarConfig{
 	},
 })
 
-func coerceFloat32(value interface{}) interface{} {
+func coerceFloat(value interface{}) interface{} {
 	switch value := value.(type) {
 	case bool:
 		if value == true {
-			return float32(1)
+			return 1.0
 		}
-		return float32(0)
+		return 0.0
 	case int:
-		return float32(value)
+		return float64(value)
 	case float32:
 		return value
 	case float64:
-		return float32(value)
+		return value
 	case string:
 		val, err := strconv.ParseFloat(value, 0)
 		if err != nil {
 			return nil
 		}
-		return coerceFloat32(val)
+		return val
 	}
-	return float32(0)
+	return 0.0
 }
 
 // Float is the GraphQL float type definition.
@@ -125,8 +125,8 @@ var Float = NewScalar(ScalarConfig{
 	Description: "The `Float` scalar type represents signed double-precision fractional " +
 		"values as specified by " +
 		"[IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point). ",
-	Serialize:  coerceFloat32,
-	ParseValue: coerceFloat32,
+	Serialize:  coerceFloat,
+	ParseValue: coerceFloat,
 	ParseLiteral: func(valueAST ast.Value) interface{} {
 		switch valueAST := valueAST.(type) {
 		case *ast.FloatValue:

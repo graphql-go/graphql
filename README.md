@@ -2,6 +2,10 @@
 
 A *work-in-progress* implementation of GraphQL for Go.
 
+### Documentation
+
+godoc: https://godoc.org/github.com/graphql-go/graphql
+
 ### Getting Started
 
 To install the library, run:
