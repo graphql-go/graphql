@@ -31,7 +31,6 @@ func Execute(p ExecuteParams) (result *Result) {
 	}
 
 	resultChannel := make(chan *Result)
-	doneChannel := make(chan struct{})
 
 	go func(out chan<- *Result, done <-chan struct{}) {
 		result := &Result{}
@@ -81,7 +80,7 @@ func Execute(p ExecuteParams) (result *Result) {
 		case <-done:
 		}
 
-	}(resultChannel, doneChannel)
+	}(resultChannel, ctx.Done())
 
 	select {
 	case <-ctx.Done():
@@ -90,7 +89,6 @@ func Execute(p ExecuteParams) (result *Result) {
 	case r := <-resultChannel:
 		result = r
 	}
-	close(doneChannel)
 	return
 }
 
