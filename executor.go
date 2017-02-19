@@ -24,40 +24,72 @@ type ExecuteParams struct {
 }
 
 func Execute(p ExecuteParams) (result *Result) {
-	result = &Result{}
-
-	exeContext, err := buildExecutionContext(BuildExecutionCtxParams{
-		Schema:        p.Schema,
-		Root:          p.Root,
-		AST:           p.AST,
-		OperationName: p.OperationName,
-		Args:          p.Args,
-		Errors:        nil,
-		Result:        result,
-		Context:       p.Context,
-	})
-
-	if err != nil {
-		result.Errors = append(result.Errors, gqlerrors.FormatError(err))
-		return
+	// Use background context if no context was provided
+	ctx := p.Context
+	if ctx == nil {
+		ctx = context.Background()
 	}
 
-	defer func() {
-		if r := recover(); r != nil {
-			var err error
-			if r, ok := r.(error); ok {
-				err = gqlerrors.FormatError(r)
-			}
-			exeContext.Errors = append(exeContext.Errors, gqlerrors.FormatError(err))
-			result.Errors = exeContext.Errors
-		}
-	}()
+	resultChannel := make(chan *Result)
 
-	return executeOperation(ExecuteOperationParams{
-		ExecutionContext: exeContext,
-		Root:             p.Root,
-		Operation:        exeContext.Operation,
-	})
+	go func(out chan<- *Result, done <-chan struct{}) {
+		result := &Result{}
+
+		exeContext, err := buildExecutionContext(BuildExecutionCtxParams{
+			Schema:        p.Schema,
+			Root:          p.Root,
+			AST:           p.AST,
+			OperationName: p.OperationName,
+			Args:          p.Args,
+			Errors:        nil,
+			Result:        result,
+			Context:       p.Context,
+		})
+
+		if err != nil {
+			result.Errors = append(result.Errors, gqlerrors.FormatError(err))
+			select {
+			case out <- result:
+			case <-done:
+			}
+			return
+		}
+
+		defer func() {
+			if r := recover(); r != nil {
+				var err error
+				if r, ok := r.(error); ok {
+					err = gqlerrors.FormatError(r)
+				}
+				exeContext.Errors = append(exeContext.Errors, gqlerrors.FormatError(err))
+				result.Errors = exeContext.Errors
+				select {
+				case out <- result:
+				case <-done:
+				}
+			}
+		}()
+
+		result = executeOperation(ExecuteOperationParams{
+			ExecutionContext: exeContext,
+			Root:             p.Root,
+			Operation:        exeContext.Operation,
+		})
+		select {
+		case out <- result:
+		case <-done:
+		}
+
+	}(resultChannel, ctx.Done())
+
+	select {
+	case <-ctx.Done():
+		result = &Result{}
+		result.Errors = append(result.Errors, gqlerrors.FormatError(ctx.Err()))
+	case r := <-resultChannel:
+		result = r
+	}
+	return
 }
 
 type BuildExecutionCtxParams struct {

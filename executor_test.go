@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/gqlerrors"
@@ -1637,5 +1638,58 @@ func TestGraphqlTag(t *testing.T) {
 	}
 	if !reflect.DeepEqual(result.Data, expectedData) {
 		t.Fatalf("unexpected result, got: %+v, expected: %+v", expectedData, result.Data)
+	}
+}
+
+func TestContextDeadline(t *testing.T) {
+	timeout := time.Millisecond * time.Duration(100)
+	acceptableDelay := time.Millisecond * time.Duration(10)
+	expectedErrors := []gqlerrors.FormattedError{
+		{
+			Message:   context.DeadlineExceeded.Error(),
+			Locations: []location.SourceLocation{},
+		},
+	}
+
+	// Query type includes a field that won't resolve within the deadline
+	var queryType = graphql.NewObject(
+		graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"hello": &graphql.Field{
+					Type: graphql.String,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						time.Sleep(2 * time.Second)
+						return "world", nil
+					},
+				},
+			},
+		})
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: queryType,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error, got: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	startTime := time.Now()
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: "{hello}",
+		Context:       ctx,
+	})
+	duration := time.Since(startTime)
+
+	if duration > timeout+acceptableDelay {
+		t.Fatalf("graphql.Do completed in %s, should have completed in %s", duration, timeout)
+	}
+	if !result.HasErrors() || len(result.Errors) == 0 {
+		t.Fatalf("Result should include errors when deadline is exceeded")
+	}
+	if !reflect.DeepEqual(expectedErrors, result.Errors) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
 	}
 }
