@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -95,6 +96,38 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 				return newTodo, nil
 			},
 		},
+		/*
+		   curl -g 'http://localhost:8080/graphql?query=mutation+_{updateTodo(text:"My+new+todo+updated"){id,text,done}}'
+		*/
+		"updateTodo": &graphql.Field{
+			Type: todoType,
+			Args: graphql.FieldConfigArgument{
+				"id": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+				"text": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+				"done": &graphql.ArgumentConfig{
+					Type: graphql.Boolean,
+				},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				if idQuery, ok := p.Args["id"].(string); ok {
+					for _, todo := range TodoList {
+						if todo.ID == idQuery {
+							text, _ := p.Args["text"].(string)
+							done, _ := p.Args["done"].(bool)
+							todo.Text = text
+							todo.Done = done
+							return todo, nil
+						}
+					}
+					return nil, errors.New("could not find todo with that ID")
+				}
+				return nil, errors.New("could not get id from params")
+			},
+		},
 	},
 })
 
@@ -171,15 +204,14 @@ func executeQuery(query string, schema graphql.Schema) *graphql.Result {
 }
 
 func main() {
-
 	http.HandleFunc("/graphql", func(w http.ResponseWriter, r *http.Request) {
 		result := executeQuery(r.URL.Query()["query"][0], schema)
 		json.NewEncoder(w).Encode(result)
 	})
-
 	fmt.Println("Now server is running on port 8080")
 	fmt.Println("Get single todo: curl -g 'http://localhost:8080/graphql?query={todo(id:\"b\"){id,text,done}}'")
 	fmt.Println("Create new todo: curl -g 'http://localhost:8080/graphql?query=mutation+_{createTodo(text:\"My+new+todo\"){id,text,done}}'")
+	fmt.Println("Update a todo: curl -g 'http://localhost:8080/graphql?query=mutation+_{updateTodo(id:\"b\",text:\"My+new+todo+updated\",done:true){id,text,done}}'")
 	fmt.Println("Load todo list: curl -g 'http://localhost:8080/graphql?query={todoList{id,text,done}}'")
 	http.ListenAndServe(":8080", nil)
 }

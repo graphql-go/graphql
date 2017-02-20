@@ -25,4 +25,7 @@ curl -g 'http://localhost:8080/graphql?query=mutation+_{createTodo(text:"My+new+
 
 // To get a list of ToDo items
 curl -g 'http://localhost:8080/graphql?query={todoList{id,text,done}}'
+
+// To update a ToDo
+curl -g 'http://localhost:8080/graphql?query=mutation+_{updateTodo(id:"b",text:"My+new+todo+updated",done:true){id,text,done}}'
 ```
