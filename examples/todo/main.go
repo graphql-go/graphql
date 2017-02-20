@@ -63,7 +63,8 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 		   curl -g 'http://localhost:8080/graphql?query=mutation+_{createTodo(text:"My+new+todo"){id,text,done}}'
 		*/
 		"createTodo": &graphql.Field{
-			Type: todoType, // the return type for this field
+			Type:        todoType, // the return type for this field
+			Description: "Create new todo",
 			Args: graphql.FieldConfigArgument{
 				"text": &graphql.ArgumentConfig{
 					Type: graphql.NewNonNull(graphql.String),
@@ -95,6 +96,42 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 				return newTodo, nil
 			},
 		},
+
+		/*
+			curl -g 'http://localhost:8080/graphql?query=mutation+_{updateTodo(id:"a",done:true){id,text,done}}'
+		*/
+		"updateTodo": &graphql.Field{
+			Type:        todoType, // the return type for this field
+			Description: "Update existing todo, mark it done or not done",
+			Args: graphql.FieldConfigArgument{
+				"done": &graphql.ArgumentConfig{
+					Type: graphql.Boolean,
+				},
+				"id": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+			},
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+
+				// marshall and cast the argument value
+				done, _ := params.Args["done"].(bool)
+				id, _ := params.Args["id"].(string)
+				affectedTodo := Todo{}
+
+				// Search list for todo with id and change the done variable
+				for i := 0; i < len(TodoList); i++ {
+					if TodoList[i].ID == id {
+						TodoList[i].Done = done
+						// Assign updated todo so we can return it
+						affectedTodo = TodoList[i]
+						break
+					}
+				}
+
+				// Return affected todo
+				return affectedTodo, nil
+			},
+		},
 	},
 })
 
@@ -110,7 +147,8 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 		   curl -g 'http://localhost:8080/graphql?query={todo(id:"b"){id,text,done}}'
 		*/
 		"todo": &graphql.Field{
-			Type: todoType,
+			Type:        todoType,
+			Description: "Get single todo",
 			Args: graphql.FieldConfigArgument{
 				"id": &graphql.ArgumentConfig{
 					Type: graphql.String,
@@ -171,15 +209,22 @@ func executeQuery(query string, schema graphql.Schema) *graphql.Result {
 }
 
 func main() {
-
 	http.HandleFunc("/graphql", func(w http.ResponseWriter, r *http.Request) {
 		result := executeQuery(r.URL.Query()["query"][0], schema)
 		json.NewEncoder(w).Encode(result)
 	})
 
+	// Serve static files
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/", fs)
+
+	// Display some basic instructions
 	fmt.Println("Now server is running on port 8080")
 	fmt.Println("Get single todo: curl -g 'http://localhost:8080/graphql?query={todo(id:\"b\"){id,text,done}}'")
 	fmt.Println("Create new todo: curl -g 'http://localhost:8080/graphql?query=mutation+_{createTodo(text:\"My+new+todo\"){id,text,done}}'")
+	fmt.Println("Update todo: curl -g 'http://localhost:8080/graphql?query=mutation+_{updateTodo(id:\"a\",done:true){id,text,done}}'")
 	fmt.Println("Load todo list: curl -g 'http://localhost:8080/graphql?query={todoList{id,text,done}}'")
+	fmt.Println("Access the web app via browser at 'http://localhost:8080'")
+
 	http.ListenAndServe(":8080", nil)
 }

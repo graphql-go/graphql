@@ -26,3 +26,7 @@ curl -g 'http://localhost:8080/graphql?query=mutation+_{createTodo(text:"My+new+
 // To get a list of ToDo items
 curl -g 'http://localhost:8080/graphql?query={todoList{id,text,done}}'
 ```
+
+## Web App
+
+Access the web app at `http://localhost:8080/`. It is work in progress and currently is simply loading todos by using jQuery ajax call.

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ToDo</title>
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" media="all" href="/assets/css/style.css">
+</head>
+<body>
+
+<div class="wrapper">
+
+  <div class="container">
+
+    <h1>ToDo</h1>
+
+    <div class="todo-list">
+      <h2>Tasks</h2>
+      <div class="todo-list-container">
+        
+        <div class=""></div>
+
+      </div>
+    </div><!-- /.todo-list -->
+
+    <div class="todo-add">
+      
+      <h2>Add task</h2>
+
+      <form class="todo-add-form">
+        <div class="form-group">
+          <input 
+            type="text" 
+            name="task" 
+            id="task" 
+            placeholder="Your task"
+            class="form-control">
+        </div>
+        <button class="btn btn-primary">Add</button>
+      </form>
+
+    </div><!-- /.todo-add -->
+
+  </div><!-- /.container -->
+
+</div><!-- /.wrapper -->
+
+<template id="todoItemTemplate">
+  <div class="todo-item{{todo-done}}">
+    <div class="checkbox">
+      <label>
+        <input id="{{todo-id}}" type="checkbox"{{todo-checked}}> {{todo-text}}
+      </label>
+    </div>
+  </div>
+</template>
+
+<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="/assets/js/app.js"></script>
+
+</body>
+</html>
