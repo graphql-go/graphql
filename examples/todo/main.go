@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -61,10 +60,11 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 	Name: "RootMutation",
 	Fields: graphql.Fields{
 		/*
-		   curl -g 'http://localhost:8080/graphql?query=mutation+_{createTodo(text:"My+new+todo"){id,text,done}}'
+			curl -g 'http://localhost:8080/graphql?query=mutation+_{createTodo(text:"My+new+todo"){id,text,done}}'
 		*/
 		"createTodo": &graphql.Field{
-			Type: todoType, // the return type for this field
+			Type:        todoType, // the return type for this field
+			Description: "Create new todo",
 			Args: graphql.FieldConfigArgument{
 				"text": &graphql.ArgumentConfig{
 					Type: graphql.NewNonNull(graphql.String),
@@ -97,35 +97,36 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 			},
 		},
 		/*
-		   curl -g 'http://localhost:8080/graphql?query=mutation+_{updateTodo(text:"My+new+todo+updated"){id,text,done}}'
+			curl -g 'http://localhost:8080/graphql?query=mutation+_{updateTodo(id:"a",done:true){id,text,done}}'
 		*/
 		"updateTodo": &graphql.Field{
-			Type: todoType,
+			Type:        todoType, // the return type for this field
+			Description: "Update existing todo, mark it done or not done",
 			Args: graphql.FieldConfigArgument{
-				"id": &graphql.ArgumentConfig{
-					Type: graphql.NewNonNull(graphql.String),
-				},
-				"text": &graphql.ArgumentConfig{
-					Type: graphql.String,
-				},
 				"done": &graphql.ArgumentConfig{
 					Type: graphql.Boolean,
 				},
+				"id": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
 			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if idQuery, ok := p.Args["id"].(string); ok {
-					for _, todo := range TodoList {
-						if todo.ID == idQuery {
-							text, _ := p.Args["text"].(string)
-							done, _ := p.Args["done"].(bool)
-							todo.Text = text
-							todo.Done = done
-							return todo, nil
-						}
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				// marshall and cast the argument value
+				done, _ := params.Args["done"].(bool)
+				id, _ := params.Args["id"].(string)
+				affectedTodo := Todo{}
+
+				// Search list for todo with id and change the done variable
+				for i := 0; i < len(TodoList); i++ {
+					if TodoList[i].ID == id {
+						TodoList[i].Done = done
+						// Assign updated todo so we can return it
+						affectedTodo = TodoList[i]
+						break
 					}
-					return nil, errors.New("could not find todo with that ID")
 				}
-				return nil, errors.New("could not get id from params")
+				// Return affected todo
+				return affectedTodo, nil
 			},
 		},
 	},
@@ -143,7 +144,8 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 		   curl -g 'http://localhost:8080/graphql?query={todo(id:"b"){id,text,done}}'
 		*/
 		"todo": &graphql.Field{
-			Type: todoType,
+			Type:        todoType,
+			Description: "Get single todo",
 			Args: graphql.FieldConfigArgument{
 				"id": &graphql.ArgumentConfig{
 					Type: graphql.String,
@@ -208,10 +210,16 @@ func main() {
 		result := executeQuery(r.URL.Query()["query"][0], schema)
 		json.NewEncoder(w).Encode(result)
 	})
+	// Serve static files
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/", fs)
+	// Display some basic instructions
 	fmt.Println("Now server is running on port 8080")
 	fmt.Println("Get single todo: curl -g 'http://localhost:8080/graphql?query={todo(id:\"b\"){id,text,done}}'")
 	fmt.Println("Create new todo: curl -g 'http://localhost:8080/graphql?query=mutation+_{createTodo(text:\"My+new+todo\"){id,text,done}}'")
-	fmt.Println("Update a todo: curl -g 'http://localhost:8080/graphql?query=mutation+_{updateTodo(id:\"b\",text:\"My+new+todo+updated\",done:true){id,text,done}}'")
+	fmt.Println("Update todo: curl -g 'http://localhost:8080/graphql?query=mutation+_{updateTodo(id:\"a\",done:true){id,text,done}}'")
 	fmt.Println("Load todo list: curl -g 'http://localhost:8080/graphql?query={todoList{id,text,done}}'")
+	fmt.Println("Access the web app via browser at 'http://localhost:8080'")
+
 	http.ListenAndServe(":8080", nil)
 }
