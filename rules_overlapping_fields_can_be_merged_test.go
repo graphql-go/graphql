@@ -729,3 +729,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Igno
         }
     `)
 }
+
+func TestValidate_OverlappingFieldsCanBeMerged_NilCrash(t *testing.T) {
+	testutil.ExpectPassesRule(t, graphql.OverlappingFieldsCanBeMergedRule, `subscription {e}`)
+}

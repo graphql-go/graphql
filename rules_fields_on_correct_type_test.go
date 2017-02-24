@@ -209,3 +209,7 @@ func TestValidate_FieldsOnCorrectTypeErrorMessage_WorksWithLotsOfSuggestions(t *
 		t.Fatalf("Unexpected message, expected: %v, got %v", expected, message)
 	}
 }
+
+func TestValidate_FieldsOnCorrectType_NilCrash(t *testing.T) {
+	testutil.ExpectPassesRule(t, graphql.FieldsOnCorrectTypeRule, `mutation{o}`)
+}
