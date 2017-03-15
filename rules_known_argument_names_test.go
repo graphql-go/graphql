@@ -75,6 +75,16 @@ func TestValidate_KnownArgumentNames_UndirectiveArgsAreInvalid(t *testing.T) {
 		testutil.RuleError(`Unknown argument "unless" on directive "@skip".`, 3, 19),
 	})
 }
+func TestValidate_KnownArgumentNames_UndirectiveArgsAreInvalidWithSuggestion(t *testing.T) {
+	testutil.ExpectFailsRule(t, graphql.KnownArgumentNamesRule, `
+      {
+        dog @skip(of: true)
+      }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(`Unknown argument "of" on directive "@skip". `+
+			`Did you mean "if"?`, 3, 19),
+	})
+}
 func TestValidate_KnownArgumentNames_InvalidArgName(t *testing.T) {
 	testutil.ExpectFailsRule(t, graphql.KnownArgumentNamesRule, `
       fragment invalidArgName on Dog {
@@ -92,6 +102,16 @@ func TestValidate_KnownArgumentNames_UnknownArgsAmongstKnownArgs(t *testing.T) {
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Unknown argument "whoknows" on field "doesKnowCommand" of type "Dog".`, 3, 25),
 		testutil.RuleError(`Unknown argument "unknown" on field "doesKnowCommand" of type "Dog".`, 3, 55),
+	})
+}
+func TestValidate_KnownArgumentNames_UnknownArgsAmongstKnownArgsWithSuggestions(t *testing.T) {
+	testutil.ExpectFailsRule(t, graphql.KnownArgumentNamesRule, `
+      fragment oneGoodArgOneInvalidArg on Dog {
+        doesKnowCommand(ddogCommand: SIT,)
+      }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(`Unknown argument "ddogCommand" on field "doesKnowCommand" of type "Dog". `+
+			`Did you mean "dogCommand"?`, 3, 25),
 	})
 }
 func TestValidate_KnownArgumentNames_UnknownArgsDeeply(t *testing.T) {

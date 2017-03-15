@@ -19,23 +19,44 @@ const (
 	TypeKindNonNull     = "NON_NULL"
 )
 
-var directiveType *Object
-var schemaType *Object
-var typeType *Object
-var fieldType *Object
-var inputValueType *Object
-var enumValueType *Object
+// SchemaType is type definition for __Schema
+var SchemaType *Object
 
-var typeKindEnum *Enum
-var directiveLocationEnum *Enum
+// DirectiveType is type definition for __Directive
+var DirectiveType *Object
 
+// TypeType is type definition for __Type
+var TypeType *Object
+
+// FieldType is type definition for __Field
+var FieldType *Object
+
+// InputValueType is type definition for __InputValue
+var InputValueType *Object
+
+// EnumValueType is type definition for __EnumValue
+var EnumValueType *Object
+
+// TypeKindEnumType is type definition for __TypeKind
+var TypeKindEnumType *Enum
+
+// DirectiveLocationEnumType is type definition for __DirectiveLocation
+var DirectiveLocationEnumType *Enum
+
+// Meta-field definitions.
+
+// SchemaMetaFieldDef Meta field definition for Schema
 var SchemaMetaFieldDef *FieldDefinition
+
+// TypeMetaFieldDef Meta field definition for types
 var TypeMetaFieldDef *FieldDefinition
+
+// TypeNameMetaFieldDef Meta field definition for type names
 var TypeNameMetaFieldDef *FieldDefinition
 
 func init() {
 
-	typeKindEnum = NewEnum(EnumConfig{
+	TypeKindEnumType = NewEnum(EnumConfig{
 		Name:        "__TypeKind",
 		Description: "An enum describing what kind of type a given `__Type` is",
 		Values: EnumValueConfigMap{
@@ -81,7 +102,7 @@ func init() {
 		},
 	})
 
-	directiveLocationEnum = NewEnum(EnumConfig{
+	DirectiveLocationEnumType = NewEnum(EnumConfig{
 		Name: "__DirectiveLocation",
 		Description: "A Directive can be adjacent to many parts of the GraphQL language, a " +
 			"__DirectiveLocation describes one such possible adjacencies.",
@@ -114,11 +135,55 @@ func init() {
 				Value:       DirectiveLocationInlineFragment,
 				Description: "Location adjacent to an inline fragment.",
 			},
+			"SCHEMA": &EnumValueConfig{
+				Value:       DirectiveLocationSchema,
+				Description: "Location adjacent to a schema definition.",
+			},
+			"SCALAR": &EnumValueConfig{
+				Value:       DirectiveLocationScalar,
+				Description: "Location adjacent to a scalar definition.",
+			},
+			"OBJECT": &EnumValueConfig{
+				Value:       DirectiveLocationObject,
+				Description: "Location adjacent to a object definition.",
+			},
+			"FIELD_DEFINITION": &EnumValueConfig{
+				Value:       DirectiveLocationFieldDefinition,
+				Description: "Location adjacent to a field definition.",
+			},
+			"ARGUMENT_DEFINITION": &EnumValueConfig{
+				Value:       DirectiveLocationArgumentDefinition,
+				Description: "Location adjacent to an argument definition.",
+			},
+			"INTERFACE": &EnumValueConfig{
+				Value:       DirectiveLocationInterface,
+				Description: "Location adjacent to an interface definition.",
+			},
+			"UNION": &EnumValueConfig{
+				Value:       DirectiveLocationUnion,
+				Description: "Location adjacent to a union definition.",
+			},
+			"ENUM": &EnumValueConfig{
+				Value:       DirectiveLocationEnum,
+				Description: "Location adjacent to an enum definition.",
+			},
+			"ENUM_VALUE": &EnumValueConfig{
+				Value:       DirectiveLocationEnumValue,
+				Description: "Location adjacent to an enum value definition.",
+			},
+			"INPUT_OBJECT": &EnumValueConfig{
+				Value:       DirectiveLocationInputObject,
+				Description: "Location adjacent to an input object type definition.",
+			},
+			"INPUT_FIELD_DEFINITION": &EnumValueConfig{
+				Value:       DirectiveLocationInputFieldDefinition,
+				Description: "Location adjacent to an input object field definition.",
+			},
 		},
 	})
 
 	// Note: some fields (for e.g "fields", "interfaces") are defined later due to cyclic reference
-	typeType = NewObject(ObjectConfig{
+	TypeType = NewObject(ObjectConfig{
 		Name: "__Type",
 		Description: "The fundamental unit of any GraphQL Schema is the type. There are " +
 			"many kinds of types in GraphQL as represented by the `__TypeKind` enum." +
@@ -131,7 +196,7 @@ func init() {
 
 		Fields: Fields{
 			"kind": &Field{
-				Type: NewNonNull(typeKindEnum),
+				Type: NewNonNull(TypeKindEnumType),
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					switch p.Source.(type) {
 					case *Scalar:
@@ -169,7 +234,7 @@ func init() {
 		},
 	})
 
-	inputValueType = NewObject(ObjectConfig{
+	InputValueType = NewObject(ObjectConfig{
 		Name: "__InputValue",
 		Description: "Arguments provided to Fields or Directives and the input fields of an " +
 			"InputObject are represented as Input Values which describe their type " +
@@ -182,7 +247,7 @@ func init() {
 				Type: String,
 			},
 			"type": &Field{
-				Type: NewNonNull(typeType),
+				Type: NewNonNull(TypeType),
 			},
 			"defaultValue": &Field{
 				Type: String,
@@ -212,7 +277,7 @@ func init() {
 		},
 	})
 
-	fieldType = NewObject(ObjectConfig{
+	FieldType = NewObject(ObjectConfig{
 		Name: "__Field",
 		Description: "Object and Interface types are described by a list of Fields, each of " +
 			"which has a name, potentially a list of arguments, and a return type.",
@@ -224,7 +289,7 @@ func init() {
 				Type: String,
 			},
 			"args": &Field{
-				Type: NewNonNull(NewList(NewNonNull(inputValueType))),
+				Type: NewNonNull(NewList(NewNonNull(InputValueType))),
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					if field, ok := p.Source.(*FieldDefinition); ok {
 						return field.Args, nil
@@ -233,7 +298,7 @@ func init() {
 				},
 			},
 			"type": &Field{
-				Type: NewNonNull(typeType),
+				Type: NewNonNull(TypeType),
 			},
 			"isDeprecated": &Field{
 				Type: NewNonNull(Boolean),
@@ -250,7 +315,7 @@ func init() {
 		},
 	})
 
-	directiveType = NewObject(ObjectConfig{
+	DirectiveType = NewObject(ObjectConfig{
 		Name: "__Directive",
 		Description: "A Directive provides a way to describe alternate runtime execution and " +
 			"type validation behavior in a GraphQL document. " +
@@ -267,12 +332,12 @@ func init() {
 			},
 			"locations": &Field{
 				Type: NewNonNull(NewList(
-					NewNonNull(directiveLocationEnum),
+					NewNonNull(DirectiveLocationEnumType),
 				)),
 			},
 			"args": &Field{
 				Type: NewNonNull(NewList(
-					NewNonNull(inputValueType),
+					NewNonNull(InputValueType),
 				)),
 			},
 			// NOTE: the following three fields are deprecated and are no longer part
@@ -335,7 +400,7 @@ func init() {
 		},
 	})
 
-	schemaType = NewObject(ObjectConfig{
+	SchemaType = NewObject(ObjectConfig{
 		Name: "__Schema",
 		Description: `A GraphQL Schema defines the capabilities of a GraphQL server. ` +
 			`It exposes all available types and directives on the server, as well as ` +
@@ -344,7 +409,7 @@ func init() {
 			"types": &Field{
 				Description: "A list of all types supported by this server.",
 				Type: NewNonNull(NewList(
-					NewNonNull(typeType),
+					NewNonNull(TypeType),
 				)),
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
@@ -359,7 +424,7 @@ func init() {
 			},
 			"queryType": &Field{
 				Description: "The type that query operations will be rooted at.",
-				Type:        NewNonNull(typeType),
+				Type:        NewNonNull(TypeType),
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
 						return schema.QueryType(), nil
@@ -370,7 +435,7 @@ func init() {
 			"mutationType": &Field{
 				Description: `If this server supports mutation, the type that ` +
 					`mutation operations will be rooted at.`,
-				Type: typeType,
+				Type: TypeType,
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
 						if schema.MutationType() != nil {
@@ -383,7 +448,7 @@ func init() {
 			"subscriptionType": &Field{
 				Description: `If this server supports subscription, the type that ` +
 					`subscription operations will be rooted at.`,
-				Type: typeType,
+				Type: TypeType,
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
 						if schema.SubscriptionType() != nil {
@@ -396,7 +461,7 @@ func init() {
 			"directives": &Field{
 				Description: `A list of all directives supported by this server.`,
 				Type: NewNonNull(NewList(
-					NewNonNull(directiveType),
+					NewNonNull(DirectiveType),
 				)),
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
@@ -408,7 +473,7 @@ func init() {
 		},
 	})
 
-	enumValueType = NewObject(ObjectConfig{
+	EnumValueType = NewObject(ObjectConfig{
 		Name: "__EnumValue",
 		Description: "One possible value for a given Enum. Enum values are unique values, not " +
 			"a placeholder for a string or numeric value. However an Enum value is " +
@@ -437,8 +502,8 @@ func init() {
 
 	// Again, adding field configs to __Type that have cyclic reference here
 	// because golang don't like them too much during init/compile-time
-	typeType.AddFieldConfig("fields", &Field{
-		Type: NewList(NewNonNull(fieldType)),
+	TypeType.AddFieldConfig("fields", &Field{
+		Type: NewList(NewNonNull(FieldType)),
 		Args: FieldConfigArgument{
 			"includeDeprecated": &ArgumentConfig{
 				Type:         Boolean,
@@ -476,8 +541,8 @@ func init() {
 			return nil, nil
 		},
 	})
-	typeType.AddFieldConfig("interfaces", &Field{
-		Type: NewList(NewNonNull(typeType)),
+	TypeType.AddFieldConfig("interfaces", &Field{
+		Type: NewList(NewNonNull(TypeType)),
 		Resolve: func(p ResolveParams) (interface{}, error) {
 			switch ttype := p.Source.(type) {
 			case *Object:
@@ -486,8 +551,8 @@ func init() {
 			return nil, nil
 		},
 	})
-	typeType.AddFieldConfig("possibleTypes", &Field{
-		Type: NewList(NewNonNull(typeType)),
+	TypeType.AddFieldConfig("possibleTypes", &Field{
+		Type: NewList(NewNonNull(TypeType)),
 		Resolve: func(p ResolveParams) (interface{}, error) {
 			switch ttype := p.Source.(type) {
 			case *Interface:
@@ -498,8 +563,8 @@ func init() {
 			return nil, nil
 		},
 	})
-	typeType.AddFieldConfig("enumValues", &Field{
-		Type: NewList(NewNonNull(enumValueType)),
+	TypeType.AddFieldConfig("enumValues", &Field{
+		Type: NewList(NewNonNull(EnumValueType)),
 		Args: FieldConfigArgument{
 			"includeDeprecated": &ArgumentConfig{
 				Type:         Boolean,
@@ -525,8 +590,8 @@ func init() {
 			return nil, nil
 		},
 	})
-	typeType.AddFieldConfig("inputFields", &Field{
-		Type: NewList(NewNonNull(inputValueType)),
+	TypeType.AddFieldConfig("inputFields", &Field{
+		Type: NewList(NewNonNull(InputValueType)),
 		Resolve: func(p ResolveParams) (interface{}, error) {
 			switch ttype := p.Source.(type) {
 			case *InputObject:
@@ -539,15 +604,15 @@ func init() {
 			return nil, nil
 		},
 	})
-	typeType.AddFieldConfig("ofType", &Field{
-		Type: typeType,
+	TypeType.AddFieldConfig("ofType", &Field{
+		Type: TypeType,
 	})
 
 	// Note that these are FieldDefinition and not FieldConfig,
-	// so the format for args is different.   d
+	// so the format for args is different.
 	SchemaMetaFieldDef = &FieldDefinition{
 		Name:        "__schema",
-		Type:        NewNonNull(schemaType),
+		Type:        NewNonNull(SchemaType),
 		Description: "Access the current type schema of this server.",
 		Args:        []*Argument{},
 		Resolve: func(p ResolveParams) (interface{}, error) {
@@ -556,7 +621,7 @@ func init() {
 	}
 	TypeMetaFieldDef = &FieldDefinition{
 		Name:        "__type",
-		Type:        typeType,
+		Type:        TypeType,
 		Description: "Request the type information of a single type.",
 		Args: []*Argument{
 			{

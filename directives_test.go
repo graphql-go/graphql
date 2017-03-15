@@ -342,9 +342,6 @@ func TestDirectivesWorksOnInlineFragmentIfFalseOmitsInlineFragment(t *testing.T)
             b
           }
         }
-        fragment Frag on TestType {
-          b
-        }
 	`
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
@@ -367,9 +364,6 @@ func TestDirectivesWorksOnInlineFragmentIfTrueIncludesInlineFragment(t *testing.
           ... on TestType @include(if: true) {
             b
           }
-        }
-        fragment Frag on TestType {
-          b
         }
 	`
 	expected := &graphql.Result{
@@ -395,9 +389,6 @@ func TestDirectivesWorksOnInlineFragmentUnlessFalseIncludesInlineFragment(t *tes
             b
           }
         }
-        fragment Frag on TestType {
-          b
-        }
 	`
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
@@ -421,9 +412,6 @@ func TestDirectivesWorksOnInlineFragmentUnlessTrueIncludesInlineFragment(t *test
           ... on TestType @skip(if: true) {
             b
           }
-        }
-        fragment Frag on TestType {
-          b
         }
 	`
 	expected := &graphql.Result{

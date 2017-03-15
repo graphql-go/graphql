@@ -2,13 +2,15 @@ package graphql
 
 import (
 	"fmt"
+	"math"
+	"sort"
+	"strings"
+
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/kinds"
 	"github.com/graphql-go/graphql/language/printer"
 	"github.com/graphql-go/graphql/language/visitor"
-	"sort"
-	"strings"
 )
 
 // SpecifiedRules set includes all validation rules defined by the GraphQL spec.
@@ -162,30 +164,40 @@ func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleI
 		VisitorOpts: visitorOpts,
 	}
 }
-
-func UndefinedFieldMessage(fieldName string, ttypeName string, suggestedTypes []string) string {
-
-	quoteStrings := func(slice []string) []string {
-		quoted := []string{}
-		for _, s := range slice {
-			quoted = append(quoted, fmt.Sprintf(`"%v"`, s))
-		}
-		return quoted
+func quoteStrings(slice []string) []string {
+	quoted := []string{}
+	for _, s := range slice {
+		quoted = append(quoted, fmt.Sprintf(`"%v"`, s))
 	}
+	return quoted
+}
 
-	// construct helpful (but long) message
+// quotedOrList Given [ A, B, C ] return '"A", "B", or "C"'.
+// Notice oxford comma
+func quotedOrList(slice []string) string {
+	maxLength := 5
+	if len(slice) == 0 {
+		return ""
+	}
+	quoted := quoteStrings(slice)
+	if maxLength > len(quoted) {
+		maxLength = len(quoted)
+	}
+	if maxLength > 2 {
+		return fmt.Sprintf("%v, or %v", strings.Join(quoted[0:maxLength-1], ", "), quoted[maxLength-1])
+	}
+	if maxLength > 1 {
+		return fmt.Sprintf("%v or %v", strings.Join(quoted[0:maxLength-1], ", "), quoted[maxLength-1])
+	}
+	return quoted[0]
+}
+func UndefinedFieldMessage(fieldName string, ttypeName string, suggestedTypeNames []string, suggestedFieldNames []string) string {
 	message := fmt.Sprintf(`Cannot query field "%v" on type "%v".`, fieldName, ttypeName)
-	suggestions := strings.Join(quoteStrings(suggestedTypes), ", ")
-	const MaxLength = 5
-	if len(suggestedTypes) > 0 {
-		if len(suggestedTypes) > MaxLength {
-			suggestions = strings.Join(quoteStrings(suggestedTypes[0:MaxLength]), ", ") +
-				fmt.Sprintf(`, and %v other types`, len(suggestedTypes)-MaxLength)
-		}
-		message = message + fmt.Sprintf(` However, this field exists on %v.`, suggestions)
-		message = message + ` Perhaps you meant to use an inline fragment?`
+	if len(suggestedTypeNames) > 0 {
+		message = fmt.Sprintf(`%v Did you mean to use an inline fragment on %v?`, message, quotedOrList(suggestedTypeNames))
+	} else if len(suggestedFieldNames) > 0 {
+		message = fmt.Sprintf(`%v Did you mean %v?`, message, quotedOrList(suggestedFieldNames))
 	}
-
 	return message
 }
 
@@ -206,37 +218,23 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 						if ttype != nil {
 							fieldDef := context.FieldDef()
 							if fieldDef == nil {
-								// This isn't valid. Let's find suggestions, if any.
-								suggestedTypes := []string{}
-
+								// This field doesn't exist, lets look for suggestions.
 								nodeName := ""
 								if node.Name != nil {
 									nodeName = node.Name.Value
 								}
+								// First determine if there are any suggested types to condition on.
+								suggestedTypeNames := getSuggestedTypeNames(context.Schema(), ttype, nodeName)
 
-								if ttype, ok := ttype.(Abstract); ok && IsAbstractType(ttype) {
-									siblingInterfaces := getSiblingInterfacesIncludingField(context.Schema(), ttype, nodeName)
-									implementations := getImplementationsIncludingField(context.Schema(), ttype, nodeName)
-									suggestedMaps := map[string]bool{}
-									for _, s := range siblingInterfaces {
-										if _, ok := suggestedMaps[s]; !ok {
-											suggestedMaps[s] = true
-											suggestedTypes = append(suggestedTypes, s)
-										}
-									}
-									for _, s := range implementations {
-										if _, ok := suggestedMaps[s]; !ok {
-											suggestedMaps[s] = true
-											suggestedTypes = append(suggestedTypes, s)
-										}
-									}
+								// If there are no suggested types, then perhaps this was a typo?
+								suggestedFieldNames := []string{}
+								if len(suggestedTypeNames) == 0 {
+									suggestedFieldNames = getSuggestedFieldNames(context.Schema(), ttype, nodeName)
 								}
-
-								message := UndefinedFieldMessage(nodeName, ttype.Name(), suggestedTypes)
 
 								reportError(
 									context,
-									message,
+									UndefinedFieldMessage(nodeName, ttype.Name(), suggestedTypeNames, suggestedFieldNames),
 									[]ast.Node{node},
 								)
 							}
@@ -252,73 +250,100 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 	}
 }
 
-// Return implementations of `type` that include `fieldName` as a valid field.
-func getImplementationsIncludingField(schema *Schema, ttype Abstract, fieldName string) []string {
+// getSuggestedTypeNames Go through all of the implementations of type, as well as the interfaces
+// that they implement. If any of those types include the provided field,
+// suggest them, sorted by how often the type is referenced,  starting
+// with Interfaces.
+func getSuggestedTypeNames(schema *Schema, ttype Output, fieldName string) []string {
 
-	result := []string{}
-	for _, t := range schema.PossibleTypes(ttype) {
-		fields := t.Fields()
-		if _, ok := fields[fieldName]; ok {
-			result = append(result, fmt.Sprintf(`%v`, t.Name()))
-		}
-	}
+	possibleTypes := schema.PossibleTypes(ttype)
 
-	sort.Strings(result)
-	return result
-}
-
-// Go through all of the implementations of type, and find other interaces
-// that they implement. If those interfaces include `field` as a valid field,
-// return them, sorted by how often the implementations include the other
-// interface.
-func getSiblingInterfacesIncludingField(schema *Schema, ttype Abstract, fieldName string) []string {
-	implementingObjects := schema.PossibleTypes(ttype)
-
-	result := []string{}
-	suggestedInterfaceSlice := []*suggestedInterface{}
-
-	// stores a map of interface name => index in suggestedInterfaceSlice
+	suggestedObjectTypes := []string{}
+	suggestedInterfaces := []*suggestedInterface{}
+	// stores a map of interface name => index in suggestedInterfaces
 	suggestedInterfaceMap := map[string]int{}
+	// stores a maps of object name => true to remove duplicates from results
+	suggestedObjectMap := map[string]bool{}
 
-	for _, t := range implementingObjects {
-		for _, i := range t.Interfaces() {
-			if i == nil {
+	for _, possibleType := range possibleTypes {
+		if field, ok := possibleType.Fields()[fieldName]; !ok || field == nil {
+			continue
+		}
+		// This object type defines this field.
+		suggestedObjectTypes = append(suggestedObjectTypes, possibleType.Name())
+		suggestedObjectMap[possibleType.Name()] = true
+
+		for _, possibleInterface := range possibleType.Interfaces() {
+			if field, ok := possibleInterface.Fields()[fieldName]; !ok || field == nil {
 				continue
 			}
-			fields := i.Fields()
-			if _, ok := fields[fieldName]; !ok {
-				continue
-			}
-			index, ok := suggestedInterfaceMap[i.Name()]
+
+			// This interface type defines this field.
+
+			// - find the index of the suggestedInterface and retrieving the interface
+			// - increase count
+			index, ok := suggestedInterfaceMap[possibleInterface.Name()]
 			if !ok {
-				suggestedInterfaceSlice = append(suggestedInterfaceSlice, &suggestedInterface{
-					name:  i.Name(),
+				suggestedInterfaces = append(suggestedInterfaces, &suggestedInterface{
+					name:  possibleInterface.Name(),
 					count: 0,
 				})
-				index = len(suggestedInterfaceSlice) - 1
+				index = len(suggestedInterfaces) - 1
+				suggestedInterfaceMap[possibleInterface.Name()] = index
 			}
-			if index < len(suggestedInterfaceSlice) {
-				s := suggestedInterfaceSlice[index]
-				if s.name == i.Name() {
+			if index < len(suggestedInterfaces) {
+				s := suggestedInterfaces[index]
+				if s.name == possibleInterface.Name() {
 					s.count = s.count + 1
 				}
 			}
 		}
 	}
-	sort.Sort(suggestedInterfaceSortedSlice(suggestedInterfaceSlice))
 
-	for _, s := range suggestedInterfaceSlice {
-		result = append(result, fmt.Sprintf(`%v`, s.name))
+	// sort results (by count usage for interfaces, alphabetical order for objects)
+	sort.Sort(suggestedInterfaceSortedSlice(suggestedInterfaces))
+	sort.Sort(sort.StringSlice(suggestedObjectTypes))
+
+	// return concatenated slices of both interface and object type names
+	// and removing duplicates
+	// ordered by: interface (sorted) and object (sorted)
+	results := []string{}
+	for _, s := range suggestedInterfaces {
+		if _, ok := suggestedObjectMap[s.name]; !ok {
+			results = append(results, s.name)
+
+		}
 	}
-	return result
-
+	results = append(results, suggestedObjectTypes...)
+	return results
 }
 
+// getSuggestedFieldNames For the field name provided, determine if there are any similar field names
+// that may be the result of a typo.
+func getSuggestedFieldNames(schema *Schema, ttype Output, fieldName string) []string {
+
+	fields := FieldDefinitionMap{}
+	switch ttype := ttype.(type) {
+	case *Object:
+		fields = ttype.Fields()
+	case *Interface:
+		fields = ttype.Fields()
+	default:
+		return []string{}
+	}
+
+	possibleFieldNames := []string{}
+	for possibleFieldName := range fields {
+		possibleFieldNames = append(possibleFieldNames, possibleFieldName)
+	}
+	return suggestionList(fieldName, possibleFieldNames)
+}
+
+// suggestedInterface an internal struct to sort interface by usage count
 type suggestedInterface struct {
 	name  string
 	count int
 }
-
 type suggestedInterfaceSortedSlice []*suggestedInterface
 
 func (s suggestedInterfaceSortedSlice) Len() int {
@@ -328,7 +353,10 @@ func (s suggestedInterfaceSortedSlice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 func (s suggestedInterfaceSortedSlice) Less(i, j int) bool {
-	return s[i].count < s[j].count
+	if s[i].count == s[j].count {
+		return s[i].name < s[j].name
+	}
+	return s[i].count > s[j].count
 }
 
 // FragmentsOnCompositeTypesRule Fragments on composite type
@@ -380,6 +408,26 @@ func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleIn
 	}
 }
 
+func unknownArgMessage(argName string, fieldName string, parentTypeName string, suggestedArgs []string) string {
+	message := fmt.Sprintf(`Unknown argument "%v" on field "%v" of type "%v".`, argName, fieldName, parentTypeName)
+
+	if len(suggestedArgs) > 0 {
+		message = fmt.Sprintf(`%v Did you mean %v?`, message, quotedOrList(suggestedArgs))
+	}
+
+	return message
+}
+
+func unknownDirectiveArgMessage(argName string, directiveName string, suggestedArgs []string) string {
+	message := fmt.Sprintf(`Unknown argument "%v" on directive "@%v".`, argName, directiveName)
+
+	if len(suggestedArgs) > 0 {
+		message = fmt.Sprintf(`%v Did you mean %v?`, message, quotedOrList(suggestedArgs))
+	}
+
+	return message
+}
+
 // KnownArgumentNamesRule Known argument names
 //
 // A GraphQL field is only valid if all supplied arguments are defined by
@@ -399,6 +447,7 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 						if argumentOf == nil {
 							return action, result
 						}
+						var fieldArgDef *Argument
 						if argumentOf.GetKind() == kinds.Field {
 							fieldDef := context.FieldDef()
 							if fieldDef == nil {
@@ -408,8 +457,9 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 							if node.Name != nil {
 								nodeName = node.Name.Value
 							}
-							var fieldArgDef *Argument
+							argNames := []string{}
 							for _, arg := range fieldDef.Args {
+								argNames = append(argNames, arg.Name())
 								if arg.Name() == nodeName {
 									fieldArgDef = arg
 								}
@@ -422,7 +472,7 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 								}
 								reportError(
 									context,
-									fmt.Sprintf(`Unknown argument "%v" on field "%v" of type "%v".`, nodeName, fieldDef.Name, parentTypeName),
+									unknownArgMessage(nodeName, fieldDef.Name, parentTypeName, suggestionList(nodeName, argNames)),
 									[]ast.Node{node},
 								)
 							}
@@ -435,8 +485,10 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 							if node.Name != nil {
 								nodeName = node.Name.Value
 							}
+							argNames := []string{}
 							var directiveArgDef *Argument
 							for _, arg := range directive.Args {
+								argNames = append(argNames, arg.Name())
 								if arg.Name() == nodeName {
 									directiveArgDef = arg
 								}
@@ -444,7 +496,7 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 							if directiveArgDef == nil {
 								reportError(
 									context,
-									fmt.Sprintf(`Unknown argument "%v" on directive "@%v".`, nodeName, directive.Name),
+									unknownDirectiveArgMessage(nodeName, directive.Name, suggestionList(nodeName, argNames)),
 									[]ast.Node{node},
 								)
 							}
@@ -497,15 +549,7 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 							)
 						}
 
-						var appliedTo ast.Node
-						if len(p.Ancestors) > 0 {
-							appliedTo = p.Ancestors[len(p.Ancestors)-1]
-						}
-						if appliedTo == nil {
-							return action, result
-						}
-
-						candidateLocation := getLocationForAppliedNode(appliedTo)
+						candidateLocation := getDirectiveLocationForASTPath(p.Ancestors)
 
 						directiveHasLocation := false
 						for _, loc := range directiveDef.Locations {
@@ -540,7 +584,14 @@ func KnownDirectivesRule(context *ValidationContext) *ValidationRuleInstance {
 	}
 }
 
-func getLocationForAppliedNode(appliedTo ast.Node) string {
+func getDirectiveLocationForASTPath(ancestors []ast.Node) string {
+	var appliedTo ast.Node
+	if len(ancestors) > 0 {
+		appliedTo = ancestors[len(ancestors)-1]
+	}
+	if appliedTo == nil {
+		return ""
+	}
 	kind := appliedTo.GetKind()
 	if kind == kinds.OperationDefinition {
 		appliedTo, _ := appliedTo.(*ast.OperationDefinition)
@@ -565,6 +616,44 @@ func getLocationForAppliedNode(appliedTo ast.Node) string {
 	}
 	if kind == kinds.FragmentDefinition {
 		return DirectiveLocationFragmentDefinition
+	}
+	if kind == kinds.SchemaDefinition {
+		return DirectiveLocationSchema
+	}
+	if kind == kinds.ScalarDefinition {
+		return DirectiveLocationScalar
+	}
+	if kind == kinds.ObjectDefinition {
+		return DirectiveLocationObject
+	}
+	if kind == kinds.FieldDefinition {
+		return DirectiveLocationFieldDefinition
+	}
+	if kind == kinds.InterfaceDefinition {
+		return DirectiveLocationInterface
+	}
+	if kind == kinds.UnionDefinition {
+		return DirectiveLocationUnion
+	}
+	if kind == kinds.EnumDefinition {
+		return DirectiveLocationEnum
+	}
+	if kind == kinds.EnumValueDefinition {
+		return DirectiveLocationEnumValue
+	}
+	if kind == kinds.InputObjectDefinition {
+		return DirectiveLocationInputObject
+	}
+	if kind == kinds.InputValueDefinition {
+		var parentNode ast.Node
+		if len(ancestors) >= 3 {
+			parentNode = ancestors[len(ancestors)-3]
+		}
+		if parentNode.GetKind() == kinds.InputObjectDefinition {
+			return DirectiveLocationInputFieldDefinition
+		} else {
+			return DirectiveLocationArgumentDefinition
+		}
 	}
 	return ""
 }
@@ -606,6 +695,15 @@ func KnownFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 	}
 }
 
+func unknownTypeMessage(typeName string, suggestedTypes []string) string {
+	message := fmt.Sprintf(`Unknown type "%v".`, typeName)
+	if len(suggestedTypes) > 0 {
+		message = fmt.Sprintf(`%v Did you mean %v?`, message, quotedOrList(suggestedTypes))
+	}
+
+	return message
+}
+
 // KnownTypeNamesRule Known type names
 //
 // A GraphQL document is only valid if referenced types (specifically
@@ -643,9 +741,13 @@ func KnownTypeNamesRule(context *ValidationContext) *ValidationRuleInstance {
 						}
 						ttype := context.Schema().Type(typeNameValue)
 						if ttype == nil {
+							suggestedTypes := []string{}
+							for key := range context.Schema().TypeMap() {
+								suggestedTypes = append(suggestedTypes, key)
+							}
 							reportError(
 								context,
-								fmt.Sprintf(`Unknown type "%v".`, typeNameValue),
+								unknownTypeMessage(typeNameValue, suggestionList(typeNameValue, suggestedTypes)),
 								[]ast.Node{node},
 							)
 						}
@@ -702,27 +804,6 @@ func LoneAnonymousOperationRule(context *ValidationContext) *ValidationRuleInsta
 	}
 }
 
-type nodeSet struct {
-	set map[ast.Node]bool
-}
-
-func newNodeSet() *nodeSet {
-	return &nodeSet{
-		set: map[ast.Node]bool{},
-	}
-}
-func (set *nodeSet) Has(node ast.Node) bool {
-	_, ok := set.set[node]
-	return ok
-}
-func (set *nodeSet) Add(node ast.Node) bool {
-	if set.Has(node) {
-		return false
-	}
-	set.set[node] = true
-	return true
-}
-
 func CycleErrorMessage(fragName string, spreadNames []string) string {
 	via := ""
 	if len(spreadNames) > 0 {
@@ -756,7 +837,7 @@ func NoFragmentCyclesRule(context *ValidationContext) *ValidationRuleInstance {
 		}
 		visitedFrags[fragmentName] = true
 
-		spreadNodes := context.FragmentSpreads(fragment)
+		spreadNodes := context.FragmentSpreads(fragment.SelectionSet)
 		if len(spreadNodes) == 0 {
 			return
 		}
@@ -1037,489 +1118,6 @@ func NoUnusedVariablesRule(context *ValidationContext) *ValidationRuleInstance {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if def, ok := p.Node.(*ast.VariableDefinition); ok && def != nil {
 						variableDefs = append(variableDefs, def)
-					}
-					return visitor.ActionNoChange, nil
-				},
-			},
-		},
-	}
-	return &ValidationRuleInstance{
-		VisitorOpts: visitorOpts,
-	}
-}
-
-type fieldDefPair struct {
-	ParentType Composite
-	Field      *ast.Field
-	FieldDef   *FieldDefinition
-}
-
-func collectFieldASTsAndDefs(context *ValidationContext, parentType Named, selectionSet *ast.SelectionSet, visitedFragmentNames map[string]bool, astAndDefs map[string][]*fieldDefPair) map[string][]*fieldDefPair {
-
-	if astAndDefs == nil {
-		astAndDefs = map[string][]*fieldDefPair{}
-	}
-	if visitedFragmentNames == nil {
-		visitedFragmentNames = map[string]bool{}
-	}
-	if selectionSet == nil {
-		return astAndDefs
-	}
-	for _, selection := range selectionSet.Selections {
-		switch selection := selection.(type) {
-		case *ast.Field:
-			fieldName := ""
-			if selection.Name != nil {
-				fieldName = selection.Name.Value
-			}
-			var fieldDef *FieldDefinition
-			if parentType, ok := parentType.(*Object); ok {
-				fieldDef, _ = parentType.Fields()[fieldName]
-			}
-			if parentType, ok := parentType.(*Interface); ok {
-				fieldDef, _ = parentType.Fields()[fieldName]
-			}
-
-			responseName := fieldName
-			if selection.Alias != nil {
-				responseName = selection.Alias.Value
-			}
-			_, ok := astAndDefs[responseName]
-			if !ok {
-				astAndDefs[responseName] = []*fieldDefPair{}
-			}
-			if parentType, ok := parentType.(Composite); ok {
-				astAndDefs[responseName] = append(astAndDefs[responseName], &fieldDefPair{
-					ParentType: parentType,
-					Field:      selection,
-					FieldDef:   fieldDef,
-				})
-			} else {
-				astAndDefs[responseName] = append(astAndDefs[responseName], &fieldDefPair{
-					Field:    selection,
-					FieldDef: fieldDef,
-				})
-			}
-		case *ast.InlineFragment:
-			inlineFragmentType := parentType
-			if selection.TypeCondition != nil {
-				parentType, _ := typeFromAST(*context.Schema(), selection.TypeCondition)
-				inlineFragmentType = parentType
-			}
-			astAndDefs = collectFieldASTsAndDefs(
-				context,
-				inlineFragmentType,
-				selection.SelectionSet,
-				visitedFragmentNames,
-				astAndDefs,
-			)
-		case *ast.FragmentSpread:
-			fragName := ""
-			if selection.Name != nil {
-				fragName = selection.Name.Value
-			}
-			if _, ok := visitedFragmentNames[fragName]; ok {
-				continue
-			}
-			visitedFragmentNames[fragName] = true
-			fragment := context.Fragment(fragName)
-			if fragment == nil {
-				continue
-			}
-			parentType, _ := typeFromAST(*context.Schema(), fragment.TypeCondition)
-			astAndDefs = collectFieldASTsAndDefs(
-				context,
-				parentType,
-				fragment.SelectionSet,
-				visitedFragmentNames,
-				astAndDefs,
-			)
-		}
-	}
-	return astAndDefs
-}
-
-// pairSet A way to keep track of pairs of things when the ordering of the pair does
-// not matter. We do this by maintaining a sort of double adjacency sets.
-type pairSet struct {
-	data map[ast.Node]*nodeSet
-}
-
-func newPairSet() *pairSet {
-	return &pairSet{
-		data: map[ast.Node]*nodeSet{},
-	}
-}
-func (pair *pairSet) Has(a ast.Node, b ast.Node) bool {
-	first, ok := pair.data[a]
-	if !ok || first == nil {
-		return false
-	}
-	res := first.Has(b)
-	return res
-}
-func (pair *pairSet) Add(a ast.Node, b ast.Node) bool {
-	pair.data = pairSetAdd(pair.data, a, b)
-	pair.data = pairSetAdd(pair.data, b, a)
-	return true
-}
-
-func pairSetAdd(data map[ast.Node]*nodeSet, a, b ast.Node) map[ast.Node]*nodeSet {
-	set, ok := data[a]
-	if !ok || set == nil {
-		set = newNodeSet()
-		data[a] = set
-	}
-	set.Add(b)
-	return data
-}
-
-type conflictReason struct {
-	Name    string
-	Message interface{} // conflictReason || []conflictReason
-}
-type conflict struct {
-	Reason      conflictReason
-	FieldsLeft  []ast.Node
-	FieldsRight []ast.Node
-}
-
-func sameArguments(args1 []*ast.Argument, args2 []*ast.Argument) bool {
-	if len(args1) != len(args2) {
-		return false
-	}
-
-	for _, arg1 := range args1 {
-		arg1Name := ""
-		if arg1.Name != nil {
-			arg1Name = arg1.Name.Value
-		}
-
-		var foundArgs2 *ast.Argument
-		for _, arg2 := range args2 {
-			arg2Name := ""
-			if arg2.Name != nil {
-				arg2Name = arg2.Name.Value
-			}
-			if arg1Name == arg2Name {
-				foundArgs2 = arg2
-			}
-			break
-		}
-		if foundArgs2 == nil {
-			return false
-		}
-		if sameValue(arg1.Value, foundArgs2.Value) == false {
-			return false
-		}
-	}
-
-	return true
-}
-func sameValue(value1 ast.Value, value2 ast.Value) bool {
-	if value1 == nil && value2 == nil {
-		return true
-	}
-	val1 := printer.Print(value1)
-	val2 := printer.Print(value2)
-
-	return val1 == val2
-}
-
-func sameType(typeA, typeB Type) bool {
-	if typeA == typeB {
-		return true
-	}
-
-	if typeA, ok := typeA.(*List); ok {
-		if typeB, ok := typeB.(*List); ok {
-			return sameType(typeA.OfType, typeB.OfType)
-		}
-	}
-	if typeA, ok := typeA.(*NonNull); ok {
-		if typeB, ok := typeB.(*NonNull); ok {
-			return sameType(typeA.OfType, typeB.OfType)
-		}
-	}
-
-	return false
-}
-
-// Two types conflict if both types could not apply to a value simultaneously.
-// Composite types are ignored as their individual field types will be compared
-// later recursively. However List and Non-Null types must match.
-func doTypesConflict(type1 Output, type2 Output) bool {
-	if type1, ok := type1.(*List); ok {
-		if type2, ok := type2.(*List); ok {
-			return doTypesConflict(type1.OfType, type2.OfType)
-		}
-		return true
-	}
-	if type2, ok := type2.(*List); ok {
-		if type1, ok := type1.(*List); ok {
-			return doTypesConflict(type1.OfType, type2.OfType)
-		}
-		return true
-	}
-	if type1, ok := type1.(*NonNull); ok {
-		if type2, ok := type2.(*NonNull); ok {
-			return doTypesConflict(type1.OfType, type2.OfType)
-		}
-		return true
-	}
-	if type2, ok := type2.(*NonNull); ok {
-		if type1, ok := type1.(*NonNull); ok {
-			return doTypesConflict(type1.OfType, type2.OfType)
-		}
-		return true
-	}
-	if IsLeafType(type1) || IsLeafType(type2) {
-		return type1 != type2
-	}
-	return false
-}
-
-// OverlappingFieldsCanBeMergedRule Overlapping fields can be merged
-//
-// A selection set is only valid if all fields (including spreading any
-// fragments) either correspond to distinct response names or can be merged
-// without ambiguity.
-func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRuleInstance {
-
-	var getSubfieldMap func(ast1 *ast.Field, type1 Output, ast2 *ast.Field, type2 Output) map[string][]*fieldDefPair
-	var subfieldConflicts func(conflicts []*conflict, responseName string, ast1 *ast.Field, ast2 *ast.Field) *conflict
-	var findConflicts func(parentFieldsAreMutuallyExclusive bool, fieldMap map[string][]*fieldDefPair) (conflicts []*conflict)
-
-	comparedSet := newPairSet()
-	findConflict := func(parentFieldsAreMutuallyExclusive bool, responseName string, field *fieldDefPair, field2 *fieldDefPair) *conflict {
-
-		parentType1 := field.ParentType
-		ast1 := field.Field
-		def1 := field.FieldDef
-
-		parentType2 := field2.ParentType
-		ast2 := field2.Field
-		def2 := field2.FieldDef
-
-		// Not a pair.
-		if ast1 == ast2 {
-			return nil
-		}
-
-		// Memoize, do not report the same issue twice.
-		// Note: Two overlapping ASTs could be encountered both when
-		// `parentFieldsAreMutuallyExclusive` is true and is false, which could
-		// produce different results (when `true` being a subset of `false`).
-		// However we do not need to include this piece of information when
-		// memoizing since this rule visits leaf fields before their parent fields,
-		// ensuring that `parentFieldsAreMutuallyExclusive` is `false` the first
-		// time two overlapping fields are encountered, ensuring that the full
-		// set of validation rules are always checked when necessary.
-		if comparedSet.Has(ast1, ast2) {
-			return nil
-		}
-		comparedSet.Add(ast1, ast2)
-
-		// The return type for each field.
-		var type1 Type
-		var type2 Type
-		if def1 != nil {
-			type1 = def1.Type
-		}
-		if def2 != nil {
-			type2 = def2.Type
-		}
-
-		// If it is known that two fields could not possibly apply at the same
-		// time, due to the parent types, then it is safe to permit them to diverge
-		// in aliased field or arguments used as they will not present any ambiguity
-		// by differing.
-		// It is known that two parent types could never overlap if they are
-		// different Object types. Interface or Union types might overlap - if not
-		// in the current state of the schema, then perhaps in some future version,
-		// thus may not safely diverge.
-		_, isParentType1Object := parentType1.(*Object)
-		_, isParentType2Object := parentType2.(*Object)
-		fieldsAreMutuallyExclusive := parentFieldsAreMutuallyExclusive || parentType1 != parentType2 && isParentType1Object && isParentType2Object
-
-		if !fieldsAreMutuallyExclusive {
-			// Two aliases must refer to the same field.
-			name1 := ""
-			name2 := ""
-
-			if ast1.Name != nil {
-				name1 = ast1.Name.Value
-			}
-			if ast2.Name != nil {
-				name2 = ast2.Name.Value
-			}
-			if name1 != name2 {
-				return &conflict{
-					Reason: conflictReason{
-						Name:    responseName,
-						Message: fmt.Sprintf(`%v and %v are different fields`, name1, name2),
-					},
-					FieldsLeft:  []ast.Node{ast1},
-					FieldsRight: []ast.Node{ast2},
-				}
-			}
-
-			// Two field calls must have the same arguments.
-			if !sameArguments(ast1.Arguments, ast2.Arguments) {
-				return &conflict{
-					Reason: conflictReason{
-						Name:    responseName,
-						Message: `they have differing arguments`,
-					},
-					FieldsLeft:  []ast.Node{ast1},
-					FieldsRight: []ast.Node{ast2},
-				}
-			}
-		}
-
-		if type1 != nil && type2 != nil && doTypesConflict(type1, type2) {
-			return &conflict{
-				Reason: conflictReason{
-					Name:    responseName,
-					Message: fmt.Sprintf(`they return conflicting types %v and %v`, type1, type2),
-				},
-				FieldsLeft:  []ast.Node{ast1},
-				FieldsRight: []ast.Node{ast2},
-			}
-		}
-
-		subFieldMap := getSubfieldMap(ast1, type1, ast2, type2)
-		if subFieldMap != nil {
-			conflicts := findConflicts(fieldsAreMutuallyExclusive, subFieldMap)
-			return subfieldConflicts(conflicts, responseName, ast1, ast2)
-		}
-
-		return nil
-	}
-
-	getSubfieldMap = func(ast1 *ast.Field, type1 Output, ast2 *ast.Field, type2 Output) map[string][]*fieldDefPair {
-		selectionSet1 := ast1.SelectionSet
-		selectionSet2 := ast2.SelectionSet
-		if selectionSet1 != nil && selectionSet2 != nil {
-			visitedFragmentNames := map[string]bool{}
-			subfieldMap := collectFieldASTsAndDefs(
-				context,
-				GetNamed(type1),
-				selectionSet1,
-				visitedFragmentNames,
-				nil,
-			)
-			subfieldMap = collectFieldASTsAndDefs(
-				context,
-				GetNamed(type2),
-				selectionSet2,
-				visitedFragmentNames,
-				subfieldMap,
-			)
-			return subfieldMap
-		}
-		return nil
-	}
-
-	subfieldConflicts = func(conflicts []*conflict, responseName string, ast1 *ast.Field, ast2 *ast.Field) *conflict {
-		if len(conflicts) > 0 {
-			conflictReasons := []conflictReason{}
-			conflictFieldsLeft := []ast.Node{ast1}
-			conflictFieldsRight := []ast.Node{ast2}
-			for _, c := range conflicts {
-				conflictReasons = append(conflictReasons, c.Reason)
-				conflictFieldsLeft = append(conflictFieldsLeft, c.FieldsLeft...)
-				conflictFieldsRight = append(conflictFieldsRight, c.FieldsRight...)
-			}
-
-			return &conflict{
-				Reason: conflictReason{
-					Name:    responseName,
-					Message: conflictReasons,
-				},
-				FieldsLeft:  conflictFieldsLeft,
-				FieldsRight: conflictFieldsRight,
-			}
-		}
-		return nil
-	}
-	findConflicts = func(parentFieldsAreMutuallyExclusive bool, fieldMap map[string][]*fieldDefPair) (conflicts []*conflict) {
-
-		// ensure field traversal
-		orderedName := sort.StringSlice{}
-		for responseName := range fieldMap {
-			orderedName = append(orderedName, responseName)
-		}
-		orderedName.Sort()
-
-		for _, responseName := range orderedName {
-			fields, _ := fieldMap[responseName]
-			for _, fieldA := range fields {
-				for _, fieldB := range fields {
-					c := findConflict(parentFieldsAreMutuallyExclusive, responseName, fieldA, fieldB)
-					if c != nil {
-						conflicts = append(conflicts, c)
-					}
-				}
-			}
-		}
-		return conflicts
-	}
-
-	var reasonMessage func(message interface{}) string
-	reasonMessage = func(message interface{}) string {
-		switch reason := message.(type) {
-		case string:
-			return reason
-		case conflictReason:
-			return reasonMessage(reason.Message)
-		case []conflictReason:
-			messages := []string{}
-			for _, r := range reason {
-				messages = append(messages, fmt.Sprintf(
-					`subfields "%v" conflict because %v`,
-					r.Name,
-					reasonMessage(r.Message),
-				))
-			}
-			return strings.Join(messages, " and ")
-		}
-		return ""
-	}
-
-	visitorOpts := &visitor.VisitorOptions{
-		KindFuncMap: map[string]visitor.NamedVisitFuncs{
-			kinds.SelectionSet: {
-				// Note: we validate on the reverse traversal so deeper conflicts will be
-				// caught first, for correct calculation of mutual exclusivity and for
-				// clearer error messages.
-				Leave: func(p visitor.VisitFuncParams) (string, interface{}) {
-					if selectionSet, ok := p.Node.(*ast.SelectionSet); ok && selectionSet != nil {
-						parentType, _ := context.ParentType().(Named)
-						fieldMap := collectFieldASTsAndDefs(
-							context,
-							parentType,
-							selectionSet,
-							nil,
-							nil,
-						)
-						conflicts := findConflicts(false, fieldMap)
-						if len(conflicts) > 0 {
-							for _, c := range conflicts {
-								responseName := c.Reason.Name
-								reason := c.Reason
-								reportError(
-									context,
-									fmt.Sprintf(
-										`Fields "%v" conflict because %v.`,
-										responseName,
-										reasonMessage(reason),
-									),
-									append(c.FieldsLeft, c.FieldsRight...),
-								)
-							}
-							return visitor.ActionNoChange, nil
-						}
 					}
 					return visitor.ActionNoChange, nil
 				},
@@ -2209,4 +1807,86 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 	}
 
 	return true, nil
+}
+
+// Internal struct to sort results from suggestionList()
+type suggestionListResult struct {
+	Options   []string
+	Distances []float64
+}
+
+func (s suggestionListResult) Len() int {
+	return len(s.Options)
+}
+func (s suggestionListResult) Swap(i, j int) {
+	s.Options[i], s.Options[j] = s.Options[j], s.Options[i]
+}
+func (s suggestionListResult) Less(i, j int) bool {
+	return s.Distances[i] < s.Distances[j]
+}
+
+// suggestionList Given an invalid input string and a list of valid options, returns a filtered
+// list of valid options sorted based on their similarity with the input.
+func suggestionList(input string, options []string) []string {
+	dists := []float64{}
+	filteredOpts := []string{}
+	inputThreshold := float64(len(input) / 2)
+
+	for _, opt := range options {
+		dist := lexicalDistance(input, opt)
+		threshold := math.Max(inputThreshold, float64(len(opt)/2))
+		threshold = math.Max(threshold, 1)
+		if dist <= threshold {
+			filteredOpts = append(filteredOpts, opt)
+			dists = append(dists, dist)
+		}
+	}
+	//sort results
+	suggested := suggestionListResult{filteredOpts, dists}
+	sort.Sort(suggested)
+	return suggested.Options
+}
+
+// lexicalDistance Computes the lexical distance between strings A and B.
+// The "distance" between two strings is given by counting the minimum number
+// of edits needed to transform string A into string B. An edit can be an
+// insertion, deletion, or substitution of a single character, or a swap of two
+// adjacent characters.
+// This distance can be useful for detecting typos in input or sorting
+func lexicalDistance(a, b string) float64 {
+	d := [][]float64{}
+	aLen := len(a)
+	bLen := len(b)
+	for i := 0; i <= aLen; i++ {
+		d = append(d, []float64{float64(i)})
+	}
+	for k := 1; k <= bLen; k++ {
+		d[0] = append(d[0], float64(k))
+	}
+
+	for i := 1; i <= aLen; i++ {
+		for k := 1; k <= bLen; k++ {
+			cost := 1.0
+			if a[i-1] == b[k-1] {
+				cost = 0.0
+			}
+			minCostFloat := math.Min(
+				d[i-1][k]+1.0,
+				d[i][k-1]+1.0,
+			)
+			minCostFloat = math.Min(
+				minCostFloat,
+				d[i-1][k-1]+cost,
+			)
+			d[i] = append(d[i], minCostFloat)
+
+			if i > 1 && k < 1 &&
+				a[i-1] == b[k-2] &&
+				a[i-2] == b[k-1] {
+				d[i][k] = math.Min(d[i][k], d[i-2][k-2]+cost)
+			}
+		}
+	}
+
+	return d[aLen][bLen]
 }
