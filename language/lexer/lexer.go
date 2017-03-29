@@ -232,32 +232,51 @@ func readString(s *source.Source, start int) (Token, error) {
 			position += n
 			runePosition++
 			if code == '\\' { // \
-				valueBuffer.Write(body[chunkStart : position-1])
+				_, err := valueBuffer.Write(body[chunkStart : position-1])
+				if err != nil {
+					return Token{}, err
+				}
 				code, n = runeAt(body, position)
 				switch code {
 				case '"':
-					valueBuffer.WriteRune('"')
+					if _, err := valueBuffer.WriteRune('"'); err != nil {
+						return Token{}, err
+					}
 					break
 				case '/':
-					valueBuffer.WriteRune('/')
+					if _, err := valueBuffer.WriteRune('/'); err != nil {
+						return Token{}, err
+					}
 					break
 				case '\\':
-					valueBuffer.WriteRune('\\')
+					if _, err := valueBuffer.WriteRune('\\'); err != nil {
+						return Token{}, err
+					}
 					break
 				case 'b':
-					valueBuffer.WriteRune('\b')
+					if _, err := valueBuffer.WriteRune('\b'); err != nil {
+						return Token{}, err
+					}
 					break
 				case 'f':
-					valueBuffer.WriteRune('\f')
+					if _, err := valueBuffer.WriteRune('\f'); err != nil {
+						return Token{}, err
+					}
 					break
 				case 'n':
-					valueBuffer.WriteRune('\n')
+					if _, err := valueBuffer.WriteRune('\n'); err != nil {
+						return Token{}, err
+					}
 					break
 				case 'r':
-					valueBuffer.WriteRune('\r')
+					if _, err := valueBuffer.WriteRune('\r'); err != nil {
+						return Token{}, err
+					}
 					break
 				case 't':
-					valueBuffer.WriteRune('\t')
+					if _, err := valueBuffer.WriteRune('\t'); err != nil {
+						return Token{}, err
+					}
 					break
 				case 'u':
 					// Check if there are at least 4 bytes available
@@ -277,7 +296,9 @@ func readString(s *source.Source, start int) (Token, error) {
 							fmt.Sprintf("Invalid character escape sequence: "+
 								"\\u%v", string(body[position+1:position+5])))
 					}
-					valueBuffer.WriteRune(charCode)
+					if _, err := valueBuffer.WriteRune(charCode); err != nil {
+						return Token{}, err
+					}
 					position += 4
 					runePosition += 4
 					break
@@ -298,7 +319,9 @@ func readString(s *source.Source, start int) (Token, error) {
 		return Token{}, gqlerrors.NewSyntaxError(s, runePosition, "Unterminated string.")
 	}
 	stringContent := body[chunkStart:position]
-	valueBuffer.Write(stringContent)
+	if _, err := valueBuffer.Write(stringContent); err != nil {
+		return Token{}, err
+	}
 	value := valueBuffer.String()
 	return makeToken(TokenKind[STRING], start, position+1, value), nil
 }

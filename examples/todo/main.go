@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -208,7 +209,11 @@ func executeQuery(query string, schema graphql.Schema) *graphql.Result {
 func main() {
 	http.HandleFunc("/graphql", func(w http.ResponseWriter, r *http.Request) {
 		result := executeQuery(r.URL.Query()["query"][0], schema)
-		json.NewEncoder(w).Encode(result)
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			log.Printf("failed to encode gql result: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	})
 	// Serve static files
 	fs := http.FileServer(http.Dir("static"))
@@ -221,5 +226,5 @@ func main() {
 	fmt.Println("Load todo list: curl -g 'http://localhost:8080/graphql?query={todoList{id,text,done}}'")
 	fmt.Println("Access the web app via browser at 'http://localhost:8080'")
 
-	http.ListenAndServe(":8080", nil)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }

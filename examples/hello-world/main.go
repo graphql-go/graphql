@@ -35,7 +35,12 @@ func main() {
 	r := graphql.Do(params)
 	if len(r.Errors) > 0 {
 		log.Fatalf("failed to execute graphql operation, errors: %+v", r.Errors)
+		return
 	}
-	rJSON, _ := json.Marshal(r)
+	rJSON, err := json.Marshal(r)
+	if err != nil {
+		log.Fatalf("failed to marshal gql result: %v", err)
+		return
+	}
 	fmt.Printf("%s \n", rJSON) // {“data”:{“hello”:”world”}}
 }

@@ -79,7 +79,7 @@ func (ti *TypeInfo) Argument() *Argument {
 	return ti.argument
 }
 
-func (ti *TypeInfo) Enter(node ast.Node) {
+func (ti *TypeInfo) Enter(node ast.Node) error {
 
 	schema := ti.schema
 	var ttype Type
@@ -121,7 +121,11 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 	case *ast.InlineFragment:
 		typeConditionAST := node.TypeCondition
 		if typeConditionAST != nil {
-			ttype, _ = typeFromAST(*schema, node.TypeCondition)
+			t, err := typeFromAST(*schema, node.TypeCondition)
+			if err != nil {
+				return err
+			}
+			ttype = t
 			ti.typeStack = append(ti.typeStack, ttype)
 		} else {
 			ti.typeStack = append(ti.typeStack, ti.Type())
@@ -129,13 +133,21 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 	case *ast.FragmentDefinition:
 		typeConditionAST := node.TypeCondition
 		if typeConditionAST != nil {
-			ttype, _ = typeFromAST(*schema, typeConditionAST)
+			t, err := typeFromAST(*schema, typeConditionAST)
+			if err != nil {
+				return err
+			}
+			ttype = t
 			ti.typeStack = append(ti.typeStack, ttype)
 		} else {
 			ti.typeStack = append(ti.typeStack, ti.Type())
 		}
 	case *ast.VariableDefinition:
-		ttype, _ = typeFromAST(*schema, node.Type)
+		t, err := typeFromAST(*schema, node.Type)
+		if err != nil {
+			return err
+		}
+		ttype = t
 		ti.inputTypeStack = append(ti.inputTypeStack, ttype)
 	case *ast.Argument:
 		nameVal := ""
@@ -186,7 +198,9 @@ func (ti *TypeInfo) Enter(node ast.Node) {
 		}
 		ti.inputTypeStack = append(ti.inputTypeStack, fieldType)
 	}
+	return nil
 }
+
 func (ti *TypeInfo) Leave(node ast.Node) {
 	kind := node.GetKind()
 	switch kind {

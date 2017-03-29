@@ -53,14 +53,18 @@ func graphqlHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("wrong result, unexpected errors: %v", result.Errors)
 		return
 	}
-	json.NewEncoder(w).Encode(result)
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		log.Printf("failed to encode gql result: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 func main() {
 	http.HandleFunc("/graphql", graphqlHandler)
 	fmt.Println("Now server is running on port 8080")
 	fmt.Println("Test with Get      : curl -g 'http://localhost:8080/graphql?query={me{id,name}}'")
-	http.ListenAndServe(":8080", nil)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 func init() {

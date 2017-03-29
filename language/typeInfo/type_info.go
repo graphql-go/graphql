@@ -6,6 +6,6 @@ import (
 
 // TypeInfoI defines the interface for TypeInfo Implementation
 type TypeInfoI interface {
-	Enter(node ast.Node)
+	Enter(node ast.Node) error
 	Leave(node ast.Node)
 }

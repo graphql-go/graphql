@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/graphql-go/graphql"
@@ -16,9 +17,13 @@ func main() {
 			Schema:        testutil.StarWarsSchema,
 			RequestString: query,
 		})
-		json.NewEncoder(w).Encode(result)
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			log.Printf("failed to encode gql result: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	})
 	fmt.Println("Now server is running on port 8080")
 	fmt.Println("Test with Get      : curl -g 'http://localhost:8080/graphql?query={hero{name}}'")
-	http.ListenAndServe(":8080", nil)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
