@@ -29,6 +29,7 @@ func testLoc(start int, end int) *ast.Location {
 		Start: start, End: end,
 	}
 }
+
 func TestSchemaParser_SimpleType(t *testing.T) {
 
 	body := `
@@ -45,6 +46,7 @@ type Hello {
 					Value: "Hello",
 					Loc:   testLoc(6, 11),
 				}),
+				Directives: []*ast.Directive{},
 				Interfaces: []*ast.Named{},
 				Fields: []*ast.FieldDefinition{
 					ast.NewFieldDefinition(&ast.FieldDefinition{
@@ -53,7 +55,8 @@ type Hello {
 							Value: "world",
 							Loc:   testLoc(16, 21),
 						}),
-						Arguments: []*ast.InputValueDefinition{},
+						Arguments:  []*ast.InputValueDefinition{},
+						Directives: []*ast.Directive{},
 						Type: ast.NewNamed(&ast.Named{
 							Loc: testLoc(23, 29),
 							Name: ast.NewName(&ast.Name{
@@ -89,6 +92,7 @@ extend type Hello {
 						Value: "Hello",
 						Loc:   testLoc(13, 18),
 					}),
+					Directives: []*ast.Directive{},
 					Interfaces: []*ast.Named{},
 					Fields: []*ast.FieldDefinition{
 						ast.NewFieldDefinition(&ast.FieldDefinition{
@@ -97,7 +101,8 @@ extend type Hello {
 								Value: "world",
 								Loc:   testLoc(23, 28),
 							}),
-							Arguments: []*ast.InputValueDefinition{},
+							Directives: []*ast.Directive{},
+							Arguments:  []*ast.InputValueDefinition{},
 							Type: ast.NewNamed(&ast.Named{
 								Loc: testLoc(30, 36),
 								Name: ast.NewName(&ast.Name{
@@ -132,6 +137,7 @@ type Hello {
 					Value: "Hello",
 					Loc:   testLoc(6, 11),
 				}),
+				Directives: []*ast.Directive{},
 				Interfaces: []*ast.Named{},
 				Fields: []*ast.FieldDefinition{
 					ast.NewFieldDefinition(&ast.FieldDefinition{
@@ -140,7 +146,8 @@ type Hello {
 							Value: "world",
 							Loc:   testLoc(16, 21),
 						}),
-						Arguments: []*ast.InputValueDefinition{},
+						Directives: []*ast.Directive{},
+						Arguments:  []*ast.InputValueDefinition{},
 						Type: ast.NewNonNull(&ast.NonNull{
 							Kind: "NonNullType",
 							Loc:  testLoc(23, 30),
@@ -174,6 +181,7 @@ func TestSchemaParser_SimpleTypeInheritingInterface(t *testing.T) {
 					Value: "Hello",
 					Loc:   testLoc(5, 10),
 				}),
+				Directives: []*ast.Directive{},
 				Interfaces: []*ast.Named{
 					ast.NewNamed(&ast.Named{
 						Name: ast.NewName(&ast.Name{
@@ -204,6 +212,7 @@ func TestSchemaParser_SimpleTypeInheritingMultipleInterfaces(t *testing.T) {
 					Value: "Hello",
 					Loc:   testLoc(5, 10),
 				}),
+				Directives: []*ast.Directive{},
 				Interfaces: []*ast.Named{
 					ast.NewNamed(&ast.Named{
 						Name: ast.NewName(&ast.Name{
@@ -241,13 +250,15 @@ func TestSchemaParser_SingleValueEnum(t *testing.T) {
 					Value: "Hello",
 					Loc:   testLoc(5, 10),
 				}),
+				Directives: []*ast.Directive{},
 				Values: []*ast.EnumValueDefinition{
 					ast.NewEnumValueDefinition(&ast.EnumValueDefinition{
 						Name: ast.NewName(&ast.Name{
 							Value: "WORLD",
 							Loc:   testLoc(13, 18),
 						}),
-						Loc: testLoc(13, 18),
+						Directives: []*ast.Directive{},
+						Loc:        testLoc(13, 18),
 					}),
 				},
 			}),
@@ -270,20 +281,23 @@ func TestSchemaParser_DoubleValueEnum(t *testing.T) {
 					Value: "Hello",
 					Loc:   testLoc(5, 10),
 				}),
+				Directives: []*ast.Directive{},
 				Values: []*ast.EnumValueDefinition{
 					ast.NewEnumValueDefinition(&ast.EnumValueDefinition{
 						Name: ast.NewName(&ast.Name{
 							Value: "WO",
 							Loc:   testLoc(13, 15),
 						}),
-						Loc: testLoc(13, 15),
+						Directives: []*ast.Directive{},
+						Loc:        testLoc(13, 15),
 					}),
 					ast.NewEnumValueDefinition(&ast.EnumValueDefinition{
 						Name: ast.NewName(&ast.Name{
 							Value: "RLD",
 							Loc:   testLoc(17, 20),
 						}),
-						Loc: testLoc(17, 20),
+						Directives: []*ast.Directive{},
+						Loc:        testLoc(17, 20),
 					}),
 				},
 			}),
@@ -309,6 +323,7 @@ interface Hello {
 					Value: "Hello",
 					Loc:   testLoc(11, 16),
 				}),
+				Directives: []*ast.Directive{},
 				Fields: []*ast.FieldDefinition{
 					ast.NewFieldDefinition(&ast.FieldDefinition{
 						Loc: testLoc(21, 34),
@@ -316,7 +331,8 @@ interface Hello {
 							Value: "world",
 							Loc:   testLoc(21, 26),
 						}),
-						Arguments: []*ast.InputValueDefinition{},
+						Directives: []*ast.Directive{},
+						Arguments:  []*ast.InputValueDefinition{},
 						Type: ast.NewNamed(&ast.Named{
 							Loc: testLoc(28, 34),
 							Name: ast.NewName(&ast.Name{
@@ -349,6 +365,7 @@ type Hello {
 					Value: "Hello",
 					Loc:   testLoc(6, 11),
 				}),
+				Directives: []*ast.Directive{},
 				Interfaces: []*ast.Named{},
 				Fields: []*ast.FieldDefinition{
 					ast.NewFieldDefinition(&ast.FieldDefinition{
@@ -357,6 +374,7 @@ type Hello {
 							Value: "world",
 							Loc:   testLoc(16, 21),
 						}),
+						Directives: []*ast.Directive{},
 						Arguments: []*ast.InputValueDefinition{
 							ast.NewInputValueDefinition(&ast.InputValueDefinition{
 								Loc: testLoc(22, 35),
@@ -372,6 +390,7 @@ type Hello {
 									}),
 								}),
 								DefaultValue: nil,
+								Directives:   []*ast.Directive{},
 							}),
 						},
 						Type: ast.NewNamed(&ast.Named{
@@ -406,6 +425,7 @@ type Hello {
 					Value: "Hello",
 					Loc:   testLoc(6, 11),
 				}),
+				Directives: []*ast.Directive{},
 				Interfaces: []*ast.Named{},
 				Fields: []*ast.FieldDefinition{
 					ast.NewFieldDefinition(&ast.FieldDefinition{
@@ -432,8 +452,10 @@ type Hello {
 									Value: true,
 									Loc:   testLoc(38, 42),
 								}),
+								Directives: []*ast.Directive{},
 							}),
 						},
+						Directives: []*ast.Directive{},
 						Type: ast.NewNamed(&ast.Named{
 							Loc: testLoc(45, 51),
 							Name: ast.NewName(&ast.Name{
@@ -466,6 +488,7 @@ type Hello {
 					Value: "Hello",
 					Loc:   testLoc(6, 11),
 				}),
+				Directives: []*ast.Directive{},
 				Interfaces: []*ast.Named{},
 				Fields: []*ast.FieldDefinition{
 					ast.NewFieldDefinition(&ast.FieldDefinition{
@@ -474,6 +497,7 @@ type Hello {
 							Value: "world",
 							Loc:   testLoc(16, 21),
 						}),
+						Directives: []*ast.Directive{},
 						Arguments: []*ast.InputValueDefinition{
 							ast.NewInputValueDefinition(&ast.InputValueDefinition{
 								Loc: testLoc(22, 38),
@@ -492,6 +516,7 @@ type Hello {
 									}),
 								}),
 								DefaultValue: nil,
+								Directives:   []*ast.Directive{},
 							}),
 						},
 						Type: ast.NewNamed(&ast.Named{
@@ -526,6 +551,7 @@ type Hello {
 					Value: "Hello",
 					Loc:   testLoc(6, 11),
 				}),
+				Directives: []*ast.Directive{},
 				Interfaces: []*ast.Named{},
 				Fields: []*ast.FieldDefinition{
 					ast.NewFieldDefinition(&ast.FieldDefinition{
@@ -534,6 +560,7 @@ type Hello {
 							Value: "world",
 							Loc:   testLoc(16, 21),
 						}),
+						Directives: []*ast.Directive{},
 						Arguments: []*ast.InputValueDefinition{
 							ast.NewInputValueDefinition(&ast.InputValueDefinition{
 								Loc: testLoc(22, 37),
@@ -549,6 +576,7 @@ type Hello {
 									}),
 								}),
 								DefaultValue: nil,
+								Directives:   []*ast.Directive{},
 							}),
 							ast.NewInputValueDefinition(&ast.InputValueDefinition{
 								Loc: testLoc(39, 50),
@@ -564,6 +592,7 @@ type Hello {
 									}),
 								}),
 								DefaultValue: nil,
+								Directives:   []*ast.Directive{},
 							}),
 						},
 						Type: ast.NewNamed(&ast.Named{
@@ -595,6 +624,7 @@ func TestSchemaParser_SimpleUnion(t *testing.T) {
 					Value: "Hello",
 					Loc:   testLoc(6, 11),
 				}),
+				Directives: []*ast.Directive{},
 				Types: []*ast.Named{
 					ast.NewNamed(&ast.Named{
 						Loc: testLoc(14, 19),
@@ -624,6 +654,7 @@ func TestSchemaParser_UnionWithTwoTypes(t *testing.T) {
 					Value: "Hello",
 					Loc:   testLoc(6, 11),
 				}),
+				Directives: []*ast.Directive{},
 				Types: []*ast.Named{
 					ast.NewNamed(&ast.Named{
 						Loc: testLoc(14, 16),
@@ -660,6 +691,7 @@ func TestSchemaParser_Scalar(t *testing.T) {
 					Value: "Hello",
 					Loc:   testLoc(7, 12),
 				}),
+				Directives: []*ast.Directive{},
 			}),
 		},
 	})
@@ -683,6 +715,7 @@ input Hello {
 					Value: "Hello",
 					Loc:   testLoc(7, 12),
 				}),
+				Directives: []*ast.Directive{},
 				Fields: []*ast.InputValueDefinition{
 					ast.NewInputValueDefinition(&ast.InputValueDefinition{
 						Loc: testLoc(17, 30),
@@ -698,6 +731,7 @@ input Hello {
 							}),
 						}),
 						DefaultValue: nil,
+						Directives:   []*ast.Directive{},
 					}),
 				},
 			}),
