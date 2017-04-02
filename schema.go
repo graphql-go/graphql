@@ -145,11 +145,8 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 }
 
 
-/*func (gq *Schema) Implementation() map[string][]*Object{
-	return gq.implementations
-}*/
 
-//TODO: Edited..Check implementation of interfaces at runtime..
+//Added Check implementation of interfaces at runtime..
 //Add Implementations at Runtime..
 func (gq *Schema) AddImplementation() error{
 
@@ -186,7 +183,7 @@ func (gq *Schema) AddImplementation() error{
 }
 
 
-//TODO: Edited. Added to add Types and Interfaces at RunTime only..
+//Edited. Added to add Types and Interfaces at RunTime only..
 //Append Runtime schema to map..
 func (gq *Schema)AppendType(objectType Type) error  {
 	if objectType.Error() != nil {
