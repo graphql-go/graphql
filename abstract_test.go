@@ -158,6 +158,147 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 	}
 }
 
+
+func TestAppendTypeUsedToAddRuntimeCustomScalarTypeForInterface(t *testing.T) {
+
+	petType := graphql.NewInterface(graphql.InterfaceConfig{
+		Name: "Pet",
+		Fields: graphql.Fields{
+			"name": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+
+	// ie declare that Dog belongs to Pet interface
+	dogType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Dog",
+		Interfaces: []*graphql.Interface{
+			petType,
+		},
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
+			_, ok := p.Value.(*testDog)
+			return ok
+		},
+		Fields: graphql.Fields{
+			"name": &graphql.Field{
+				Type: graphql.String,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					if dog, ok := p.Source.(*testDog); ok {
+						return dog.Name, nil
+					}
+					return nil, nil
+				},
+			},
+			"woofs": &graphql.Field{
+				Type: graphql.Boolean,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					if dog, ok := p.Source.(*testDog); ok {
+						return dog.Woofs, nil
+					}
+					return nil, nil
+				},
+			},
+		},
+	})
+	// ie declare that Cat belongs to Pet interface
+	catType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Cat",
+		Interfaces: []*graphql.Interface{
+			petType,
+		},
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
+			_, ok := p.Value.(*testCat)
+			return ok
+		},
+		Fields: graphql.Fields{
+			"name": &graphql.Field{
+				Type: graphql.String,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					if cat, ok := p.Source.(*testCat); ok {
+						return cat.Name, nil
+					}
+					return nil, nil
+				},
+			},
+			"meows": &graphql.Field{
+				Type: graphql.Boolean,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					if cat, ok := p.Source.(*testCat); ok {
+						return cat.Meows, nil
+					}
+					return nil, nil
+				},
+			},
+		},
+	})
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"pets": &graphql.Field{
+					Type: graphql.NewList(petType),
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return []interface{}{
+							&testDog{"Odie", true},
+							&testCat{"Garfield", false},
+						}, nil
+					},
+				},
+			},
+		}),
+
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	//Now add types catType and dogType at runtime.
+	schema.AppendType(catType)
+	schema.AppendType(dogType)
+
+	query := `{
+	      pets {
+		name
+		... on Dog {
+		  woofs
+		}
+		... on Cat {
+		  meows
+		}
+	      }
+	    }`
+
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"pets": []interface{}{
+				map[string]interface{}{
+					"name":  "Odie",
+					"woofs": bool(true),
+				},
+				map[string]interface{}{
+					"name":  "Garfield",
+					"meows": bool(false),
+				},
+			},
+		},
+		Errors: nil,
+	}
+
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+	})
+	if len(result.Errors) != 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
+
+
 func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 
 	dogType := graphql.NewObject(graphql.ObjectConfig{

@@ -183,8 +183,8 @@ func (gq *Schema) AddImplementation() error{
 }
 
 
-//Edited. Added to add Types and Interfaces at RunTime only..
-//Append Runtime schema to map..
+//Edited. To check add Types at RunTime..
+//Append Runtime schema to typeMap
 func (gq *Schema)AppendType(objectType Type) error  {
 	if objectType.Error() != nil {
 		return objectType.Error()
