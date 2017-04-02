@@ -137,6 +137,66 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 	return schema, nil
 }
 
+
+/*func (gq *Schema) Implementation() map[string][]*Object{
+	return gq.implementations
+}*/
+
+//TODO: Edited..Check implementation of interfaces at runtime..
+//Add Implementations at Runtime..
+func (gq *Schema) AddImplementation() error{
+
+	// Keep track of all implementations by interface name.
+	if gq.implementations == nil {
+		gq.implementations = map[string][]*Object{}
+	}
+	for _, ttype := range gq.typeMap {
+		if ttype, ok := ttype.(*Object); ok {
+			for _, iface := range ttype.Interfaces() {
+				impls, ok := gq.implementations[iface.Name()]
+				if impls == nil || !ok {
+					impls = []*Object{}
+				}
+				impls = append(impls, ttype)
+				gq.implementations[iface.Name()] = impls
+			}
+		}
+	}
+
+	// Enforce correct interface implementations
+	for _, ttype := range gq.typeMap {
+		if ttype, ok := ttype.(*Object); ok {
+			for _, iface := range ttype.Interfaces() {
+				err := assertObjectImplementsInterface(gq, ttype, iface)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+
+//TODO: Edited. Added to add Types and Interfaces at RunTime only..
+//Append Runtime schema to map..
+func (gq *Schema)AppendType(objectType Type) error  {
+	if objectType.Error() != nil {
+		return objectType.Error()
+	}
+	var err error
+	gq.typeMap, err = typeMapReducer(gq, gq.typeMap, objectType)
+	if err != nil {
+		return err
+	}
+	//Now Add interface implementation..
+	return gq.AddImplementation()
+}
+
+
+
+
 func (gq *Schema) QueryType() *Object {
 	return gq.queryType
 }
