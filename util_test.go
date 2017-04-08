@@ -2,24 +2,25 @@ package graphql_test
 
 import (
 	"encoding/json"
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/testutil"
 	"log"
 	"reflect"
 	"testing"
-)
 
-type Human struct {
-	Alive  bool    `json:"alive"`
-	Age    int     `json:"age"`
-	Weight float64 `json:"weight"`
-}
+	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/testutil"
+)
 
 type Person struct {
 	Human
 	Name    string   `json:"name"`
 	Home    Address  `json:"home"`
 	Friends []Friend `json:"friends"`
+}
+
+type Human struct {
+	Alive  bool    `json:"alive"`
+	Age    int     `json:"age"`
+	Weight float64 `json:"weight"`
 }
 
 type Friend struct {
@@ -38,29 +39,29 @@ var personSource = Person{
 		Weight: 70.1,
 		Alive:  true,
 	},
-	Name:    "John Doe",
-	Home:    myaddress,
+	Name: "John Doe",
+	Home: Address{
+		Street: "Jl. G1",
+		City:   "Jakarta",
+	},
 	Friends: friendSource,
 }
 
 var friendSource = []Friend{
-	{"Arief", "palembang"},
-	{"Al", "semarang"},
-}
-
-var myaddress = Address{
-	Street: "Jl. G1",
-	City:   "Jakarta",
+	{Name: "Arief", Address: "palembang"},
+	{Name: "Al", Address: "semarang"},
 }
 
 func TestBindFields(t *testing.T) {
-	personObj := graphql.NewObject(graphql.ObjectConfig{
-		Name:   "Person",
+	// create person type based on Person struct
+	personType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Person",
+		// pass empty Person struct to bind all of it's fields
 		Fields: graphql.BindFields(Person{}),
 	})
 	fields := graphql.Fields{
 		"person": &graphql.Field{
-			Type: personObj,
+			Type: personType,
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				return personSource, nil
 			},
@@ -118,6 +119,7 @@ func TestBindArg(t *testing.T) {
 	fields := graphql.Fields{
 		"friend": &graphql.Field{
 			Type: friendObj,
+			//it can be added more than one since it's a slice
 			Args: graphql.BindArg(Friend{}, "name"),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				if name, ok := p.Args["name"].(string); ok {

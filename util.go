@@ -1,7 +1,6 @@
 package graphql
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -9,6 +8,12 @@ import (
 
 const TAG = "json"
 
+// can't take recursive slice type
+// e.g
+// type Person struct{
+//	Friends []Person
+// }
+// it will throw panic stack-overflow
 func BindFields(obj interface{}) Fields {
 	v := reflect.ValueOf(obj)
 	fields := make(map[string]*Field)
@@ -23,13 +28,11 @@ func BindFields(obj interface{}) Fields {
 		var graphType Output
 		if typeField.Type.Kind() == reflect.Struct {
 
+			structFields := BindFields(v.Field(i).Interface())
 			if tag == "" {
-				structFields := BindFields(v.Field(i).Interface())
 				fields = appendFields(fields, structFields)
 				continue
 			} else {
-				structFields := BindFields(v.Field(i).Interface())
-
 				graphType = NewObject(ObjectConfig{
 					Name:   tag,
 					Fields: structFields,
@@ -88,6 +91,7 @@ func getGraphList(tipe reflect.Type) *List {
 		return NewList(String)
 	}
 
+	// finaly bind object
 	t := reflect.New(tipe.Elem())
 	name := strings.Replace(fmt.Sprint(tipe.Elem()), ".", "_", -1)
 	obj := NewObject(ObjectConfig{
@@ -138,18 +142,6 @@ func BindArg(obj interface{}, tags ...string) FieldConfigArgument {
 		}
 	}
 	return config
-}
-
-func UnmarshalArgs(args map[string]interface{}, pointer interface{}) error {
-	js, err := json.Marshal(args)
-	if err != nil {
-		return fmt.Errorf("ini error 1 %v", err)
-	}
-	err = json.Unmarshal(js, pointer)
-	if err != nil {
-		return fmt.Errorf("ini error 2 %v", err)
-	}
-	return nil
 }
 
 func inArray(slice interface{}, item interface{}) bool {
