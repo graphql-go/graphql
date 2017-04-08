@@ -14,6 +14,7 @@ type Person struct {
 	Human
 	Name    string   `json:"name"`
 	Home    Address  `json:"home"`
+	Hobbies []string `json:"hobbies"`
 	Friends []Friend `json:"friends"`
 }
 
@@ -45,6 +46,7 @@ var personSource = Person{
 		City:   "Jakarta",
 	},
 	Friends: friendSource,
+	Hobbies:[]string{"eat","sleep","code"},
 }
 
 var friendSource = []Friend{
@@ -83,7 +85,8 @@ func TestBindFields(t *testing.T) {
 				friends{name,address},
 				age,
 				weight,
-				alive
+				alive,
+				hobbies
 			}
 		}
 	`
