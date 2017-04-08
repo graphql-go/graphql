@@ -3,8 +3,8 @@ package graphql
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/graphql-go/graphql"
 	"reflect"
+	"strings"
 )
 
 const TAG = "json"
@@ -17,18 +17,33 @@ func BindFields(obj interface{}) Fields {
 		typeField := v.Type().Field(i)
 
 		tag := typeField.Tag.Get(TAG)
-		if typeField.Type.Kind() == reflect.Struct && tag == "" {
-			structFields := BindFields(v.Field(i).Interface())
-
-			fields = appendFields(fields, structFields)
+		if tag == "-" {
 			continue
+		}
+		var graphType Output
+		if typeField.Type.Kind() == reflect.Struct {
+
+			if tag == "" {
+				structFields := BindFields(v.Field(i).Interface())
+				fields = appendFields(fields, structFields)
+				continue
+			} else {
+				structFields := BindFields(v.Field(i).Interface())
+
+				graphType = NewObject(ObjectConfig{
+					Name:   tag,
+					Fields: structFields,
+				})
+			}
 		}
 
 		if tag == "" {
 			continue
 		}
 
-		graphType := getGraphType(typeField.Type)
+		if graphType == nil {
+			graphType = getGraphType(typeField.Type)
+		}
 		fields[tag] = &Field{
 			Type: graphType,
 			Resolve: func(p ResolveParams) (interface{}, error) {
@@ -69,8 +84,17 @@ func getGraphList(tipe reflect.Type) *List {
 	case reflect.TypeOf([]float32{}):
 	case reflect.TypeOf([]float64{}):
 		return NewList(Float)
+	case reflect.TypeOf([]string{}):
+		return NewList(String)
 	}
-	return NewList(String)
+
+	t := reflect.New(tipe.Elem())
+	name := strings.Replace(fmt.Sprint(tipe.Elem()), ".", "_", -1)
+	obj := NewObject(ObjectConfig{
+		Name:   name,
+		Fields: BindFields(t.Elem().Interface()),
+	})
+	return NewList(obj)
 }
 
 func appendFields(dest, origin Fields) Fields {
