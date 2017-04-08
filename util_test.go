@@ -1,9 +1,11 @@
-package graphql
+package graphql_test
 
 import (
 	"encoding/json"
-	"fmt"
+	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/testutil"
 	"log"
+	"reflect"
 	"testing"
 )
 
@@ -13,7 +15,7 @@ type Human struct {
 	Weight float64 `json:"weight"`
 }
 
-type person struct {
+type Person struct {
 	Human
 	Name    string   `json:"name"`
 	Home    Address  `json:"home"`
@@ -30,18 +32,20 @@ type Address struct {
 	City   string `json:"city"`
 }
 
-var personSource = person{
+var personSource = Person{
 	Human: Human{
 		Age:    24,
 		Weight: 70.1,
 		Alive:  true,
 	},
-	Name: "John Doe",
-	Home: myaddress,
-	Friends: []Friend{
-		{"Arief", "palembang"},
-		{"Al", "semarang"},
-	},
+	Name:    "John Doe",
+	Home:    myaddress,
+	Friends: friendSource,
+}
+
+var friendSource = []Friend{
+	{"Arief", "palembang"},
+	{"Al", "semarang"},
 }
 
 var myaddress = Address{
@@ -50,21 +54,21 @@ var myaddress = Address{
 }
 
 func TestBindFields(t *testing.T) {
-	personObj := NewObject(ObjectConfig{
+	personObj := graphql.NewObject(graphql.ObjectConfig{
 		Name:   "Person",
-		Fields: BindFields(person{}),
+		Fields: graphql.BindFields(Person{}),
 	})
-	fields := Fields{
-		"person": &Field{
+	fields := graphql.Fields{
+		"person": &graphql.Field{
 			Type: personObj,
-			Resolve: func(p ResolveParams) (interface{}, error) {
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				return personSource, nil
 			},
 		},
 	}
-	rootQuery := ObjectConfig{Name: "RootQuery", Fields: fields}
-	schemaConfig := SchemaConfig{Query: NewObject(rootQuery)}
-	schema, err := NewSchema(schemaConfig)
+	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
+	schemaConfig := graphql.SchemaConfig{Query: graphql.NewObject(rootQuery)}
+	schema, err := graphql.NewSchema(schemaConfig)
 	if err != nil {
 		log.Fatalf("failed to create new schema, error: %v", err)
 	}
@@ -74,7 +78,7 @@ func TestBindFields(t *testing.T) {
 		{
 			person{
 				name,
-				home{street},
+				home{street,city},
 				friends{name,address},
 				age,
 				weight,
@@ -82,11 +86,87 @@ func TestBindFields(t *testing.T) {
 			}
 		}
 	`
-	params := Params{Schema: schema, RequestString: query}
-	r := Do(params)
+	params := graphql.Params{Schema: schema, RequestString: query}
+	r := graphql.Do(params)
 	if len(r.Errors) > 0 {
 		log.Fatalf("failed to execute graphql operation, errors: %+v", r.Errors)
 	}
+
 	rJSON, _ := json.Marshal(r)
-	fmt.Printf("%s \n", rJSON)
+	data := struct {
+		Data struct {
+			Person Person `json:"person"`
+		} `json:"data"`
+	}{}
+	err = json.Unmarshal(rJSON, &data)
+	if err != nil {
+		log.Fatalf("failed to unmarshal. error: %v", err)
+	}
+
+	newPerson := data.Data.Person
+	if !reflect.DeepEqual(newPerson, personSource) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(personSource, newPerson))
+	}
+}
+
+func TestBindArg(t *testing.T) {
+	var friendObj = graphql.NewObject(graphql.ObjectConfig{
+		Name:   "friend",
+		Fields: graphql.BindFields(Friend{}),
+	})
+
+	fields := graphql.Fields{
+		"friend": &graphql.Field{
+			Type: friendObj,
+			Args: graphql.BindArg(Friend{}, "name"),
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				if name, ok := p.Args["name"].(string); ok {
+					for _, friend := range friendSource {
+						if friend.Name == name {
+							return friend, nil
+						}
+					}
+				}
+				return nil, nil
+			},
+		},
+	}
+	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
+	schemaConfig := graphql.SchemaConfig{Query: graphql.NewObject(rootQuery)}
+	schema, err := graphql.NewSchema(schemaConfig)
+	if err != nil {
+		log.Fatalf("failed to create new schema, error: %v", err)
+	}
+
+	// Query
+	query := `
+		{
+			friend(name:"Arief"){
+				address
+			}
+		}
+	`
+	params := graphql.Params{Schema: schema, RequestString: query}
+	r := graphql.Do(params)
+	if len(r.Errors) > 0 {
+		log.Fatalf("failed to execute graphql operation, errors: %+v", r.Errors)
+	}
+
+	rJSON, _ := json.Marshal(r)
+
+	data := struct {
+		Data struct {
+			Friend Friend `json:"friend"`
+		} `json:"data"`
+	}{}
+	err = json.Unmarshal(rJSON, &data)
+	if err != nil {
+		log.Fatalf("failed to unmarshal. error: %v", err)
+	}
+
+	expectedAddress := "palembang"
+	newFriend := data.Data.Friend
+	if newFriend.Address != expectedAddress {
+		t.Fatalf("Unexpected result, expected address to be %s but got %s", expectedAddress, newFriend.Address)
+	}
 }
