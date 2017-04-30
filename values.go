@@ -320,6 +320,12 @@ func isNullish(value interface{}) bool {
 	if value, ok := value.(string); ok {
 		return value == ""
 	}
+	if value, ok := value.(*string); ok {
+		if value == nil {
+			return true
+		}
+		return *value == ""
+	}
 	if value, ok := value.(int); ok {
 		return math.IsNaN(float64(value))
 	}
