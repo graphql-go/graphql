@@ -2,10 +2,11 @@ package graphql_test
 
 import (
 	"encoding/json"
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/testutil"
 	"reflect"
 	"testing"
+
+	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/testutil"
 )
 
 func testSchema(t *testing.T, testField *graphql.Field) graphql.Schema {
@@ -147,7 +148,7 @@ func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_With
 
 	expected := map[string]interface{}{
 		"test": map[string]interface{}{
-			"Str": nil,
+			"Str": "",
 			"Int": 0,
 		},
 	}
@@ -223,7 +224,7 @@ func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_With
 
 	expected := map[string]interface{}{
 		"test": map[string]interface{}{
-			"str": nil,
+			"str": "",
 			"int": 0,
 		},
 	}
