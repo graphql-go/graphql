@@ -85,7 +85,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 				"b": "Boring",
 				"c": []interface{}{
 					"Contrived",
-					nil,
+					"",
 					"Confusing",
 				},
 				"deeper": []interface{}{

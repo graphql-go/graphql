@@ -1252,8 +1252,7 @@ func (gl *List) Error() error {
 //
 // Note: the enforcement of non-nullability occurs within the executor.
 type NonNull struct {
-	PrivateName string `json:"name"` // added to conform with introspection for NonNull.Name = nil
-	OfType      Type   `json:"ofType"`
+	OfType Type `json:"ofType"`
 
 	err error
 }
