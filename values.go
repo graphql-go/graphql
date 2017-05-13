@@ -320,14 +320,38 @@ func isNullish(value interface{}) bool {
 	if value, ok := value.(string); ok {
 		return value == ""
 	}
+	if value, ok := value.(*string); ok {
+		if value == nil {
+			return true
+		}
+		return *value == ""
+	}
 	if value, ok := value.(int); ok {
 		return math.IsNaN(float64(value))
+	}
+	if value, ok := value.(*int); ok {
+		if value == nil {
+			return true
+		}
+		return math.IsNaN(float64(*value))
 	}
 	if value, ok := value.(float32); ok {
 		return math.IsNaN(float64(value))
 	}
+	if value, ok := value.(*float32); ok {
+		if value == nil {
+			return true
+		}
+		return math.IsNaN(float64(*value))
+	}
 	if value, ok := value.(float64); ok {
 		return math.IsNaN(value)
+	}
+	if value, ok := value.(*float64); ok {
+		if value == nil {
+			return true
+		}
+		return math.IsNaN(*value)
 	}
 	return value == nil
 }
