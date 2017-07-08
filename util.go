@@ -76,21 +76,22 @@ func getGraphType(tipe reflect.Type) Output {
 }
 
 func getGraphList(tipe reflect.Type) *List {
-	switch tipe {
-	case reflect.TypeOf([]int{}):
-	case reflect.TypeOf([]int8{}):
-	case reflect.TypeOf([]int32{}):
-	case reflect.TypeOf([]int64{}):
-		return NewList(Int)
-	case reflect.TypeOf([]bool{}):
-		return NewList(Boolean)
-	case reflect.TypeOf([]float32{}):
-	case reflect.TypeOf([]float64{}):
-		return NewList(Float)
-	case reflect.TypeOf([]string{}):
-		return NewList(String)
+	if tipe.Kind() == reflect.Slice {
+		switch tipe.Elem().Kind() {
+		case reflect.Int:
+		case reflect.Int8:
+		case reflect.Int32:
+		case reflect.Int64:
+			return NewList(Int)
+		case reflect.Bool:
+			return NewList(Boolean)
+		case reflect.Float32:
+		case reflect.Float64:
+			return NewList(Float)
+		case reflect.String:
+			return NewList(String)
+		}
 	}
-
 	// finaly bind object
 	t := reflect.New(tipe.Elem())
 	name := strings.Replace(fmt.Sprint(tipe.Elem()), ".", "_", -1)
