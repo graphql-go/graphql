@@ -62,7 +62,7 @@ For more complex examples, refer to the [examples/](https://github.com/graphql-g
 
 ### Origin and Current Direction
 
-This project was originally a port of [v0.4.3](https://github.com/graphql/graphql-js/releases/tag/v0.4.3) of [graphql-js](https://github.com/graphql/graphql-js) (excluding the Validator), which was based on the July 2015 GraphQL specification. `graphql` is currently several versions behind `graphql-js`, however future efforts will be guided directly by the [latest formal GraphQL specification](https://github.com/facebook/graphql/releases) (currently: [October 2015](https://github.com/facebook/graphql/releases/tag/October2015)).
+This project was originally a port of [v0.4.3](https://github.com/graphql/graphql-js/releases/tag/v0.4.3) of [graphql-js](https://github.com/graphql/graphql-js) (excluding the Validator), which was based on the July 2015 GraphQL specification. `graphql-go` is currently on [v0.6.0](https://github.com/graphql/graphql-js/releases/tag/v0.6.0) of `graphql-js` which is based on the [April 2016](https://github.com/facebook/graphql/releases/tag/April2016) GraphQL specification. However future efforts will be guided directly by the [latest formal GraphQL specification](https://github.com/facebook/graphql/releases) (currently: [October 2016](https://github.com/facebook/graphql/releases/tag/October2016)).
 
 ### Third Party Libraries
 | Name          | Author        | Description  |
