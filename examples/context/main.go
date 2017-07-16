@@ -1,13 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/graphql-go/graphql"
-	"golang.org/x/net/context"
 )
 
 var Schema graphql.Schema
