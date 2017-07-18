@@ -46,7 +46,7 @@ func graphqlHandler(w http.ResponseWriter, r *http.Request) {
 	}{1, "cool user"}
 	result := graphql.Do(graphql.Params{
 		Schema:        Schema,
-		RequestString: r.URL.Query()["query"][0],
+		RequestString: r.URL.Query().Get("query"),
 		Context:       context.WithValue(context.Background(), "currentUser", user),
 	})
 	if len(result.Errors) > 0 {
