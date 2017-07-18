@@ -88,7 +88,7 @@ func main() {
 	_ = importJSONDataFromFile("data.json", &data)
 
 	http.HandleFunc("/graphql", func(w http.ResponseWriter, r *http.Request) {
-		result := executeQuery(r.URL.Query()["query"][0], schema)
+		result := executeQuery(r.URL.Query().Get("query"), schema)
 		json.NewEncoder(w).Encode(result)
 	})
 
