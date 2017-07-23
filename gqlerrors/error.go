@@ -2,6 +2,7 @@ package gqlerrors
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/location"
@@ -30,6 +31,9 @@ func NewError(message string, nodes []ast.Node, stack string, source *source.Sou
 	if source == nil {
 		for _, node := range nodes {
 			// get source from first node
+			if node == nil || reflect.ValueOf(node).IsNil() {
+				continue
+			}
 			if node.GetLoc() != nil {
 				source = node.GetLoc().Source
 			}
@@ -38,6 +42,9 @@ func NewError(message string, nodes []ast.Node, stack string, source *source.Sou
 	}
 	if len(positions) == 0 && len(nodes) > 0 {
 		for _, node := range nodes {
+			if node == nil || reflect.ValueOf(node).IsNil() {
+				continue
+			}
 			if node.GetLoc() == nil {
 				continue
 			}

@@ -171,3 +171,30 @@ func TestThreadsContextFromParamsThrough(t *testing.T) {
 	}
 
 }
+
+func TestNewErrorChecksNilNodes(t *testing.T) {
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"graphql_is": &graphql.Field{
+					Type: graphql.String,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return "", nil
+					},
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("unexpected errors: %v", err.Error())
+	}
+	query := `{graphql_is:great(sort:ByPopularity)}{stars}`
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+	})
+	if len(result.Errors) == 0 {
+		t.Fatalf("expected errors, got: %v", result)
+	}
+}
