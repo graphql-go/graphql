@@ -292,8 +292,6 @@ func serializeDateTime(value interface{}) interface{} {
 	default:
 		return nil
 	}
-
-	return nil
 }
 
 func unserializeDateTime(value interface{}) interface{} {
@@ -313,8 +311,6 @@ func unserializeDateTime(value interface{}) interface{} {
 	default:
 		return nil
 	}
-
-	return nil
 }
 
 var DateTime = NewScalar(ScalarConfig{
