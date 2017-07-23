@@ -1,6 +1,7 @@
 package graphql_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,7 +13,6 @@ import (
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/location"
 	"github.com/graphql-go/graphql/testutil"
-	"golang.org/x/net/context"
 )
 
 func TestExecutesArbitraryCode(t *testing.T) {
