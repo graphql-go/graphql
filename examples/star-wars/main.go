@@ -11,7 +11,7 @@ import (
 
 func main() {
 	http.HandleFunc("/graphql", func(w http.ResponseWriter, r *http.Request) {
-		query := r.URL.Query()["query"][0]
+		query := r.URL.Query().Get("query")
 		result := graphql.Do(graphql.Params{
 			Schema:        testutil.StarWarsSchema,
 			RequestString: query,

@@ -1,12 +1,12 @@
 package graphql
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"regexp"
 
 	"github.com/graphql-go/graphql/language/ast"
-	"golang.org/x/net/context"
 )
 
 // Type interface for all of the possible kinds of GraphQL types
