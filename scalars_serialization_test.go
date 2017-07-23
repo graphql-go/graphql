@@ -4,6 +4,7 @@ import (
 	"math"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/graphql-go/graphql"
 )
@@ -12,6 +13,7 @@ type intSerializationTest struct {
 	Value    interface{}
 	Expected interface{}
 }
+
 type float64SerializationTest struct {
 	Value    interface{}
 	Expected interface{}
@@ -20,6 +22,11 @@ type float64SerializationTest struct {
 type stringSerializationTest struct {
 	Value    interface{}
 	Expected string
+}
+
+type dateTimeSerializationTest struct {
+	Value    interface{}
+	Expected interface{}
 }
 
 type boolSerializationTest struct {
@@ -160,6 +167,33 @@ func TestTypeSystem_Scalar_SerializesOutputBoolean(t *testing.T) {
 		if val != test.Expected {
 			reflectedValue := reflect.ValueOf(test.Value)
 			t.Fatalf("Failed String.Boolean(%v(%v)), expected: %v, got %v", reflectedValue.Type(), test.Value, test.Expected, val)
+		}
+	}
+}
+
+func TestTypeSystem_Scalar_SerializeOutputDateTime(t *testing.T) {
+	now := time.Now()
+	nowString, err := now.MarshalText()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []dateTimeSerializationTest{
+		{"string", nil},
+		{int(1), nil},
+		{float32(-1.1), nil},
+		{float64(-1.1), nil},
+		{true, nil},
+		{false, nil},
+		{now, string(nowString)},
+		{&now, string(nowString)},
+	}
+
+	for _, test := range tests {
+		val := graphql.DateTime.Serialize(test.Value)
+		if val != test.Expected {
+			reflectedValue := reflect.ValueOf(test.Value)
+			t.Fatalf("Failed DateTime.Serialize(%v(%v)), expected: %v, got %v", reflectedValue.Type(), test.Value, test.Expected, val)
 		}
 	}
 }

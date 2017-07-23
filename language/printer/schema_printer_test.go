@@ -121,6 +121,6 @@ directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 `
 	results := printer.Print(astDoc)
 	if !reflect.DeepEqual(expected, results) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(results, expected))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, results))
 	}
 }
