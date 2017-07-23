@@ -93,7 +93,7 @@ func TestVisitor_AllowsEditingANodeBothOnEnterAndOnLeave(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(visited, expectedVisited) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(visited, expectedVisited))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
 	}
 
 }
@@ -151,7 +151,7 @@ func TestVisitor_AllowsEditingTheRootNodeOnEnterAndOnLeave(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(visited, expectedVisited) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(visited, expectedVisited))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))
 	}
 }
 func TestVisitor_AllowsForEditingOnEnter(t *testing.T) {
@@ -1487,7 +1487,7 @@ func TestVisitor_VisitInParallel_AllowsForEditingOnLeave(t *testing.T) {
 
 	expectedEditedAST := parse(t, `{ a,    c { a,    c } }`)
 	if !reflect.DeepEqual(editedAST, expectedEditedAST) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(editedAST, expectedEditedAST))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedEditedAST, editedAST))
 	}
 }
 
@@ -1738,7 +1738,7 @@ func TestVisitor_VisitWithTypeInfo_MaintainsTypeInfoDuringEdit(t *testing.T) {
 	expectedEditedASTQuery := printer.Print(parse(t, `{ human(id: 4) { name, pets { __typename } }, alien { __typename } }`))
 
 	if !reflect.DeepEqual(editedASTQuery, expectedEditedASTQuery) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(editedASTQuery, expectedEditedASTQuery))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedEditedASTQuery, editedASTQuery))
 	}
 	if !reflect.DeepEqual(visited, expectedVisited) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedVisited, visited))

@@ -109,7 +109,7 @@ func TestBindFields(t *testing.T) {
 
 	newPerson := data.Data.Person
 	if !reflect.DeepEqual(newPerson, personSource) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(personSource, newPerson))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(newPerson, personSource))
 	}
 }
 
