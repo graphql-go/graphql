@@ -42,7 +42,7 @@ func TestPrinter_DoesNotAlterAST(t *testing.T) {
 	_ = testutil.ASTToJSON(t, astDoc)
 
 	if !reflect.DeepEqual(astDocAfter, astDocBefore) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(astDocAfter, astDocBefore))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(astDocBefore, astDocAfter))
 	}
 }
 
@@ -75,7 +75,7 @@ func TestPrinter_CorrectlyPrintsNonQueryOperationsWithoutName(t *testing.T) {
 	results := printer.Print(astDoc)
 
 	if !reflect.DeepEqual(expected, results) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(results, expected))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, results))
 	}
 
 	// Test #2
@@ -89,7 +89,7 @@ func TestPrinter_CorrectlyPrintsNonQueryOperationsWithoutName(t *testing.T) {
 	results = printer.Print(astDoc)
 
 	if !reflect.DeepEqual(expected, results) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(results, expected))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, results))
 	}
 
 	// Test #3
@@ -103,7 +103,7 @@ func TestPrinter_CorrectlyPrintsNonQueryOperationsWithoutName(t *testing.T) {
 	results = printer.Print(astDoc)
 
 	if !reflect.DeepEqual(expected, results) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(results, expected))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, results))
 	}
 
 	// Test #4
@@ -117,7 +117,7 @@ func TestPrinter_CorrectlyPrintsNonQueryOperationsWithoutName(t *testing.T) {
 	results = printer.Print(astDoc)
 
 	if !reflect.DeepEqual(expected, results) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(results, expected))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, results))
 	}
 }
 
@@ -183,6 +183,6 @@ fragment frag on Follower {
 	results := printer.Print(astDoc)
 
 	if !reflect.DeepEqual(expected, results) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(results, expected))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, results))
 	}
 }
