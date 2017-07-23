@@ -377,3 +377,47 @@ func TestTypeSystem_EnumValues_EnumValueMayBeNullable(t *testing.T) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
+
+func TestTypeSystem_EnumValues_EnumValueMayBePointer(t *testing.T) {
+	var enumTypeTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"query": &graphql.Field{
+					Type: graphql.NewObject(graphql.ObjectConfig{
+						Name: "query",
+						Fields: graphql.Fields{
+							"color": &graphql.Field{
+								Type: enumTypeTestColorType,
+							},
+							"foo": &graphql.Field{
+								Description: "foo field",
+								Type:        graphql.Int,
+							},
+						},
+					}),
+					Resolve: func(_ graphql.ResolveParams) (interface{}, error) {
+						one := 1
+						return struct {
+							Color *int `graphql:"color"`
+							Foo   *int `graphql:"foo"`
+						}{&one, &one}, nil
+					},
+				},
+			},
+		}),
+	})
+	query := "{ query { color foo } }"
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"query": map[string]interface{}{
+				"color": "GREEN",
+				"foo":   1}}}
+	result := g(t, graphql.Params{
+		Schema:        enumTypeTestSchema,
+		RequestString: query,
+	})
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
