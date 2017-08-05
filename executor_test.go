@@ -1483,6 +1483,56 @@ func TestQuery_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 	}
 }
 
+func TestQuery_InputObjectUsesFieldDefaultValueFn(t *testing.T) {
+	inputType := graphql.NewInputObject(graphql.InputObjectConfig{
+		Name: "Input",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"default": &graphql.InputObjectFieldConfig{
+				Type:         graphql.String,
+				DefaultValue: "bar",
+			},
+		},
+	})
+	q := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Query",
+		Fields: graphql.Fields{
+			"a": &graphql.Field{
+				Type: graphql.String,
+				Args: graphql.FieldConfigArgument{
+					"foo": &graphql.ArgumentConfig{
+						Type: graphql.NewNonNull(inputType),
+					},
+				},
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					val := p.Args["foo"].(map[string]interface{})
+					def, ok := val["default"]
+					if !ok || def == nil {
+						return nil, errors.New("queryError: No 'default' param")
+					}
+					if def.(string) != "bar" {
+						return nil, errors.New("queryError: 'default' param has wrong value")
+					}
+					return "ok", nil
+				},
+			},
+		},
+	})
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: q,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error, got: %v", err)
+	}
+	query := `{ a(foo: {}) }`
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+	})
+	if len(result.Errors) != 0 {
+		t.Fatalf("wrong result, unexpected errors: %+v", result.Errors)
+	}
+}
+
 func TestMutation_ExecutionAddsErrorsFromFieldResolveFn(t *testing.T) {
 	mError := errors.New("mutationError")
 	q := graphql.NewObject(graphql.ObjectConfig{
