@@ -252,14 +252,14 @@ func DefaultTypeInfoFieldDef(schema *Schema, parentType Type, fieldAST *ast.Fiel
 		schema.QueryType() == parentType {
 		return TypeMetaFieldDef
 	}
-	if name == TypeNameMetaFieldDef.Name {
-		if _, ok := parentType.(*Object); ok && parentType != nil {
+	if name == TypeNameMetaFieldDef.Name && parentType != nil {
+		if t, ok := parentType.(*Object); ok && t != nil {
 			return TypeNameMetaFieldDef
 		}
-		if _, ok := parentType.(*Interface); ok && parentType != nil {
+		if t, ok := parentType.(*Interface); ok && t != nil {
 			return TypeNameMetaFieldDef
 		}
-		if _, ok := parentType.(*Union); ok && parentType != nil {
+		if t, ok := parentType.(*Union); ok && t != nil {
 			return TypeNameMetaFieldDef
 		}
 	}

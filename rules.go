@@ -214,30 +214,38 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 					var result interface{}
 					if node, ok := p.Node.(*ast.Field); ok {
 						ttype := context.ParentType()
-
-						if ttype != nil {
-							fieldDef := context.FieldDef()
-							if fieldDef == nil {
-								// This field doesn't exist, lets look for suggestions.
-								nodeName := ""
-								if node.Name != nil {
-									nodeName = node.Name.Value
-								}
-								// First determine if there are any suggested types to condition on.
-								suggestedTypeNames := getSuggestedTypeNames(context.Schema(), ttype, nodeName)
-
-								// If there are no suggested types, then perhaps this was a typo?
-								suggestedFieldNames := []string{}
-								if len(suggestedTypeNames) == 0 {
-									suggestedFieldNames = getSuggestedFieldNames(context.Schema(), ttype, nodeName)
-								}
-
-								reportError(
-									context,
-									UndefinedFieldMessage(nodeName, ttype.Name(), suggestedTypeNames, suggestedFieldNames),
-									[]ast.Node{node},
-								)
+						if ttype == nil {
+							return action, result
+						}
+						if t, ok := ttype.(*Object); ok && t == nil {
+							return action, result
+						}
+						if t, ok := ttype.(*Interface); ok && t == nil {
+							return action, result
+						}
+						if t, ok := ttype.(*Union); ok && t == nil {
+							return action, result
+						}
+						fieldDef := context.FieldDef()
+						if fieldDef == nil {
+							// This field doesn't exist, lets look for suggestions.
+							nodeName := ""
+							if node.Name != nil {
+								nodeName = node.Name.Value
 							}
+							// First determine if there are any suggested types to condition on.
+							suggestedTypeNames := getSuggestedTypeNames(context.Schema(), ttype, nodeName)
+
+							// If there are no suggested types, then perhaps this was a typo?
+							suggestedFieldNames := []string{}
+							if len(suggestedTypeNames) == 0 {
+								suggestedFieldNames = getSuggestedFieldNames(context.Schema(), ttype, nodeName)
+							}
+							reportError(
+								context,
+								UndefinedFieldMessage(nodeName, ttype.Name(), suggestedTypeNames, suggestedFieldNames),
+								[]ast.Node{node},
+							)
 						}
 					}
 					return action, result
@@ -1517,7 +1525,7 @@ func UniqueInputFieldNamesRule(context *ValidationContext) *ValidationRuleInstan
 //
 // A GraphQL document is only valid if all defined operations have unique names.
 func UniqueOperationNamesRule(context *ValidationContext) *ValidationRuleInstance {
-	knownOperationNames := map[string]*ast.Name{}
+	knownOperationNames := make(map[string]ast.Node)
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
@@ -1528,14 +1536,18 @@ func UniqueOperationNamesRule(context *ValidationContext) *ValidationRuleInstanc
 						if node.Name != nil {
 							operationName = node.Name.Value
 						}
+						var errNode ast.Node = node
+						if node.Name != nil {
+							errNode = node.Name
+						}
 						if nameAST, ok := knownOperationNames[operationName]; ok {
 							reportError(
 								context,
 								fmt.Sprintf(`There can only be one operation named "%v".`, operationName),
-								[]ast.Node{nameAST, node.Name},
+								[]ast.Node{nameAST, errNode},
 							)
 						} else {
-							knownOperationNames[operationName] = node.Name
+							knownOperationNames[operationName] = errNode
 						}
 					}
 					return visitor.ActionSkip, nil
@@ -1717,6 +1729,9 @@ func VariablesInAllowedPositionRule(context *ValidationContext) *ValidationRuleI
 func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 	// A value must be provided if the type is non-null.
 	if ttype, ok := ttype.(*NonNull); ok {
+		if e := ttype.Error(); e != nil {
+			return false, []string{e.Error()}
+		}
 		if valueAST == nil {
 			if ttype.OfType.Name() != "" {
 				return false, []string{fmt.Sprintf(`Expected "%v!", found null.`, ttype.OfType.Name())}

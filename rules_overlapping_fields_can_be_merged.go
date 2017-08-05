@@ -467,10 +467,10 @@ func (rule *overlappingFieldsCanBeMergedRule) getFieldsAndFragmentNames(parentTy
 					fieldName = selection.Name.Value
 				}
 				var fieldDef *FieldDefinition
-				if parentType, ok := parentType.(*Object); ok {
+				if parentType, ok := parentType.(*Object); ok && parentType != nil {
 					fieldDef, _ = parentType.Fields()[fieldName]
 				}
-				if parentType, ok := parentType.(*Interface); ok {
+				if parentType, ok := parentType.(*Interface); ok && parentType != nil {
 					fieldDef, _ = parentType.Fields()[fieldName]
 				}
 

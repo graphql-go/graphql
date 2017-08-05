@@ -101,3 +101,7 @@ func TestValidate_VariableDefaultValuesOfCorrectType_ListVariablesWithInvalidIte
 				2, 40),
 		})
 }
+
+func TestValidate_VariableDefaultValuesOfCorrectType_InvalidNonNull(t *testing.T) {
+	testutil.ExpectPassesRule(t, graphql.DefaultValuesOfCorrectTypeRule, `query($g:e!){a}`)
+}
