@@ -102,3 +102,9 @@ func TestValidate_UniqueOperationNames_MultipleOperationsOfSameNameOfDifferentTy
 		testutil.RuleError(`There can only be one operation named "Foo".`, 2, 13, 5, 20),
 	})
 }
+
+func TestValidate_UniqueOperationNames_MultipleAnonymousOperations(t *testing.T) {
+	testutil.ExpectFailsRule(t, graphql.UniqueOperationNamesRule, `{a}{b}`, []gqlerrors.FormattedError{
+		testutil.RuleError(`There can only be one operation named "".`, 1, 1, 1, 4),
+	})
+}
