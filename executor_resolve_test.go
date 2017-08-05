@@ -147,7 +147,7 @@ func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_With
 
 	expected := map[string]interface{}{
 		"test": map[string]interface{}{
-			"Str": nil,
+			"Str": "",
 			"Int": 0,
 		},
 	}
@@ -223,7 +223,7 @@ func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_With
 
 	expected := map[string]interface{}{
 		"test": map[string]interface{}{
-			"str": nil,
+			"str": "",
 			"int": 0,
 		},
 	}
