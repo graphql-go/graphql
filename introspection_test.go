@@ -102,7 +102,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								"name": "__Type",
 							},
 							"isDeprecated":      false,
-							"deprecationReason": nil,
+							"deprecationReason": "",
 						},
 						map[string]interface{}{
 							"name": "directives",
@@ -646,7 +646,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": nil,
+							"deprecationReason": "",
 						},
 						map[string]interface{}{
 							"name": "args",
@@ -731,37 +731,37 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 						map[string]interface{}{
 							"name":              "QUERY",
 							"isDeprecated":      false,
-							"deprecationReason": nil,
+							"deprecationReason": "",
 						},
 						map[string]interface{}{
 							"name":              "MUTATION",
 							"isDeprecated":      false,
-							"deprecationReason": nil,
+							"deprecationReason": "",
 						},
 						map[string]interface{}{
 							"name":              "SUBSCRIPTION",
 							"isDeprecated":      false,
-							"deprecationReason": nil,
+							"deprecationReason": "",
 						},
 						map[string]interface{}{
 							"name":              "FIELD",
 							"isDeprecated":      false,
-							"deprecationReason": nil,
+							"deprecationReason": "",
 						},
 						map[string]interface{}{
 							"name":              "FRAGMENT_DEFINITION",
 							"isDeprecated":      false,
-							"deprecationReason": nil,
+							"deprecationReason": "",
 						},
 						map[string]interface{}{
 							"name":              "FRAGMENT_SPREAD",
 							"isDeprecated":      false,
-							"deprecationReason": nil,
+							"deprecationReason": "",
 						},
 						map[string]interface{}{
 							"name":              "INLINE_FRAGMENT",
 							"isDeprecated":      false,
-							"deprecationReason": nil,
+							"deprecationReason": "",
 						},
 					},
 					"possibleTypes": nil,
