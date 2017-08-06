@@ -619,3 +619,25 @@ func TestTypeSystem_DefinitionExample_IncludesFieldsThunk(t *testing.T) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(fieldMap["s"].Type, someObject))
 	}
 }
+
+func TestTypeSystem_DefinitionExampe_AllowsCyclicFieldTypes(t *testing.T) {
+	personType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Person",
+		Fields: (graphql.FieldsThunk)(func() graphql.Fields {
+			return graphql.Fields{
+				"name": &graphql.Field{
+					Type: graphql.String,
+				},
+				"bestFriend": &graphql.Field{
+					Type: personType,
+				},
+			}
+		}),
+	})
+
+	fieldMap := personType.Fields()
+	if !reflect.DeepEqual(fieldMap["name"].Type, graphql.String) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(fieldMap["bestFriend"].Type, personType))
+	}
+
+}
