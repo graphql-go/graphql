@@ -300,7 +300,8 @@ func init() {
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return GetHuman(p.Args["id"].(int)), nil
+					id, _ := strconv.Atoi(p.Args["id"].(string))
+					return GetHuman(id), nil
 				},
 			},
 			"droid": &graphql.Field{
