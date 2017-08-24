@@ -827,12 +827,17 @@ func defaultResolveTypeFn(p ResolveTypeParams, abstractType Abstract) *Object {
 func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 	// try to resolve p.Source as a struct first
 	sourceVal := reflect.ValueOf(p.Source)
-	if sourceVal.IsValid() && sourceVal.Type().Kind() == reflect.Ptr {
-		sourceVal = sourceVal.Elem()
-	}
-	if !sourceVal.IsValid() {
+	if sourceVal.IsValid() {
+		if sourceVal.Type().Kind() == reflect.Ptr {
+			sourceVal = sourceVal.Elem()
+			if !sourceVal.IsValid() {
+				return nil, nil
+			}
+		}
+	} else {
 		return nil, nil
 	}
+
 	if sourceVal.Type().Kind() == reflect.Struct {
 		// try matching the field name first
 		if v := sourceVal.FieldByName(p.Info.FieldName); v.IsValid() {
