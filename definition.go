@@ -441,6 +441,9 @@ func (gt *Object) String() string {
 	return gt.PrivateName
 }
 func (gt *Object) Fields() FieldDefinitionMap {
+	if len(gt.fields) != 0 {
+		return gt.fields
+	}
 	var configureFields Fields
 	switch gt.typeConfig.Fields.(type) {
 	case Fields:

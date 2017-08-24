@@ -278,7 +278,7 @@ func executeFields(p ExecuteFieldsParams) *Result {
 		p.Fields = map[string][]*ast.Field{}
 	}
 
-	finalResults := map[string]interface{}{}
+	finalResults := make(map[string]interface{}, len(p.Fields))
 	for responseName, fieldASTs := range p.Fields {
 		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
 		if state.hasNoFieldDefs {
@@ -741,16 +741,16 @@ func completeObjectValue(eCtx *ExecutionContext, returnType *Object, fieldASTs [
 			continue
 		}
 		selectionSet := fieldAST.SelectionSet
-		if selectionSet != nil {
-			innerParams := CollectFieldsParams{
-				ExeContext:           eCtx,
-				RuntimeType:          returnType,
-				SelectionSet:         selectionSet,
-				Fields:               subFieldASTs,
-				VisitedFragmentNames: visitedFragmentNames,
-			}
-			subFieldASTs = collectFields(innerParams)
+		if selectionSet == nil {
+			continue
 		}
+		subFieldASTs = collectFields(CollectFieldsParams{
+			ExeContext:           eCtx,
+			RuntimeType:          returnType,
+			SelectionSet:         selectionSet,
+			Fields:               subFieldASTs,
+			VisitedFragmentNames: visitedFragmentNames,
+		})
 	}
 	executeFieldsParams := ExecuteFieldsParams{
 		ExecutionContext: eCtx,
@@ -790,7 +790,7 @@ func completeListValue(eCtx *ExecutionContext, returnType *List, fieldASTs []*as
 	}
 
 	itemType := returnType.OfType
-	completedResults := []interface{}{}
+	completedResults := make([]interface{}, 0, resultVal.Len())
 	for i := 0; i < resultVal.Len(); i++ {
 		val := resultVal.Index(i).Interface()
 		completedItem := completeValueCatchingError(eCtx, itemType, fieldASTs, info, val)
@@ -834,29 +834,18 @@ func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 		return nil, nil
 	}
 	if sourceVal.Type().Kind() == reflect.Struct {
+		// try matching the field name first
+		if v := sourceVal.FieldByName(p.Info.FieldName); v.IsValid() {
+			return v.Interface(), nil
+		}
+		var tag reflect.StructTag
 		for i := 0; i < sourceVal.NumField(); i++ {
-			valueField := sourceVal.Field(i)
-			typeField := sourceVal.Type().Field(i)
-			// try matching the field name first
-			if typeField.Name == p.Info.FieldName {
-				return valueField.Interface(), nil
-			}
-			tag := typeField.Tag
+			tag = sourceVal.Type().Field(i).Tag
 			checkTag := func(tagName string) bool {
-				t := tag.Get(tagName)
-				tOptions := strings.Split(t, ",")
-				if len(tOptions) == 0 {
-					return false
-				}
-				if tOptions[0] != p.Info.FieldName {
-					return false
-				}
-				return true
+				return strings.SplitN(tag.Get(tagName), ",", 1)[0] == p.Info.FieldName
 			}
 			if checkTag("json") || checkTag("graphql") {
-				return valueField.Interface(), nil
-			} else {
-				continue
+				return sourceVal.Field(i).Interface(), nil
 			}
 		}
 		return nil, nil
