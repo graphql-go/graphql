@@ -12,5 +12,5 @@ type Result struct {
 }
 
 func (r *Result) HasErrors() bool {
-	return (len(r.Errors) > 0)
+	return len(r.Errors) > 0
 }
