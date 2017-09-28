@@ -1,11 +1,11 @@
-# Contributing to graphql-go
+# Contributing to graphql
 
-This document is based on the [io.js contribution guidelines](https://github.com/nodejs/io.js/blob/master/CONTRIBUTING.md)
+This document is based on the [Node.js contribution guidelines](https://github.com/nodejs/node/blob/master/CONTRIBUTING.md)
 
 ## Chat room 
 
-[![Join the chat at https://gitter.im/chris-ramon/graphql-go](https://badges.gitter.im/Join%20Chat.svg)]
-(https://gitter.im/chris-ramon/graphql-go?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/graphql-go/graphql](https://badges.gitter.im/Join%20Chat.svg)]
+(https://gitter.im/graphql-go/graphql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Feel free to participate in the chat room for informal discussions and queries. 
 
@@ -15,11 +15,11 @@ Just drop by and say hi!
 
 When opening new issues or commenting on existing issues on this repository
 please make sure discussions are related to concrete technical issues with the
-`graphql-go` software.
+`graphql` implementation.
 
 ## Code Contributions
 
-The `graphql-go` project welcomes new contributors.
+The `graphql` project welcomes new contributors.
 
 This document will guide you through the contribution process.
 
@@ -45,9 +45,9 @@ Descriptions for each of these will eventually be provided below.
 
 
 ## Creating Pull Requests
-Because `graphql-go` makes use of self-referencing import paths, you will want
+Because `graphql` makes use of self-referencing import paths, you will want
 to implement the local copy of your fork as a remote on your copy of the
-original `graphql-go` repo. Katrina Owen has [an excellent post on this workflow](https://splice.com/blog/contributing-open-source-git-repositories-go/).
+original `graphql` repo. Katrina Owen has [an excellent post on this workflow](https://splice.com/blog/contributing-open-source-git-repositories-go/).
 
 The basics are as follows:
 
@@ -56,10 +56,10 @@ The basics are as follows:
 2. `go get` the upstream repo and set it up as the `upstream` remote and your own repo as the `origin` remote:
 
 ```bash
-$ go get github.com/chris-ramon/graphql-go
-$ cd $GOPATH/src/github.com/chris-ramon/graphql-go
+$ go get github.com/graphql-go/graphql
+$ cd $GOPATH/src/github.com/graphql-go/graphql
 $ git remote rename origin upstream
-$ git remote add origin git@github.com/YOUR_GITHUB_NAME/graphql-go
+$ git remote add origin git@github.com/YOUR_GITHUB_NAME/graphql
 ```
 All import paths should now work fine assuming that you've got the
 proper branch checked out.
@@ -70,7 +70,7 @@ proper branch checked out.
 
 1. Set the contributor's fork as an upstream on your checkout
 
-   ```git remote add contrib1 https://github.com/contrib1/graphql-go```
+   ```git remote add contrib1 https://github.com/contrib1/graphql```
 
 2. Fetch the contributor's repo
 
