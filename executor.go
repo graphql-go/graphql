@@ -21,6 +21,9 @@ type ExecuteParams struct {
 	// Context may be provided to pass application-specific per-request
 	// information to resolve functions.
 	Context context.Context
+
+	// PanicHandler will be called if any of the resolvers or mutations panic
+	PanicHandler func(ctx context.Context, err interface{})
 }
 
 func Execute(p ExecuteParams) (result *Result) {
@@ -44,6 +47,7 @@ func Execute(p ExecuteParams) (result *Result) {
 			Errors:        nil,
 			Result:        result,
 			Context:       p.Context,
+			PanicHandler:  p.PanicHandler,
 		})
 
 		if err != nil {
@@ -57,6 +61,9 @@ func Execute(p ExecuteParams) (result *Result) {
 
 		defer func() {
 			if r := recover(); r != nil {
+				if p.PanicHandler != nil {
+					p.PanicHandler(ctx, r)
+				}
 				var err error
 				if r, ok := r.(error); ok {
 					err = gqlerrors.FormatError(r)
@@ -101,6 +108,7 @@ type BuildExecutionCtxParams struct {
 	Errors        []gqlerrors.FormattedError
 	Result        *Result
 	Context       context.Context
+	PanicHandler  func(ctx context.Context, err interface{})
 }
 type ExecutionContext struct {
 	Schema         Schema
@@ -110,6 +118,7 @@ type ExecutionContext struct {
 	VariableValues map[string]interface{}
 	Errors         []gqlerrors.FormattedError
 	Context        context.Context
+	PanicHandler   func(ctx context.Context, err interface{})
 }
 
 func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error) {
@@ -156,6 +165,7 @@ func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error)
 	eCtx.VariableValues = variableValues
 	eCtx.Errors = p.Errors
 	eCtx.Context = p.Context
+	eCtx.PanicHandler = p.PanicHandler
 	return eCtx, nil
 }
 
@@ -512,6 +522,9 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	var returnType Output
 	defer func() (interface{}, resolveFieldResultState) {
 		if r := recover(); r != nil {
+			if eCtx.PanicHandler != nil {
+				eCtx.PanicHandler(eCtx.Context, r)
+			}
 
 			var err error
 			if r, ok := r.(string); ok {
@@ -577,7 +590,8 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	})
 
 	if resolveFnError != nil {
-		panic(gqlerrors.FormatError(resolveFnError))
+		eCtx.Errors = append(eCtx.Errors, gqlerrors.FormatError(resolveFnError))
+		return result, resultState
 	}
 
 	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
@@ -588,6 +602,9 @@ func completeValueCatchingError(eCtx *ExecutionContext, returnType Type, fieldAS
 	// catch panic
 	defer func() interface{} {
 		if r := recover(); r != nil {
+			if eCtx.PanicHandler != nil {
+				eCtx.PanicHandler(eCtx.Context, r)
+			}
 			//send panic upstream
 			if _, ok := returnType.(*NonNull); ok {
 				panic(r)
