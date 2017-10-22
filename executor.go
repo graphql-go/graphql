@@ -589,8 +589,7 @@ func resolveField(eCtx *ExecutionContext, parentType *Object, source interface{}
 	})
 
 	if resolveFnError != nil {
-		eCtx.Errors = append(eCtx.Errors, gqlerrors.FormatError(resolveFnError))
-		return result, resultState
+		panic(gqlerrors.FormatError(resolveFnError))
 	}
 
 	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)

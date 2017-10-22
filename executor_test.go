@@ -573,42 +573,21 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 }
 
 func TestPanicHandler(t *testing.T) {
-
-	query := `{
-      sync,
-      syncError,
-    }`
-
+	query := `{syncError,}`
 	expectedData := map[string]interface{}{
-		"sync":      "sync",
 		"syncError": nil,
 	}
 	expectedErrors := []gqlerrors.FormattedError{
-		{
-			Message: "Error getting syncError",
-			Locations: []location.SourceLocation{
-				{
-					Line: 3, Column: 7,
-				},
-			},
-		},
+		{Message: "Error getting syncError",
+			Locations: []location.SourceLocation{{Line: 1, Column: 2}}},
 	}
-
 	data := map[string]interface{}{
-		"sync": func() interface{} {
-			return "sync"
-		},
-		"syncError": func() interface{} {
-			panic("Error getting syncError")
-		},
+		"syncError": func() interface{} { panic("Error getting syncError") },
 	}
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Type",
 			Fields: graphql.Fields{
-				"sync": &graphql.Field{
-					Type: graphql.String,
-				},
 				"syncError": &graphql.Field{
 					Type: graphql.String,
 				},
@@ -616,14 +595,10 @@ func TestPanicHandler(t *testing.T) {
 		}),
 	})
 	if err != nil {
-		t.Fatalf("Error in schema %v", err.Error())
+		t.Fatal(err)
 	}
-
-	// parse query
 	ast := testutil.TestParse(t, query)
-
 	var caughtPanic interface{}
-	// execute
 	ep := graphql.ExecuteParams{
 		Schema: schema,
 		AST:    ast,
@@ -633,9 +608,6 @@ func TestPanicHandler(t *testing.T) {
 		},
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) == 0 {
-		t.Fatalf("wrong result, expected errors, got %v", len(result.Errors))
-	}
 	if !reflect.DeepEqual(expectedData, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedData, result.Data))
 	}
@@ -644,7 +616,7 @@ func TestPanicHandler(t *testing.T) {
 	}
 	panicStr, ok := caughtPanic.(string)
 	if !ok || panicStr != "Error getting syncError" {
-		t.Fatalf("Expected to catch `Error getting syncError` but caught `%+v`", caughtPanic)
+		t.Fatalf("wrong panic, expected: `Error getting syncError`, got %v", caughtPanic)
 	}
 }
 
