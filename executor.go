@@ -22,7 +22,7 @@ type ExecuteParams struct {
 	// information to resolve functions.
 	Context context.Context
 
-	PanicHandler func(ctx context.Context, err interface{})
+	PanicHandler PanicHandler
 }
 
 func Execute(p ExecuteParams) (result *Result) {

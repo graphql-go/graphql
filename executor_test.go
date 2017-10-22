@@ -628,8 +628,8 @@ func TestPanicHandler(t *testing.T) {
 		Schema: schema,
 		AST:    ast,
 		Root:   data,
-		PanicHandler: func(ctx context.Context, err interface{}) {
-			caughtPanic = err
+		PanicHandler: func(ctx context.Context, v interface{}) {
+			caughtPanic = v
 		},
 	}
 	result := testutil.TestExecute(t, ep)

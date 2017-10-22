@@ -8,6 +8,8 @@ import (
 	"github.com/graphql-go/graphql/language/source"
 )
 
+type PanicHandler func(ctx context.Context, v interface{})
+
 type Params struct {
 	// The GraphQL type system to use when validating and executing a query.
 	Schema Schema
@@ -33,7 +35,7 @@ type Params struct {
 	Context context.Context
 
 	// PanicHandler is called if any resolver panics.
-	PanicHandler func(ctx context.Context, err interface{})
+	PanicHandler PanicHandler
 }
 
 func Do(p Params) *Result {
