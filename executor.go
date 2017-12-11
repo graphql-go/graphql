@@ -304,9 +304,11 @@ func executeFields(p ExecuteFieldsParams) *Result {
 					recoverChan <- recover()
 				}()
 
+				res := resolve()
+
 				resultsMutex.Lock()
 				defer resultsMutex.Unlock()
-				finalResults[responseName] = resolve()
+				finalResults[responseName] = res
 			}(responseName)
 		} else {
 			resultsMutex.Lock()
