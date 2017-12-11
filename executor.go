@@ -299,7 +299,7 @@ func executeFields(p ExecuteFieldsParams) *Result {
 		}
 		if resolve, ok := resolved.(deferredResolveFunction); ok {
 			numberOfDeferredFunctions += 1
-			go func() {
+			go func(responseName string) {
 				defer func() {
 					recoverChan <- recover()
 				}()
@@ -307,7 +307,7 @@ func executeFields(p ExecuteFieldsParams) *Result {
 				resultsMutex.Lock()
 				defer resultsMutex.Unlock()
 				finalResults[responseName] = resolve()
-			}()
+			}(responseName)
 		} else {
 			resultsMutex.Lock()
 			finalResults[responseName] = resolved
