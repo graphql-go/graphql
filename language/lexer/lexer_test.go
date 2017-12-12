@@ -481,6 +481,22 @@ func TestLexer_LexesBlockStrings(t *testing.T) {
 			},
 		},
 		{
+			Body: `
+				"""
+						my great description
+						spans multiple lines
+
+						with breaks
+				"""
+			`,
+			Expected: Token{
+				Kind:  TokenKind[BLOCK_STRING],
+				Start: 5,
+				End:   89,
+				Value: "my great description\nspans multiple lines\n\nwith breaks",
+			},
+		},
+		{
 			Body: `"""contains " quote"""`,
 			Expected: Token{
 				Kind:  TokenKind[BLOCK_STRING],

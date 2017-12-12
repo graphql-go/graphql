@@ -395,6 +395,9 @@ func blockStringValue(in string) string {
 	}
 	if commonIndent > 0 {
 		for i, line := range lines {
+			if commonIndent > len(line) {
+				continue
+			}
 			lines[i] = line[commonIndent:]
 		}
 	}
