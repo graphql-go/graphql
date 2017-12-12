@@ -136,55 +136,23 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
 
 			// Note: the Type System IDL is an experimental non-spec addition.
 			case "schema":
-				node, err := parseSchemaDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				fallthrough
 			case "scalar":
-				node, err := parseScalarTypeDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				fallthrough
 			case "type":
-				node, err := parseObjectTypeDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				fallthrough
 			case "interface":
-				node, err := parseInterfaceTypeDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				fallthrough
 			case "union":
-				node, err := parseUnionTypeDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				fallthrough
 			case "enum":
-				node, err := parseEnumTypeDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				fallthrough
 			case "input":
-				node, err := parseInputObjectTypeDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				fallthrough
 			case "extend":
-				node, err := parseTypeExtensionDefinition(parser)
-				if err != nil {
-					return nil, err
-				}
-				nodes = append(nodes, node)
+				fallthrough
 			case "directive":
-				node, err := parseDirectiveDefinition(parser)
+				node, err := parseTypeSystemDefinition(parser)
 				if err != nil {
 					return nil, err
 				}
@@ -194,6 +162,12 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
 					return nil, err
 				}
 			}
+		} else if peekDescription(parser) {
+			node, err := parseTypeSystemDefinition(parser)
+			if err != nil {
+				return nil, err
+			}
+			nodes = append(nodes, node)
 		} else {
 			if err := unexpected(parser, lexer.Token{}); err != nil {
 				return nil, err
@@ -638,13 +612,7 @@ func parseValueLiteral(parser *Parser, isConst bool) (ast.Value, error) {
 	case lexer.TokenKind[lexer.BLOCK_STRING]:
 		fallthrough
 	case lexer.TokenKind[lexer.STRING]:
-		if err := advance(parser); err != nil {
-			return nil, err
-		}
-		return ast.NewStringValue(&ast.StringValue{
-			Value: token.Value,
-			Loc:   loc(parser, token.Start),
-		}), nil
+		return parseStringLiteral(parser)
 	case lexer.TokenKind[lexer.NAME]:
 		if token.Value == "true" || token.Value == "false" {
 			if err := advance(parser); err != nil {
@@ -877,6 +845,59 @@ func parseNamed(parser *Parser) (*ast.Named, error) {
 }
 
 /* Implements the parsing rules in the Type Definition section. */
+
+/**
+ * TypeSystemDefinition :
+ *   - SchemaDefinition
+ *   - TypeDefinition
+ *   - TypeExtension
+ *   - DirectiveDefinition
+ *
+ * TypeDefinition :
+ *   - ScalarTypeDefinition
+ *   - ObjectTypeDefinition
+ *   - InterfaceTypeDefinition
+ *   - UnionTypeDefinition
+ *   - EnumTypeDefinition
+ *   - InputObjectTypeDefinition
+ */
+func parseTypeSystemDefinition(parser *Parser) (ast.Node, error) {
+	var err error
+
+	// Many definitions begin with a description and require a lookahead.
+	keywordToken := parser.Token
+	if peekDescription(parser) {
+		keywordToken, err = lookahead(parser)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if keywordToken.Kind == lexer.NAME {
+		switch keywordToken.Value {
+		case "schema":
+			return parseSchemaDefinition(parser)
+		case "scalar":
+			return parseScalarTypeDefinition(parser)
+		case "type":
+			return parseObjectTypeDefinition(parser)
+		case "interface":
+			return parseInterfaceTypeDefinition(parser)
+		case "union":
+			return parseUnionTypeDefinition(parser)
+		case "enum":
+			return parseEnumTypeDefinition(parser)
+		case "input":
+			return parseInputObjectTypeDefinition(parser)
+		case "extend":
+			return parseTypeExtensionDefinition(parser)
+		case "directive":
+			return parseDirectiveDefinition(parser)
+		}
+	}
+
+	return nil, unexpected(parser, keywordToken)
+}
 
 /**
  * SchemaDefinition : schema Directives? { OperationTypeDefinition+ }
@@ -1387,6 +1408,27 @@ func parseDirectiveLocations(parser *Parser) ([]*ast.Name, error) {
 	return locations, nil
 }
 
+func parseStringLiteral(parser *Parser) (*ast.StringValue, error) {
+	token := parser.Token
+	if err := advance(parser); err != nil {
+		return nil, err
+	}
+	return ast.NewStringValue(&ast.StringValue{
+		Value: token.Value,
+		Loc:   loc(parser, token.Start),
+	}), nil
+}
+
+/**
+ * Description : StringValue
+ */
+func parseDescription(parser *Parser) (*ast.StringValue, error) {
+	if peekDescription(parser) {
+		return parseStringLiteral(parser)
+	}
+	return nil, nil
+}
+
 /* Core parsing utility functions */
 
 // Returns a location object, used to identify the place in
@@ -1420,9 +1462,20 @@ func advance(parser *Parser) error {
 	return nil
 }
 
+// lookahead retrieves the next token
+func lookahead(parser *Parser) (lexer.Token, error) {
+	prevEnd := parser.Token.End
+	return parser.LexToken(prevEnd)
+}
+
 // Determines if the next token is of a given kind
 func peek(parser *Parser, Kind int) bool {
 	return parser.Token.Kind == Kind
+}
+
+// peekDescription determines if the next token is a string value
+func peekDescription(parser *Parser) bool {
+	return peek(parser, lexer.STRING) || peek(parser, lexer.BLOCK_STRING)
 }
 
 // If the next token is of the given kind, return true after advancing
