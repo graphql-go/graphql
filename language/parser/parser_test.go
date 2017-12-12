@@ -449,6 +449,19 @@ func TestParsesNamedSubscriptionOperations(t *testing.T) {
 	}
 }
 
+func TestParsesScalarWithDescription(t *testing.T) {
+	source := `
+		"""
+		Returns RFC666; includes timezone offset.
+		"""
+		scalar TimeWithZone
+	`
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestParseCreatesAst(t *testing.T) {
 	body := `{
   node(id: 4) {

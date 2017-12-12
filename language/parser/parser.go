@@ -958,11 +958,15 @@ func parseOperationTypeDefinition(parser *Parser) (interface{}, error) {
 }
 
 /**
- * ScalarTypeDefinition : scalar Name Directives?
+ * ScalarTypeDefinition : Description? scalar Name Directives?
  */
 func parseScalarTypeDefinition(parser *Parser) (*ast.ScalarDefinition, error) {
 	start := parser.Token.Start
-	_, err := expectKeyWord(parser, "scalar")
+	description, err := parseDescription(parser)
+	if err != nil {
+		return nil, err
+	}
+	_, err = expectKeyWord(parser, "scalar")
 	if err != nil {
 		return nil, err
 	}
@@ -975,9 +979,10 @@ func parseScalarTypeDefinition(parser *Parser) (*ast.ScalarDefinition, error) {
 		return nil, err
 	}
 	def := ast.NewScalarDefinition(&ast.ScalarDefinition{
-		Name:       name,
-		Directives: directives,
-		Loc:        loc(parser, start),
+		Name:        name,
+		Description: description,
+		Directives:  directives,
+		Loc:         loc(parser, start),
 	})
 	return def, nil
 }

@@ -72,7 +72,7 @@ func (def *SchemaDefinition) GetOperation() string {
 	return ""
 }
 
-// ScalarDefinition implements Node, Definition
+// OperationTypeDefinition implements Node, Definition
 type OperationTypeDefinition struct {
 	Kind      string
 	Loc       *Location
@@ -102,10 +102,11 @@ func (def *OperationTypeDefinition) GetLoc() *Location {
 
 // ScalarDefinition implements Node, Definition
 type ScalarDefinition struct {
-	Kind       string
-	Loc        *Location
-	Name       *Name
-	Directives []*Directive
+	Kind        string
+	Loc         *Location
+	Description *StringValue
+	Name        *Name
+	Directives  []*Directive
 }
 
 func NewScalarDefinition(def *ScalarDefinition) *ScalarDefinition {
@@ -113,10 +114,11 @@ func NewScalarDefinition(def *ScalarDefinition) *ScalarDefinition {
 		def = &ScalarDefinition{}
 	}
 	return &ScalarDefinition{
-		Kind:       kinds.ScalarDefinition,
-		Loc:        def.Loc,
-		Name:       def.Name,
-		Directives: def.Directives,
+		Kind:        kinds.ScalarDefinition,
+		Loc:         def.Loc,
+		Description: def.Description,
+		Name:        def.Name,
+		Directives:  def.Directives,
 	}
 }
 
