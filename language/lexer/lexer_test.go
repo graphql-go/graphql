@@ -546,6 +546,53 @@ func TestLexer_LexesBlockStrings(t *testing.T) {
 	}
 }
 
+func TestLexer_ReportsUsefulBlockStringErrors(t *testing.T) {
+	tests := []Test{
+		{
+			Body: `"""`,
+			Expected: `Syntax Error GraphQL (1:4) Unterminated string.
+
+1: """
+      ^
+`,
+		},
+		{
+			Body: `"""no end quote`,
+			Expected: `Syntax Error GraphQL (1:16) Unterminated string.
+
+1: """no end quote
+                  ^
+`,
+		},
+		{
+			Body: "\"\"\"contains unescaped \u0007 control char\"\"\"",
+			Expected: `Syntax Error GraphQL (1:23) Invalid character within String: "\\u0007".
+
+1: """contains unescaped \u0007 control char"""
+                         ^
+`,
+		},
+		{
+			Body: "\"\"\"null-byte is not \u0000 end of file\"\"\"",
+			Expected: `Syntax Error GraphQL (1:21) Invalid character within String: "\\u0000".
+
+1: """null-byte is not \u0000 end of file"""
+                       ^
+`,
+		},
+	}
+	for _, test := range tests {
+		_, err := Lex(createSource(test.Body))(0)
+		if err == nil {
+			t.Errorf("unexpected nil error\nexpected:\n%v\n\ngot:\n%v", test.Expected, err)
+		}
+
+		if err.Error() != test.Expected {
+			t.Errorf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", test.Expected, err.Error())
+		}
+	}
+}
+
 func TestLexer_LexesNumbers(t *testing.T) {
 	tests := []Test{
 		{
