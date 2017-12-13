@@ -314,11 +314,12 @@ func (def *InterfaceDefinition) GetOperation() string {
 
 // UnionDefinition implements Node, Definition
 type UnionDefinition struct {
-	Kind       string
-	Loc        *Location
-	Name       *Name
-	Directives []*Directive
-	Types      []*Named
+	Kind        string
+	Loc         *Location
+	Name        *Name
+	Description *StringValue
+	Directives  []*Directive
+	Types       []*Named
 }
 
 func NewUnionDefinition(def *UnionDefinition) *UnionDefinition {
@@ -326,11 +327,12 @@ func NewUnionDefinition(def *UnionDefinition) *UnionDefinition {
 		def = &UnionDefinition{}
 	}
 	return &UnionDefinition{
-		Kind:       kinds.UnionDefinition,
-		Loc:        def.Loc,
-		Name:       def.Name,
-		Directives: def.Directives,
-		Types:      def.Types,
+		Kind:        kinds.UnionDefinition,
+		Loc:         def.Loc,
+		Name:        def.Name,
+		Description: def.Description,
+		Directives:  def.Directives,
+		Types:       def.Types,
 	}
 }
 

@@ -524,6 +524,19 @@ func TestParsesInterfaceDefinitionWithDescription(t *testing.T) {
 	}
 }
 
+func TestParsesUnionDefinitionWithDescription(t *testing.T) {
+	source := `
+		"""
+		Cruft ...
+		"""
+		union Cruft = Foo | Bar
+	`
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestParseCreatesAst(t *testing.T) {
 	body := `{
   node(id: 4) {

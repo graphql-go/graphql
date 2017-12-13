@@ -1207,11 +1207,15 @@ func parseInterfaceTypeDefinition(parser *Parser) (*ast.InterfaceDefinition, err
 }
 
 /**
- * UnionTypeDefinition : union Name Directives? = UnionMembers
+ * UnionTypeDefinition : Description? union Name Directives? = UnionMembers
  */
 func parseUnionTypeDefinition(parser *Parser) (*ast.UnionDefinition, error) {
 	start := parser.Token.Start
-	_, err := expectKeyWord(parser, "union")
+	description, err := parseDescription(parser)
+	if err != nil {
+		return nil, err
+	}
+	_, err = expectKeyWord(parser, "union")
 	if err != nil {
 		return nil, err
 	}
@@ -1232,10 +1236,11 @@ func parseUnionTypeDefinition(parser *Parser) (*ast.UnionDefinition, error) {
 		return nil, err
 	}
 	return ast.NewUnionDefinition(&ast.UnionDefinition{
-		Name:       name,
-		Directives: directives,
-		Loc:        loc(parser, start),
-		Types:      types,
+		Name:        name,
+		Description: description,
+		Directives:  directives,
+		Loc:         loc(parser, start),
+		Types:       types,
 	}), nil
 }
 
