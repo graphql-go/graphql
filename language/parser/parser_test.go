@@ -537,6 +537,22 @@ func TestParsesUnionDefinitionWithDescription(t *testing.T) {
 	}
 }
 
+func TestParsesEnumDefinitionWithDescription(t *testing.T) {
+	source := `
+		"""
+		description 2
+		"""
+		enum Site {
+			DESKTOP
+			MOBILE
+		}
+	`
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestParseCreatesAst(t *testing.T) {
 	body := `{
   node(id: 4) {

@@ -362,11 +362,12 @@ func (def *UnionDefinition) GetOperation() string {
 
 // EnumDefinition implements Node, Definition
 type EnumDefinition struct {
-	Kind       string
-	Loc        *Location
-	Name       *Name
-	Directives []*Directive
-	Values     []*EnumValueDefinition
+	Kind        string
+	Loc         *Location
+	Name        *Name
+	Description *StringValue
+	Directives  []*Directive
+	Values      []*EnumValueDefinition
 }
 
 func NewEnumDefinition(def *EnumDefinition) *EnumDefinition {
@@ -374,11 +375,12 @@ func NewEnumDefinition(def *EnumDefinition) *EnumDefinition {
 		def = &EnumDefinition{}
 	}
 	return &EnumDefinition{
-		Kind:       kinds.EnumDefinition,
-		Loc:        def.Loc,
-		Name:       def.Name,
-		Directives: def.Directives,
-		Values:     def.Values,
+		Kind:        kinds.EnumDefinition,
+		Loc:         def.Loc,
+		Name:        def.Name,
+		Description: def.Description,
+		Directives:  def.Directives,
+		Values:      def.Values,
 	}
 }
 

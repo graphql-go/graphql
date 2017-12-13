@@ -1267,11 +1267,15 @@ func parseUnionMembers(parser *Parser) ([]*ast.Named, error) {
 }
 
 /**
- * EnumTypeDefinition : enum Name Directives? { EnumValueDefinition+ }
+ * EnumTypeDefinition : Description? enum Name Directives? { EnumValueDefinition+ }
  */
 func parseEnumTypeDefinition(parser *Parser) (*ast.EnumDefinition, error) {
 	start := parser.Token.Start
-	_, err := expectKeyWord(parser, "enum")
+	description, err := parseDescription(parser)
+	if err != nil {
+		return nil, err
+	}
+	_, err = expectKeyWord(parser, "enum")
 	if err != nil {
 		return nil, err
 	}
@@ -1294,10 +1298,11 @@ func parseEnumTypeDefinition(parser *Parser) (*ast.EnumDefinition, error) {
 		}
 	}
 	return ast.NewEnumDefinition(&ast.EnumDefinition{
-		Name:       name,
-		Directives: directives,
-		Loc:        loc(parser, start),
-		Values:     values,
+		Name:        name,
+		Description: description,
+		Directives:  directives,
+		Loc:         loc(parser, start),
+		Values:      values,
 	}), nil
 }
 
