@@ -477,6 +477,21 @@ func TestParsesObjectTypeDefinitionWithDescription(t *testing.T) {
 	}
 }
 
+func TestParsesFieldDefinitionWithDescription(t *testing.T) {
+	source := `
+		type Foo implements Bar {
+			"""
+			foo is quite the field.
+			"""
+			foo: String!
+		}
+	`
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestParseCreatesAst(t *testing.T) {
 	body := `{
   node(id: 4) {

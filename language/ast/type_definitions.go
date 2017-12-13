@@ -198,12 +198,13 @@ func (def *ObjectDefinition) GetOperation() string {
 
 // FieldDefinition implements Node
 type FieldDefinition struct {
-	Kind       string
-	Loc        *Location
-	Name       *Name
-	Arguments  []*InputValueDefinition
-	Type       Type
-	Directives []*Directive
+	Kind        string
+	Loc         *Location
+	Name        *Name
+	Description *StringValue
+	Arguments   []*InputValueDefinition
+	Type        Type
+	Directives  []*Directive
 }
 
 func NewFieldDefinition(def *FieldDefinition) *FieldDefinition {
@@ -211,12 +212,13 @@ func NewFieldDefinition(def *FieldDefinition) *FieldDefinition {
 		def = &FieldDefinition{}
 	}
 	return &FieldDefinition{
-		Kind:       kinds.FieldDefinition,
-		Loc:        def.Loc,
-		Name:       def.Name,
-		Arguments:  def.Arguments,
-		Type:       def.Type,
-		Directives: def.Directives,
+		Kind:        kinds.FieldDefinition,
+		Loc:         def.Loc,
+		Name:        def.Name,
+		Description: def.Description,
+		Arguments:   def.Arguments,
+		Type:        def.Type,
+		Directives:  def.Directives,
 	}
 }
 

@@ -1058,10 +1058,14 @@ func parseImplementsInterfaces(parser *Parser) ([]*ast.Named, error) {
 }
 
 /**
- * FieldDefinition : Name ArgumentsDefinition? : Type Directives?
+ * FieldDefinition : Description? Name ArgumentsDefinition? : Type Directives?
  */
 func parseFieldDefinition(parser *Parser) (interface{}, error) {
 	start := parser.Token.Start
+	description, err := parseDescription(parser)
+	if err != nil {
+		return nil, err
+	}
 	name, err := parseName(parser)
 	if err != nil {
 		return nil, err
@@ -1083,11 +1087,12 @@ func parseFieldDefinition(parser *Parser) (interface{}, error) {
 		return nil, err
 	}
 	return ast.NewFieldDefinition(&ast.FieldDefinition{
-		Name:       name,
-		Arguments:  args,
-		Type:       ttype,
-		Directives: directives,
-		Loc:        loc(parser, start),
+		Name:        name,
+		Description: description,
+		Arguments:   args,
+		Type:        ttype,
+		Directives:  directives,
+		Loc:         loc(parser, start),
 	}), nil
 }
 
