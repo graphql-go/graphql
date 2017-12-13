@@ -1400,7 +1400,11 @@ func parseTypeExtensionDefinition(parser *Parser) (*ast.TypeExtensionDefinition,
  */
 func parseDirectiveDefinition(parser *Parser) (*ast.DirectiveDefinition, error) {
 	start := parser.Token.Start
-	_, err := expectKeyWord(parser, "directive")
+	description, err := parseDescription(parser)
+	if err != nil {
+		return nil, err
+	}
+	_, err = expectKeyWord(parser, "directive")
 	if err != nil {
 		return nil, err
 	}
@@ -1426,10 +1430,11 @@ func parseDirectiveDefinition(parser *Parser) (*ast.DirectiveDefinition, error) 
 	}
 
 	return ast.NewDirectiveDefinition(&ast.DirectiveDefinition{
-		Loc:       loc(parser, start),
-		Name:      name,
-		Arguments: args,
-		Locations: locations,
+		Loc:         loc(parser, start),
+		Name:        name,
+		Description: description,
+		Arguments:   args,
+		Locations:   locations,
 	}), nil
 }
 

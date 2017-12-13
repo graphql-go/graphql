@@ -586,6 +586,17 @@ func TestParsesInputObjectDefinitionWithDescription(t *testing.T) {
 	}
 }
 
+func TestDirectiveDefinitionWithDescription(t *testing.T) {
+	source := `
+		"cool skip"
+		directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+	`
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestParseCreatesAst(t *testing.T) {
 	body := `{
   node(id: 4) {
