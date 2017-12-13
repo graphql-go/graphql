@@ -1334,11 +1334,16 @@ func parseEnumValueDefinition(parser *Parser) (interface{}, error) {
 }
 
 /**
- * InputObjectTypeDefinition : input Name Directives? { InputValueDefinition+ }
+ * InputObjectTypeDefinition :
+ *   - Description? input Name Directives? { InputValueDefinition+ }
  */
 func parseInputObjectTypeDefinition(parser *Parser) (*ast.InputObjectDefinition, error) {
 	start := parser.Token.Start
-	_, err := expectKeyWord(parser, "input")
+	description, err := parseDescription(parser)
+	if err != nil {
+		return nil, err
+	}
+	_, err = expectKeyWord(parser, "input")
 	if err != nil {
 		return nil, err
 	}
@@ -1361,10 +1366,11 @@ func parseInputObjectTypeDefinition(parser *Parser) (*ast.InputObjectDefinition,
 		}
 	}
 	return ast.NewInputObjectDefinition(&ast.InputObjectDefinition{
-		Name:       name,
-		Directives: directives,
-		Loc:        loc(parser, start),
-		Fields:     fields,
+		Name:        name,
+		Description: description,
+		Directives:  directives,
+		Loc:         loc(parser, start),
+		Fields:      fields,
 	}), nil
 }
 

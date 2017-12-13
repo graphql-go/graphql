@@ -440,11 +440,12 @@ func (def *EnumValueDefinition) GetLoc() *Location {
 
 // InputObjectDefinition implements Node, Definition
 type InputObjectDefinition struct {
-	Kind       string
-	Loc        *Location
-	Name       *Name
-	Directives []*Directive
-	Fields     []*InputValueDefinition
+	Kind        string
+	Loc         *Location
+	Name        *Name
+	Description *StringValue
+	Directives  []*Directive
+	Fields      []*InputValueDefinition
 }
 
 func NewInputObjectDefinition(def *InputObjectDefinition) *InputObjectDefinition {
@@ -452,11 +453,12 @@ func NewInputObjectDefinition(def *InputObjectDefinition) *InputObjectDefinition
 		def = &InputObjectDefinition{}
 	}
 	return &InputObjectDefinition{
-		Kind:       kinds.InputObjectDefinition,
-		Loc:        def.Loc,
-		Name:       def.Name,
-		Directives: def.Directives,
-		Fields:     def.Fields,
+		Kind:        kinds.InputObjectDefinition,
+		Loc:         def.Loc,
+		Name:        def.Name,
+		Description: def.Description,
+		Directives:  def.Directives,
+		Fields:      def.Fields,
 	}
 }
 

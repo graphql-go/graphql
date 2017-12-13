@@ -570,6 +570,22 @@ func TestParsesEnumValueDefinitionWithDescription(t *testing.T) {
 	}
 }
 
+func TestParsesInputObjectDefinitionWithDescription(t *testing.T) {
+	source := `
+		"""
+		InputType is indeed a type
+		"""
+		input InputType {
+			key: String!
+			answer: Int = 42
+		}
+	`
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestParseCreatesAst(t *testing.T) {
 	body := `{
   node(id: 4) {
