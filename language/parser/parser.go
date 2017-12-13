@@ -988,11 +988,17 @@ func parseScalarTypeDefinition(parser *Parser) (*ast.ScalarDefinition, error) {
 }
 
 /**
- * ObjectTypeDefinition : type Name ImplementsInterfaces? Directives? { FieldDefinition+ }
+ * ObjectTypeDefinition :
+ *   Description?
+ *   type Name ImplementsInterfaces? Directives? { FieldDefinition+ }
  */
 func parseObjectTypeDefinition(parser *Parser) (*ast.ObjectDefinition, error) {
 	start := parser.Token.Start
-	_, err := expectKeyWord(parser, "type")
+	description, err := parseDescription(parser)
+	if err != nil {
+		return nil, err
+	}
+	_, err = expectKeyWord(parser, "type")
 	if err != nil {
 		return nil, err
 	}
@@ -1019,11 +1025,12 @@ func parseObjectTypeDefinition(parser *Parser) (*ast.ObjectDefinition, error) {
 		}
 	}
 	return ast.NewObjectDefinition(&ast.ObjectDefinition{
-		Name:       name,
-		Loc:        loc(parser, start),
-		Interfaces: interfaces,
-		Directives: directives,
-		Fields:     fields,
+		Name:        name,
+		Description: description,
+		Loc:         loc(parser, start),
+		Interfaces:  interfaces,
+		Directives:  directives,
+		Fields:      fields,
 	}), nil
 }
 

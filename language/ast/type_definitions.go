@@ -148,12 +148,13 @@ func (def *ScalarDefinition) GetOperation() string {
 
 // ObjectDefinition implements Node, Definition
 type ObjectDefinition struct {
-	Kind       string
-	Loc        *Location
-	Name       *Name
-	Interfaces []*Named
-	Directives []*Directive
-	Fields     []*FieldDefinition
+	Kind        string
+	Loc         *Location
+	Name        *Name
+	Description *StringValue
+	Interfaces  []*Named
+	Directives  []*Directive
+	Fields      []*FieldDefinition
 }
 
 func NewObjectDefinition(def *ObjectDefinition) *ObjectDefinition {
@@ -161,12 +162,13 @@ func NewObjectDefinition(def *ObjectDefinition) *ObjectDefinition {
 		def = &ObjectDefinition{}
 	}
 	return &ObjectDefinition{
-		Kind:       kinds.ObjectDefinition,
-		Loc:        def.Loc,
-		Name:       def.Name,
-		Interfaces: def.Interfaces,
-		Directives: def.Directives,
-		Fields:     def.Fields,
+		Kind:        kinds.ObjectDefinition,
+		Loc:         def.Loc,
+		Name:        def.Name,
+		Description: def.Description,
+		Interfaces:  def.Interfaces,
+		Directives:  def.Directives,
+		Fields:      def.Fields,
 	}
 }
 

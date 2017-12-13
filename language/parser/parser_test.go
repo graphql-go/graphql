@@ -462,6 +462,21 @@ func TestParsesScalarWithDescription(t *testing.T) {
 	}
 }
 
+func TestParsesObjectTypeDefinitionWithDescription(t *testing.T) {
+	source := `
+		"""
+		★ Foo ★
+		"""
+		type Foo implements Bar {
+			foo: String!
+		}
+	`
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestParseCreatesAst(t *testing.T) {
 	body := `{
   node(id: 4) {
