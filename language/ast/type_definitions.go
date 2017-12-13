@@ -4,7 +4,13 @@ import (
 	"github.com/graphql-go/graphql/language/kinds"
 )
 
+// DescribableNode are nodes that have descriptions associated with them.
+type DescribableNode interface {
+	GetDescription() *StringValue
+}
+
 type TypeDefinition interface {
+	DescribableNode
 	GetOperation() string
 	GetVariableDefinitions() []*VariableDefinition
 	GetSelectionSet() *SelectionSet
@@ -146,6 +152,10 @@ func (def *ScalarDefinition) GetOperation() string {
 	return ""
 }
 
+func (def *ScalarDefinition) GetDescription() *StringValue {
+	return def.Description
+}
+
 // ObjectDefinition implements Node, Definition
 type ObjectDefinition struct {
 	Kind        string
@@ -196,6 +206,10 @@ func (def *ObjectDefinition) GetOperation() string {
 	return ""
 }
 
+func (def *ObjectDefinition) GetDescription() *StringValue {
+	return def.Description
+}
+
 // FieldDefinition implements Node
 type FieldDefinition struct {
 	Kind        string
@@ -230,6 +244,10 @@ func (def *FieldDefinition) GetLoc() *Location {
 	return def.Loc
 }
 
+func (def *FieldDefinition) GetDescription() *StringValue {
+	return def.Description
+}
+
 // InputValueDefinition implements Node
 type InputValueDefinition struct {
 	Kind         string
@@ -262,6 +280,10 @@ func (def *InputValueDefinition) GetKind() string {
 
 func (def *InputValueDefinition) GetLoc() *Location {
 	return def.Loc
+}
+
+func (def *InputValueDefinition) GetDescription() *StringValue {
+	return def.Description
 }
 
 // InterfaceDefinition implements Node, Definition
@@ -312,6 +334,10 @@ func (def *InterfaceDefinition) GetOperation() string {
 	return ""
 }
 
+func (def *InterfaceDefinition) GetDescription() *StringValue {
+	return def.Description
+}
+
 // UnionDefinition implements Node, Definition
 type UnionDefinition struct {
 	Kind        string
@@ -358,6 +384,10 @@ func (def *UnionDefinition) GetSelectionSet() *SelectionSet {
 
 func (def *UnionDefinition) GetOperation() string {
 	return ""
+}
+
+func (def *UnionDefinition) GetDescription() *StringValue {
+	return def.Description
 }
 
 // EnumDefinition implements Node, Definition
@@ -408,6 +438,10 @@ func (def *EnumDefinition) GetOperation() string {
 	return ""
 }
 
+func (def *EnumDefinition) GetDescription() *StringValue {
+	return def.Description
+}
+
 // EnumValueDefinition implements Node, Definition
 type EnumValueDefinition struct {
 	Kind        string
@@ -436,6 +470,10 @@ func (def *EnumValueDefinition) GetKind() string {
 
 func (def *EnumValueDefinition) GetLoc() *Location {
 	return def.Loc
+}
+
+func (def *EnumValueDefinition) GetDescription() *StringValue {
+	return def.Description
 }
 
 // InputObjectDefinition implements Node, Definition
@@ -484,4 +522,8 @@ func (def *InputObjectDefinition) GetSelectionSet() *SelectionSet {
 
 func (def *InputObjectDefinition) GetOperation() string {
 	return ""
+}
+
+func (def *InputObjectDefinition) GetDescription() *StringValue {
+	return def.Description
 }

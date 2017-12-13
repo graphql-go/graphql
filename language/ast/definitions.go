@@ -241,3 +241,7 @@ func (def *DirectiveDefinition) GetSelectionSet() *SelectionSet {
 func (def *DirectiveDefinition) GetOperation() string {
 	return ""
 }
+
+func (def *DirectiveDefinition) GetDescription() *StringValue {
+	return def.Description
+}
