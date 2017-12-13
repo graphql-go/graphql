@@ -1307,12 +1307,16 @@ func parseEnumTypeDefinition(parser *Parser) (*ast.EnumDefinition, error) {
 }
 
 /**
- * EnumValueDefinition : EnumValue Directives?
+ * EnumValueDefinition : Description? EnumValue Directives?
  *
  * EnumValue : Name
  */
 func parseEnumValueDefinition(parser *Parser) (interface{}, error) {
 	start := parser.Token.Start
+	description, err := parseDescription(parser)
+	if err != nil {
+		return nil, err
+	}
 	name, err := parseName(parser)
 	if err != nil {
 		return nil, err
@@ -1322,9 +1326,10 @@ func parseEnumValueDefinition(parser *Parser) (interface{}, error) {
 		return nil, err
 	}
 	return ast.NewEnumValueDefinition(&ast.EnumValueDefinition{
-		Name:       name,
-		Directives: directives,
-		Loc:        loc(parser, start),
+		Name:        name,
+		Description: description,
+		Directives:  directives,
+		Loc:         loc(parser, start),
 	}), nil
 }
 

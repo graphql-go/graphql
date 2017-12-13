@@ -410,10 +410,11 @@ func (def *EnumDefinition) GetOperation() string {
 
 // EnumValueDefinition implements Node, Definition
 type EnumValueDefinition struct {
-	Kind       string
-	Loc        *Location
-	Name       *Name
-	Directives []*Directive
+	Kind        string
+	Loc         *Location
+	Name        *Name
+	Description *StringValue
+	Directives  []*Directive
 }
 
 func NewEnumValueDefinition(def *EnumValueDefinition) *EnumValueDefinition {
@@ -421,10 +422,11 @@ func NewEnumValueDefinition(def *EnumValueDefinition) *EnumValueDefinition {
 		def = &EnumValueDefinition{}
 	}
 	return &EnumValueDefinition{
-		Kind:       kinds.EnumValueDefinition,
-		Loc:        def.Loc,
-		Name:       def.Name,
-		Directives: def.Directives,
+		Kind:        kinds.EnumValueDefinition,
+		Loc:         def.Loc,
+		Name:        def.Name,
+		Description: def.Description,
+		Directives:  def.Directives,
 	}
 }
 

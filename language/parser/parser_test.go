@@ -553,6 +553,23 @@ func TestParsesEnumDefinitionWithDescription(t *testing.T) {
 	}
 }
 
+func TestParsesEnumValueDefinitionWithDescription(t *testing.T) {
+	source := `
+		enum Site {
+			"description 1"
+			DESKTOP
+			"""
+			description 2
+			"""
+			MOBILE
+		}
+	`
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestParseCreatesAst(t *testing.T) {
 	body := `{
   node(id: 4) {
