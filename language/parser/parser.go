@@ -1118,10 +1118,14 @@ func parseArgumentDefs(parser *Parser) ([]*ast.InputValueDefinition, error) {
 }
 
 /**
- * InputValueDefinition : Name : Type DefaultValue? Directives?
+ * InputValueDefinition : Description? Name : Type DefaultValue? Directives?
  */
 func parseInputValueDef(parser *Parser) (interface{}, error) {
 	start := parser.Token.Start
+	description, err := parseDescription(parser)
+	if err != nil {
+		return nil, err
+	}
 	name, err := parseName(parser)
 	if err != nil {
 		return nil, err
@@ -1152,6 +1156,7 @@ func parseInputValueDef(parser *Parser) (interface{}, error) {
 	}
 	return ast.NewInputValueDefinition(&ast.InputValueDefinition{
 		Name:         name,
+		Description:  description,
 		Type:         ttype,
 		DefaultValue: defaultValue,
 		Directives:   directives,

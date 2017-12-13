@@ -235,6 +235,7 @@ type InputValueDefinition struct {
 	Kind         string
 	Loc          *Location
 	Name         *Name
+	Description  *StringValue
 	Type         Type
 	DefaultValue Value
 	Directives   []*Directive
@@ -248,6 +249,7 @@ func NewInputValueDefinition(def *InputValueDefinition) *InputValueDefinition {
 		Kind:         kinds.InputValueDefinition,
 		Loc:          def.Loc,
 		Name:         def.Name,
+		Description:  def.Description,
 		Type:         def.Type,
 		DefaultValue: def.DefaultValue,
 		Directives:   def.Directives,

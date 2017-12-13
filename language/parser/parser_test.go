@@ -492,6 +492,23 @@ func TestParsesFieldDefinitionWithDescription(t *testing.T) {
 	}
 }
 
+func TestParsesInputValueDefinitionWithDescription(t *testing.T) {
+	source := `
+		type Foo implements Bar {
+			foo(
+				"""
+				input value comment
+				"""
+				bar: String!
+			): String!
+		}
+	`
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestParseCreatesAst(t *testing.T) {
 	body := `{
   node(id: 4) {
