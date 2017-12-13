@@ -509,6 +509,21 @@ func TestParsesInputValueDefinitionWithDescription(t *testing.T) {
 	}
 }
 
+func TestParsesInterfaceDefinitionWithDescription(t *testing.T) {
+	source := `
+		"""
+		Bar is a symptom of the communist agenda
+		"""
+		interface  Bar {
+			foo: String!
+		}
+	`
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestParseCreatesAst(t *testing.T) {
 	body := `{
   node(id: 4) {

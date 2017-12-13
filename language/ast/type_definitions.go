@@ -266,11 +266,12 @@ func (def *InputValueDefinition) GetLoc() *Location {
 
 // InterfaceDefinition implements Node, Definition
 type InterfaceDefinition struct {
-	Kind       string
-	Loc        *Location
-	Name       *Name
-	Directives []*Directive
-	Fields     []*FieldDefinition
+	Kind        string
+	Loc         *Location
+	Name        *Name
+	Description *StringValue
+	Directives  []*Directive
+	Fields      []*FieldDefinition
 }
 
 func NewInterfaceDefinition(def *InterfaceDefinition) *InterfaceDefinition {
@@ -278,11 +279,12 @@ func NewInterfaceDefinition(def *InterfaceDefinition) *InterfaceDefinition {
 		def = &InterfaceDefinition{}
 	}
 	return &InterfaceDefinition{
-		Kind:       kinds.InterfaceDefinition,
-		Loc:        def.Loc,
-		Name:       def.Name,
-		Directives: def.Directives,
-		Fields:     def.Fields,
+		Kind:        kinds.InterfaceDefinition,
+		Loc:         def.Loc,
+		Name:        def.Name,
+		Description: def.Description,
+		Directives:  def.Directives,
+		Fields:      def.Fields,
 	}
 }
 

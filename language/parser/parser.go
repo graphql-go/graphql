@@ -1165,11 +1165,17 @@ func parseInputValueDef(parser *Parser) (interface{}, error) {
 }
 
 /**
- * InterfaceTypeDefinition : interface Name Directives? { FieldDefinition+ }
+ * InterfaceTypeDefinition :
+ *   Description?
+ *   interface Name Directives? { FieldDefinition+ }
  */
 func parseInterfaceTypeDefinition(parser *Parser) (*ast.InterfaceDefinition, error) {
 	start := parser.Token.Start
-	_, err := expectKeyWord(parser, "interface")
+	description, err := parseDescription(parser)
+	if err != nil {
+		return nil, err
+	}
+	_, err = expectKeyWord(parser, "interface")
 	if err != nil {
 		return nil, err
 	}
@@ -1192,10 +1198,11 @@ func parseInterfaceTypeDefinition(parser *Parser) (*ast.InterfaceDefinition, err
 		}
 	}
 	return ast.NewInterfaceDefinition(&ast.InterfaceDefinition{
-		Name:       name,
-		Directives: directives,
-		Loc:        loc(parser, start),
-		Fields:     fields,
+		Name:        name,
+		Description: description,
+		Directives:  directives,
+		Loc:         loc(parser, start),
+		Fields:      fields,
 	}), nil
 }
 
