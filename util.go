@@ -64,6 +64,9 @@ func getGraphType(tipe reflect.Type) Output {
 	case reflect.String:
 		return String
 	case reflect.Int:
+	case reflect.Int8:
+	case reflect.Int32:
+	case reflect.Int64:
 		return Int
 	case reflect.Float32:
 	case reflect.Float64:
