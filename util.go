@@ -64,8 +64,15 @@ func getGraphType(tipe reflect.Type) Output {
 	case reflect.String:
 		return String
 	case reflect.Int:
+		fallthrough
+	case reflect.Int8:
+		fallthrough
+	case reflect.Int32:
+		fallthrough
+	case reflect.Int64:
 		return Int
 	case reflect.Float32:
+		fallthrough
 	case reflect.Float64:
 		return Float
 	case reflect.Bool:
@@ -80,13 +87,17 @@ func getGraphList(tipe reflect.Type) *List {
 	if tipe.Kind() == reflect.Slice {
 		switch tipe.Elem().Kind() {
 		case reflect.Int:
+			fallthrough
 		case reflect.Int8:
+			fallthrough
 		case reflect.Int32:
+			fallthrough
 		case reflect.Int64:
 			return NewList(Int)
 		case reflect.Bool:
 			return NewList(Boolean)
 		case reflect.Float32:
+			fallthrough
 		case reflect.Float64:
 			return NewList(Float)
 		case reflect.String:
