@@ -3,6 +3,8 @@ package lexer
 import (
 	"bytes"
 	"fmt"
+	"regexp"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/graphql-go/graphql/gqlerrors"
@@ -28,6 +30,7 @@ const (
 	INT
 	FLOAT
 	STRING
+	BLOCK_STRING
 )
 
 var TokenKind map[int]int
@@ -54,6 +57,7 @@ func init() {
 	TokenKind[INT] = INT
 	TokenKind[FLOAT] = FLOAT
 	TokenKind[STRING] = STRING
+	TokenKind[BLOCK_STRING] = BLOCK_STRING
 	tokenDescription[TokenKind[EOF]] = "EOF"
 	tokenDescription[TokenKind[BANG]] = "!"
 	tokenDescription[TokenKind[DOLLAR]] = "$"
@@ -72,6 +76,7 @@ func init() {
 	tokenDescription[TokenKind[INT]] = "Int"
 	tokenDescription[TokenKind[FLOAT]] = "Float"
 	tokenDescription[TokenKind[STRING]] = "String"
+	tokenDescription[TokenKind[BLOCK_STRING]] = "BlockString"
 }
 
 // Token is a representation of a lexed Token. Value only appears for non-punctuation
@@ -303,6 +308,138 @@ func readString(s *source.Source, start int) (Token, error) {
 	return makeToken(TokenKind[STRING], start, position+1, value), nil
 }
 
+// readBlockString reads a block string token from the source file.
+//
+// """("?"?(\\"""|\\(?!=""")|[^"\\]))*"""
+func readBlockString(s *source.Source, start int) (Token, error) {
+	body := s.Body
+	position := start + 3
+	runePosition := start + 3
+	chunkStart := position
+	var valueBuffer bytes.Buffer
+
+	for {
+		// Stop if we've reached the end of the buffer
+		if position >= len(body) {
+			break
+		}
+
+		code, n := runeAt(body, position)
+
+		// Closing Triple-Quote (""")
+		if code == '"' {
+			x, _ := runeAt(body, position+1)
+			y, _ := runeAt(body, position+2)
+			if x == '"' && y == '"' {
+				stringContent := body[chunkStart:position]
+				valueBuffer.Write(stringContent)
+				value := blockStringValue(valueBuffer.String())
+				return makeToken(TokenKind[BLOCK_STRING], start, position+3, value), nil
+			}
+		}
+
+		// SourceCharacter
+		if code < 0x0020 &&
+			code != 0x0009 &&
+			code != 0x000a &&
+			code != 0x000d {
+			return Token{}, gqlerrors.NewSyntaxError(s, runePosition, fmt.Sprintf(`Invalid character within String: %v.`, printCharCode(code)))
+		}
+
+		// Escape Triple-Quote (\""")
+		if code == '\\' { // \
+			x, _ := runeAt(body, position+1)
+			y, _ := runeAt(body, position+2)
+			z, _ := runeAt(body, position+3)
+			if x == '"' && y == '"' && z == '"' {
+				stringContent := append(body[chunkStart:position], []byte(`"""`)...)
+				valueBuffer.Write(stringContent)
+				position += 4     // account for `"""` characters
+				runePosition += 4 // "       "   "     "
+				chunkStart = position
+				continue
+			}
+		}
+
+		position += n
+		runePosition++
+	}
+
+	return Token{}, gqlerrors.NewSyntaxError(s, runePosition, "Unterminated string.")
+}
+
+var splitLinesRegex = regexp.MustCompile("\r\n|[\n\r]")
+
+// This implements the GraphQL spec's BlockStringValue() static algorithm.
+//
+// Produces the value of a block string from its parsed raw value, similar to
+// Coffeescript's block string, Python's docstring trim or Ruby's strip_heredoc.
+//
+// Spec: http://facebook.github.io/graphql/draft/#BlockStringValue()
+// Heavily borrows from: https://github.com/graphql/graphql-js/blob/8e0c599ceccfa8c40d6edf3b72ee2a71490b10e0/src/language/blockStringValue.js
+func blockStringValue(in string) string {
+	// Expand a block string's raw value into independent lines.
+	lines := splitLinesRegex.Split(in, -1)
+
+	// Remove common indentation from all lines but first
+	commonIndent := -1
+	for i := 1; i < len(lines); i++ {
+		line := lines[i]
+		indent := leadingWhitespaceLen(line)
+		if indent < len(line) && (commonIndent == -1 || indent < commonIndent) {
+			commonIndent = indent
+			if commonIndent == 0 {
+				break
+			}
+		}
+	}
+	if commonIndent > 0 {
+		for i, line := range lines {
+			if commonIndent > len(line) {
+				continue
+			}
+			lines[i] = line[commonIndent:]
+		}
+	}
+
+	// Remove leading blank lines.
+	for {
+		if isBlank := lineIsBlank(lines[0]); !isBlank {
+			break
+		}
+		lines = lines[1:]
+	}
+
+	// Remove trailing blank lines.
+	for {
+		i := len(lines) - 1
+		if isBlank := lineIsBlank(lines[i]); !isBlank {
+			break
+		}
+		lines = append(lines[:i], lines[i+1:]...)
+	}
+
+	// Return a string of the lines joined with U+000A.
+	return strings.Join(lines, "\n")
+}
+
+// leadingWhitespaceLen returns count of whitespace characters on given line.
+func leadingWhitespaceLen(in string) (n int) {
+	for _, ch := range in {
+		if ch == ' ' || ch == '\t' {
+			n++
+		} else {
+			break
+		}
+	}
+	return
+}
+
+// lineIsBlank returns true when given line has no content.
+func lineIsBlank(in string) bool {
+	return leadingWhitespaceLen(in) == len(in)
+}
+
 // Converts four hexidecimal chars to the integer that the
 // string represents. For example, uniCharCode('0','0','0','f')
 // will return 15, and uniCharCode('0','0','f','f') returns 255.
@@ -425,11 +562,16 @@ func readToken(s *source.Source, fromPosition int) (Token, error) {
 		return token, nil
 	// "
 	case '"':
-		token, err := readString(s, position)
-		if err != nil {
-			return token, err
+		var token Token
+		var err error
+		x, _ := runeAt(body, position+1)
+		y, _ := runeAt(body, position+2)
+		if x == '"' && y == '"' {
+			token, err = readBlockString(s, position)
+		} else {
+			token, err = readString(s, position)
 		}
-		return token, nil
+		return token, err
 	}
 	description := fmt.Sprintf("Unexpected character %v.", printCharCode(code))
 	return Token{}, gqlerrors.NewSyntaxError(s, runePosition, description)
