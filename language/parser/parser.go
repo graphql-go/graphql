@@ -635,6 +635,8 @@ func parseValueLiteral(parser *Parser, isConst bool) (ast.Value, error) {
 			Value: token.Value,
 			Loc:   loc(parser, token.Start),
 		}), nil
+	case lexer.TokenKind[lexer.BLOCK_STRING]:
+		fallthrough
 	case lexer.TokenKind[lexer.STRING]:
 		if err := advance(parser); err != nil {
 			return nil, err
