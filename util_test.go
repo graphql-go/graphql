@@ -19,7 +19,7 @@ type Person struct {
 }
 
 type Human struct {
-	Alive  bool    `json:"alive"`
+	Alive  bool    `json:"alive,omitempty"`
 	Age    int     `json:"age"`
 	Weight float64 `json:"weight"`
 }
@@ -32,6 +32,7 @@ type Friend struct {
 type Address struct {
 	Street string `json:"street"`
 	City   string `json:"city"`
+	Test   string `json:",omitempty"`
 }
 
 var personSource = Person{
@@ -46,7 +47,7 @@ var personSource = Person{
 		City:   "Jakarta",
 	},
 	Friends: friendSource,
-	Hobbies:[]string{"eat","sleep","code"},
+	Hobbies: []string{"eat", "sleep", "code"},
 }
 
 var friendSource = []Friend{
@@ -109,7 +110,7 @@ func TestBindFields(t *testing.T) {
 
 	newPerson := data.Data.Person
 	if !reflect.DeepEqual(newPerson, personSource) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(newPerson, personSource))
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(personSource, newPerson))
 	}
 }
 
