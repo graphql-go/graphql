@@ -21,10 +21,11 @@ func BindFields(obj interface{}) Fields {
 	for i := 0; i < v.NumField(); i++ {
 		typeField := v.Type().Field(i)
 
-		tag := typeField.Tag.Get(TAG)
+		tag := extractTag(typeField.Tag)
 		if tag == "-" {
 			continue
 		}
+
 		var graphType Output
 		if typeField.Type.Kind() == reflect.Struct {
 
@@ -63,8 +64,15 @@ func getGraphType(tipe reflect.Type) Output {
 	case reflect.String:
 		return String
 	case reflect.Int:
+		fallthrough
+	case reflect.Int8:
+		fallthrough
+	case reflect.Int32:
+		fallthrough
+	case reflect.Int64:
 		return Int
 	case reflect.Float32:
+		fallthrough
 	case reflect.Float64:
 		return Float
 	case reflect.Bool:
@@ -79,13 +87,17 @@ func getGraphList(tipe reflect.Type) *List {
 	if tipe.Kind() == reflect.Slice {
 		switch tipe.Elem().Kind() {
 		case reflect.Int:
+			fallthrough
 		case reflect.Int8:
+			fallthrough
 		case reflect.Int32:
+			fallthrough
 		case reflect.Int64:
 			return NewList(Int)
 		case reflect.Bool:
 			return NewList(Boolean)
 		case reflect.Float32:
+			fallthrough
 		case reflect.Float64:
 			return NewList(Float)
 		case reflect.String:
@@ -120,12 +132,20 @@ func extractValue(originTag string, obj interface{}) interface{} {
 				return res
 			}
 		}
-		curTag := typeField.Tag
-		if originTag == curTag.Get(TAG) {
+
+		if originTag == extractTag(typeField.Tag) {
 			return val.Field(j).Interface()
 		}
 	}
 	return nil
+}
+
+func extractTag(tag reflect.StructTag) string {
+	t := tag.Get(TAG)
+	if t != "" {
+		t = strings.Split(t, ",")[0]
+	}
+	return t
 }
 
 // lazy way of binding args
@@ -135,7 +155,7 @@ func BindArg(obj interface{}, tags ...string) FieldConfigArgument {
 	for i := 0; i < v.NumField(); i++ {
 		typeField := v.Type().Field(i)
 
-		mytag := typeField.Tag.Get(TAG)
+		mytag := extractTag(typeField.Tag)
 		if inArray(tags, mytag) {
 			config[mytag] = &ArgumentConfig{
 				Type: getGraphType(typeField.Type),
