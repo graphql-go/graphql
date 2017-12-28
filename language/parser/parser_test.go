@@ -449,6 +449,166 @@ func TestParsesNamedSubscriptionOperations(t *testing.T) {
 	}
 }
 
+func TestParsesFieldDefinitionWithDescription(t *testing.T) {
+	source := `
+		type Foo implements Bar {
+			"""
+			foo is quite the field.
+			"""
+			foo: String!
+		}
+	`
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestParsesInputValueDefinitionWithDescription(t *testing.T) {
+	source := `
+		type Foo implements Bar {
+			foo(
+				"""
+				input value comment
+				"""
+				bar: String!
+			): String!
+		}
+	`
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestParsesEnumValueDefinitionWithDescription(t *testing.T) {
+	source := `
+		enum Site {
+			"description 1"
+			DESKTOP
+			"""
+			description 2
+			"""
+			MOBILE
+		}
+	`
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestDefinitionsWithDescriptions(t *testing.T) {
+	testCases := []struct {
+		name            string
+		source          string
+		expectedComment string
+	}{
+		{
+			name: "directives",
+			source: `
+				"cool skip"
+				directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+			`,
+			expectedComment: "cool skip",
+		},
+		{
+			name: "input",
+			source: `
+				"""
+				InputType is indeed a type
+				"""
+				input InputType {
+					key: String!
+					answer: Int = 42
+				}
+			`,
+			expectedComment: "InputType is indeed a type",
+		},
+		{
+			name: "enum",
+			source: `
+				"""
+				description 2
+				"""
+				enum Site {
+					DESKTOP
+					MOBILE
+				}
+			`,
+			expectedComment: "description 2",
+		},
+		{
+			name: "union",
+			source: `
+				"""
+				Cruft ...
+				"""
+				union Cruft = Foo | Bar
+			`,
+			expectedComment: "Cruft ...",
+		},
+		{
+			name: "interface",
+			source: `
+				"""
+				Bar is a symptom of the communist agenda
+				"""
+				interface  Bar {
+					foo: String!
+				}
+			`,
+			expectedComment: "Bar is a symptom of the communist agenda",
+		},
+		{
+			name: "object",
+			source: `
+				"""
+				★ Foo ★
+				"""
+				type Foo implements Bar {
+					foo: String!
+				}
+			`,
+			expectedComment: "★ Foo ★",
+		},
+		{
+			name: "scalar",
+			source: `
+				"""
+				Returns RFC666; includes timezone offset.
+				"""
+				scalar TimeWithZone
+			`,
+			expectedComment: "Returns RFC666; includes timezone offset.",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("%s may have comments", tc.name), func(t *testing.T) {
+			doc, err := Parse(ParseParams{Source: tc.source})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if doc == nil {
+				t.Fatal("no document was returned")
+			}
+			for _, def := range doc.Definitions {
+				fmt.Printf("%#v\n", def)
+			}
+			if node, ok := doc.Definitions[0].(ast.DescribableNode); !ok {
+				t.Fatalf("unexpected node received %#v", doc.Definitions[0])
+			} else if node.GetDescription().Value != tc.expectedComment {
+				t.Fatalf(
+					"parsed description '%s' does not match '%s'",
+					node.GetDescription().Value,
+					tc.expectedComment,
+				)
+			}
+		})
+	}
+}
+
 func TestParseCreatesAst(t *testing.T) {
 	body := `{
   node(id: 4) {
