@@ -431,6 +431,7 @@ func (gt *Object) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	switch gt.typeConfig.Fields.(type) {
 	case Fields:
 		gt.typeConfig.Fields.(Fields)[fieldName] = fieldConfig
+		gt.initialisedFields = false
 	}
 }
 func (gt *Object) Name() string {
@@ -760,6 +761,7 @@ func (it *Interface) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	switch it.typeConfig.Fields.(type) {
 	case Fields:
 		it.typeConfig.Fields.(Fields)[fieldName] = fieldConfig
+		it.initialisedFields = false
 	}
 }
 
