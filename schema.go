@@ -288,10 +288,10 @@ func typeMapReducer(schema *Schema, typeMap TypeMap, objectType Type) (TypeMap, 
 	}
 
 	if mappedObjectType, ok := typeMap[objectType.Name()]; ok {
-		err := invariant(
+		err = invariantf(
 			mappedObjectType == objectType,
-			fmt.Sprintf(`Schema must contain unique named types but contains multiple types named "%v".`, objectType.Name()),
-		)
+			`Schema must contain unique named types but contains multiple types named "%v".`, objectType.Name())
+
 		if err != nil {
 			return typeMap, err
 		}
@@ -408,11 +408,11 @@ func assertObjectImplementsInterface(schema *Schema, object *Object, iface *Inte
 		ifaceField := ifaceFieldMap[fieldName]
 
 		// Assert interface field exists on object.
-		err := invariant(
+		err := invariantf(
 			objectField != nil,
-			fmt.Sprintf(`"%v" expects field "%v" but "%v" does not `+
-				`provide it.`, iface, fieldName, object),
-		)
+			`"%v" expects field "%v" but "%v" does not `+
+				`provide it.`, iface, fieldName, object)
+
 		if err != nil {
 			return err
 		}
