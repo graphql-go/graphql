@@ -467,3 +467,10 @@ func invariant(condition bool, message string) error {
 	}
 	return nil
 }
+
+func invariantf(condition bool, format string, a ...interface{}) error {
+	if !condition {
+		return gqlerrors.NewFormattedError(fmt.Sprintf(format, a...))
+	}
+	return nil
+}
