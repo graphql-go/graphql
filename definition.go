@@ -365,9 +365,11 @@ type Object struct {
 	PrivateDescription string `json:"description"`
 	IsTypeOf           IsTypeOfFn
 
-	typeConfig ObjectConfig
-	fields     FieldDefinitionMap
-	interfaces []*Interface
+	typeConfig            ObjectConfig
+	initialisedFields     bool
+	fields                FieldDefinitionMap
+	initialisedInterfaces bool
+	interfaces            []*Interface
 	// Interim alternative to throwing an error during schema definition at run-time
 	err error
 }
@@ -429,6 +431,7 @@ func (gt *Object) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	switch gt.typeConfig.Fields.(type) {
 	case Fields:
 		gt.typeConfig.Fields.(Fields)[fieldName] = fieldConfig
+		gt.initialisedFields = false
 	}
 }
 func (gt *Object) Name() string {
@@ -441,6 +444,10 @@ func (gt *Object) String() string {
 	return gt.PrivateName
 }
 func (gt *Object) Fields() FieldDefinitionMap {
+	if gt.initialisedFields {
+		return gt.fields
+	}
+
 	var configureFields Fields
 	switch gt.typeConfig.Fields.(type) {
 	case Fields:
@@ -448,13 +455,19 @@ func (gt *Object) Fields() FieldDefinitionMap {
 	case FieldsThunk:
 		configureFields = gt.typeConfig.Fields.(FieldsThunk)()
 	}
+
 	fields, err := defineFieldMap(gt, configureFields)
 	gt.err = err
 	gt.fields = fields
+	gt.initialisedFields = true
 	return gt.fields
 }
 
 func (gt *Object) Interfaces() []*Interface {
+	if gt.initialisedInterfaces {
+		return gt.interfaces
+	}
+
 	var configInterfaces []*Interface
 	switch gt.typeConfig.Interfaces.(type) {
 	case InterfacesThunk:
@@ -463,14 +476,18 @@ func (gt *Object) Interfaces() []*Interface {
 		configInterfaces = gt.typeConfig.Interfaces.([]*Interface)
 	case nil:
 	default:
-		gt.err = fmt.Errorf("Unknown Object.Interfaces type: %v", reflect.TypeOf(gt.typeConfig.Interfaces))
+		gt.err = fmt.Errorf("Unknown Object.Interfaces type: %T", gt.typeConfig.Interfaces)
+		gt.initialisedInterfaces = true
 		return nil
 	}
+
 	interfaces, err := defineInterfaces(gt, configInterfaces)
 	gt.err = err
 	gt.interfaces = interfaces
+	gt.initialisedInterfaces = true
 	return gt.interfaces
 }
+
 func (gt *Object) Error() error {
 	return gt.err
 }
@@ -507,15 +524,7 @@ func defineInterfaces(ttype *Object, interfaces []*Interface) ([]*Interface, err
 	return ifaces, nil
 }
 
-func defineFieldMap(ttype Named, fields interface{}) (FieldDefinitionMap, error) {
-	var fieldMap Fields
-	switch fields.(type) {
-	case Fields:
-		fieldMap = fields.(Fields)
-	case FieldsThunk:
-		fieldMap = fields.(FieldsThunk)()
-	}
-
+func defineFieldMap(ttype Named, fieldMap Fields) (FieldDefinitionMap, error) {
 	resultFieldMap := FieldDefinitionMap{}
 
 	err := invariant(
@@ -695,9 +704,10 @@ type Interface struct {
 	PrivateDescription string `json:"description"`
 	ResolveType        ResolveTypeFn
 
-	typeConfig InterfaceConfig
-	fields     FieldDefinitionMap
-	err        error
+	typeConfig        InterfaceConfig
+	initialisedFields bool
+	fields            FieldDefinitionMap
+	err               error
 }
 type InterfaceConfig struct {
 	Name        string      `json:"name"`
@@ -751,15 +761,23 @@ func (it *Interface) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	switch it.typeConfig.Fields.(type) {
 	case Fields:
 		it.typeConfig.Fields.(Fields)[fieldName] = fieldConfig
+		it.initialisedFields = false
 	}
 }
+
 func (it *Interface) Name() string {
 	return it.PrivateName
 }
+
 func (it *Interface) Description() string {
 	return it.PrivateDescription
 }
+
 func (it *Interface) Fields() (fields FieldDefinitionMap) {
+	if it.initialisedFields {
+		return it.fields
+	}
+
 	var configureFields Fields
 	switch it.typeConfig.Fields.(type) {
 	case Fields:
@@ -767,14 +785,18 @@ func (it *Interface) Fields() (fields FieldDefinitionMap) {
 	case FieldsThunk:
 		configureFields = it.typeConfig.Fields.(FieldsThunk)()
 	}
+
 	fields, err := defineFieldMap(it, configureFields)
 	it.err = err
 	it.fields = fields
+	it.initialisedFields = true
 	return it.fields
 }
+
 func (it *Interface) String() string {
 	return it.PrivateName
 }
+
 func (it *Interface) Error() error {
 	return it.err
 }
