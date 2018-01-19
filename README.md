@@ -1,6 +1,8 @@
 # graphql [![Build Status](https://travis-ci.org/graphql-go/graphql.svg)](https://travis-ci.org/graphql-go/graphql) [![GoDoc](https://godoc.org/graphql.co/graphql?status.svg)](https://godoc.org/github.com/graphql-go/graphql) [![Coverage Status](https://coveralls.io/repos/graphql-go/graphql/badge.svg?branch=master&service=github)](https://coveralls.io/github/graphql-go/graphql?branch=master) [![Join the chat at https://gitter.im/graphql-go/graphql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/graphql-go/graphql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-A *work-in-progress* implementation of GraphQL in Go. Its currently a port of `graphql-js` [v0.6.0](https://github.com/graphql/graphql-js/releases/tag/v0.6.0) which is based on the [April 2016](https://github.com/facebook/graphql/releases/tag/April2016) GraphQL specification. Future efforts will be guided directly by the [latest formal GraphQL specification](https://github.com/facebook/graphql/releases) (currently: [October 2016](https://github.com/facebook/graphql/releases/tag/October2016)).
+An implementation of GraphQL in Go. Follows the official reference implementation [`graphql-js`](https://github.com/graphql/graphql-js).
+
+Supports: queries, mutations & subscriptions.
 
 ### Documentation
 
