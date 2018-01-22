@@ -1,6 +1,7 @@
 package gqlerrors
 
 import (
+	"encoding/json"
 	"errors"
 
 	"github.com/graphql-go/graphql/language/location"
@@ -8,14 +9,22 @@ import (
 
 // FormattedError contains user and machine readable, formatted error messages.
 type FormattedError struct {
-	Message   string                    `json:"message"`
-	Locations []location.SourceLocation `json:"locations"`
-	Type      string                    `json:"type,omitempty"`
+	Message    string                    `json:"message"`
+	Locations  []location.SourceLocation `json:"locations"`
+	Extensions ErrorExtensions           `json:"-"`
 }
 
-// ErrorType describes the type of the error. For example "NOT_FOUND" might be
-// an error type the server wants to communicate to the client.
-type ErrorType string
+// MarshalJSON implements custom JSON marshaling for the `FormattedError` type
+// in order to place the `ErrorExtensions` at the top level.
+func (g FormattedError) MarshalJSON() ([]byte, error) {
+	m := map[string]interface{}{}
+	for k, v := range g.Extensions {
+		m[k] = v
+	}
+	m["message"] = g.Message
+	m["locations"] = g.Locations
+	return json.Marshal(m)
+}
 
 // FormattedErrorType is an interface that can be implemented by the underlying
 // error that is passed to `FormatError` (or `FormatErrors`). If the error
@@ -36,34 +45,37 @@ func NewFormattedError(message string) FormattedError {
 	return FormatError(err)
 }
 
+// NewFormattedErrorWithExtensions creates a new formatted error from a string
+// with the given extensions.
+func NewFormattedErrorWithExtensions(message string,
+	extensions ErrorExtensions,
+) FormattedError {
+	err := FormatError(errors.New(message))
+	err.Extensions = extensions
+	return err
+}
+
 // FormatError from a plain error type.
 func FormatError(err error) FormattedError {
-	var errorType string
-	formattedErrorType, isFormattedErrorType := err.(FormattedErrorType)
-	if isFormattedErrorType {
-		errorType = formattedErrorType.ErrorType()
-	}
-
 	switch err := err.(type) {
 	case FormattedError:
 		return err
 	case *Error:
 		return FormattedError{
-			Message:   err.Error(),
-			Locations: err.Locations,
-			Type:      errorType,
+			Message:    err.Error(),
+			Locations:  err.Locations,
+			Extensions: err.Extensions,
 		}
 	case Error:
 		return FormattedError{
-			Message:   err.Error(),
-			Locations: err.Locations,
-			Type:      errorType,
+			Message:    err.Error(),
+			Locations:  err.Locations,
+			Extensions: err.Extensions,
 		}
 	default:
 		return FormattedError{
 			Message:   err.Error(),
 			Locations: []location.SourceLocation{},
-			Type:      errorType,
 		}
 	}
 }
