@@ -2,6 +2,7 @@ package graphql
 
 import (
 	"fmt"
+	"sync"
 )
 
 type SchemaConfig struct {
@@ -43,12 +44,14 @@ type Schema struct {
 	subscriptionType *Object
 	implementations  map[string][]*Object
 	possibleTypeMap  map[string]map[string]bool
+
+	mu *sync.Mutex
 }
 
 func NewSchema(config SchemaConfig) (Schema, error) {
 	var err error
 
-	schema := Schema{}
+	schema := Schema{mu: &sync.Mutex{}}
 
 	if err = invariant(config.Query != nil, "Schema query must be Object Type but got: nil."); err != nil {
 		return schema, err
@@ -219,14 +222,31 @@ func (gq *Schema) Directive(name string) *Directive {
 }
 
 func (gq *Schema) TypeMap() TypeMap {
-	return gq.typeMap
+	gq.mu.Lock()
+	defer gq.mu.Unlock()
+	ret := make(TypeMap, len(gq.typeMap))
+	for k, v := range gq.typeMap {
+		ret[k] = v
+	}
+	return ret
 }
 
 func (gq *Schema) Type(name string) Type {
-	return gq.TypeMap()[name]
+	gq.mu.Lock()
+	defer gq.mu.Unlock()
+	ret := gq.typeMap[name]
+	return ret
 }
 
 func (gq *Schema) PossibleTypes(abstractType Abstract) []*Object {
+	return gq.possibleTypes(true, abstractType)
+}
+
+func (gq *Schema) possibleTypes(lock bool, abstractType Abstract) []*Object {
+	if lock {
+		gq.mu.Lock()
+		defer gq.mu.Unlock()
+	}
 	switch abstractType := abstractType.(type) {
 	case *Union:
 		return abstractType.Types()
@@ -237,21 +257,25 @@ func (gq *Schema) PossibleTypes(abstractType Abstract) []*Object {
 	}
 	return []*Object{}
 }
+
 func (gq *Schema) IsPossibleType(abstractType Abstract, possibleType *Object) bool {
+	gq.mu.Lock()
+	defer gq.mu.Unlock()
 	possibleTypeMap := gq.possibleTypeMap
 	if possibleTypeMap == nil {
 		possibleTypeMap = map[string]map[string]bool{}
+		gq.possibleTypeMap = possibleTypeMap
 	}
 
 	if typeMap, ok := possibleTypeMap[abstractType.Name()]; !ok {
 		typeMap = map[string]bool{}
-		for _, possibleType := range gq.PossibleTypes(abstractType) {
+		for _, possibleType := range gq.possibleTypes(false, abstractType) {
 			typeMap[possibleType.Name()] = true
 		}
 		possibleTypeMap[abstractType.Name()] = typeMap
+		gq.possibleTypeMap = possibleTypeMap
 	}
 
-	gq.possibleTypeMap = possibleTypeMap
 	if typeMap, ok := possibleTypeMap[abstractType.Name()]; ok {
 		isPossible, _ := typeMap[possibleType.Name()]
 		return isPossible
@@ -259,7 +283,6 @@ func (gq *Schema) IsPossibleType(abstractType Abstract, possibleType *Object) bo
 	return false
 }
 
-// map-reduce
 func typeMapReducer(schema *Schema, typeMap TypeMap, objectType Type) (TypeMap, error) {
 	var err error
 	if objectType == nil || objectType.Name() == "" {

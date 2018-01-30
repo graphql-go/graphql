@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"sync"
 
 	"github.com/graphql-go/graphql/language/ast"
 )
@@ -888,7 +889,8 @@ type Enum struct {
 	valuesLookup map[interface{}]*EnumValueDefinition
 	nameLookup   map[string]*EnumValueDefinition
 
-	err error
+	once sync.Once
+	err  error
 }
 type EnumValueConfigMap map[string]*EnumValueConfig
 type EnumValueConfig struct {
@@ -1008,27 +1010,28 @@ func (gt *Enum) String() string {
 func (gt *Enum) Error() error {
 	return gt.err
 }
-func (gt *Enum) getValueLookup() map[interface{}]*EnumValueDefinition {
-	if len(gt.valuesLookup) > 0 {
-		return gt.valuesLookup
-	}
+
+func (gt *Enum) init() {
 	valuesLookup := map[interface{}]*EnumValueDefinition{}
 	for _, value := range gt.Values() {
 		valuesLookup[value.Value] = value
 	}
 	gt.valuesLookup = valuesLookup
-	return gt.valuesLookup
-}
 
-func (gt *Enum) getNameLookup() map[string]*EnumValueDefinition {
-	if len(gt.nameLookup) > 0 {
-		return gt.nameLookup
-	}
 	nameLookup := map[string]*EnumValueDefinition{}
 	for _, value := range gt.Values() {
 		nameLookup[value.Name] = value
 	}
 	gt.nameLookup = nameLookup
+}
+
+func (gt *Enum) getValueLookup() map[interface{}]*EnumValueDefinition {
+	gt.once.Do(gt.init)
+	return gt.valuesLookup
+}
+
+func (gt *Enum) getNameLookup() map[string]*EnumValueDefinition {
+	gt.once.Do(gt.init)
 	return gt.nameLookup
 }
 

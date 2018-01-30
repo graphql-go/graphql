@@ -62,8 +62,8 @@ func Execute(p ExecuteParams) (result *Result) {
 				if r, ok := r.(error); ok {
 					err = gqlerrors.FormatError(r)
 				}
-				exeContext.Errors = append(exeContext.Errors, gqlerrors.FormatError(err))
-				result.Errors = exeContext.Errors
+				exeContext.addError(gqlerrors.FormatError(err))
+				result.Errors = exeContext.Errors()
 				select {
 				case out <- result:
 				case <-done:
@@ -110,16 +110,22 @@ type executionContext struct {
 	Root           interface{}
 	Operation      ast.Definition
 	VariableValues map[string]interface{}
-	Errors         []gqlerrors.FormattedError
 	Context        context.Context
 
+	errors      []gqlerrors.FormattedError
 	errorsMutex sync.Mutex
 }
 
-func (eCtx *executionContext) addError(err gqlerrors.FormattedError) {
+func (eCtx *executionContext) addError(gqlErrors ...gqlerrors.FormattedError) {
 	eCtx.errorsMutex.Lock()
 	defer eCtx.errorsMutex.Unlock()
-	eCtx.Errors = append(eCtx.Errors, err)
+	eCtx.errors = append(eCtx.errors, gqlErrors...)
+}
+
+func (eCtx *executionContext) Errors() []gqlerrors.FormattedError {
+	eCtx.errorsMutex.Lock()
+	defer eCtx.errorsMutex.Unlock()
+	return eCtx.errors
 }
 
 func buildExecutionContext(p buildExecutionCtxParams) (*executionContext, error) {
@@ -164,7 +170,7 @@ func buildExecutionContext(p buildExecutionCtxParams) (*executionContext, error)
 	eCtx.Root = p.Root
 	eCtx.Operation = operation
 	eCtx.VariableValues = variableValues
-	eCtx.Errors = p.Errors
+	eCtx.addError(p.Errors...)
 	eCtx.Context = p.Context
 	return eCtx, nil
 }
@@ -275,7 +281,7 @@ func executeFieldsSerially(p executeFieldsParams) *Result {
 
 	return &Result{
 		Data:   finalResults,
-		Errors: p.ExecutionContext.Errors,
+		Errors: p.ExecutionContext.Errors(),
 	}
 }
 
@@ -326,7 +332,7 @@ func executeFields(p executeFieldsParams) *Result {
 
 	return &Result{
 		Data:   finalResults,
-		Errors: p.ExecutionContext.Errors,
+		Errors: p.ExecutionContext.Errors(),
 	}
 }
 
