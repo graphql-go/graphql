@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"runtime/debug"
 	"strings"
 
 	"github.com/graphql-go/graphql/gqlerrors"
@@ -61,7 +62,9 @@ func Execute(p ExecuteParams) (result *Result) {
 				if r, ok := r.(error); ok {
 					err = gqlerrors.FormatError(r)
 				}
-				exeContext.Errors = append(exeContext.Errors, gqlerrors.FormatError(err))
+				formattedErr := gqlerrors.FormatError(err)
+				formattedErr.StackTrace = string(debug.Stack())
+				exeContext.Errors = append(exeContext.Errors, formattedErr)
 				result.Errors = exeContext.Errors
 				select {
 				case out <- result:
