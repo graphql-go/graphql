@@ -1,18 +1,22 @@
 package gqlerrors
 
 import (
-	"errors"
-
 	"github.com/graphql-go/graphql/language/location"
+	"github.com/pkg/errors"
 )
 
 type FormattedError struct {
 	Message   string                    `json:"message"`
 	Locations []location.SourceLocation `json:"locations"`
+	cause     error
 }
 
 func (g FormattedError) Error() string {
 	return g.Message
+}
+
+func (g FormattedError) Cause() error {
+	return g.cause
 }
 
 func NewFormattedError(message string) FormattedError {
@@ -38,6 +42,7 @@ func FormatError(err error) FormattedError {
 		return FormattedError{
 			Message:   err.Error(),
 			Locations: []location.SourceLocation{},
+			cause:     err,
 		}
 	}
 }

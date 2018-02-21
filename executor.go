@@ -2,13 +2,13 @@ package graphql
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
+	"github.com/pkg/errors"
 )
 
 type ExecuteParams struct {
