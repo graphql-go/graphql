@@ -3,7 +3,6 @@ package graphql_test
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"testing"
@@ -13,6 +12,7 @@ import (
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/location"
 	"github.com/graphql-go/graphql/testutil"
+	"github.com/pkg/errors"
 )
 
 func TestExecutesArbitraryCode(t *testing.T) {
@@ -205,9 +205,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestMergesParallelFragments(t *testing.T) {
@@ -292,9 +290,7 @@ func TestMergesParallelFragments(t *testing.T) {
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestThreadsSourceCorrectly(t *testing.T) {
@@ -451,9 +447,7 @@ func TestThreadsRootValueContextCorrectly(t *testing.T) {
 			"a": "stringValue",
 		},
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestThreadsContextCorrectly(t *testing.T) {
@@ -498,9 +492,7 @@ func TestThreadsContextCorrectly(t *testing.T) {
 			"a": "bar",
 		},
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestNullsOutErrorSubtrees(t *testing.T) {
@@ -612,9 +604,7 @@ func TestUsesTheInlineOperationIfNoOperationNameIsProvided(t *testing.T) {
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestUsesTheOnlyOperationIfNoOperationNameIsProvided(t *testing.T) {
@@ -657,9 +647,7 @@ func TestUsesTheOnlyOperationIfNoOperationNameIsProvided(t *testing.T) {
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestUsesTheNamedOperationIfOperationNameIsProvided(t *testing.T) {
@@ -702,9 +690,7 @@ func TestUsesTheNamedOperationIfOperationNameIsProvided(t *testing.T) {
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestThrowsIfNoOperationIsProvided(t *testing.T) {
@@ -751,10 +737,9 @@ func TestThrowsIfNoOperationIsProvided(t *testing.T) {
 	if result.Data != nil {
 		t.Fatalf("wrong result, expected nil result.Data, got %v", result.Data)
 	}
-	if !reflect.DeepEqual(expectedErrors, result.Errors) {
-		t.Fatalf("unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
-	}
+	testutil.EqualFormattedErrorsSlice(t, expectedErrors, result.Errors)
 }
+
 func TestThrowsIfNoOperationNameIsProvidedWithMultipleOperations(t *testing.T) {
 
 	doc := `query Example { a } query OtherExample { a }`
@@ -799,9 +784,7 @@ func TestThrowsIfNoOperationNameIsProvidedWithMultipleOperations(t *testing.T) {
 	if result.Data != nil {
 		t.Fatalf("wrong result, expected nil result.Data, got %v", result.Data)
 	}
-	if !reflect.DeepEqual(expectedErrors, result.Errors) {
-		t.Fatalf("unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
-	}
+	testutil.EqualFormattedErrorsSlice(t, expectedErrors, result.Errors)
 }
 
 func TestThrowsIfUnknownOperationNameIsProvided(t *testing.T) {
@@ -846,9 +829,7 @@ func TestThrowsIfUnknownOperationNameIsProvided(t *testing.T) {
 	if result.Data != nil {
 		t.Fatalf("wrong result, expected nil result.Data, got %v", result.Data)
 	}
-	if !reflect.DeepEqual(expectedErrors, result.Errors) {
-		t.Fatalf("unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
-	}
+	testutil.EqualFormattedErrorsSlice(t, expectedErrors, result.Errors)
 }
 func TestUsesTheQuerySchemaForQueries(t *testing.T) {
 
@@ -908,9 +889,7 @@ func TestUsesTheQuerySchemaForQueries(t *testing.T) {
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestUsesTheMutationSchemaForMutations(t *testing.T) {
@@ -963,9 +942,7 @@ func TestUsesTheMutationSchemaForMutations(t *testing.T) {
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestUsesTheSubscriptionSchemaForSubscriptions(t *testing.T) {
@@ -1018,9 +995,7 @@ func TestUsesTheSubscriptionSchemaForSubscriptions(t *testing.T) {
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
@@ -1091,9 +1066,7 @@ func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 
 	// TODO: test to ensure key ordering
 	// The following does not work
@@ -1158,9 +1131,7 @@ func TestAvoidsRecursion(t *testing.T) {
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 
 }
 
@@ -1208,9 +1179,7 @@ func TestDoesNotIncludeIllegalFieldsInOutput(t *testing.T) {
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, expected len(%v) errors, got len(%v)", len(expected.Errors), len(result.Errors))
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
@@ -1270,9 +1239,7 @@ func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 type testSpecialType struct {
@@ -1357,9 +1324,7 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 	if len(result.Errors) == 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
@@ -1405,9 +1370,7 @@ func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
 	if len(result.Errors) != 1 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestQuery_ExecutionAddsErrorsFromFieldResolveFn(t *testing.T) {
@@ -1739,7 +1702,5 @@ func TestContextDeadline(t *testing.T) {
 	if !result.HasErrors() || len(result.Errors) == 0 {
 		t.Fatalf("Result should include errors when deadline is exceeded")
 	}
-	if !reflect.DeepEqual(expectedErrors, result.Errors) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
-	}
+	testutil.EqualFormattedErrorsSlice(t, expectedErrors, result.Errors)
 }

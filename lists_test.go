@@ -1,7 +1,6 @@
 package graphql_test
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/graphql-go/graphql"
@@ -50,10 +49,7 @@ func checkList(t *testing.T, testType graphql.Type, testData interface{}, expect
 	if len(expected.Errors) != len(result.Errors) {
 		t.Fatalf("wrong result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
-
+	testutil.EqualResults(t, expected, result)
 }
 
 // Describe [T] Array<T>

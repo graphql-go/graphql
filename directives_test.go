@@ -1,7 +1,6 @@
 package graphql_test
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/graphql-go/graphql"
@@ -60,9 +59,7 @@ func TestDirectives_DirectivesMustBeNamed(t *testing.T) {
 		Message:   "Directive must be named.",
 		Locations: []location.SourceLocation{},
 	}
-	if !reflect.DeepEqual(expectedErr, err) {
-		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, err))
-	}
+	testutil.EqualFormattedErrors(t, expectedErr, err)
 }
 
 func TestDirectives_DirectiveNameMustBeValid(t *testing.T) {
@@ -87,9 +84,7 @@ func TestDirectives_DirectiveNameMustBeValid(t *testing.T) {
 		Message:   `Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "123invalid name" does not.`,
 		Locations: []location.SourceLocation{},
 	}
-	if !reflect.DeepEqual(expectedErr, err) {
-		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, err))
-	}
+	testutil.EqualFormattedErrors(t, expectedErr, err)
 }
 
 func TestDirectives_DirectiveNameMustProvideLocations(t *testing.T) {
@@ -111,9 +106,7 @@ func TestDirectives_DirectiveNameMustProvideLocations(t *testing.T) {
 		Message:   `Must provide locations for directive.`,
 		Locations: []location.SourceLocation{},
 	}
-	if !reflect.DeepEqual(expectedErr, err) {
-		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, err))
-	}
+	testutil.EqualFormattedErrors(t, expectedErr, err)
 }
 
 func TestDirectives_DirectiveArgNamesMustBeValid(t *testing.T) {
@@ -148,9 +141,7 @@ func TestDirectives_DirectiveArgNamesMustBeValid(t *testing.T) {
 		Message:   `Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "123if" does not.`,
 		Locations: []location.SourceLocation{},
 	}
-	if !reflect.DeepEqual(expectedErr, err) {
-		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, err))
-	}
+	testutil.EqualFormattedErrors(t, expectedErr, err)
 }
 
 func TestDirectivesWorksWithoutDirectives(t *testing.T) {
@@ -165,9 +156,7 @@ func TestDirectivesWorksWithoutDirectives(t *testing.T) {
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksOnScalarsIfTrueIncludesScalar(t *testing.T) {
@@ -182,9 +171,7 @@ func TestDirectivesWorksOnScalarsIfTrueIncludesScalar(t *testing.T) {
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksOnScalarsIfFalseOmitsOnScalar(t *testing.T) {
@@ -198,9 +185,7 @@ func TestDirectivesWorksOnScalarsIfFalseOmitsOnScalar(t *testing.T) {
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksOnScalarsUnlessFalseIncludesScalar(t *testing.T) {
@@ -215,9 +200,7 @@ func TestDirectivesWorksOnScalarsUnlessFalseIncludesScalar(t *testing.T) {
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksOnScalarsUnlessTrueOmitsScalar(t *testing.T) {
@@ -231,9 +214,7 @@ func TestDirectivesWorksOnScalarsUnlessTrueOmitsScalar(t *testing.T) {
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksOnFragmentSpreadsIfFalseOmitsFragmentSpread(t *testing.T) {
@@ -255,9 +236,7 @@ func TestDirectivesWorksOnFragmentSpreadsIfFalseOmitsFragmentSpread(t *testing.T
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksOnFragmentSpreadsIfTrueIncludesFragmentSpread(t *testing.T) {
@@ -280,9 +259,7 @@ func TestDirectivesWorksOnFragmentSpreadsIfTrueIncludesFragmentSpread(t *testing
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksOnFragmentSpreadsUnlessFalseIncludesFragmentSpread(t *testing.T) {
@@ -305,9 +282,7 @@ func TestDirectivesWorksOnFragmentSpreadsUnlessFalseIncludesFragmentSpread(t *te
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksOnFragmentSpreadsUnlessTrueOmitsFragmentSpread(t *testing.T) {
@@ -329,9 +304,7 @@ func TestDirectivesWorksOnFragmentSpreadsUnlessTrueOmitsFragmentSpread(t *testin
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksOnInlineFragmentIfFalseOmitsInlineFragment(t *testing.T) {
@@ -352,9 +325,7 @@ func TestDirectivesWorksOnInlineFragmentIfFalseOmitsInlineFragment(t *testing.T)
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksOnInlineFragmentIfTrueIncludesInlineFragment(t *testing.T) {
@@ -376,9 +347,7 @@ func TestDirectivesWorksOnInlineFragmentIfTrueIncludesInlineFragment(t *testing.
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksOnInlineFragmentUnlessFalseIncludesInlineFragment(t *testing.T) {
@@ -400,9 +369,7 @@ func TestDirectivesWorksOnInlineFragmentUnlessFalseIncludesInlineFragment(t *tes
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksOnInlineFragmentUnlessTrueIncludesInlineFragment(t *testing.T) {
@@ -423,9 +390,7 @@ func TestDirectivesWorksOnInlineFragmentUnlessTrueIncludesInlineFragment(t *test
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksOnAnonymousInlineFragmentIfFalseOmitsAnonymousInlineFragment(t *testing.T) {
@@ -446,9 +411,7 @@ func TestDirectivesWorksOnAnonymousInlineFragmentIfFalseOmitsAnonymousInlineFrag
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksOnAnonymousInlineFragmentIfTrueIncludesAnonymousInlineFragment(t *testing.T) {
@@ -470,9 +433,7 @@ func TestDirectivesWorksOnAnonymousInlineFragmentIfTrueIncludesAnonymousInlineFr
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksOnAnonymousInlineFragmentUnlessFalseIncludesAnonymousInlineFragment(t *testing.T) {
@@ -494,9 +455,7 @@ func TestDirectivesWorksOnAnonymousInlineFragmentUnlessFalseIncludesAnonymousInl
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksOnAnonymousInlineFragmentUnlessTrueIncludesAnonymousInlineFragment(t *testing.T) {
@@ -517,9 +476,7 @@ func TestDirectivesWorksOnAnonymousInlineFragmentUnlessTrueIncludesAnonymousInli
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksWithSkipAndIncludeDirectives_IncludeAndNoSkip(t *testing.T) {
@@ -534,9 +491,7 @@ func TestDirectivesWorksWithSkipAndIncludeDirectives_IncludeAndNoSkip(t *testing
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksWithSkipAndIncludeDirectives_IncludeAndSkip(t *testing.T) {
@@ -550,9 +505,7 @@ func TestDirectivesWorksWithSkipAndIncludeDirectives_IncludeAndSkip(t *testing.T
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksWithSkipAndIncludeDirectives_NoIncludeAndSkip(t *testing.T) {
@@ -566,9 +519,7 @@ func TestDirectivesWorksWithSkipAndIncludeDirectives_NoIncludeAndSkip(t *testing
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }
 
 func TestDirectivesWorksWithSkipAndIncludeDirectives_NoIncludeOrSkip(t *testing.T) {
@@ -582,7 +533,5 @@ func TestDirectivesWorksWithSkipAndIncludeDirectives_NoIncludeOrSkip(t *testing.
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
-	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
-	}
+	testutil.EqualResults(t, expected, result)
 }

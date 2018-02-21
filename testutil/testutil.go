@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
 )
@@ -465,4 +466,49 @@ func ContainSubset(super map[string]interface{}, sub map[string]interface{}) boo
 
 func EqualErrorMessage(expected, result *graphql.Result, i int) bool {
 	return expected.Errors[i].Message == result.Errors[i].Message
+}
+
+func EqualFormattedErrorsSlice(t *testing.T, expected, actual []gqlerrors.FormattedError) {
+	if len(expected) != len(actual) {
+		t.Fatalf("Result errors length difference, expected %d, actual %d", len(expected), len(actual))
+	}
+	for i := range expected {
+		EqualFormattedErrors(t, expected[i], actual[i])
+	}
+}
+
+func EqualFormattedErrors(t *testing.T, expected, actual interface{}) {
+	var exp, act gqlerrors.FormattedError
+	var ok bool
+	if exp, ok = expected.(gqlerrors.FormattedError); !ok {
+		t.Fatalf("Expected error is not a gqlerrors.FormattedError but a %T", expected)
+	}
+	if act, ok = actual.(gqlerrors.FormattedError); !ok {
+		t.Fatalf("Actual error is not a gqlerrors.FormattedError but a %T", expected)
+	}
+	if exp.Message != act.Message {
+		t.Fatalf("Message mismatch, Diff: %v", Diff(exp.Message, act.Message))
+	}
+	if !reflect.DeepEqual(exp.Locations, act.Locations) {
+		t.Fatalf("Locations mismatch, Diff: %v", Diff(exp.Locations, act.Locations))
+	}
+}
+
+func EqualResults(t *testing.T, expected, result *graphql.Result) {
+	if !reflect.DeepEqual(expected.Data, result.Data) {
+		t.Fatalf("Result data mismatch, Diff: %v", Diff(expected.Data, result.Data))
+	}
+	if len(expected.Errors) != len(result.Errors) {
+		t.Fatalf("Result errors length difference, expected %d, actual %d", len(expected.Errors), len(result.Errors))
+	}
+	for i := range expected.Errors {
+		exp := expected.Errors[i]
+		act := result.Errors[i]
+		if exp.Message != act.Message {
+			t.Fatalf("Result error %d message mismatch, Diff: %v", i, Diff(exp.Message, act.Message))
+		}
+		if !reflect.DeepEqual(exp.Locations, act.Locations) {
+			t.Fatalf("Result error %d locations mismatch, Diff: %v", i, Diff(exp.Locations, act.Locations))
+		}
+	}
 }
