@@ -1691,6 +1691,70 @@ func TestGraphqlTag(t *testing.T) {
 	}
 }
 
+func TestFieldResolver(t *testing.T) {
+	typeObjectType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Type",
+		Fields: graphql.Fields{
+			"fooBar": &graphql.Field{Type: graphql.String},
+		},
+	})
+	var baz = &graphql.Field{
+		Type:        typeObjectType,
+		Description: "typeObjectType",
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			return testCustomResolver{}, nil
+		},
+	}
+	var bazPtr = &graphql.Field{
+		Type:        typeObjectType,
+		Description: "typeObjectType",
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			return &testCustomResolver{}, nil
+		},
+	}
+	q := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Query",
+		Fields: graphql.Fields{
+			"baz":    baz,
+			"bazPtr": bazPtr,
+		},
+	})
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: q,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error, got: %v", err)
+	}
+	query := "{ baz { fooBar }, bazPtr { fooBar } }"
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+	})
+	if len(result.Errors) != 0 {
+		t.Fatalf("wrong result, unexpected errors: %+v", result.Errors)
+	}
+	expectedData := map[string]interface{}{
+		"baz": map[string]interface{}{
+			"fooBar": "foo bar value",
+		},
+		"bazPtr": map[string]interface{}{
+			"fooBar": "foo bar value",
+		},
+	}
+	if !reflect.DeepEqual(result.Data, expectedData) {
+		t.Fatalf("unexpected result, got: %+v, expected: %+v", result.Data, expectedData)
+	}
+}
+
+type testCustomResolver struct{}
+
+func (r testCustomResolver) Resolve(p graphql.ResolveParams) (interface{}, error) {
+	if p.Info.FieldName == "fooBar" {
+		return "foo bar value", nil
+	}
+	return "", errors.New("invalid field " + p.Info.FieldName)
+}
+
 func TestContextDeadline(t *testing.T) {
 	timeout := time.Millisecond * time.Duration(100)
 	acceptableDelay := time.Millisecond * time.Duration(10)
