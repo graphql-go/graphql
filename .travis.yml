@@ -17,5 +17,5 @@ before_install:
   - go get github.com/pkg/errors
 
 script:
-  - $HOME/gopath/bin/goveralls -service=travis-ci
+  - $HOME/gopath/bin/goveralls -race -service=travis-ci
   - go vet ./...
