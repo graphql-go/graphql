@@ -631,9 +631,9 @@ type Field struct {
 	Name              string              `json:"name"` // used by graphlql-relay
 	Type              Output              `json:"type"`
 	Args              FieldConfigArgument `json:"args"`
-	Resolve           FieldResolveFn
-	DeprecationReason string `json:"deprecationReason"`
-	Description       string `json:"description"`
+	Resolve           FieldResolveFn      `json:"-"`
+	DeprecationReason string              `json:"deprecationReason"`
+	Description       string              `json:"description"`
 }
 
 type FieldConfigArgument map[string]*ArgumentConfig
