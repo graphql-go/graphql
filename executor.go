@@ -821,6 +821,12 @@ func defaultResolveTypeFn(p ResolveTypeParams, abstractType Abstract) *Object {
 	return nil
 }
 
+// FieldResolver is used in DefaultResolveFn when the the source value implements this interface.
+type FieldResolver interface {
+	// Resolve resolves the value for the given ResolveParams. It has the same semantics as FieldResolveFn.
+	Resolve(p ResolveParams) (interface{}, error)
+}
+
 // defaultResolveFn If a resolve function is not given, then a default resolve behavior is used
 // which takes the property of the source object of the same name as the field
 // and returns it as the result, or if it's a function, returns the result
@@ -834,6 +840,12 @@ func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 	if !sourceVal.IsValid() {
 		return nil, nil
 	}
+
+	// Check if value implements 'Resolver' interface
+	if resolver, ok := sourceVal.Interface().(FieldResolver); ok {
+		return resolver.Resolve(p)
+	}
+
 	if sourceVal.Type().Kind() == reflect.Struct {
 		for i := 0; i < sourceVal.NumField(); i++ {
 			valueField := sourceVal.Field(i)
