@@ -7,8 +7,9 @@ import (
 )
 
 type FormattedError struct {
-	Message   string                    `json:"message"`
-	Locations []location.SourceLocation `json:"locations"`
+	Message       string                    `json:"message"`
+	Locations     []location.SourceLocation `json:"locations"`
+	OriginalError error                     `json:"-"`
 }
 
 func (g FormattedError) Error() string {
@@ -26,18 +27,21 @@ func FormatError(err error) FormattedError {
 		return err
 	case *Error:
 		return FormattedError{
-			Message:   err.Error(),
-			Locations: err.Locations,
+			Message:       err.Error(),
+			Locations:     err.Locations,
+			OriginalError: err,
 		}
 	case Error:
 		return FormattedError{
-			Message:   err.Error(),
-			Locations: err.Locations,
+			Message:       err.Error(),
+			Locations:     err.Locations,
+			OriginalError: err,
 		}
 	default:
 		return FormattedError{
-			Message:   err.Error(),
-			Locations: []location.SourceLocation{},
+			Message:       err.Error(),
+			Locations:     []location.SourceLocation{},
+			OriginalError: err,
 		}
 	}
 }
