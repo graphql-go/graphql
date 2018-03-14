@@ -3,6 +3,7 @@ language: go
 go:
   - 1.8.x
   - 1.9.x
+  - 1.10.x
   - tip
 
 matrix:
@@ -15,5 +16,5 @@ before_install:
   - go get github.com/mattn/goveralls
 
 script:
-  - $HOME/gopath/bin/goveralls -service=travis-ci
+  - $HOME/gopath/bin/goveralls -race -service=travis-ci
   - go vet ./...
