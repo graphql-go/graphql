@@ -144,11 +144,9 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 	return schema, nil
 }
 
-
-
 //Added Check implementation of interfaces at runtime..
 //Add Implementations at Runtime..
-func (gq *Schema) AddImplementation() error{
+func (gq *Schema) AddImplementation() error {
 
 	// Keep track of all implementations by interface name.
 	if gq.implementations == nil {
@@ -182,10 +180,9 @@ func (gq *Schema) AddImplementation() error{
 	return nil
 }
 
-
 //Edited. To check add Types at RunTime..
 //Append Runtime schema to typeMap
-func (gq *Schema)AppendType(objectType Type) error  {
+func (gq *Schema) AppendType(objectType Type) error {
 	if objectType.Error() != nil {
 		return objectType.Error()
 	}
@@ -197,9 +194,6 @@ func (gq *Schema)AppendType(objectType Type) error  {
 	//Now Add interface implementation..
 	return gq.AddImplementation()
 }
-
-
-
 
 func (gq *Schema) QueryType() *Object {
 	return gq.queryType
