@@ -57,32 +57,24 @@ func NewDirective(config DirectiveConfig) *Directive {
 	dir := &Directive{}
 
 	// Ensure directive is named
-	err := invariant(config.Name != "", "Directive must be named.")
-	if err != nil {
-		dir.err = err
+	if dir.err = invariant(config.Name != "", "Directive must be named."); dir.err != nil {
 		return dir
 	}
 
 	// Ensure directive name is valid
-	err = assertValidName(config.Name)
-	if err != nil {
-		dir.err = err
+	if dir.err = assertValidName(config.Name); dir.err != nil {
 		return dir
 	}
 
 	// Ensure locations are provided for directive
-	err = invariant(len(config.Locations) > 0, "Must provide locations for directive.")
-	if err != nil {
-		dir.err = err
+	if dir.err = invariant(len(config.Locations) > 0, "Must provide locations for directive."); dir.err != nil {
 		return dir
 	}
 
 	args := []*Argument{}
 
 	for argName, argConfig := range config.Args {
-		err := assertValidName(argName)
-		if err != nil {
-			dir.err = err
+		if dir.err = assertValidName(argName); dir.err != nil {
 			return dir
 		}
 		args = append(args, &Argument{
