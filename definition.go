@@ -43,38 +43,22 @@ var _ Input = (*NonNull)(nil)
 
 // IsInputType determines if given type is a GraphQLInputType
 func IsInputType(ttype Type) bool {
-	named := GetNamed(ttype)
-	if _, ok := named.(*Scalar); ok {
+	switch GetNamed(ttype).(type) {
+	case *Scalar, *Enum, *InputObject:
 		return true
+	default:
+		return false
 	}
-	if _, ok := named.(*Enum); ok {
-		return true
-	}
-	if _, ok := named.(*InputObject); ok {
-		return true
-	}
-	return false
 }
 
 // IsOutputType determines if given type is a GraphQLOutputType
 func IsOutputType(ttype Type) bool {
-	name := GetNamed(ttype)
-	if _, ok := name.(*Scalar); ok {
+	switch GetNamed(ttype).(type) {
+	case *Scalar, *Object, *Interface, *Union, *Enum:
 		return true
+	default:
+		return false
 	}
-	if _, ok := name.(*Object); ok {
-		return true
-	}
-	if _, ok := name.(*Interface); ok {
-		return true
-	}
-	if _, ok := name.(*Union); ok {
-		return true
-	}
-	if _, ok := name.(*Enum); ok {
-		return true
-	}
-	return false
 }
 
 // Leaf interface for types that may be leaf values
@@ -91,14 +75,12 @@ var _ Leaf = (*Enum)(nil)
 
 // IsLeafType determines if given type is a leaf value
 func IsLeafType(ttype Type) bool {
-	named := GetNamed(ttype)
-	if _, ok := named.(*Scalar); ok {
+	switch GetNamed(ttype).(type) {
+	case *Scalar, *Enum:
 		return true
+	default:
+		return false
 	}
-	if _, ok := named.(*Enum); ok {
-		return true
-	}
-	return false
 }
 
 // Output interface for types that may be used as output types as the result of fields.
@@ -131,16 +113,12 @@ var _ Composite = (*Union)(nil)
 
 // IsCompositeType determines if given type is a GraphQLComposite type
 func IsCompositeType(ttype interface{}) bool {
-	if _, ok := ttype.(*Object); ok {
+	switch ttype.(type) {
+	case *Object, *Interface, *Union:
 		return true
+	default:
+		return false
 	}
-	if _, ok := ttype.(*Interface); ok {
-		return true
-	}
-	if _, ok := ttype.(*Union); ok {
-		return true
-	}
-	return false
 }
 
 // Abstract interface for types that may describe the parent context of a selection set.
@@ -152,13 +130,12 @@ var _ Abstract = (*Interface)(nil)
 var _ Abstract = (*Union)(nil)
 
 func IsAbstractType(ttype interface{}) bool {
-	if _, ok := ttype.(*Interface); ok {
+	switch ttype.(type) {
+	case *Interface, *Union:
 		return true
+	default:
+		return false
 	}
-	if _, ok := ttype.(*Union); ok {
-		return true
-	}
-	return false
 }
 
 // Nullable interface for types that can accept null as a value.
@@ -197,17 +174,15 @@ var _ Named = (*InputObject)(nil)
 func GetNamed(ttype Type) Named {
 	unmodifiedType := ttype
 	for {
-		if ttype, ok := unmodifiedType.(*List); ok {
-			unmodifiedType = ttype.OfType
-			continue
+		switch typ := unmodifiedType.(type) {
+		case *List:
+			unmodifiedType = typ.OfType
+		case *NonNull:
+			unmodifiedType = typ.OfType
+		default:
+			return unmodifiedType
 		}
-		if ttype, ok := unmodifiedType.(*NonNull); ok {
-			unmodifiedType = ttype.OfType
-			continue
-		}
-		break
 	}
-	return unmodifiedType
 }
 
 // Scalar Type Definition
