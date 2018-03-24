@@ -431,9 +431,7 @@ func (gt *Object) Fields() FieldDefinitionMap {
 		configureFields = gt.typeConfig.Fields.(FieldsThunk)()
 	}
 
-	fields, err := defineFieldMap(gt, configureFields)
-	gt.err = err
-	gt.fields = fields
+	gt.fields, gt.err = defineFieldMap(gt, configureFields)
 	gt.initialisedFields = true
 	return gt.fields
 }
@@ -456,9 +454,7 @@ func (gt *Object) Interfaces() []*Interface {
 		return nil
 	}
 
-	interfaces, err := defineInterfaces(gt, configInterfaces)
-	gt.err = err
-	gt.interfaces = interfaces
+	gt.interfaces, gt.err = defineInterfaces(gt, configInterfaces)
 	gt.initialisedInterfaces = true
 	return gt.interfaces
 }
@@ -524,8 +520,7 @@ func defineFieldMap(ttype Named, fieldMap Fields) (FieldDefinitionMap, error) {
 		if field.Type.Error() != nil {
 			return resultFieldMap, field.Type.Error()
 		}
-		err = assertValidName(fieldName)
-		if err != nil {
+		if err = assertValidName(fieldName); err != nil {
 			return resultFieldMap, err
 		}
 		fieldDef := &FieldDefinition{
@@ -538,22 +533,19 @@ func defineFieldMap(ttype Named, fieldMap Fields) (FieldDefinitionMap, error) {
 
 		fieldDef.Args = []*Argument{}
 		for argName, arg := range field.Args {
-			err := assertValidName(argName)
-			if err != nil {
+			if err = assertValidName(argName); err != nil {
 				return resultFieldMap, err
 			}
-			err = invariantf(
+			if err = invariantf(
 				arg != nil,
 				`%v.%v args must be an object with argument names as keys.`, ttype, fieldName,
-			)
-			if err != nil {
+			); err != nil {
 				return resultFieldMap, err
 			}
-			err = invariantf(
+			if err = invariantf(
 				arg.Type != nil,
 				`%v.%v(%v:) argument type must be Input Type but got: %v.`, ttype, fieldName, argName, arg.Type,
-			)
-			if err != nil {
+			); err != nil {
 				return resultFieldMap, err
 			}
 			fieldArg := &Argument{
@@ -711,14 +703,10 @@ type ResolveTypeFn func(p ResolveTypeParams) *Object
 func NewInterface(config InterfaceConfig) *Interface {
 	it := &Interface{}
 
-	err := invariant(config.Name != "", "Type must be named.")
-	if err != nil {
-		it.err = err
+	if it.err = invariant(config.Name != "", "Type must be named."); it.err != nil {
 		return it
 	}
-	err = assertValidName(config.Name)
-	if err != nil {
-		it.err = err
+	if it.err = assertValidName(config.Name); it.err != nil {
 		return it
 	}
 	it.PrivateName = config.Name
@@ -761,9 +749,7 @@ func (it *Interface) Fields() (fields FieldDefinitionMap) {
 		configureFields = it.typeConfig.Fields.(FieldsThunk)()
 	}
 
-	fields, err := defineFieldMap(it, configureFields)
-	it.err = err
-	it.fields = fields
+	it.fields, it.err = defineFieldMap(it, configureFields)
 	it.initialisedFields = true
 	return it.fields
 }
@@ -817,47 +803,37 @@ type UnionConfig struct {
 func NewUnion(config UnionConfig) *Union {
 	objectType := &Union{}
 
-	err := invariant(config.Name != "", "Type must be named.")
-	if err != nil {
-		objectType.err = err
+	if objectType.err = invariant(config.Name != "", "Type must be named."); objectType.err != nil {
 		return objectType
 	}
-	err = assertValidName(config.Name)
-	if err != nil {
-		objectType.err = err
+	if objectType.err = assertValidName(config.Name); objectType.err != nil {
 		return objectType
 	}
 	objectType.PrivateName = config.Name
 	objectType.PrivateDescription = config.Description
 	objectType.ResolveType = config.ResolveType
 
-	err = invariantf(
+	if objectType.err = invariantf(
 		len(config.Types) > 0,
 		`Must provide Array of types for Union %v.`, config.Name,
-	)
-	if err != nil {
-		objectType.err = err
+	); objectType.err != nil {
 		return objectType
 	}
 	for _, ttype := range config.Types {
-		err := invariantf(
+		if objectType.err = invariantf(
 			ttype != nil,
 			`%v may only contain Object types, it cannot contain: %v.`, objectType, ttype,
-		)
-		if err != nil {
-			objectType.err = err
+		); objectType.err != nil {
 			return objectType
 		}
 		if objectType.ResolveType == nil {
-			err = invariantf(
+			if objectType.err = invariantf(
 				ttype.IsTypeOf != nil,
 				`Union Type %v does not provide a "resolveType" function `+
 					`and possible Type %v does not provide a "isTypeOf" `+
 					`function. There is no way to resolve this possible type `+
 					`during execution.`, objectType, ttype,
-			)
-			if err != nil {
-				objectType.err = err
+			); objectType.err != nil {
 				return objectType
 			}
 		}
@@ -936,44 +912,38 @@ func NewEnum(config EnumConfig) *Enum {
 	gt := &Enum{}
 	gt.enumConfig = config
 
-	err := assertValidName(config.Name)
-	if err != nil {
-		gt.err = err
+	if gt.err = assertValidName(config.Name); gt.err != nil {
 		return gt
 	}
 
 	gt.PrivateName = config.Name
 	gt.PrivateDescription = config.Description
-	gt.values, err = gt.defineEnumValues(config.Values)
-	if err != nil {
-		gt.err = err
+	if gt.values, gt.err = gt.defineEnumValues(config.Values); gt.err != nil {
 		return gt
 	}
 
 	return gt
 }
 func (gt *Enum) defineEnumValues(valueMap EnumValueConfigMap) ([]*EnumValueDefinition, error) {
+	var err error
 	values := []*EnumValueDefinition{}
 
-	err := invariantf(
+	if err = invariantf(
 		len(valueMap) > 0,
 		`%v values must be an object with value names as keys.`, gt,
-	)
-	if err != nil {
+	); err != nil {
 		return values, err
 	}
 
 	for valueName, valueConfig := range valueMap {
-		err := invariantf(
+		if err = invariantf(
 			valueConfig != nil,
 			`%v.%v must refer to an object with a "value" key `+
 				`representing an internal value but got: %v.`, gt, valueName, valueConfig,
-		)
-		if err != nil {
+		); err != nil {
 			return values, err
 		}
-		err = assertValidName(valueName)
-		if err != nil {
+		if err = assertValidName(valueName); err != nil {
 			return values, err
 		}
 		value := &EnumValueDefinition{
@@ -1105,7 +1075,6 @@ func (st *InputObjectField) Name() string {
 }
 func (st *InputObjectField) Description() string {
 	return st.PrivateDescription
-
 }
 func (st *InputObjectField) String() string {
 	return st.PrivateName
@@ -1125,9 +1094,7 @@ type InputObjectConfig struct {
 
 func NewInputObject(config InputObjectConfig) *InputObject {
 	gt := &InputObject{}
-	err := invariant(config.Name != "", "Type must be named.")
-	if err != nil {
-		gt.err = err
+	if gt.err = invariant(config.Name != "", "Type must be named."); gt.err != nil {
 		return gt
 	}
 
@@ -1139,7 +1106,10 @@ func NewInputObject(config InputObjectConfig) *InputObject {
 }
 
 func (gt *InputObject) defineFieldMap() InputObjectFieldMap {
-	var fieldMap InputObjectConfigFieldMap
+	var (
+		fieldMap InputObjectConfigFieldMap
+		err      error
+	)
 	switch gt.typeConfig.Fields.(type) {
 	case InputObjectConfigFieldMap:
 		fieldMap = gt.typeConfig.Fields.(InputObjectConfigFieldMap)
@@ -1148,12 +1118,10 @@ func (gt *InputObject) defineFieldMap() InputObjectFieldMap {
 	}
 	resultFieldMap := InputObjectFieldMap{}
 
-	err := invariantf(
+	if gt.err = invariantf(
 		len(fieldMap) > 0,
 		`%v fields must be an object with field names as keys or a function which return such an object.`, gt,
-	)
-	if err != nil {
-		gt.err = err
+	); gt.err != nil {
 		return resultFieldMap
 	}
 
@@ -1161,16 +1129,13 @@ func (gt *InputObject) defineFieldMap() InputObjectFieldMap {
 		if fieldConfig == nil {
 			continue
 		}
-		err := assertValidName(fieldName)
-		if err != nil {
+		if err = assertValidName(fieldName); err != nil {
 			continue
 		}
-		err = invariantf(
+		if gt.err = invariantf(
 			fieldConfig.Type != nil,
 			`%v.%v field type must be Input Type but got: %v.`, gt, fieldName, fieldConfig.Type,
-		)
-		if err != nil {
-			gt.err = err
+		); err != nil {
 			return resultFieldMap
 		}
 		field := &InputObjectField{}
@@ -1228,9 +1193,8 @@ type List struct {
 func NewList(ofType Type) *List {
 	gl := &List{}
 
-	err := invariantf(ofType != nil, `Can only create List of a Type but got: %v.`, ofType)
-	if err != nil {
-		gl.err = err
+	gl.err = invariantf(ofType != nil, `Can only create List of a Type but got: %v.`, ofType)
+	if gl.err != nil {
 		return gl
 	}
 
@@ -1281,9 +1245,8 @@ func NewNonNull(ofType Type) *NonNull {
 	gl := &NonNull{}
 
 	_, isOfTypeNonNull := ofType.(*NonNull)
-	err := invariantf(ofType != nil && !isOfTypeNonNull, `Can only create NonNull of a Nullable Type but got: %v.`, ofType)
-	if err != nil {
-		gl.err = err
+	gl.err = invariantf(ofType != nil && !isOfTypeNonNull, `Can only create NonNull of a Nullable Type but got: %v.`, ofType)
+	if gl.err != nil {
 		return gl
 	}
 	gl.OfType = ofType
