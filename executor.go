@@ -851,7 +851,7 @@ func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 			valueField := sourceVal.Field(i)
 			typeField := sourceVal.Type().Field(i)
 			// try matching the field name first
-			if typeField.Name == p.Info.FieldName {
+			if strings.EqualFold(typeField.Name, p.Info.FieldName) {
 				return valueField.Interface(), nil
 			}
 			tag := typeField.Tag
