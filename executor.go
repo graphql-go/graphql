@@ -832,18 +832,18 @@ type FieldResolver interface {
 // and returns it as the result, or if it's a function, returns the result
 // of calling that function.
 func DefaultResolveFn(p ResolveParams) (interface{}, error) {
-	// try to resolve p.Source as a struct first
 	sourceVal := reflect.ValueOf(p.Source)
+	// Check if value implements 'Resolver' interface
+	if resolver, ok := sourceVal.Interface().(FieldResolver); ok {
+		return resolver.Resolve(p)
+	}
+
+	// try to resolve p.Source as a struct
 	if sourceVal.IsValid() && sourceVal.Type().Kind() == reflect.Ptr {
 		sourceVal = sourceVal.Elem()
 	}
 	if !sourceVal.IsValid() {
 		return nil, nil
-	}
-
-	// Check if value implements 'Resolver' interface
-	if resolver, ok := sourceVal.Interface().(FieldResolver); ok {
-		return resolver.Resolve(p)
 	}
 
 	if sourceVal.Type().Kind() == reflect.Struct {
