@@ -158,9 +158,7 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
 				}
 				nodes = append(nodes, node)
 			default:
-				if err := unexpected(parser, lexer.Token{}); err != nil {
-					return nil, err
-				}
+				return nil, unexpected(parser, lexer.Token{})
 			}
 		} else if peekDescription(parser) {
 			node, err := parseTypeSystemDefinition(parser)
@@ -169,9 +167,7 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
 			}
 			nodes = append(nodes, node)
 		} else {
-			if err := unexpected(parser, lexer.Token{}); err != nil {
-				return nil, err
-			}
+			return nil, unexpected(parser, lexer.Token{})
 		}
 	}
 	return ast.NewDocument(&ast.Document{
@@ -640,10 +636,8 @@ func parseValueLiteral(parser *Parser, isConst bool) (ast.Value, error) {
 			return parseVariable(parser)
 		}
 	}
-	if err := unexpected(parser, lexer.Token{}); err != nil {
-		return nil, err
-	}
-	return nil, nil
+
+	return nil, unexpected(parser, lexer.Token{})
 }
 
 func parseConstValue(parser *Parser) (interface{}, error) {
@@ -1570,10 +1564,8 @@ func expectKeyWord(parser *Parser, value string) (lexer.Token, error) {
 // Helper function for creating an error when an unexpected lexed token
 // is encountered.
 func unexpected(parser *Parser, atToken lexer.Token) error {
-	var token lexer.Token
+	var token = atToken
 	if (atToken == lexer.Token{}) {
-		token = parser.Token
-	} else {
 		token = parser.Token
 	}
 	description := fmt.Sprintf("Unexpected %v", lexer.GetTokenDesc(token))
