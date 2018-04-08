@@ -254,7 +254,10 @@ func parseOperationType(parser *Parser) (string, error) {
 func parseVariableDefinitions(parser *Parser) ([]*ast.VariableDefinition, error) {
 	variableDefinitions := []*ast.VariableDefinition{}
 	if peek(parser, lexer.TokenKind[lexer.PAREN_L]) {
-		vdefs, err := many(parser, lexer.TokenKind[lexer.PAREN_L], parseVariableDefinition, lexer.TokenKind[lexer.PAREN_R])
+		vdefs, err := reverse(parser,
+			lexer.TokenKind[lexer.PAREN_L], parseVariableDefinition, lexer.TokenKind[lexer.PAREN_R],
+			true,
+		)
 		for _, vdef := range vdefs {
 			if vdef != nil {
 				variableDefinitions = append(variableDefinitions, vdef.(*ast.VariableDefinition))
@@ -327,7 +330,10 @@ func parseVariable(parser *Parser) (*ast.Variable, error) {
  */
 func parseSelectionSet(parser *Parser) (*ast.SelectionSet, error) {
 	start := parser.Token.Start
-	iSelections, err := many(parser, lexer.TokenKind[lexer.BRACE_L], parseSelection, lexer.TokenKind[lexer.BRACE_R])
+	iSelections, err := reverse(parser,
+		lexer.TokenKind[lexer.BRACE_L], parseSelection, lexer.TokenKind[lexer.BRACE_R],
+		true,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -378,11 +384,9 @@ func parseField(parser *Parser) (*ast.Field, error) {
 		return nil, err
 	} else if skp {
 		alias = nameOrAlias
-		n, err := parseName(parser)
-		if err != nil {
+		if name, err = parseName(parser); err != nil {
 			return nil, err
 		}
-		name = n
 	} else {
 		name = nameOrAlias
 	}
@@ -418,7 +422,10 @@ func parseField(parser *Parser) (*ast.Field, error) {
 func parseArguments(parser *Parser) ([]*ast.Argument, error) {
 	arguments := []*ast.Argument{}
 	if peek(parser, lexer.TokenKind[lexer.PAREN_L]) {
-		iArguments, err := many(parser, lexer.TokenKind[lexer.PAREN_L], parseArgument, lexer.TokenKind[lexer.PAREN_R])
+		iArguments, err := reverse(parser,
+			lexer.TokenKind[lexer.PAREN_L], parseArgument, lexer.TokenKind[lexer.PAREN_R],
+			true,
+		)
 		if err != nil {
 			return arguments, err
 		}
@@ -665,7 +672,10 @@ func parseList(parser *Parser, isConst bool) (*ast.ListValue, error) {
 	} else {
 		item = parseValueValue
 	}
-	iValues, err := any(parser, lexer.TokenKind[lexer.BRACKET_L], item, lexer.TokenKind[lexer.BRACKET_R])
+	iValues, err := reverse(parser,
+		lexer.TokenKind[lexer.BRACKET_L], item, lexer.TokenKind[lexer.BRACKET_R],
+		false,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -908,11 +918,10 @@ func parseSchemaDefinition(parser *Parser) (*ast.SchemaDefinition, error) {
 	if err != nil {
 		return nil, err
 	}
-	operationTypesI, err := many(
+	operationTypesI, err := reverse(
 		parser,
-		lexer.TokenKind[lexer.BRACE_L],
-		parseOperationTypeDefinition,
-		lexer.TokenKind[lexer.BRACE_R],
+		lexer.TokenKind[lexer.BRACE_L], parseOperationTypeDefinition, lexer.TokenKind[lexer.BRACE_R],
+		true,
 	)
 	if err != nil {
 		return nil, err
@@ -1008,7 +1017,10 @@ func parseObjectTypeDefinition(parser *Parser) (*ast.ObjectDefinition, error) {
 	if err != nil {
 		return nil, err
 	}
-	iFields, err := any(parser, lexer.TokenKind[lexer.BRACE_L], parseFieldDefinition, lexer.TokenKind[lexer.BRACE_R])
+	iFields, err := reverse(parser,
+		lexer.TokenKind[lexer.BRACE_L], parseFieldDefinition, lexer.TokenKind[lexer.BRACE_R],
+		false,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1099,7 +1111,10 @@ func parseArgumentDefs(parser *Parser) ([]*ast.InputValueDefinition, error) {
 	if !peek(parser, lexer.TokenKind[lexer.PAREN_L]) {
 		return inputValueDefinitions, nil
 	}
-	iInputValueDefinitions, err := many(parser, lexer.TokenKind[lexer.PAREN_L], parseInputValueDef, lexer.TokenKind[lexer.PAREN_R])
+	iInputValueDefinitions, err := reverse(parser,
+		lexer.TokenKind[lexer.PAREN_L], parseInputValueDef, lexer.TokenKind[lexer.PAREN_R],
+		true,
+	)
 	if err != nil {
 		return inputValueDefinitions, err
 	}
@@ -1181,7 +1196,10 @@ func parseInterfaceTypeDefinition(parser *Parser) (*ast.InterfaceDefinition, err
 	if err != nil {
 		return nil, err
 	}
-	iFields, err := any(parser, lexer.TokenKind[lexer.BRACE_L], parseFieldDefinition, lexer.TokenKind[lexer.BRACE_R])
+	iFields, err := reverse(parser,
+		lexer.TokenKind[lexer.BRACE_L], parseFieldDefinition, lexer.TokenKind[lexer.BRACE_R],
+		false,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1281,7 +1299,10 @@ func parseEnumTypeDefinition(parser *Parser) (*ast.EnumDefinition, error) {
 	if err != nil {
 		return nil, err
 	}
-	iEnumValueDefs, err := any(parser, lexer.TokenKind[lexer.BRACE_L], parseEnumValueDefinition, lexer.TokenKind[lexer.BRACE_R])
+	iEnumValueDefs, err := reverse(parser,
+		lexer.TokenKind[lexer.BRACE_L], parseEnumValueDefinition, lexer.TokenKind[lexer.BRACE_R],
+		false,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1349,7 +1370,10 @@ func parseInputObjectTypeDefinition(parser *Parser) (*ast.InputObjectDefinition,
 	if err != nil {
 		return nil, err
 	}
-	iInputValueDefinitions, err := any(parser, lexer.TokenKind[lexer.BRACE_L], parseInputValueDef, lexer.TokenKind[lexer.BRACE_R])
+	iInputValueDefinitions, err := reverse(parser,
+		lexer.TokenKind[lexer.BRACE_L], parseInputValueDef, lexer.TokenKind[lexer.BRACE_R],
+		false,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1572,46 +1596,25 @@ func unexpected(parser *Parser, atToken lexer.Token) error {
 	return gqlerrors.NewSyntaxError(parser.Source, token.Start, description)
 }
 
-//  Returns a possibly empty list of parse nodes, determined by
-// the parseFn. This list begins with a lex token of openKind
-// and ends with a lex token of closeKind. Advances the parser
-// to the next lex token after the closing token.
-func any(parser *Parser, openKind int, parseFn parseFn, closeKind int) ([]interface{}, error) {
-	var nodes []interface{}
-	_, err := expect(parser, openKind)
-	if err != nil {
-		return nodes, nil
-	}
-	for {
-		if skp, err := skip(parser, closeKind); err != nil {
-			return nil, err
-		} else if skp {
-			break
-		}
-		n, err := parseFn(parser)
-		if err != nil {
-			return nodes, err
-		}
-		nodes = append(nodes, n)
-	}
-	return nodes, nil
+func unexpectedEmpty(parser *Parser, beginLoc int, openKind, closeKind int) error {
+	description := fmt.Sprintf("Unexpected empty IN %s%s",
+		lexer.GetTokenKindDesc(openKind),
+		lexer.GetTokenKindDesc(closeKind),
+	)
+	return gqlerrors.NewSyntaxError(parser.Source, beginLoc, description)
 }
 
-//  Returns a non-empty list of parse nodes, determined by
+//  Returns list of parse nodes, determined by
 // the parseFn. This list begins with a lex token of openKind
 // and ends with a lex token of closeKind. Advances the parser
 // to the next lex token after the closing token.
-func many(parser *Parser, openKind int, parseFn parseFn, closeKind int) ([]interface{}, error) {
-	_, err := expect(parser, openKind)
+// if zinteger is true, len(nodes) > 0
+func reverse(parser *Parser, openKind int, parseFn parseFn, closeKind int, zinteger bool) ([]interface{}, error) {
+	token, err := expect(parser, openKind)
 	if err != nil {
 		return nil, err
 	}
 	var nodes []interface{}
-	node, err := parseFn(parser)
-	if err != nil {
-		return nodes, err
-	}
-	nodes = append(nodes, node)
 	for {
 		if skp, err := skip(parser, closeKind); err != nil {
 			return nil, err
@@ -1623,6 +1626,9 @@ func many(parser *Parser, openKind int, parseFn parseFn, closeKind int) ([]inter
 			return nodes, err
 		}
 		nodes = append(nodes, node)
+	}
+	if zinteger && len(nodes) <= 0 {
+		return nodes, unexpectedEmpty(parser, token.Start, openKind, closeKind)
 	}
 	return nodes, nil
 }
