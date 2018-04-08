@@ -447,6 +447,168 @@ func TestLexer_ReportsUsefulStringErrors(t *testing.T) {
 	}
 }
 
+func TestLexer_LexesBlockStrings(t *testing.T) {
+	tests := []Test{
+		{
+			Body: `"""simple"""`,
+			Expected: Token{
+				Kind:  TokenKind[BLOCK_STRING],
+				Start: 0,
+				End:   12,
+				Value: "simple",
+			},
+		},
+		{
+			Body: `""" white space """`,
+			Expected: Token{
+				Kind:  TokenKind[BLOCK_STRING],
+				Start: 0,
+				End:   19,
+				Value: " white space ",
+			},
+		},
+		{
+			Body: `
+				"""  white space """
+				"""  white space  """
+				"""  white space """
+			`,
+			Expected: Token{
+				Kind:  TokenKind[BLOCK_STRING],
+				Start: 5,
+				End:   25,
+				Value: "  white space ",
+			},
+		},
+		{
+			Body: `
+				"""
+						my great description
+						spans multiple lines
+
+						with breaks
+				"""
+			`,
+			Expected: Token{
+				Kind:  TokenKind[BLOCK_STRING],
+				Start: 5,
+				End:   89,
+				Value: "my great description\nspans multiple lines\n\nwith breaks",
+			},
+		},
+		{
+			Body: `"""contains " quote"""`,
+			Expected: Token{
+				Kind:  TokenKind[BLOCK_STRING],
+				Start: 0,
+				End:   22,
+				Value: `contains " quote`,
+			},
+		},
+		{
+			Body: `"""contains \""" triplequote"""`,
+			Expected: Token{
+				Kind:  TokenKind[BLOCK_STRING],
+				Start: 0,
+				End:   31,
+				Value: `contains """ triplequote`,
+			},
+		},
+		{
+			Body: "\"\"\"multi\nline\"\"\"",
+			Expected: Token{
+				Kind:  TokenKind[BLOCK_STRING],
+				Start: 0,
+				End:   16,
+				Value: "multi\nline",
+			},
+		},
+		{
+			Body: "\"\"\"multi\rline\r\nnormalized\"\"\"",
+			Expected: Token{
+				Kind:  TokenKind[BLOCK_STRING],
+				Start: 0,
+				End:   28,
+				Value: "multi\nline\nnormalized",
+			},
+		},
+		{
+			Body: "\"\"\"unescaped \\n\\r\\b\\t\\f\\u1234\"\"\"",
+			Expected: Token{
+				Kind:  TokenKind[BLOCK_STRING],
+				Start: 0,
+				End:   32,
+				Value: "unescaped \\n\\r\\b\\t\\f\\u1234",
+			},
+		},
+		{
+			Body: "\"\"\"slashes \\\\ \\/\"\"\"",
+			Expected: Token{
+				Kind:  TokenKind[BLOCK_STRING],
+				Start: 0,
+				End:   19,
+				Value: "slashes \\\\ \\/",
+			},
+		},
+	}
+	for _, test := range tests {
+		token, err := Lex(&source.Source{Body: []byte(test.Body)})(0)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if !reflect.DeepEqual(token, test.Expected) {
+			t.Errorf("unexpected token, expected: %v, got: %v", test.Expected, token)
+		}
+	}
+}
+
+func TestLexer_ReportsUsefulBlockStringErrors(t *testing.T) {
+	tests := []Test{
+		{
+			Body: `"""`,
+			Expected: `Syntax Error GraphQL (1:4) Unterminated string.
+
+1: """
+      ^
+`,
+		},
+		{
+			Body: `"""no end quote`,
+			Expected: `Syntax Error GraphQL (1:16) Unterminated string.
+
+1: """no end quote
+                  ^
+`,
+		},
+		{
+			Body: "\"\"\"contains unescaped \u0007 control char\"\"\"",
+			Expected: `Syntax Error GraphQL (1:23) Invalid character within String: "\\u0007".
+
+1: """contains unescaped \u0007 control char"""
+                         ^
+`,
+		},
+		{
+			Body: "\"\"\"null-byte is not \u0000 end of file\"\"\"",
+			Expected: `Syntax Error GraphQL (1:21) Invalid character within String: "\\u0000".
+
+1: """null-byte is not \u0000 end of file"""
+                       ^
+`,
+		},
+	}
+	for _, test := range tests {
+		_, err := Lex(createSource(test.Body))(0)
+		if err == nil {
+			t.Errorf("unexpected nil error\nexpected:\n%v\n\ngot:\n%v", test.Expected, err)
+		}
+
+		if err.Error() != test.Expected {
+			t.Errorf("unexpected error.\nexpected:\n%v\n\ngot:\n%v", test.Expected, err.Error())
+		}
+	}
+}
+
 func TestLexer_LexesNumbers(t *testing.T) {
 	tests := []Test{
 		{

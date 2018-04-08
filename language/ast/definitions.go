@@ -200,11 +200,12 @@ func (def *TypeExtensionDefinition) GetOperation() string {
 
 // DirectiveDefinition implements Node, Definition
 type DirectiveDefinition struct {
-	Kind      string
-	Loc       *Location
-	Name      *Name
-	Arguments []*InputValueDefinition
-	Locations []*Name
+	Kind        string
+	Loc         *Location
+	Name        *Name
+	Description *StringValue
+	Arguments   []*InputValueDefinition
+	Locations   []*Name
 }
 
 func NewDirectiveDefinition(def *DirectiveDefinition) *DirectiveDefinition {
@@ -212,11 +213,12 @@ func NewDirectiveDefinition(def *DirectiveDefinition) *DirectiveDefinition {
 		def = &DirectiveDefinition{}
 	}
 	return &DirectiveDefinition{
-		Kind:      kinds.DirectiveDefinition,
-		Loc:       def.Loc,
-		Name:      def.Name,
-		Arguments: def.Arguments,
-		Locations: def.Locations,
+		Kind:        kinds.DirectiveDefinition,
+		Loc:         def.Loc,
+		Name:        def.Name,
+		Description: def.Description,
+		Arguments:   def.Arguments,
+		Locations:   def.Locations,
 	}
 }
 
@@ -238,4 +240,8 @@ func (def *DirectiveDefinition) GetSelectionSet() *SelectionSet {
 
 func (def *DirectiveDefinition) GetOperation() string {
 	return ""
+}
+
+func (def *DirectiveDefinition) GetDescription() *StringValue {
+	return def.Description
 }
