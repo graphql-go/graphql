@@ -422,7 +422,6 @@ func (gt *Object) Fields() FieldDefinitionMap {
 	if gt.initialisedFields {
 		return gt.fields
 	}
-
 	var configureFields Fields
 	switch gt.typeConfig.Fields.(type) {
 	case Fields:

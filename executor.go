@@ -279,7 +279,7 @@ func executeFields(p executeFieldsParams) *Result {
 		p.Fields = map[string][]*ast.Field{}
 	}
 
-	finalResults := map[string]interface{}{}
+	finalResults := make(map[string]interface{}, len(p.Fields))
 	for responseName, fieldASTs := range p.Fields {
 		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
 		if state.hasNoFieldDefs {
@@ -742,16 +742,16 @@ func completeObjectValue(eCtx *executionContext, returnType *Object, fieldASTs [
 			continue
 		}
 		selectionSet := fieldAST.SelectionSet
-		if selectionSet != nil {
-			innerParams := collectFieldsParams{
-				ExeContext:           eCtx,
-				RuntimeType:          returnType,
-				SelectionSet:         selectionSet,
-				Fields:               subFieldASTs,
-				VisitedFragmentNames: visitedFragmentNames,
-			}
-			subFieldASTs = collectFields(innerParams)
+		if selectionSet == nil {
+			continue
 		}
+		subFieldASTs = collectFields(CollectFieldsParams{
+			ExeContext:           eCtx,
+			RuntimeType:          returnType,
+			SelectionSet:         selectionSet,
+			Fields:               subFieldASTs,
+			VisitedFragmentNames: visitedFragmentNames,
+		})
 	}
 	executeFieldsParams := executeFieldsParams{
 		ExecutionContext: eCtx,
@@ -791,7 +791,7 @@ func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*as
 	}
 
 	itemType := returnType.OfType
-	completedResults := []interface{}{}
+	completedResults := make([]interface{}, 0, resultVal.Len())
 	for i := 0; i < resultVal.Len(); i++ {
 		val := resultVal.Index(i).Interface()
 		completedItem := completeValueCatchingError(eCtx, itemType, fieldASTs, info, val)
@@ -832,7 +832,7 @@ type FieldResolver interface {
 // and returns it as the result, or if it's a function, returns the result
 // of calling that function.
 func DefaultResolveFn(p ResolveParams) (interface{}, error) {
-	sourceVal := reflect.ValueOf(p.Source)
+  sourceVal := reflect.ValueOf(p.Source)
 	// Check if value implements 'Resolver' interface
 	if resolver, ok := sourceVal.Interface().(FieldResolver); ok {
 		return resolver.Resolve(p)
