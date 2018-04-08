@@ -15,21 +15,33 @@ const TAG = "json"
 // }
 // it will throw panic stack-overflow
 func BindFields(obj interface{}) Fields {
+	t := reflect.TypeOf(obj)
 	v := reflect.ValueOf(obj)
 	fields := make(map[string]*Field)
 
-	for i := 0; i < v.NumField(); i++ {
-		typeField := v.Type().Field(i)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+		v = v.Elem()
+	}
 
-		tag := extractTag(typeField.Tag)
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+
+		tag := extractTag(field.Tag)
 		if tag == "-" {
 			continue
 		}
 
-		var graphType Output
-		if typeField.Type.Kind() == reflect.Struct {
+		fieldType := field.Type
 
+		if fieldType.Kind() == reflect.Ptr {
+			fieldType = fieldType.Elem()
+		}
+
+		var graphType Output
+		if fieldType.Kind() == reflect.Struct {
 			structFields := BindFields(v.Field(i).Interface())
+
 			if tag == "" {
 				fields = appendFields(fields, structFields)
 				continue
@@ -46,7 +58,7 @@ func BindFields(obj interface{}) Fields {
 		}
 
 		if graphType == nil {
-			graphType = getGraphType(typeField.Type)
+			graphType = getGraphType(fieldType)
 		}
 		fields[tag] = &Field{
 			Type: graphType,
@@ -122,19 +134,19 @@ func appendFields(dest, origin Fields) Fields {
 }
 
 func extractValue(originTag string, obj interface{}) interface{} {
-	val := reflect.ValueOf(obj)
+	val := reflect.Indirect(reflect.ValueOf(obj))
 
 	for j := 0; j < val.NumField(); j++ {
-		typeField := val.Type().Field(j)
-		if typeField.Type.Kind() == reflect.Struct {
+		field := val.Type().Field(j)
+		if field.Type.Kind() == reflect.Struct {
 			res := extractValue(originTag, val.Field(j).Interface())
 			if res != nil {
 				return res
 			}
 		}
 
-		if originTag == extractTag(typeField.Tag) {
-			return val.Field(j).Interface()
+		if originTag == extractTag(field.Tag) {
+			return reflect.Indirect(val.Field(j)).Interface()
 		}
 	}
 	return nil
@@ -150,15 +162,15 @@ func extractTag(tag reflect.StructTag) string {
 
 // lazy way of binding args
 func BindArg(obj interface{}, tags ...string) FieldConfigArgument {
-	v := reflect.ValueOf(obj)
+	v := reflect.Indirect(reflect.ValueOf(obj))
 	var config = make(FieldConfigArgument)
 	for i := 0; i < v.NumField(); i++ {
-		typeField := v.Type().Field(i)
+		field := v.Type().Field(i)
 
-		mytag := extractTag(typeField.Tag)
+		mytag := extractTag(field.Tag)
 		if inArray(tags, mytag) {
 			config[mytag] = &ArgumentConfig{
-				Type: getGraphType(typeField.Type),
+				Type: getGraphType(field.Type),
 			}
 		}
 	}
