@@ -9,6 +9,7 @@ import (
 
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
+	"sync"
 )
 
 type ExecuteParams struct {
@@ -111,6 +112,14 @@ type executionContext struct {
 	VariableValues map[string]interface{}
 	Errors         []gqlerrors.FormattedError
 	Context        context.Context
+
+	errorsMutex      sync.Mutex
+}
+
+func (eCtx *ExecutionContext) addError(err gqlerrors.FormattedError) {
+	eCtx.errorsMutex.Lock()
+	defer eCtx.errorsMutex.Unlock()
+	eCtx.Errors = append(eCtx.Errors, err)
 }
 
 func buildExecutionContext(p buildExecutionCtxParams) (*executionContext, error) {
@@ -279,13 +288,40 @@ func executeFields(p executeFieldsParams) *Result {
 		p.Fields = map[string][]*ast.Field{}
 	}
 
+	var numberOfDeferredFunctions int
+	recoverChan := make(chan interface{}, len(p.Fields))
+
+	var resultsMutex sync.Mutex
 	finalResults := map[string]interface{}{}
 	for responseName, fieldASTs := range p.Fields {
 		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
 		if state.hasNoFieldDefs {
 			continue
 		}
-		finalResults[responseName] = resolved
+		if resolve, ok := resolved.(deferredResolveFunction); ok {
+			numberOfDeferredFunctions += 1
+			go func(responseName string) {
+				defer func() {
+					recoverChan <- recover()
+				}()
+
+				res := resolve()
+
+				resultsMutex.Lock()
+				defer resultsMutex.Unlock()
+				finalResults[responseName] = res
+			}(responseName)
+		} else {
+			resultsMutex.Lock()
+			finalResults[responseName] = resolved
+			resultsMutex.Unlock()
+		}
+	}
+
+	for i := 0; i < numberOfDeferredFunctions; i++ {
+		if r := <-recoverChan; r != nil {
+			panic(r)
+		}
 	}
 
 	return &Result{
@@ -504,6 +540,8 @@ type resolveFieldResultState struct {
 	hasNoFieldDefs bool
 }
 
+type deferredResolveFunction func() interface{}
+
 // Resolves the field on the given source object. In particular, this
 // figures out the value that the field returns by calling its resolve function,
 // then calls completeValue to complete promises, serialize scalars, or execute
@@ -511,25 +549,27 @@ type resolveFieldResultState struct {
 func resolveField(eCtx *executionContext, parentType *Object, source interface{}, fieldASTs []*ast.Field) (result interface{}, resultState resolveFieldResultState) {
 	// catch panic from resolveFn
 	var returnType Output
+	handleRecover := func(r interface{}) {
+		var err error
+		if r, ok := r.(string); ok {
+			err = NewLocatedError(
+				fmt.Sprintf("%v", r),
+				FieldASTsToNodeASTs(fieldASTs),
+			)
+		}
+		if r, ok := r.(error); ok {
+			err = gqlerrors.FormatError(r)
+		}
+		// send panic upstream
+		if _, ok := returnType.(*NonNull); ok {
+			panic(gqlerrors.FormatError(err))
+		}
+		eCtx.addError(gqlerrors.FormatError(err))
+	}
+
 	defer func() (interface{}, resolveFieldResultState) {
 		if r := recover(); r != nil {
-
-			var err error
-			if r, ok := r.(string); ok {
-				err = NewLocatedError(
-					fmt.Sprintf("%v", r),
-					FieldASTsToNodeASTs(fieldASTs),
-				)
-			}
-			if r, ok := r.(error); ok {
-				err = gqlerrors.FormatError(r)
-			}
-			// send panic upstream
-			if _, ok := returnType.(*NonNull); ok {
-				panic(gqlerrors.FormatError(err))
-			}
-			eCtx.Errors = append(eCtx.Errors, gqlerrors.FormatError(err))
-			return result, resultState
+			handleRecover(r)
 		}
 		return result, resultState
 	}()
@@ -581,6 +621,25 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		panic(gqlerrors.FormatError(resolveFnError))
 	}
 
+	if deferredResolveFn, ok := result.(func() (interface{}, error)); ok {
+		return deferredResolveFunction(func() (result interface{}) {
+			defer func() interface{} {
+				if r := recover(); r != nil {
+					handleRecover(r)
+				}
+
+				return result
+			}()
+
+			result, resolveFnError = deferredResolveFn()
+			if resolveFnError != nil {
+				panic(gqlerrors.FormatError(resolveFnError))
+			}
+
+			return completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
+		}), resultState
+	}
+
 	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
 	return completed, resultState
 }
@@ -594,7 +653,7 @@ func completeValueCatchingError(eCtx *executionContext, returnType Type, fieldAS
 				panic(r)
 			}
 			if err, ok := r.(gqlerrors.FormattedError); ok {
-				eCtx.Errors = append(eCtx.Errors, err)
+				eCtx.addError(err)
 			}
 			return completed
 		}

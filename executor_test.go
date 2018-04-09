@@ -1483,6 +1483,48 @@ func TestQuery_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 	}
 }
 
+func TestQuery_DeferredResolveFn_ExecutionAddsErrorsFromFieldResolveFn(t *testing.T) {
+	qError := errors.New("queryError")
+	q := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Query",
+		Fields: graphql.Fields{
+			"a": &graphql.Field{
+				Type: graphql.String,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return func() (interface{}, error) {
+						return nil, qError
+					}, nil
+				},
+			},
+			"b": &graphql.Field{
+				Type: graphql.String,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return func() (interface{}, error) {
+						return "ok", nil
+					}, nil
+				},
+			},
+		},
+	})
+	blogSchema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: q,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error, got: %v", err)
+	}
+	query := "{ a }"
+	result := graphql.Do(graphql.Params{
+		Schema:        blogSchema,
+		RequestString: query,
+	})
+	if len(result.Errors) == 0 {
+		t.Fatal("wrong result, expected errors, got no errors")
+	}
+	if result.Errors[0].Error() != qError.Error() {
+		t.Fatalf("wrong result, unexpected error, got: %v, expected: %v", result.Errors[0], qError)
+	}
+}
+
 func TestQuery_InputObjectUsesFieldDefaultValueFn(t *testing.T) {
 	inputType := graphql.NewInputObject(graphql.InputObjectConfig{
 		Name: "Input",

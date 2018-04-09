@@ -114,6 +114,55 @@ func TestExecutesResolveFunction_UsesProvidedResolveFunction(t *testing.T) {
 	}
 }
 
+func TestExecutesResolveFunction_UsesProvidedResolveFunction_ResolveFunctionIsDeferred(t *testing.T) {
+	schema := testSchema(t, &graphql.Field{
+		Type: graphql.String,
+		Args: graphql.FieldConfigArgument{
+			"aStr": &graphql.ArgumentConfig{Type: graphql.String},
+			"aInt": &graphql.ArgumentConfig{Type: graphql.Int},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			return func() (interface{}, error) {
+				b, err := json.Marshal(p.Args)
+				return string(b), err
+			}, nil
+		},
+	})
+
+	expected := map[string]interface{}{
+		"test": "{}",
+	}
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: `{ test }`,
+	})
+	if !reflect.DeepEqual(expected, result.Data) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result.Data))
+	}
+
+	expected = map[string]interface{}{
+		"test": `{"aStr":"String!"}`,
+	}
+	result = graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: `{ test(aStr: "String!") }`,
+	})
+	if !reflect.DeepEqual(expected, result.Data) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result.Data))
+	}
+
+	expected = map[string]interface{}{
+		"test": `{"aInt":-123,"aStr":"String!"}`,
+	}
+	result = graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: `{ test(aInt: -123, aStr: "String!") }`,
+	})
+	if !reflect.DeepEqual(expected, result.Data) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result.Data))
+	}
+}
+
 func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_WithoutJSONTags(t *testing.T) {
 
 	// For structs without JSON tags, it will map to upper-cased exported field names
