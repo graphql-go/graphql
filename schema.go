@@ -227,10 +227,10 @@ func (gq *Schema) Type(name string) Type {
 }
 
 func (gq *Schema) PossibleTypes(abstractType Abstract) []*Object {
-	if abstractType, ok := abstractType.(*Union); ok {
+	switch abstractType := abstractType.(type) {
+	case *Union:
 		return abstractType.Types()
-	}
-	if abstractType, ok := abstractType.(*Interface); ok {
+	case *Interface:
 		if impls, ok := gq.implementations[abstractType.Name()]; ok {
 			return impls
 		}

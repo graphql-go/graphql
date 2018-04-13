@@ -28,15 +28,8 @@ func NewField(f *Field) *Field {
 	if f == nil {
 		f = &Field{}
 	}
-	return &Field{
-		Kind:         kinds.Field,
-		Loc:          f.Loc,
-		Alias:        f.Alias,
-		Name:         f.Name,
-		Arguments:    f.Arguments,
-		Directives:   f.Directives,
-		SelectionSet: f.SelectionSet,
-	}
+	f.Kind = kinds.Field
+	return f
 }
 
 func (f *Field) GetKind() string {
@@ -128,11 +121,8 @@ func NewSelectionSet(ss *SelectionSet) *SelectionSet {
 	if ss == nil {
 		ss = &SelectionSet{}
 	}
-	return &SelectionSet{
-		Kind:       kinds.SelectionSet,
-		Loc:        ss.Loc,
-		Selections: ss.Selections,
-	}
+	ss.Kind = kinds.SelectionSet
+	return ss
 }
 
 func (ss *SelectionSet) GetKind() string {
