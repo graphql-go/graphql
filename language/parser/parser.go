@@ -250,13 +250,13 @@ func parseOperationType(parser *Parser) (string, error) {
 func parseVariableDefinitions(parser *Parser) ([]*ast.VariableDefinition, error) {
 	variableDefinitions := []*ast.VariableDefinition{}
 	if !peek(parser, lexer.TokenKind[lexer.PAREN_L]) {
-		return nil, nil
+		return variableDefinitions, nil
 	}
 	if vdefs, err := reverse(parser,
 		lexer.TokenKind[lexer.PAREN_L], parseVariableDefinition, lexer.TokenKind[lexer.PAREN_R],
 		true,
 	); err != nil {
-		return variableDefinitions, nil
+		return variableDefinitions, err
 	} else {
 		for _, vdef := range vdefs {
 			variableDefinitions = append(variableDefinitions, vdef.(*ast.VariableDefinition))
