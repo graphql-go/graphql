@@ -31,7 +31,6 @@ func ValidateDocument(schema *Schema, astDoc *ast.Document, rules []ValidationRu
 		rules = SpecifiedRules
 	}
 
-	vr.IsValid = false
 	if schema == nil {
 		vr.Errors = append(vr.Errors, gqlerrors.NewFormattedError("Must provide schema"))
 		return vr

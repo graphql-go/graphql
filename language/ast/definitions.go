@@ -39,15 +39,8 @@ func NewOperationDefinition(op *OperationDefinition) *OperationDefinition {
 	if op == nil {
 		op = &OperationDefinition{}
 	}
-	return &OperationDefinition{
-		Kind:                kinds.OperationDefinition,
-		Loc:                 op.Loc,
-		Operation:           op.Operation,
-		Name:                op.Name,
-		VariableDefinitions: op.VariableDefinitions,
-		Directives:          op.Directives,
-		SelectionSet:        op.SelectionSet,
-	}
+	op.Kind = kinds.OperationDefinition
+	return op
 }
 
 func (op *OperationDefinition) GetKind() string {
@@ -143,13 +136,8 @@ func NewVariableDefinition(vd *VariableDefinition) *VariableDefinition {
 	if vd == nil {
 		vd = &VariableDefinition{}
 	}
-	return &VariableDefinition{
-		Kind:         kinds.VariableDefinition,
-		Loc:          vd.Loc,
-		Variable:     vd.Variable,
-		Type:         vd.Type,
-		DefaultValue: vd.DefaultValue,
-	}
+	vd.Kind = kinds.VariableDefinition
+	return vd
 }
 
 func (vd *VariableDefinition) GetKind() string {

@@ -3,6 +3,7 @@ package graphql
 import (
 	"fmt"
 	"math"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -72,25 +73,21 @@ func ArgumentsOfCorrectTypeRule(context *ValidationContext) *ValidationRuleInsta
 			kinds.Argument: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if argAST, ok := p.Node.(*ast.Argument); ok {
-						value := argAST.Value
-						argDef := context.Argument()
-						if argDef != nil {
-							isValid, messages := isValidLiteralValue(argDef.Type, value)
-							if !isValid {
-								argNameValue := ""
+						if argDef := context.Argument(); argDef != nil {
+							if isValid, messages := isValidLiteralValue(argDef.Type, argAST.Value); !isValid {
+								var messagesStr, argNameValue string
 								if argAST.Name != nil {
 									argNameValue = argAST.Name.Value
 								}
 
-								messagesStr := ""
 								if len(messages) > 0 {
 									messagesStr = "\n" + strings.Join(messages, "\n")
 								}
 								reportError(
 									context,
 									fmt.Sprintf(`Argument "%v" has invalid value %v.%v`,
-										argNameValue, printer.Print(value), messagesStr),
-									[]ast.Node{value},
+										argNameValue, printer.Print(argAST.Value), messagesStr),
+									[]ast.Node{argAST.Value},
 								)
 							}
 
@@ -116,13 +113,17 @@ func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleI
 			kinds.VariableDefinition: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if varDefAST, ok := p.Node.(*ast.VariableDefinition); ok {
-						name := ""
+						var (
+							name         string
+							defaultValue = varDefAST.DefaultValue
+							messagesStr  string
+						)
 						if varDefAST.Variable != nil && varDefAST.Variable.Name != nil {
 							name = varDefAST.Variable.Name.Value
 						}
-						defaultValue := varDefAST.DefaultValue
 						ttype := context.InputType()
 
+						// when input variable value must be nonNull, and set default value is unnecessary
 						if ttype, ok := ttype.(*NonNull); ok && defaultValue != nil {
 							reportError(
 								context,
@@ -131,9 +132,7 @@ func DefaultValuesOfCorrectTypeRule(context *ValidationContext) *ValidationRuleI
 								[]ast.Node{defaultValue},
 							)
 						}
-						isValid, messages := isValidLiteralValue(ttype, defaultValue)
-						if ttype != nil && defaultValue != nil && !isValid {
-							messagesStr := ""
+						if isValid, messages := isValidLiteralValue(ttype, defaultValue); !isValid && defaultValue != nil {
 							if len(messages) > 0 {
 								messagesStr = "\n" + strings.Join(messages, "\n")
 							}
@@ -211,25 +210,21 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 			kinds.Field: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					var action = visitor.ActionNoChange
-					var result interface{}
 					if node, ok := p.Node.(*ast.Field); ok {
-						ttype := context.ParentType()
-						if ttype == nil {
-							return action, result
+						var ttype Composite
+						if ttype = context.ParentType(); ttype == nil {
+							return action, nil
 						}
-						if t, ok := ttype.(*Object); ok && t == nil {
-							return action, result
-						}
-						if t, ok := ttype.(*Interface); ok && t == nil {
-							return action, result
-						}
-						if t, ok := ttype.(*Union); ok && t == nil {
-							return action, result
+						switch ttype.(type) {
+						case *Object, *Interface, *Union:
+							if reflect.ValueOf(ttype).IsNil() {
+								return action, nil
+							}
 						}
 						fieldDef := context.FieldDef()
 						if fieldDef == nil {
 							// This field doesn't exist, lets look for suggestions.
-							nodeName := ""
+							var nodeName string
 							if node.Name != nil {
 								nodeName = node.Name.Value
 							}
@@ -248,7 +243,7 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 							)
 						}
 					}
-					return action, result
+					return action, nil
 				},
 			},
 		},
@@ -263,15 +258,15 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 // suggest them, sorted by how often the type is referenced,  starting
 // with Interfaces.
 func getSuggestedTypeNames(schema *Schema, ttype Output, fieldName string) []string {
-
+	var (
+		suggestedObjectTypes = []string{}
+		suggestedInterfaces  = []*suggestedInterface{}
+		// stores a map of interface name => index in suggestedInterfaces
+		suggestedInterfaceMap = map[string]int{}
+		// stores a maps of object name => true to remove duplicates from results
+		suggestedObjectMap = map[string]bool{}
+	)
 	possibleTypes := schema.PossibleTypes(ttype)
-
-	suggestedObjectTypes := []string{}
-	suggestedInterfaces := []*suggestedInterface{}
-	// stores a map of interface name => index in suggestedInterfaces
-	suggestedInterfaceMap := map[string]int{}
-	// stores a maps of object name => true to remove duplicates from results
-	suggestedObjectMap := map[string]bool{}
 
 	for _, possibleType := range possibleTypes {
 		if field, ok := possibleType.Fields()[fieldName]; !ok || field == nil {
@@ -446,72 +441,75 @@ func KnownArgumentNamesRule(context *ValidationContext) *ValidationRuleInstance 
 			kinds.Argument: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					var action = visitor.ActionNoChange
-					var result interface{}
 					if node, ok := p.Node.(*ast.Argument); ok {
 						var argumentOf ast.Node
 						if len(p.Ancestors) > 0 {
 							argumentOf = p.Ancestors[len(p.Ancestors)-1]
 						}
 						if argumentOf == nil {
-							return action, result
+							return action, nil
 						}
-						var fieldArgDef *Argument
-						if argumentOf.GetKind() == kinds.Field {
-							fieldDef := context.FieldDef()
+						//  verify node, if the node's name exists in Arguments{Field, Directive}
+						var (
+							fieldArgDef    *Argument
+							fieldDef       = context.FieldDef()
+							directive      = context.Directive()
+							argNames       []string
+							parentTypeName string
+						)
+						switch argumentOf.GetKind() {
+						case kinds.Field:
+							// get field definition
 							if fieldDef == nil {
-								return action, result
+								return action, nil
 							}
-							nodeName := ""
-							if node.Name != nil {
-								nodeName = node.Name.Value
-							}
-							argNames := []string{}
 							for _, arg := range fieldDef.Args {
-								argNames = append(argNames, arg.Name())
-								if arg.Name() == nodeName {
+								if arg.Name() == node.Name.Value {
 									fieldArgDef = arg
+									break
 								}
+								argNames = append(argNames, arg.Name())
 							}
 							if fieldArgDef == nil {
 								parentType := context.ParentType()
-								parentTypeName := ""
 								if parentType != nil {
 									parentTypeName = parentType.Name()
 								}
 								reportError(
 									context,
-									unknownArgMessage(nodeName, fieldDef.Name, parentTypeName, suggestionList(nodeName, argNames)),
+									unknownArgMessage(
+										node.Name.Value,
+										fieldDef.Name,
+										parentTypeName, suggestionList(node.Name.Value, argNames),
+									),
 									[]ast.Node{node},
 								)
 							}
-						} else if argumentOf.GetKind() == kinds.Directive {
-							directive := context.Directive()
-							if directive == nil {
-								return action, result
+						case kinds.Directive:
+							if directive = context.Directive(); directive == nil {
+								return action, nil
 							}
-							nodeName := ""
-							if node.Name != nil {
-								nodeName = node.Name.Value
-							}
-							argNames := []string{}
-							var directiveArgDef *Argument
 							for _, arg := range directive.Args {
-								argNames = append(argNames, arg.Name())
-								if arg.Name() == nodeName {
-									directiveArgDef = arg
+								if arg.Name() == node.Name.Value {
+									fieldArgDef = arg
+									break
 								}
+								argNames = append(argNames, arg.Name())
 							}
-							if directiveArgDef == nil {
+							if fieldArgDef == nil {
 								reportError(
 									context,
-									unknownDirectiveArgMessage(nodeName, directive.Name, suggestionList(nodeName, argNames)),
+									unknownDirectiveArgMessage(
+										node.Name.Value,
+										directive.Name,
+										suggestionList(node.Name.Value, argNames),
+									),
 									[]ast.Node{node},
 								)
 							}
 						}
-
 					}
-					return action, result
+					return action, nil
 				},
 			},
 		},
@@ -1727,8 +1725,20 @@ func VariablesInAllowedPositionRule(context *ValidationContext) *ValidationRuleI
 // Note that this only validates literal values, variables are assumed to
 // provide values of the correct type.
 func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
-	// A value must be provided if the type is non-null.
-	if ttype, ok := ttype.(*NonNull); ok {
+	if _, ok := ttype.(*NonNull); !ok {
+		if valueAST == nil {
+			return true, nil
+		}
+
+		// This function only tests literals, and assumes variables will provide
+		// values of the correct type.
+		if valueAST.GetKind() == kinds.Variable {
+			return true, nil
+		}
+	}
+	switch ttype := ttype.(type) {
+	case *NonNull:
+		// A value must be provided if the type is non-null.
 		if e := ttype.Error(); e != nil {
 			return false, []string{e.Error()}
 		}
@@ -1740,20 +1750,8 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 		}
 		ofType, _ := ttype.OfType.(Input)
 		return isValidLiteralValue(ofType, valueAST)
-	}
-
-	if valueAST == nil {
-		return true, nil
-	}
-
-	// This function only tests literals, and assumes variables will provide
-	// values of the correct type.
-	if valueAST.GetKind() == kinds.Variable {
-		return true, nil
-	}
-
-	// Lists accept a non-list value as a list of one.
-	if ttype, ok := ttype.(*List); ok {
+	case *List:
+		// Lists accept a non-list value as a list of one.
 		itemType, _ := ttype.OfType.(Input)
 		if valueAST, ok := valueAST.(*ast.ListValue); ok {
 			messagesReduce := []string{}
@@ -1766,11 +1764,8 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 			return (len(messagesReduce) == 0), messagesReduce
 		}
 		return isValidLiteralValue(itemType, valueAST)
-
-	}
-
-	// Input objects check each defined field and look for undefined fields.
-	if ttype, ok := ttype.(*InputObject); ok {
+	case *InputObject:
+		// Input objects check each defined field and look for undefined fields.
 		valueAST, ok := valueAST.(*ast.ObjectValue)
 		if !ok {
 			return false, []string{fmt.Sprintf(`Expected "%v", found not an object.`, ttype.Name())}
@@ -1782,23 +1777,16 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 		fieldASTs := valueAST.Fields
 		fieldASTMap := map[string]*ast.ObjectField{}
 		for _, fieldAST := range fieldASTs {
-			fieldASTName := ""
-			if fieldAST.Name != nil {
-				fieldASTName = fieldAST.Name.Value
-			}
-
-			fieldASTMap[fieldASTName] = fieldAST
-
-			field, ok := fields[fieldASTName]
+			fieldASTMap[fieldAST.Name.Value] = fieldAST
+			field, ok := fields[fieldAST.Name.Value]
 			if !ok || field == nil {
-				messagesReduce = append(messagesReduce, fmt.Sprintf(`In field "%v": Unknown field.`, fieldASTName))
+				messagesReduce = append(messagesReduce, fmt.Sprintf(`In field "%v": Unknown field.`, fieldAST.Name.Value))
 			}
 		}
 		// Ensure every defined field is valid.
 		for fieldName, field := range fields {
-			fieldAST, _ := fieldASTMap[fieldName]
 			var fieldASTValue ast.Value
-			if fieldAST != nil {
+			if fieldAST := fieldASTMap[fieldName]; fieldAST != nil {
 				fieldASTValue = fieldAST.Value
 			}
 			if isValid, messages := isValidLiteralValue(field.Type, fieldASTValue); !isValid {
@@ -1808,14 +1796,11 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 			}
 		}
 		return (len(messagesReduce) == 0), messagesReduce
-	}
-
-	if ttype, ok := ttype.(*Scalar); ok {
+	case *Scalar:
 		if isNullish(ttype.ParseLiteral(valueAST)) {
 			return false, []string{fmt.Sprintf(`Expected type "%v", found %v.`, ttype.Name(), printer.Print(valueAST))}
 		}
-	}
-	if ttype, ok := ttype.(*Enum); ok {
+	case *Enum:
 		if isNullish(ttype.ParseLiteral(valueAST)) {
 			return false, []string{fmt.Sprintf(`Expected type "%v", found %v.`, ttype.Name(), printer.Print(valueAST))}
 		}

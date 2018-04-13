@@ -7,11 +7,12 @@ import (
 	"reflect"
 	"strings"
 
+	"sort"
+
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/kinds"
 	"github.com/graphql-go/graphql/language/printer"
-	"sort"
 )
 
 // Prepares an object map of variableValues of the correct type based on the
@@ -316,41 +317,26 @@ func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
 }
 
 // Returns true if a value is null, undefined, or NaN.
-func isNullish(value interface{}) bool {
-	if value, ok := value.(*string); ok {
-		if value == nil {
+func isNullish(src interface{}) bool {
+	if src == nil {
+		return true
+	}
+	value := reflect.ValueOf(src)
+	if value.Kind() == reflect.Ptr {
+		value = value.Elem()
+	}
+	switch value.Kind() {
+	case reflect.String:
+		// if src is ptr type and len(string)=0, it returns false
+		if !value.IsValid() {
 			return true
 		}
-		return *value == ""
+	case reflect.Int:
+		return math.IsNaN(float64(value.Int()))
+	case reflect.Float32, reflect.Float64:
+		return math.IsNaN(float64(value.Float()))
 	}
-	if value, ok := value.(int); ok {
-		return math.IsNaN(float64(value))
-	}
-	if value, ok := value.(*int); ok {
-		if value == nil {
-			return true
-		}
-		return math.IsNaN(float64(*value))
-	}
-	if value, ok := value.(float32); ok {
-		return math.IsNaN(float64(value))
-	}
-	if value, ok := value.(*float32); ok {
-		if value == nil {
-			return true
-		}
-		return math.IsNaN(float64(*value))
-	}
-	if value, ok := value.(float64); ok {
-		return math.IsNaN(value)
-	}
-	if value, ok := value.(*float64); ok {
-		if value == nil {
-			return true
-		}
-		return math.IsNaN(*value)
-	}
-	return value == nil
+	return false
 }
 
 /**
