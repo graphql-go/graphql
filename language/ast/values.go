@@ -31,11 +31,8 @@ func NewVariable(v *Variable) *Variable {
 	if v == nil {
 		v = &Variable{}
 	}
-	return &Variable{
-		Kind: kinds.Variable,
-		Loc:  v.Loc,
-		Name: v.Name,
-	}
+	v.Kind = kinds.Variable
+	return v
 }
 
 func (v *Variable) GetKind() string {

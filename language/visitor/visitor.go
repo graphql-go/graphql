@@ -3,9 +3,10 @@ package visitor
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/typeInfo"
-	"reflect"
 )
 
 const (
@@ -184,27 +185,33 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) interface{
 		visitorKeys = QueryDocumentKeys
 	}
 
-	var result interface{}
-	var newRoot = root
-	var sstack *stack
-	var parent interface{}
-	var parentSlice []interface{}
-	inSlice := false
-	prevInSlice := false
-	keys := []interface{}{newRoot}
-	index := -1
-	edits := []*edit{}
-	path := []interface{}{}
-	ancestors := []interface{}{}
-	ancestorsSlice := [][]interface{}{}
+	var (
+		result         interface{}
+		newRoot        ast.Node = root
+		sstack         *stack
+		parent         interface{}
+		parentSlice    []interface{}
+		inSlice        = false
+		prevInSlice    = false
+		keys           = []interface{}{root}
+		index          = -1
+		edits          = []*edit{} // key-value
+		path           = []interface{}{}
+		ancestors      = []interface{}{}
+		ancestorsSlice = [][]interface{}{}
+	)
+	// these algorithm must be simple!!!
+	// abstract algorithm
 Loop:
 	for {
 		index = index + 1
 
 		isLeaving := (len(keys) == index)
-		var key interface{}  // string for structs or int for slices
-		var node interface{} // ast.Node or can be anything
-		var nodeSlice []interface{}
+		var (
+			key       interface{} // string for structs or int for slices
+			node      interface{} // ast.Node or can be anything
+			nodeSlice []interface{}
+		)
 		isEdited := (isLeaving && len(edits) != 0)
 
 		if isLeaving {
@@ -238,7 +245,7 @@ Loop:
 						arrayEditKey = edit.Key.(int)
 					}
 					if inSlice && isNilNode(edit.Value) {
-						nodeSlice = spliceNode(nodeSlice, arrayEditKey)
+						nodeSlice = removeNodeByIndex(nodeSlice, arrayEditKey)
 						editOffset = editOffset + 1
 					} else {
 						if inSlice {
@@ -440,8 +447,6 @@ Loop:
 							continue
 						}
 					}
-				} else {
-					resultIsUndefined = true
 				}
 			}
 
@@ -520,218 +525,167 @@ Loop:
 	return result
 }
 
-func pop(a []interface{}) (x interface{}, aa []interface{}) {
+func pop(a []interface{}) (interface{}, []interface{}) {
 	if len(a) == 0 {
-		return x, aa
+		return nil, nil
 	}
-	x, aa = a[len(a)-1], a[:len(a)-1]
-	return x, aa
-}
-func popNodeSlice(a [][]interface{}) (x []interface{}, aa [][]interface{}) {
-	if len(a) == 0 {
-		return x, aa
-	}
-	x, aa = a[len(a)-1], a[:len(a)-1]
-	return x, aa
-}
-func spliceNode(a interface{}, i int) (result []interface{}) {
-	if i < 0 {
-		return result
-	}
-	typeOf := reflect.TypeOf(a)
-	if typeOf == nil {
-		return result
-	}
-	switch typeOf.Kind() {
-	case reflect.Slice:
-		s := reflect.ValueOf(a)
-		for i := 0; i < s.Len(); i++ {
-			elem := s.Index(i)
-			elemInterface := elem.Interface()
-			result = append(result, elemInterface)
-		}
-		if i >= s.Len() {
-			return result
-		}
-		return append(result[:i], result[i+1:]...)
-	default:
-		return result
-	}
+	return a[len(a)-1], a[:len(a)-1]
 }
 
+func popNodeSlice(a [][]interface{}) ([]interface{}, [][]interface{}) {
+	if len(a) == 0 {
+		return nil, nil
+	}
+	return a[len(a)-1], a[:len(a)-1]
+}
+
+func removeNodeByIndex(a []interface{}, pos int) []interface{} {
+	if pos < 0 || pos >= len(a) {
+		return a
+	}
+	return append(a[:pos], a[pos+1:]...)
+}
+
+// get value by key from struct | slice | map | wrap(prev)
+// when obj type is struct, the key's type must be string
+// ... slice, ... int
+// ... map, ... any type. But the type satisfies map's key definition(feature: compare...)
 func getFieldValue(obj interface{}, key interface{}) interface{} {
+	var value reflect.Value
 	val := reflect.ValueOf(obj)
-	if val.Type().Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
 	}
-	if val.Type().Kind() == reflect.Struct {
-		key, ok := key.(string)
-		if !ok {
-			return nil
-		}
-		valField := val.FieldByName(key)
-		if valField.IsValid() {
-			return valField.Interface()
-		}
-		return nil
-	}
-	if val.Type().Kind() == reflect.Slice {
-		key, ok := key.(int)
-		if !ok {
-			return nil
-		}
-		if key >= val.Len() {
-			return nil
-		}
-		valField := val.Index(key)
-		if valField.IsValid() {
-			return valField.Interface()
-		}
-		return nil
-	}
-	if val.Type().Kind() == reflect.Map {
-		keyVal := reflect.ValueOf(key)
-		valField := val.MapIndex(keyVal)
-		if valField.IsValid() {
-			return valField.Interface()
-		}
-		return nil
-	}
-	return nil
-}
-
-func updateNodeField(value interface{}, fieldName string, fieldValue interface{}) (retVal interface{}) {
-	retVal = value
-	val := reflect.ValueOf(value)
-
-	isPtr := false
-	if val.IsValid() && val.Type().Kind() == reflect.Ptr {
-		val = val.Elem()
-		isPtr = true
-	}
-	if !val.IsValid() {
-		return retVal
-	}
-	if val.Type().Kind() == reflect.Struct {
-		for i := 0; i < val.NumField(); i++ {
-			valueField := val.Field(i)
-			typeField := val.Type().Field(i)
-
-			// try matching the field name
-			if typeField.Name == fieldName {
-				fieldValueVal := reflect.ValueOf(fieldValue)
-				if valueField.CanSet() {
-
-					if fieldValueVal.IsValid() {
-						if valueField.Type().Kind() == fieldValueVal.Type().Kind() {
-							if fieldValueVal.Type().Kind() == reflect.Slice {
-								newSliceValue := reflect.MakeSlice(reflect.TypeOf(valueField.Interface()), fieldValueVal.Len(), fieldValueVal.Len())
-								for i := 0; i < newSliceValue.Len(); i++ {
-									dst := newSliceValue.Index(i)
-									src := fieldValueVal.Index(i)
-									srcValue := reflect.ValueOf(src.Interface())
-									if dst.CanSet() {
-										dst.Set(srcValue)
-									}
-								}
-								valueField.Set(newSliceValue)
-
-							} else {
-								valueField.Set(fieldValueVal)
-							}
-						}
-					} else {
-						valueField.Set(reflect.New(valueField.Type()).Elem())
-					}
-					if isPtr == true {
-						retVal = val.Addr().Interface()
-						return retVal
-					}
-					retVal = val.Interface()
-					return retVal
-
-				}
-			}
-		}
-	}
-	return retVal
-}
-func toSliceInterfaces(slice interface{}) (result []interface{}) {
-	switch reflect.TypeOf(slice).Kind() {
+	switch val.Kind() {
+	case reflect.Struct:
+		value = val.FieldByName(key.(string))
+	case reflect.Map:
+		value = val.MapIndex(reflect.ValueOf(key))
 	case reflect.Slice:
-		s := reflect.ValueOf(slice)
-		for i := 0; i < s.Len(); i++ {
-			elem := s.Index(i)
-			elemInterface := elem.Interface()
-			if elem, ok := elemInterface.(ast.Node); ok {
-				result = append(result, elem)
-			}
+		if index, ok := key.(int); !ok {
+			return nil
+		} else if index >= 0 || val.Len() > index {
+			value = val.Index(index)
 		}
-		return result
-	default:
-		return result
 	}
+	if !value.IsValid() {
+		return nil
+	}
+	return value.Interface()
+}
+
+// currenty only supports update struct field value
+func updateNodeField(src interface{}, targetName string, target interface{}) interface{} {
+	var isPtr bool
+	srcVal := reflect.ValueOf(src)
+	// verify condition
+	if srcVal.Kind() == reflect.Ptr {
+		isPtr = true
+		srcVal = srcVal.Elem()
+	}
+	targetVal := reflect.ValueOf(target)
+	if srcVal.Kind() != reflect.Struct {
+		return src
+	}
+	srcFieldValue := srcVal.FieldByName(targetName)
+	if !srcFieldValue.IsValid() || srcFieldValue.Kind() != targetVal.Kind() {
+		return src
+	}
+
+	if srcFieldValue.CanSet() {
+		if srcFieldValue.Kind() == reflect.Slice {
+			items := reflect.MakeSlice(srcFieldValue.Type(), targetVal.Len(), targetVal.Len())
+			for index := 0; index < items.Len(); index++ {
+				tmp := targetVal.Index(index).Interface()
+				items.Index(index).Set(reflect.ValueOf(tmp))
+			}
+			srcFieldValue.Set(items)
+		} else {
+			srcFieldValue.Set(targetVal)
+		}
+	}
+	if isPtr {
+		return srcVal.Addr().Interface()
+	}
+	return srcVal.Interface()
+}
+
+func toSliceInterfaces(src interface{}) []interface{} {
+	var list []interface{}
+	value := reflect.ValueOf(src)
+	if value.Kind() == reflect.Ptr {
+		value = value.Elem()
+	}
+	if value.Kind() != reflect.Slice {
+		return nil
+	}
+	for index := 0; index < value.Len(); index++ {
+		list = append(list, value.Index(index).Interface())
+	}
+	return list
 }
 
 func isSlice(value interface{}) bool {
-	val := reflect.ValueOf(value)
-	if val.IsValid() && val.Type().Kind() == reflect.Slice {
+	if value == nil {
+		return false
+	}
+	typ := reflect.TypeOf(value)
+	if typ.Kind() == reflect.Slice {
 		return true
-	}
-	return false
-}
-func isNode(node interface{}) bool {
-	val := reflect.ValueOf(node)
-	if val.IsValid() && val.Type().Kind() == reflect.Ptr {
-		val = val.Elem()
-	}
-	if !val.IsValid() {
-		return false
-	}
-	if val.Type().Kind() == reflect.Map {
-		keyVal := reflect.ValueOf("Kind")
-		valField := val.MapIndex(keyVal)
-		return valField.IsValid()
-	}
-	if val.Type().Kind() == reflect.Struct {
-		valField := val.FieldByName("Kind")
-		return valField.IsValid()
-	}
-	return false
-}
-func isStructNode(node interface{}) bool {
-	val := reflect.ValueOf(node)
-	if val.IsValid() && val.Type().Kind() == reflect.Ptr {
-		val = val.Elem()
-	}
-	if !val.IsValid() {
-		return false
-	}
-	if val.Type().Kind() == reflect.Struct {
-		valField := val.FieldByName("Kind")
-		return valField.IsValid()
 	}
 	return false
 }
 
+func isStructNode(node interface{}) bool {
+	if node == nil {
+		return false
+	}
+	value := reflect.ValueOf(node)
+	if value.Kind() == reflect.Ptr {
+		value = value.Elem()
+	}
+	if value.Kind() == reflect.Struct {
+		_, ok := node.(ast.Node)
+		return ok
+	}
+	return false
+}
+
+// notice: type: Named, List or NonNull maybe map type
+// and it can't be asserted to ast.Node
+func isNode(node interface{}) bool {
+	if node == nil {
+		return false
+	}
+	val := reflect.ValueOf(node)
+	if !val.IsValid() {
+		return false
+	}
+	switch val.Kind() {
+	case reflect.Map:
+		return true
+	case reflect.Ptr:
+		val = val.Elem()
+	}
+	_, ok := node.(ast.Node)
+	return ok
+}
+
 func isNilNode(node interface{}) bool {
+	if node == nil {
+		return true
+	}
 	val := reflect.ValueOf(node)
 	if !val.IsValid() {
 		return true
 	}
-	if val.Type().Kind() == reflect.Ptr {
+	switch val.Kind() {
+	case reflect.Ptr, reflect.Map, reflect.Slice:
 		return val.IsNil()
+	case reflect.Bool:
+		return node.(bool)
 	}
-	if val.Type().Kind() == reflect.Slice {
-		return val.Len() == 0
-	}
-	if val.Type().Kind() == reflect.Map {
-		return val.Len() == 0
-	}
-	if val.Type().Kind() == reflect.Bool {
-		return val.Interface().(bool)
-	}
-	return val.Interface() == nil
+	return false
 }
 
 // VisitInParallel Creates a new visitor instance which delegates to many visitors to run in
@@ -830,44 +784,43 @@ func VisitWithTypeInfo(ttypeInfo typeInfo.TypeInfoI, visitorOpts *VisitorOptions
 
 // GetVisitFn Given a visitor instance, if it is leaving or not, and a node kind, return
 // the function the visitor runtime should call.
+// priority [high->low] in VisitorOptions:
+// KindFuncMap{Kind> {Leave, Enter}} > {Leave, Enter} > {EnterKindMap, LeaveKindMap}
 func GetVisitFn(visitorOpts *VisitorOptions, kind string, isLeaving bool) VisitFunc {
 	if visitorOpts == nil {
 		return nil
 	}
-	kindVisitor, ok := visitorOpts.KindFuncMap[kind]
-	if ok {
+	if kindVisitor, ok := visitorOpts.KindFuncMap[kind]; ok {
 		if !isLeaving && kindVisitor.Kind != nil {
 			// { Kind() {} }
 			return kindVisitor.Kind
-		}
-		if isLeaving {
+		} else if isLeaving {
 			// { Kind: { leave() {} } }
 			return kindVisitor.Leave
+		} else {
+			// { Kind: { enter() {} } }
+			return kindVisitor.Enter
 		}
-		// { Kind: { enter() {} } }
-		return kindVisitor.Enter
-
 	}
 	if isLeaving {
-		// { enter() {} }
-		specificVisitor := visitorOpts.Leave
-		if specificVisitor != nil {
-			return specificVisitor
+		// { leave() {} }
+		if genericVisitor := visitorOpts.Leave; genericVisitor != nil {
+			return genericVisitor
 		}
 		if specificKindVisitor, ok := visitorOpts.LeaveKindMap[kind]; ok {
 			// { leave: { Kind() {} } }
 			return specificKindVisitor
 		}
 
-	}
-	// { leave() {} }
-	specificVisitor := visitorOpts.Enter
-	if specificVisitor != nil {
-		return specificVisitor
-	}
-	if specificKindVisitor, ok := visitorOpts.EnterKindMap[kind]; ok {
-		// { enter: { Kind() {} } }
-		return specificKindVisitor
+	} else {
+		// { enter() {} }
+		if genericVisitor := visitorOpts.Enter; genericVisitor != nil {
+			return genericVisitor
+		}
+		if specificKindVisitor, ok := visitorOpts.EnterKindMap[kind]; ok {
+			// { enter: { Kind() {} } }
+			return specificKindVisitor
+		}
 	}
 	return nil
 }

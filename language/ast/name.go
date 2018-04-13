@@ -15,11 +15,8 @@ func NewName(node *Name) *Name {
 	if node == nil {
 		node = &Name{}
 	}
-	return &Name{
-		Kind:  kinds.Name,
-		Value: node.Value,
-		Loc:   node.Loc,
-	}
+	node.Kind = kinds.Name
+	return node
 }
 
 func (node *Name) GetKind() string {

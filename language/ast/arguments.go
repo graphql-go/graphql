@@ -16,12 +16,8 @@ func NewArgument(arg *Argument) *Argument {
 	if arg == nil {
 		arg = &Argument{}
 	}
-	return &Argument{
-		Kind:  kinds.Argument,
-		Loc:   arg.Loc,
-		Name:  arg.Name,
-		Value: arg.Value,
-	}
+	arg.Kind = kinds.Argument
+	return arg
 }
 
 func (arg *Argument) GetKind() string {

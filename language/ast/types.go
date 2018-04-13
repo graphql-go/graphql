@@ -26,11 +26,8 @@ func NewNamed(t *Named) *Named {
 	if t == nil {
 		t = &Named{}
 	}
-	return &Named{
-		Kind: kinds.Named,
-		Loc:  t.Loc,
-		Name: t.Name,
-	}
+	t.Kind = kinds.Named
+	return t
 }
 
 func (t *Named) GetKind() string {
