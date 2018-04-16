@@ -574,7 +574,7 @@ func getFieldValue(obj interface{}, key interface{}) interface{} {
 	return value.Interface()
 }
 
-// currenty only supports update struct field value
+// currently only supports update struct field value
 func updateNodeField(src interface{}, targetName string, target interface{}) interface{} {
 	var isPtr bool
 	srcVal := reflect.ValueOf(src)
