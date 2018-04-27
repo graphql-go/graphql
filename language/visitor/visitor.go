@@ -2,7 +2,6 @@ package visitor
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 
 	"github.com/graphql-go/graphql/language/ast"
@@ -215,19 +214,7 @@ Loop:
 		isEdited := (isLeaving && len(edits) != 0)
 
 		if isLeaving {
-			if !inSlice {
-				if len(ancestors) == 0 {
-					key = nil
-				} else {
-					key, path = pop(path)
-				}
-			} else {
-				if len(ancestorsSlice) == 0 {
-					key = nil
-				} else {
-					key, path = pop(path)
-				}
-			}
+			key, path = pop(path)
 
 			node = parent
 			parent, ancestors = pop(ancestors)
@@ -238,120 +225,68 @@ Loop:
 				prevInSlice = inSlice
 				editOffset := 0
 				for _, edit := range edits {
-					arrayEditKey := 0
 					if inSlice {
-						keyInt := edit.Key.(int)
-						edit.Key = keyInt - editOffset
-						arrayEditKey = edit.Key.(int)
-					}
-					if inSlice && isNilNode(edit.Value) {
-						nodeSlice = removeNodeByIndex(nodeSlice, arrayEditKey)
-						editOffset = editOffset + 1
-					} else {
-						if inSlice {
-							nodeSlice[arrayEditKey] = edit.Value
+						if isNilNode(edit.Value) {
+							nodeSlice = removeNodeByIndex(nodeSlice, edit.Key.(int)-editOffset)
+							editOffset++
 						} else {
-							key, _ := edit.Key.(string)
-
-							var updatedNode interface{}
-							if !isSlice(edit.Value) {
-								if isStructNode(edit.Value) {
-									updatedNode = updateNodeField(node, key, edit.Value)
-								} else {
-									var todoNode map[string]interface{}
-									b, err := json.Marshal(node)
-									if err != nil {
-										panic(fmt.Sprintf("Invalid root AST Node: %v", root))
-									}
-									err = json.Unmarshal(b, &todoNode)
-									if err != nil {
-										panic(fmt.Sprintf("Invalid root AST Node (2): %v", root))
-									}
-									todoNode[key] = edit.Value
-									updatedNode = todoNode
-								}
-							} else {
-								isSliceOfNodes := true
-
-								// check if edit.value slice is ast.nodes
-								switch reflect.TypeOf(edit.Value).Kind() {
-								case reflect.Slice:
-									s := reflect.ValueOf(edit.Value)
-									for i := 0; i < s.Len(); i++ {
-										elem := s.Index(i)
-										if !isStructNode(elem.Interface()) {
-											isSliceOfNodes = false
-										}
-									}
-								}
-
-								// is a slice of real nodes
-								if isSliceOfNodes {
-									// the node we are writing to is an ast.Node
-									updatedNode = updateNodeField(node, key, edit.Value)
-								} else {
-									var todoNode map[string]interface{}
-									b, err := json.Marshal(node)
-									if err != nil {
-										panic(fmt.Sprintf("Invalid root AST Node: %v", root))
-									}
-									err = json.Unmarshal(b, &todoNode)
-									if err != nil {
-										panic(fmt.Sprintf("Invalid root AST Node (2): %v", root))
-									}
-									todoNode[key] = edit.Value
-									updatedNode = todoNode
-								}
-
+							nodeSlice[edit.Key.(int)-editOffset] = edit.Value
+						}
+					} else {
+						var isConvertMap bool
+						// check if edit.Value implements ast.Node or []ast.Node.
+						if !isSlice(edit.Value) {
+							if !isStructNode(edit.Value) {
+								isConvertMap = true
 							}
-							node = updatedNode
+						} else {
+							// check if edit.value slice is ast.nodes
+							ev := reflect.ValueOf(edit.Value)
+							for i := 0; i < ev.Len(); i++ {
+								if !isStructNode(ev.Index(i).Interface()) {
+									isConvertMap = true
+									break
+								}
+							}
+						}
+						if !isConvertMap {
+							node = updateNodeField(node, edit.Key.(string), edit.Value)
+						} else {
+							// non-node needs convert to map
+							if todoNode, err := convertMap(node); err != nil {
+								panic(err)
+							} else {
+								todoNode[edit.Key.(string)] = edit.Value
+								node = todoNode
+							}
 						}
 					}
 				}
 			}
-			index = sstack.Index
-			keys = sstack.Keys
-			edits = sstack.Edits
-			inSlice = sstack.inSlice
-			sstack = sstack.Prev
+			index, keys, edits, inSlice, sstack = sstack.Index, sstack.Keys, sstack.Edits, sstack.inSlice, sstack.Prev
 		} else {
-			// get key
-			if !inSlice {
-				if !isNilNode(parent) {
-					key = getFieldValue(keys, index)
-				} else {
-					// initial conditions
-					key = nil
-				}
-			} else {
+			// get key & value
+			if inSlice {
 				key = index
+			} else if !isNilNode(parent) {
+				key = getFieldValue(keys, index)
 			}
 			// get node
-			if !inSlice {
-				if !isNilNode(parent) {
-					fieldValue := getFieldValue(parent, key)
-					if isNode(fieldValue) {
-						node = fieldValue.(ast.Node)
-					}
-					if isSlice(fieldValue) {
-						nodeSlice = toSliceInterfaces(fieldValue)
-					}
-				} else {
-					// initial conditions
-					node = newRoot
-				}
+			var tmp interface{}
+			if !isNilNode(parent) {
+				tmp = parent
+			} else if len(parentSlice) != 0 {
+				tmp = parentSlice
 			} else {
-				if len(parentSlice) != 0 {
-					fieldValue := getFieldValue(parentSlice, key)
-					if isNode(fieldValue) {
-						node = fieldValue.(ast.Node)
-					}
-					if isSlice(fieldValue) {
-						nodeSlice = toSliceInterfaces(fieldValue)
-					}
-				} else {
-					// initial conditions
-					nodeSlice = []interface{}{}
+				node, nodeSlice = newRoot, []interface{}{}
+			}
+			if tmp != nil {
+				fieldValue := getFieldValue(tmp, key)
+				switch {
+				case isNode(fieldValue):
+					node = fieldValue.(ast.Node)
+				case isSlice(fieldValue):
+					nodeSlice = toSliceInterfaces(fieldValue)
 				}
 			}
 
@@ -374,66 +309,45 @@ Loop:
 		var result interface{}
 		resultIsUndefined := true
 		if !isNilNode(node) {
-			if !isNode(node) { // is node-ish.
-				panic(fmt.Sprintf("Invalid AST Node (4): %v", node))
-			}
-
-			// Try to pass in current node as ast.Node
 			// Note that since user can potentially return a non-ast.Node from visit functions.
-			// In that case, we try to unmarshal map[string]interface{} into ast.Node
-			var nodeIn interface{}
-			if _, ok := node.(map[string]interface{}); ok {
-				b, err := json.Marshal(node)
-				if err != nil {
-					panic(fmt.Sprintf("Invalid root AST Node: %v", root))
-				}
-				err = json.Unmarshal(b, &nodeIn)
-				if err != nil {
-					panic(fmt.Sprintf("Invalid root AST Node (2a): %v", root))
-				}
-			} else {
-				nodeIn = node
-			}
+			// if not exist map type for node, nodes implement ast.Node
 			parentConcrete, _ := parent.(ast.Node)
-			// ancestorsConcrete slice may contain nil values
 			ancestorsConcrete := []ast.Node{}
 			for _, ancestor := range ancestors {
 				if ancestorConcrete, ok := ancestor.(ast.Node); ok {
 					ancestorsConcrete = append(ancestorsConcrete, ancestorConcrete)
 				} else {
-					ancestorsConcrete = append(ancestorsConcrete, nil)
+					ancestorsConcrete = append(ancestorsConcrete, nil) // map for nil
 				}
 			}
 
-			kind := ""
-			if node, ok := node.(map[string]interface{}); ok {
-				kind, _ = node["Kind"].(string)
-			}
-			if node, ok := node.(ast.Node); ok {
-				kind = node.GetKind()
+			var kind string
+			switch tmp := node.(type) {
+			case map[string]interface{}:
+				kind = tmp["Kind"].(string)
+			case ast.Node:
+				kind = tmp.GetKind()
 			}
 
 			visitFn := GetVisitFn(visitorOpts, kind, isLeaving)
 			if visitFn != nil {
 				p := VisitFuncParams{
-					Node:      nodeIn,
+					Node:      node,
 					Key:       key,
 					Parent:    parentConcrete,
 					Path:      path,
 					Ancestors: ancestorsConcrete,
 				}
-				action := ActionUpdate
-				action, result = visitFn(p)
-				if action == ActionBreak {
+				var action string
+				switch action, result = visitFn(p); action {
+				case ActionBreak:
 					break Loop
-				}
-				if action == ActionSkip {
+				case ActionSkip:
 					if !isLeaving {
 						_, path = pop(path)
 						continue
 					}
-				}
-				if action != ActionNoChange {
+				case ActionUpdate:
 					resultIsUndefined = false
 					edits = append(edits, &edit{
 						Key:   key,
@@ -449,7 +363,6 @@ Loop:
 					}
 				}
 			}
-
 		}
 
 		// collect back edits on the way out
@@ -467,7 +380,6 @@ Loop:
 			}
 		}
 		if !isLeaving {
-
 			// add to stack
 			prevStack := sstack
 			sstack = &stack{
@@ -479,39 +391,23 @@ Loop:
 			}
 
 			// replace keys
-			inSlice = false
+			keys, index, edits = []interface{}{}, -1, []*edit{}
 			if len(nodeSlice) > 0 {
 				inSlice = true
-			}
-			keys = []interface{}{}
-
-			if inSlice {
-				// get keys
-				for _, m := range nodeSlice {
-					keys = append(keys, m)
-				}
+				keys = append(keys, nodeSlice...)
 			} else {
+				inSlice = false
 				if !isNilNode(node) {
-					if node, ok := node.(ast.Node); ok {
-						kind := node.GetKind()
-						if n, ok := visitorKeys[kind]; ok {
-							for _, m := range n {
-								keys = append(keys, m)
-							}
-						}
+					kind := node.(ast.Node).GetKind()
+					for _, m := range visitorKeys[kind] {
+						keys = append(keys, m)
 					}
-
 				}
-
 			}
-			index = -1
-			edits = []*edit{}
-
 			ancestors = append(ancestors, parent)
 			parent = node
 			ancestorsSlice = append(ancestorsSlice, parentSlice)
 			parentSlice = nodeSlice
-
 		}
 
 		// loop guard
@@ -546,6 +442,20 @@ func removeNodeByIndex(a []interface{}, pos int) []interface{} {
 	return append(a[:pos], a[pos+1:]...)
 }
 
+func convertMap(src interface{}) (dest map[string]interface{}, err error) {
+	if src == nil {
+		return
+	}
+	var bts []byte
+	if bts, err = json.Marshal(src); err != nil {
+		return
+	}
+	if err = json.Unmarshal(bts, &dest); err != nil {
+		return
+	}
+	return
+}
+
 // get value by key from struct | slice | map | wrap(prev)
 // when obj type is struct, the key's type must be string
 // ... slice, ... int
@@ -574,7 +484,7 @@ func getFieldValue(obj interface{}, key interface{}) interface{} {
 	return value.Interface()
 }
 
-// currenty only supports update struct field value
+// currently only supports update struct field value
 func updateNodeField(src interface{}, targetName string, target interface{}) interface{} {
 	var isPtr bool
 	srcVal := reflect.ValueOf(src)
