@@ -31,9 +31,9 @@ func Execute(p ExecuteParams) (result *Result) {
 	}
 
 	resultChannel := make(chan *Result)
+	result = &Result{}
 
 	go func(out chan<- *Result, done <-chan struct{}) {
-		result := &Result{}
 		defer func() {
 			if err := recover(); err != nil {
 				result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
@@ -67,7 +67,6 @@ func Execute(p ExecuteParams) (result *Result) {
 
 	select {
 	case <-ctx.Done():
-		result = &Result{}
 		result.Errors = append(result.Errors, gqlerrors.FormatError(ctx.Err()))
 	case r := <-resultChannel:
 		result = r
