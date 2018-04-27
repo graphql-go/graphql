@@ -116,7 +116,7 @@ type executionContext struct {
 	errorsMutex      sync.Mutex
 }
 
-func (eCtx *ExecutionContext) addError(err gqlerrors.FormattedError) {
+func (eCtx *executionContext) addError(err gqlerrors.FormattedError) {
 	eCtx.errorsMutex.Lock()
 	defer eCtx.errorsMutex.Unlock()
 	eCtx.Errors = append(eCtx.Errors, err)
