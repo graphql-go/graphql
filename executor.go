@@ -34,52 +34,35 @@ func Execute(p ExecuteParams) (result *Result) {
 
 	go func(out chan<- *Result, done <-chan struct{}) {
 		result := &Result{}
-
+		defer func() {
+			if err := recover(); err != nil {
+				result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
+			}
+			select {
+			case out <- result:
+			case <-done:
+			}
+		}()
 		exeContext, err := buildExecutionContext(buildExecutionCtxParams{
 			Schema:        p.Schema,
 			Root:          p.Root,
 			AST:           p.AST,
 			OperationName: p.OperationName,
 			Args:          p.Args,
-			Errors:        nil,
 			Result:        result,
 			Context:       p.Context,
 		})
 
 		if err != nil {
 			result.Errors = append(result.Errors, gqlerrors.FormatError(err))
-			select {
-			case out <- result:
-			case <-done:
-			}
 			return
 		}
-
-		defer func() {
-			if r := recover(); r != nil {
-				var err error
-				if r, ok := r.(error); ok {
-					err = gqlerrors.FormatError(r)
-				}
-				exeContext.Errors = append(exeContext.Errors, gqlerrors.FormatError(err))
-				result.Errors = exeContext.Errors
-				select {
-				case out <- result:
-				case <-done:
-				}
-			}
-		}()
 
 		result = executeOperation(executeOperationParams{
 			ExecutionContext: exeContext,
 			Root:             p.Root,
 			Operation:        exeContext.Operation,
 		})
-		select {
-		case out <- result:
-		case <-done:
-		}
-
 	}(resultChannel, ctx.Done())
 
 	select {
@@ -98,7 +81,6 @@ type buildExecutionCtxParams struct {
 	AST           *ast.Document
 	OperationName string
 	Args          map[string]interface{}
-	Errors        []gqlerrors.FormattedError
 	Result        *Result
 	Context       context.Context
 }
@@ -155,7 +137,6 @@ func buildExecutionContext(p buildExecutionCtxParams) (*executionContext, error)
 	eCtx.Root = p.Root
 	eCtx.Operation = operation
 	eCtx.VariableValues = variableValues
-	eCtx.Errors = p.Errors
 	eCtx.Context = p.Context
 	return eCtx, nil
 }
