@@ -287,17 +287,17 @@ type collectFieldsParams struct {
 // CollectFields requires the "runtime type" of an object. For a field which
 // returns and Interface or Union type, the "runtime type" will be the actual
 // Object type returned by that field.
-func collectFields(p collectFieldsParams) map[string][]*ast.Field {
-
-	fields := p.Fields
+func collectFields(p collectFieldsParams) (fields map[string][]*ast.Field) {
+	// overlying SelectionSet & Fields to fields
+	if p.SelectionSet == nil {
+		return p.Fields
+	}
+	fields = p.Fields
 	if fields == nil {
 		fields = map[string][]*ast.Field{}
 	}
 	if p.VisitedFragmentNames == nil {
 		p.VisitedFragmentNames = map[string]bool{}
-	}
-	if p.SelectionSet == nil {
-		return fields
 	}
 	for _, iSelection := range p.SelectionSet.Selections {
 		switch selection := iSelection.(type) {
@@ -360,60 +360,35 @@ func collectFields(p collectFieldsParams) map[string][]*ast.Field {
 // Determines if a field should be included based on the @include and @skip
 // directives, where @skip has higher precedence than @include.
 func shouldIncludeNode(eCtx *executionContext, directives []*ast.Directive) bool {
-
-	defaultReturnValue := true
-
-	var skipAST *ast.Directive
-	var includeAST *ast.Directive
+	var (
+		skipAST, includeAST *ast.Directive
+		argValues           map[string]interface{}
+	)
 	for _, directive := range directives {
 		if directive == nil || directive.Name == nil {
 			continue
 		}
-		if directive.Name.Value == SkipDirective.Name {
+		switch directive.Name.Value {
+		case SkipDirective.Name:
 			skipAST = directive
-			break
-		}
-	}
-	if skipAST != nil {
-		argValues, err := getArgumentValues(
-			SkipDirective.Args,
-			skipAST.Arguments,
-			eCtx.VariableValues,
-		)
-		if err != nil {
-			return defaultReturnValue
-		}
-		if skipIf, ok := argValues["if"].(bool); ok {
-			if skipIf == true {
-				return false
-			}
-		}
-	}
-	for _, directive := range directives {
-		if directive == nil || directive.Name == nil {
-			continue
-		}
-		if directive.Name.Value == IncludeDirective.Name {
+		case IncludeDirective.Name:
 			includeAST = directive
-			break
+		}
+	}
+	// precedence: skipAST > includeAST
+	if skipAST != nil {
+		argValues = getArgumentValues(SkipDirective.Args, skipAST.Arguments, eCtx.VariableValues)
+		if skipIf, ok := argValues["if"].(bool); ok && skipIf {
+			return false // excluded selectionSet's fields
 		}
 	}
 	if includeAST != nil {
-		argValues, err := getArgumentValues(
-			IncludeDirective.Args,
-			includeAST.Arguments,
-			eCtx.VariableValues,
-		)
-		if err != nil {
-			return defaultReturnValue
-		}
-		if includeIf, ok := argValues["if"].(bool); ok {
-			if includeIf == false {
-				return false
-			}
+		argValues = getArgumentValues(IncludeDirective.Args, includeAST.Arguments, eCtx.VariableValues)
+		if includeIf, ok := argValues["if"].(bool); ok && !includeIf {
+			return false // excluded selectionSet's fields
 		}
 	}
-	return defaultReturnValue
+	return true
 }
 
 // Determines if a fragment is applicable to the given type.
@@ -534,7 +509,7 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 	// Build a map of arguments from the field.arguments AST, using the
 	// variables scope to fulfill any variable references.
 	// TODO: find a way to memoize, in case this field is within a List type.
-	args, _ := getArgumentValues(fieldDef.Args, fieldAST.Arguments, eCtx.VariableValues)
+	args := getArgumentValues(fieldDef.Args, fieldAST.Arguments, eCtx.VariableValues)
 
 	info := ResolveInfo{
 		FieldName:      fieldName,

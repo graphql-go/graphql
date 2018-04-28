@@ -36,7 +36,9 @@ func getVariableValues(schema Schema, definitionASTs []*ast.VariableDefinition, 
 
 // Prepares an object map of argument values given a list of argument
 // definitions and list of argument AST nodes.
-func getArgumentValues(argDefs []*Argument, argASTs []*ast.Argument, variableVariables map[string]interface{}) (map[string]interface{}, error) {
+func getArgumentValues(
+	argDefs []*Argument, argASTs []*ast.Argument,
+	variableValues map[string]interface{}) map[string]interface{} {
 
 	argASTMap := map[string]*ast.Argument{}
 	for _, argAST := range argASTs {
@@ -46,21 +48,21 @@ func getArgumentValues(argDefs []*Argument, argASTs []*ast.Argument, variableVar
 	}
 	results := map[string]interface{}{}
 	for _, argDef := range argDefs {
-
-		name := argDef.PrivateName
-		var valueAST ast.Value
-		if argAST, ok := argASTMap[name]; ok {
-			valueAST = argAST.Value
+		var (
+			tmp   interface{}
+			value ast.Value
+		)
+		if tmpValue, ok := argASTMap[argDef.PrivateName]; ok {
+			value = tmpValue.Value
 		}
-		value := valueFromAST(valueAST, argDef.Type, variableVariables)
-		if isNullish(value) {
-			value = argDef.DefaultValue
+		if tmp = valueFromAST(value, argDef.Type, variableValues); isNullish(tmp) {
+			tmp = argDef.DefaultValue
 		}
-		if !isNullish(value) {
-			results[name] = value
+		if !isNullish(tmp) {
+			results[argDef.PrivateName] = tmp
 		}
 	}
-	return results, nil
+	return results
 }
 
 // Given a variable definition, and any value of input, return a value which
@@ -355,95 +357,66 @@ func isNullish(src interface{}) bool {
  *
  */
 func valueFromAST(valueAST ast.Value, ttype Input, variables map[string]interface{}) interface{} {
-
-	if ttype, ok := ttype.(*NonNull); ok {
-		val := valueFromAST(valueAST, ttype.OfType, variables)
-		return val
-	}
-
 	if valueAST == nil {
 		return nil
 	}
-
-	if valueAST, ok := valueAST.(*ast.Variable); ok && valueAST.Kind == kinds.Variable {
-		if valueAST.Name == nil {
-			return nil
-		}
-		if variables == nil {
-			return nil
-		}
-		variableName := valueAST.Name.Value
-		variableVal, ok := variables[variableName]
-		if !ok {
+	// precedence: value > type
+	if valueAST, ok := valueAST.(*ast.Variable); ok {
+		if valueAST.Name == nil || variables == nil {
 			return nil
 		}
 		// Note: we're not doing any checking that this variable is correct. We're
 		// assuming that this query has been validated and the variable usage here
 		// is of the correct type.
-		return variableVal
+		return variables[valueAST.Name.Value]
 	}
-
-	if ttype, ok := ttype.(*List); ok {
-		itemType := ttype.OfType
-		if valueAST, ok := valueAST.(*ast.ListValue); ok && valueAST.Kind == kinds.ListValue {
-			values := []interface{}{}
+	switch ttype := ttype.(type) {
+	case *NonNull:
+		return valueFromAST(valueAST, ttype.OfType, variables)
+	case *List:
+		values := []interface{}{}
+		if valueAST, ok := valueAST.(*ast.ListValue); ok {
 			for _, itemAST := range valueAST.Values {
-				v := valueFromAST(itemAST, itemType, variables)
-				values = append(values, v)
+				values = append(values, valueFromAST(itemAST, ttype.OfType, variables))
 			}
 			return values
 		}
-		v := valueFromAST(valueAST, itemType, variables)
-		return []interface{}{v}
-	}
-
-	if ttype, ok := ttype.(*InputObject); ok {
-		valueAST, ok := valueAST.(*ast.ObjectValue)
-		if !ok {
+		return append(values, valueFromAST(valueAST, ttype.OfType, variables))
+	case *InputObject:
+		var (
+			ok bool
+			ov *ast.ObjectValue
+			of *ast.ObjectField
+		)
+		if ov, ok = valueAST.(*ast.ObjectValue); !ok {
 			return nil
 		}
 		fieldASTs := map[string]*ast.ObjectField{}
-		for _, fieldAST := range valueAST.Fields {
-			if fieldAST.Name == nil {
+		for _, of = range ov.Fields {
+			if of == nil || of.Name == nil {
 				continue
 			}
-			fieldName := fieldAST.Name.Value
-			fieldASTs[fieldName] = fieldAST
-
+			fieldASTs[of.Name.Value] = of
 		}
 		obj := map[string]interface{}{}
-		for fieldName, field := range ttype.Fields() {
-			fieldAST, ok := fieldASTs[fieldName]
-			fieldValue := field.DefaultValue
-			if !ok || fieldAST == nil {
-				if fieldValue == nil {
-					continue
-				}
+		for name, field := range ttype.Fields() {
+			var value interface{}
+			if of, ok = fieldASTs[name]; ok {
+				value = valueFromAST(of.Value, field.Type, variables)
 			} else {
-				fieldValue = valueFromAST(fieldAST.Value, field.Type, variables)
+				value = field.DefaultValue
 			}
-			if isNullish(fieldValue) {
-				fieldValue = field.DefaultValue
-			}
-			if !isNullish(fieldValue) {
-				obj[fieldName] = fieldValue
+			if !isNullish(value) {
+				obj[name] = value
 			}
 		}
 		return obj
+	case *Scalar:
+		return ttype.ParseLiteral(valueAST)
+	case *Enum:
+		return ttype.ParseLiteral(valueAST)
 	}
 
-	switch ttype := ttype.(type) {
-	case *Scalar:
-		parsed := ttype.ParseLiteral(valueAST)
-		if !isNullish(parsed) {
-			return parsed
-		}
-	case *Enum:
-		parsed := ttype.ParseLiteral(valueAST)
-		if !isNullish(parsed) {
-			return parsed
-		}
-	}
 	return nil
 }
 
