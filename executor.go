@@ -298,14 +298,14 @@ func executeFields(p executeFieldsParams) *Result {
 		if state.hasNoFieldDefs {
 			continue
 		}
-		if resolve, ok := resolved.(deferredResolveFunction); ok {
+		if state.isDeferred {
 			numberOfDeferredFunctions += 1
 			go func(responseName string) {
 				defer func() {
 					recoverChan <- recover()
 				}()
 
-				res := resolve()
+				res := resolved.(deferredResolveFunction)()
 
 				resultsMutex.Lock()
 				defer resultsMutex.Unlock()
@@ -538,6 +538,7 @@ func getFieldEntryKey(node *ast.Field) string {
 // Internal resolveField state
 type resolveFieldResultState struct {
 	hasNoFieldDefs bool
+	isDeferred bool
 }
 
 type deferredResolveFunction func() interface{}
@@ -622,6 +623,7 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 	}
 
 	if deferredResolveFn, ok := result.(func() (interface{}, error)); ok {
+		resultState.isDeferred = true
 		return deferredResolveFunction(func() (result interface{}) {
 			defer func() interface{} {
 				if r := recover(); r != nil {
