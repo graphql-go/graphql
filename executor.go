@@ -853,7 +853,7 @@ func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*as
 	// concurrently resolve list elements
 	itemType := returnType.OfType
 	wg := sync.WaitGroup{}
-	completedResults := make([]interface{}, 0, resultVal.Len())
+	completedResults := make([]interface{}, resultVal.Len())
 	panics := make(chan interface{}, resultVal.Len())
 	for i := 0; i < resultVal.Len(); i++ {
 		wg.Add(1)
