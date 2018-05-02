@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/testutil"
+	"github.com/GannettDigital/graphql"
+	"github.com/GannettDigital/graphql/testutil"
 )
 
 func main() {

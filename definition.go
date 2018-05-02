@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/graphql-go/graphql/language/ast"
+	"github.com/GannettDigital/graphql/language/ast"
 )
 
 // Type interface for all of the possible kinds of GraphQL types

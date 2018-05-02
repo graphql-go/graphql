@@ -3,9 +3,9 @@ package graphql_test
 import (
 	"testing"
 
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/testutil"
+	"github.com/GannettDigital/graphql"
+	"github.com/GannettDigital/graphql/gqlerrors"
+	"github.com/GannettDigital/graphql/testutil"
 )
 
 func TestValidate_VariablesAreInputTypes_(t *testing.T) {

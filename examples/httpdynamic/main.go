@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/graphql-go/graphql"
+	"github.com/GannettDigital/graphql"
 )
 
 /*****************************************************************************/
