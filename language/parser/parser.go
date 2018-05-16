@@ -1013,7 +1013,9 @@ func parseObjectTypeDefinition(parser *Parser) (ast.Node, error) {
 }
 
 /**
- * ImplementsInterfaces : implements NamedType+
+ * ImplementsInterfaces :
+ *   - implements `&`? NamedType
+ *   - ImplementsInterfaces & NamedType
  */
 func parseImplementsInterfaces(parser *Parser) ([]*ast.Named, error) {
 	types := []*ast.Named{}
@@ -1021,14 +1023,18 @@ func parseImplementsInterfaces(parser *Parser) ([]*ast.Named, error) {
 		if err := advance(parser); err != nil {
 			return nil, err
 		}
+		// optional leading ampersand
+		skip(parser, lexer.TokenKind[lexer.AMP])
 		for {
 			ttype, err := parseNamed(parser)
 			if err != nil {
 				return types, err
 			}
 			types = append(types, ttype)
-			if !peek(parser, lexer.TokenKind[lexer.NAME]) {
+			if skipped, err := skip(parser, lexer.TokenKind[lexer.AMP]); !skipped {
 				break
+			} else if err != nil {
+				return types, err
 			}
 		}
 	}
