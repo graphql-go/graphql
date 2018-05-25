@@ -773,7 +773,7 @@ func TestLists_UserErrorExpectIterableButDidNotGetOne(t *testing.T) {
 		},
 		Errors: []gqlerrors.FormattedError{
 			{
-				Message:   "User Error: aexpected iterable, but did not find one for field DataType.test.",
+				Message:   "User Error: expected iterable, but did not find one for field DataType.test.",
 				Locations: []location.SourceLocation{},
 			},
 		},
