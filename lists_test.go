@@ -773,8 +773,25 @@ func TestLists_UserErrorExpectIterableButDidNotGetOne(t *testing.T) {
 		},
 		Errors: []gqlerrors.FormattedError{
 			{
-				Message:   "User Error: expected iterable, but did not find one for field DataType.test.",
+				Message:   "User Error: aexpected iterable, but did not find one for field DataType.test.",
 				Locations: []location.SourceLocation{},
+			},
+		},
+	}
+	checkList(t, ttype, data, expected)
+}
+
+func TestLists_ArrayOfNullableObjects_ContainsValues(t *testing.T) {
+	ttype := graphql.NewList(graphql.Int)
+	data := [2]interface{}{
+		1, 2,
+	}
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"nest": map[string]interface{}{
+				"test": []interface{}{
+					1, 2,
+				},
 			},
 		},
 	}
