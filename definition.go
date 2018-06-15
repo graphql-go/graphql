@@ -424,11 +424,13 @@ func (gt *Object) Fields() FieldDefinitionMap {
 	}
 
 	var configureFields Fields
-	switch gt.typeConfig.Fields.(type) {
+	switch fields := gt.typeConfig.Fields.(type) {
 	case Fields:
-		configureFields = gt.typeConfig.Fields.(Fields)
+		configureFields = fields
 	case FieldsThunk:
-		configureFields = gt.typeConfig.Fields.(FieldsThunk)()
+		configureFields = fields()
+	case func() Fields:
+		configureFields = fields()
 	}
 
 	fields, err := defineFieldMap(gt, configureFields)
@@ -444,11 +446,13 @@ func (gt *Object) Interfaces() []*Interface {
 	}
 
 	var configInterfaces []*Interface
-	switch gt.typeConfig.Interfaces.(type) {
+	switch ifaces := gt.typeConfig.Interfaces.(type) {
 	case InterfacesThunk:
-		configInterfaces = gt.typeConfig.Interfaces.(InterfacesThunk)()
+		configInterfaces = ifaces()
+	case func() []*Interface:
+		configInterfaces = ifaces()
 	case []*Interface:
-		configInterfaces = gt.typeConfig.Interfaces.([]*Interface)
+		configInterfaces = ifaces
 	case nil:
 	default:
 		gt.err = fmt.Errorf("Unknown Object.Interfaces type: %T", gt.typeConfig.Interfaces)
@@ -754,11 +758,13 @@ func (it *Interface) Fields() (fields FieldDefinitionMap) {
 	}
 
 	var configureFields Fields
-	switch it.typeConfig.Fields.(type) {
+	switch fields := it.typeConfig.Fields.(type) {
 	case Fields:
-		configureFields = it.typeConfig.Fields.(Fields)
+		configureFields = fields
 	case FieldsThunk:
-		configureFields = it.typeConfig.Fields.(FieldsThunk)()
+		configureFields = fields()
+	case func() Fields:
+		configureFields = fields()
 	}
 
 	fields, err := defineFieldMap(it, configureFields)
@@ -1140,11 +1146,13 @@ func NewInputObject(config InputObjectConfig) *InputObject {
 
 func (gt *InputObject) defineFieldMap() InputObjectFieldMap {
 	var fieldMap InputObjectConfigFieldMap
-	switch gt.typeConfig.Fields.(type) {
+	switch fields := gt.typeConfig.Fields.(type) {
 	case InputObjectConfigFieldMap:
-		fieldMap = gt.typeConfig.Fields.(InputObjectConfigFieldMap)
+		fieldMap = fields
+	case func() InputObjectConfigFieldMap:
+		fieldMap = fields()
 	case InputObjectConfigFieldMapThunk:
-		fieldMap = gt.typeConfig.Fields.(InputObjectConfigFieldMapThunk)()
+		fieldMap = fields()
 	}
 	resultFieldMap := InputObjectFieldMap{}
 
