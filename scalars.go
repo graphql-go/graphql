@@ -167,7 +167,7 @@ var Float = NewScalar(ScalarConfig{
 	ParseLiteral: func(valueAST ast.Value) interface{} {
 		switch valueAST := valueAST.(type) {
 		case *ast.FloatValue:
-			if floatValue, err := strconv.ParseFloat(valueAST.Value, 32); err == nil {
+			if floatValue, err := strconv.ParseFloat(valueAST.Value, 64); err == nil {
 				return floatValue
 			}
 		case *ast.IntValue:
