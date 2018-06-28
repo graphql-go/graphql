@@ -11,7 +11,8 @@ import (
 )
 
 func checkList(t *testing.T, testType graphql.Type, testData interface{}, expected *graphql.Result) {
-	t.Helper()
+	// TODO: uncomment t.Helper when support for go1.8 is dropped.
+	//t.Helper()
 	data := map[string]interface{}{
 		"test": testData,
 	}
