@@ -780,3 +780,20 @@ func TestLists_UserErrorExpectIterableButDidNotGetOne(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
+
+func TestLists_ArrayOfNullableObjects_ContainsValues(t *testing.T) {
+	ttype := graphql.NewList(graphql.Int)
+	data := [2]interface{}{
+		1, 2,
+	}
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"nest": map[string]interface{}{
+				"test": []interface{}{
+					1, 2,
+				},
+			},
+		},
+	}
+	checkList(t, ttype, data, expected)
+}
