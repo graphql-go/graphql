@@ -112,6 +112,7 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 	}
 
 	schema.typeMap = typeMap
+	schema.possibleTypeMap = map[string]map[string]bool{}
 
 	// Keep track of all implementations by interface name.
 	if schema.implementations == nil {
@@ -261,22 +262,16 @@ func (gq *Schema) possibleTypes(lock bool, abstractType Abstract) []*Object {
 func (gq *Schema) IsPossibleType(abstractType Abstract, possibleType *Object) bool {
 	gq.mu.Lock()
 	defer gq.mu.Unlock()
-	possibleTypeMap := gq.possibleTypeMap
-	if possibleTypeMap == nil {
-		possibleTypeMap = map[string]map[string]bool{}
-		gq.possibleTypeMap = possibleTypeMap
-	}
 
-	if typeMap, ok := possibleTypeMap[abstractType.Name()]; !ok {
+	if typeMap, ok := gq.possibleTypeMap[abstractType.Name()]; !ok {
 		typeMap = map[string]bool{}
 		for _, possibleType := range gq.possibleTypes(false, abstractType) {
 			typeMap[possibleType.Name()] = true
 		}
-		possibleTypeMap[abstractType.Name()] = typeMap
-		gq.possibleTypeMap = possibleTypeMap
+		gq.possibleTypeMap[abstractType.Name()] = typeMap
 	}
 
-	if typeMap, ok := possibleTypeMap[abstractType.Name()]; ok {
+	if typeMap, ok := gq.possibleTypeMap[abstractType.Name()]; ok {
 		isPossible, _ := typeMap[possibleType.Name()]
 		return isPossible
 	}
