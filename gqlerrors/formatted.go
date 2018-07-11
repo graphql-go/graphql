@@ -7,8 +7,9 @@ import (
 )
 
 type FormattedError struct {
-	Message   string                    `json:"message"`
-	Locations []location.SourceLocation `json:"locations"`
+	Message    string                    `json:"message"`
+	Locations  []location.SourceLocation `json:"locations"`
+	StackTrace string                    `json:"-"`
 }
 
 func (g FormattedError) Error() string {
