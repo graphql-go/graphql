@@ -324,7 +324,7 @@ func TestCoerceFloat(t *testing.T) {
 		},
 		{
 			in:   make(map[string]interface{}),
-			want: 0.0,
+			want: nil,
 		},
 	}
 

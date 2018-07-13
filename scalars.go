@@ -192,9 +192,9 @@ func coerceFloat(value interface{}) interface{} {
 		return coerceFloat(*value)
 	}
 
-	// TODO: check the graphql spec: coerceInt returns nil if it
-	// cannot convert, should coerceFloat do the same?
-	return 0.0
+	// If the value cannot be transformed into an float, return nil instead of '0.0'
+	// to denote 'no float found'
+	return nil
 }
 
 // Float is the GraphQL float type definition.
