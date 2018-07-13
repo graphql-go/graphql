@@ -21,6 +21,8 @@ func coerceInt(value interface{}) interface{} {
 			return 1
 		}
 		return 0
+	case *bool:
+		return coerceInt(*value)
 	case int:
 		if value < int(math.MinInt32) || value > int(math.MaxInt32) {
 			return nil
@@ -134,7 +136,43 @@ func coerceFloat(value interface{}) interface{} {
 		return coerceFloat(*value)
 	case int:
 		return float64(value)
+	case *int:
+		return coerceFloat(*value)
+	case int8:
+		return float64(value)
+	case *int8:
+		return coerceFloat(*value)
+	case int16:
+		return float64(value)
+	case *int16:
+		return coerceFloat(*value)
+	case int32:
+		return float64(value)
 	case *int32:
+		return coerceFloat(*value)
+	case int64:
+		return float64(value)
+	case *int64:
+		return coerceFloat(*value)
+	case uint:
+		return float64(value)
+	case *uint:
+		return coerceFloat(*value)
+	case uint8:
+		return float64(value)
+	case *uint8:
+		return coerceFloat(*value)
+	case uint16:
+		return float64(value)
+	case *uint16:
+		return coerceFloat(*value)
+	case uint32:
+		return float64(value)
+	case *uint32:
+		return coerceFloat(*value)
+	case uint64:
+		return float64(value)
+	case *uint64:
 		return coerceFloat(*value)
 	case float32:
 		return value
@@ -153,6 +191,9 @@ func coerceFloat(value interface{}) interface{} {
 	case *string:
 		return coerceFloat(*value)
 	}
+
+	// TODO: check the graphql spec: coerceInt returns nil if it
+	// cannot convert, should coerceFloat do the same?
 	return 0.0
 }
 
@@ -237,6 +278,69 @@ func coerceBool(value interface{}) interface{} {
 		}
 		return false
 	case *int:
+		return coerceBool(*value)
+	case int8:
+		if value != 0 {
+			return true
+		}
+		return false
+	case *int8:
+		return coerceBool(*value)
+	case int16:
+		if value != 0 {
+			return true
+		}
+		return false
+	case *int16:
+		return coerceBool(*value)
+	case int32:
+		if value != 0 {
+			return true
+		}
+		return false
+	case *int32:
+		return coerceBool(*value)
+	case int64:
+		if value != 0 {
+			return true
+		}
+		return false
+	case *int64:
+		return coerceBool(*value)
+	case uint:
+		if value != 0 {
+			return true
+		}
+		return false
+	case *uint:
+		return coerceBool(*value)
+	case uint8:
+		if value != 0 {
+			return true
+		}
+		return false
+	case *uint8:
+		return coerceBool(*value)
+	case uint16:
+		if value != 0 {
+			return true
+		}
+		return false
+	case *uint16:
+		return coerceBool(*value)
+	case uint32:
+		if value != 0 {
+			return true
+		}
+		return false
+	case *uint32:
+		return coerceBool(*value)
+	case uint64:
+		if value != 0 {
+			return true
+		}
+		return false
+	case *uint64:
 		return coerceBool(*value)
 	}
 	return false
