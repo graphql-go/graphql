@@ -567,12 +567,14 @@ func completeValueCatchingError(eCtx *executionContext, returnType Type, fieldAS
 func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
 
 	resultVal := reflect.ValueOf(result)
-	if resultVal.IsValid() && resultVal.Type().Kind() == reflect.Func {
+	for resultVal.IsValid() && resultVal.Type().Kind() == reflect.Func {
 		if propertyFn, ok := result.(func() interface{}); ok {
-			return propertyFn()
+			result = propertyFn()
+			resultVal = reflect.ValueOf(result)
+		} else {
+			err := gqlerrors.NewFormattedError("Error resolving func. Expected `func() interface{}` signature")
+			panic(gqlerrors.FormatError(err))
 		}
-		err := gqlerrors.NewFormattedError("Error resolving func. Expected `func() interface{}` signature")
-		panic(gqlerrors.FormatError(err))
 	}
 
 	// If field type is NonNull, complete for inner type, and throw field error
@@ -737,7 +739,7 @@ func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*as
 		parentTypeName = info.ParentType.Name()
 	}
 	err := invariantf(
-		resultVal.IsValid() && resultVal.Type().Kind() == reflect.Slice,
+		resultVal.IsValid() && isIterable(result),
 		"User Error: expected iterable, but did not find one "+
 			"for field %v.%v.", parentTypeName, info.FieldName)
 

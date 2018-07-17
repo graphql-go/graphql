@@ -318,6 +318,15 @@ func isNullish(src interface{}) bool {
 	return false
 }
 
+// Returns true if src is a slice or an array
+func isIterable(src interface{}) bool {
+	if src == nil {
+		return false
+	}
+	t := reflect.TypeOf(src)
+	return t.Kind() == reflect.Slice || t.Kind() == reflect.Array
+}
+
 /**
  * Produces a value given a GraphQL Value AST.
  *
