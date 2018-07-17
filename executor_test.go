@@ -572,6 +572,54 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 	}
 }
 
+func TestPanicHandler(t *testing.T) {
+	query := `{syncError,}`
+	expectedData := map[string]interface{}{
+		"syncError": nil,
+	}
+	expectedErrors := []gqlerrors.FormattedError{
+		{Message: "Error getting syncError",
+			Locations: []location.SourceLocation{{Line: 1, Column: 2}}},
+	}
+	data := map[string]interface{}{
+		"syncError": func() interface{} { panic("Error getting syncError") },
+	}
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Type",
+			Fields: graphql.Fields{
+				"syncError": &graphql.Field{
+					Type: graphql.String,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ast := testutil.TestParse(t, query)
+	var caughtPanic interface{}
+	ep := graphql.ExecuteParams{
+		Schema: schema,
+		AST:    ast,
+		Root:   data,
+		PanicHandler: func(ctx context.Context, v interface{}) {
+			caughtPanic = v
+		},
+	}
+	result := testutil.TestExecute(t, ep)
+	if !reflect.DeepEqual(expectedData, result.Data) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedData, result.Data))
+	}
+	if !reflect.DeepEqual(expectedErrors, result.Errors) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
+	}
+	panicStr, ok := caughtPanic.(string)
+	if !ok || panicStr != "Error getting syncError" {
+		t.Fatalf("wrong panic, expected: `Error getting syncError`, got %v", caughtPanic)
+	}
+}
+
 func TestUsesTheInlineOperationIfNoOperationNameIsProvided(t *testing.T) {
 
 	doc := `{ a }`

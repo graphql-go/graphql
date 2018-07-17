@@ -21,6 +21,8 @@ type ExecuteParams struct {
 	// Context may be provided to pass application-specific per-request
 	// information to resolve functions.
 	Context context.Context
+
+	PanicHandler PanicHandler
 }
 
 func Execute(p ExecuteParams) (result *Result) {
@@ -44,6 +46,7 @@ func Execute(p ExecuteParams) (result *Result) {
 			Errors:        nil,
 			Result:        result,
 			Context:       p.Context,
+			PanicHandler:  p.PanicHandler,
 		})
 
 		if err != nil {
@@ -101,6 +104,7 @@ type buildExecutionCtxParams struct {
 	Errors        []gqlerrors.FormattedError
 	Result        *Result
 	Context       context.Context
+	PanicHandler  func(ctx context.Context, err interface{})
 }
 
 type executionContext struct {
@@ -111,6 +115,7 @@ type executionContext struct {
 	VariableValues map[string]interface{}
 	Errors         []gqlerrors.FormattedError
 	Context        context.Context
+	PanicHandler   func(ctx context.Context, err interface{})
 }
 
 func buildExecutionContext(p buildExecutionCtxParams) (*executionContext, error) {
@@ -157,6 +162,7 @@ func buildExecutionContext(p buildExecutionCtxParams) (*executionContext, error)
 	eCtx.VariableValues = variableValues
 	eCtx.Errors = p.Errors
 	eCtx.Context = p.Context
+	eCtx.PanicHandler = p.PanicHandler
 	return eCtx, nil
 }
 
@@ -513,7 +519,9 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 	var returnType Output
 	defer func() (interface{}, resolveFieldResultState) {
 		if r := recover(); r != nil {
-
+			if eCtx.PanicHandler != nil {
+				eCtx.PanicHandler(eCtx.Context, r)
+			}
 			var err error
 			if r, ok := r.(string); ok {
 				err = NewLocatedError(
