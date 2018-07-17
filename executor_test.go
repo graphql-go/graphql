@@ -1807,3 +1807,90 @@ func TestContextDeadline(t *testing.T) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
 	}
 }
+
+func TestThunkResultsProcessedCorrectly(t *testing.T) {
+	barType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Bar",
+		Fields: graphql.Fields{
+			"bazA": &graphql.Field{
+				Type: graphql.String,
+			},
+			"bazB": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+
+	fooType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Foo",
+		Fields: graphql.Fields{
+			"bar": &graphql.Field{
+				Type: barType,
+				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					var bar struct {
+						BazA string
+						BazB string
+					}
+					bar.BazA = "A"
+					bar.BazB = "B"
+
+					thunk := func() interface{} { return &bar }
+					return thunk, nil
+				},
+			},
+		},
+	})
+
+	queryType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Query",
+		Fields: graphql.Fields{
+			"foo": &graphql.Field{
+				Type: fooType,
+				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					var foo struct{}
+					return foo, nil
+				},
+			},
+		},
+	})
+
+	expectNoError := func(err error) {
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	}
+
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: queryType,
+	})
+	expectNoError(err)
+
+	query := "{ foo { bar { bazA bazB } } }"
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+	})
+	if len(result.Errors) != 0 {
+		t.Fatalf("expected no errors, got %v", result.Errors)
+	}
+
+	foo := result.Data.(map[string]interface{})["foo"].(map[string]interface{})
+	bar, ok := foo["bar"].(map[string]interface{})
+
+	if !ok {
+		t.Errorf("expected bar to be a map[string]interface{}: actual = %v", reflect.TypeOf(foo["bar"]))
+	} else {
+		if got, want := bar["bazA"], "A"; got != want {
+			t.Errorf("foo.bar.bazA: got=%v, want=%v", got, want)
+		}
+		if got, want := bar["bazB"], "B"; got != want {
+			t.Errorf("foo.bar.bazB: got=%v, want=%v", got, want)
+		}
+	}
+
+	if t.Failed() {
+		b, err := json.Marshal(result.Data)
+		expectNoError(err)
+		t.Log(string(b))
+	}
+}

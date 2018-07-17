@@ -11,6 +11,8 @@ import (
 )
 
 func checkList(t *testing.T, testType graphql.Type, testData interface{}, expected *graphql.Result) {
+	// TODO: uncomment t.Helper when support for go1.8 is dropped.
+	//t.Helper()
 	data := map[string]interface{}{
 		"test": testData,
 	}
@@ -561,8 +563,17 @@ func TestLists_NullableListOfNonNullArrayOfFunc_ContainsNulls(t *testing.T) {
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
-				"test": []interface{}{
-					1, nil, 2,
+				"test": nil,
+			},
+		},
+		Errors: []gqlerrors.FormattedError{
+			{
+				Message: "Cannot return null for non-nullable field DataType.test.",
+				Locations: []location.SourceLocation{
+					{
+						Line:   1,
+						Column: 10,
+					},
 				},
 			},
 		},
@@ -752,9 +763,16 @@ func TestLists_NonNullListOfNonNullArrayOfFunc_ContainsNulls(t *testing.T) {
 	}
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
-			"nest": map[string]interface{}{
-				"test": []interface{}{
-					1, nil, 2,
+			"nest": nil,
+		},
+		Errors: []gqlerrors.FormattedError{
+			{
+				Message: "Cannot return null for non-nullable field DataType.test.",
+				Locations: []location.SourceLocation{
+					{
+						Line:   1,
+						Column: 10,
+					},
 				},
 			},
 		},
