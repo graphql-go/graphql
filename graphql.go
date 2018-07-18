@@ -28,6 +28,11 @@ type Params struct {
 	// one operation.
 	OperationName string
 
+	// IdleHandler is invoked when asynchronous resolution is used and no more work can be completed
+	// until asynchronous resolution progresses. At least some values must be resolved prior to this
+	// function's return.
+	IdleHandler func()
+
 	// Context may be provided to pass application-specific per-request
 	// information to resolve functions.
 	Context context.Context
@@ -58,6 +63,7 @@ func Do(p Params) *Result {
 		AST:           AST,
 		OperationName: p.OperationName,
 		Args:          p.VariableValues,
+		IdleHandler:   p.IdleHandler,
 		Context:       p.Context,
 	})
 }

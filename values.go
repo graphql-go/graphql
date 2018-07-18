@@ -13,6 +13,7 @@ import (
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/kinds"
 	"github.com/graphql-go/graphql/language/printer"
+	"github.com/graphql-go/graphql/promise"
 )
 
 // Prepares an object map of variableValues of the correct type based on the
@@ -337,6 +338,12 @@ func isNullish(src interface{}) bool {
 		return math.IsNaN(float64(value.Float()))
 	}
 	return false
+}
+
+// Returns true if src is a *promise.Promise
+func isPromise(src interface{}) bool {
+	_, ok := src.(*promise.Promise)
+	return ok
 }
 
 // Returns true if src is a slice or an array

@@ -1807,3 +1807,259 @@ func TestContextDeadline(t *testing.T) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
 	}
 }
+
+func TestAsynchronousResolver(t *testing.T) {
+	stringChan := make(graphql.ResolvePromise, 1)
+	stringListChan := make(graphql.ResolvePromise, 1)
+
+	subObjectType := graphql.NewObject(
+		graphql.ObjectConfig{
+			Name: "SubObject",
+			Fields: graphql.Fields{
+				"source": &graphql.Field{
+					Type: graphql.String,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return p.Source, nil
+					},
+				},
+				"s": &graphql.Field{
+					Type: graphql.String,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return graphql.ResolvePromise(stringChan), nil
+					},
+				},
+			},
+		},
+	)
+
+	for name, tc := range map[string]struct {
+		Object        *graphql.Object
+		RequestString string
+		Expected      *graphql.Result
+	}{
+		"String": {
+			Object: graphql.NewObject(
+				graphql.ObjectConfig{
+					Name: "Query",
+					Fields: graphql.Fields{
+						"s": &graphql.Field{
+							Type: graphql.String,
+							Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+								return graphql.ResolvePromise(stringChan), nil
+							},
+						},
+					},
+				},
+			),
+			RequestString: "{s}",
+			Expected: &graphql.Result{
+				Data: map[string]interface{}{
+					"s": "foo",
+				},
+			},
+		},
+		"[String]": {
+			Object: graphql.NewObject(
+				graphql.ObjectConfig{
+					Name: "Query",
+					Fields: graphql.Fields{
+						"l": &graphql.Field{
+							Type: graphql.NewList(graphql.String),
+							Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+								return graphql.ResolvePromise(stringListChan), nil
+							},
+						},
+					},
+				},
+			),
+			RequestString: "{l}",
+			Expected: &graphql.Result{
+				Data: map[string]interface{}{
+					"l": []interface{}{"foo"},
+				},
+			},
+		},
+		"[StringPromise]": {
+			Object: graphql.NewObject(
+				graphql.ObjectConfig{
+					Name: "Query",
+					Fields: graphql.Fields{
+						"l": &graphql.Field{
+							Type: graphql.NewList(graphql.String),
+							Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+								return []graphql.ResolvePromise{graphql.ResolvePromise(stringChan), graphql.ResolvePromise(stringChan)}, nil
+							},
+						},
+					},
+				},
+			),
+			RequestString: "{l}",
+			Expected: &graphql.Result{
+				Data: map[string]interface{}{
+					"l": []interface{}{"foo", "foo"},
+				},
+			},
+		},
+		"[SubObject]": {
+			Object: graphql.NewObject(
+				graphql.ObjectConfig{
+					Name: "Query",
+					Fields: graphql.Fields{
+						"l": &graphql.Field{
+							Type: graphql.NewList(subObjectType),
+							Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+								return []string{"bar", "baz"}, nil
+							},
+						},
+					},
+				},
+			),
+			RequestString: "{l{source, s}}",
+			Expected: &graphql.Result{
+				Data: map[string]interface{}{
+					"l": []interface{}{
+						map[string]interface{}{
+							"source": "bar",
+							"s":      "foo",
+						},
+						map[string]interface{}{
+							"source": "baz",
+							"s":      "foo",
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			schema, err := graphql.NewSchema(graphql.SchemaConfig{
+				Query: tc.Object,
+			})
+			if err != nil {
+				t.Fatalf("unexpected error, got: %v", err)
+			}
+
+			result := graphql.Do(graphql.Params{
+				Schema:        schema,
+				RequestString: tc.RequestString,
+				IdleHandler: func() {
+					select {
+					case stringChan <- &graphql.ResolveResult{
+						Value: "foo",
+					}:
+					default:
+					}
+					select {
+					case stringListChan <- &graphql.ResolveResult{
+						Value: []string{"foo"},
+					}:
+					default:
+					}
+				},
+			})
+			if !reflect.DeepEqual(tc.Expected, result) {
+				t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(tc.Expected, result))
+			}
+		})
+	}
+}
+
+func TestAsynchronousError(t *testing.T) {
+	ch := make(graphql.ResolvePromise, 1)
+
+	var queryType = graphql.NewObject(
+		graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"hello": &graphql.Field{
+					Type: graphql.String,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return graphql.ResolvePromise(ch), nil
+					},
+				},
+			},
+		})
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: queryType,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error, got: %v", err)
+	}
+
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: "{hello}",
+		IdleHandler: func() {
+			ch <- &graphql.ResolveResult{
+				Error: errors.New("world"),
+			}
+		},
+	})
+
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"hello": nil,
+		},
+		Errors: []gqlerrors.FormattedError{gqlerrors.FormatError(errors.New("world"))},
+	}
+
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
+func TestAsynchronousError_NonNull(t *testing.T) {
+	ch := make(graphql.ResolvePromise, 1)
+
+	var queryType = graphql.NewObject(
+		graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"hello": &graphql.Field{
+					Type: graphql.NewObject(
+						graphql.ObjectConfig{
+							Name: "SubObject",
+							Fields: graphql.Fields{
+								"world": &graphql.Field{
+									Type: graphql.NewNonNull(graphql.String),
+									Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+										return graphql.ResolvePromise(ch), nil
+									},
+								},
+							},
+						},
+					),
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return graphql.ResolvePromise(ch), nil
+					},
+				},
+			},
+		})
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: queryType,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error, got: %v", err)
+	}
+
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: "{hello{world}}",
+		IdleHandler: func() {
+			ch <- &graphql.ResolveResult{
+				Error: errors.New("!"),
+			}
+		},
+	})
+
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"hello": nil,
+		},
+		Errors: []gqlerrors.FormattedError{gqlerrors.FormatError(errors.New("!"))},
+	}
+
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}

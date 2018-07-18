@@ -592,6 +592,16 @@ type ResolveInfo struct {
 	VariableValues map[string]interface{}
 }
 
+type ResolveResult struct {
+	Value interface{}
+	Error error
+}
+
+// When returned from a resolve function, ResolvePromise indicates that the resolution will be done
+// asynchronously. When used, an IdleHandler should be specified. This handler must fulfill one or
+// more promises each time it is invoked.
+type ResolvePromise chan *ResolveResult
+
 type Fields map[string]*Field
 
 type Field struct {
