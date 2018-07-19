@@ -535,7 +535,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 			str := join([]string{
 				"type",
 				name,
-				wrap("implements ", join(interfaces, ", "), ""),
+				wrap("implements ", join(interfaces, " & "), ""),
 				join(directives, " "),
 				block(fields),
 			}, " ")
@@ -551,7 +551,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 			str := join([]string{
 				"type",
 				name,
-				wrap("implements ", join(interfaces, ", "), ""),
+				wrap("implements ", join(interfaces, " & "), ""),
 				join(directives, " "),
 				block(fields),
 			}, " ")

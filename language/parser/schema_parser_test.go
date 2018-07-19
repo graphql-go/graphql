@@ -201,13 +201,13 @@ func TestSchemaParser_SimpleTypeInheritingInterface(t *testing.T) {
 }
 
 func TestSchemaParser_SimpleTypeInheritingMultipleInterfaces(t *testing.T) {
-	body := `type Hello implements Wo, rld { }`
+	body := `type Hello implements Wo & rld { }`
 	astDoc := parse(t, body)
 	expected := ast.NewDocument(&ast.Document{
-		Loc: testLoc(0, 33),
+		Loc: testLoc(0, 34),
 		Definitions: []ast.Node{
 			ast.NewObjectDefinition(&ast.ObjectDefinition{
-				Loc: testLoc(0, 33),
+				Loc: testLoc(0, 34),
 				Name: ast.NewName(&ast.Name{
 					Value: "Hello",
 					Loc:   testLoc(5, 10),
@@ -224,9 +224,47 @@ func TestSchemaParser_SimpleTypeInheritingMultipleInterfaces(t *testing.T) {
 					ast.NewNamed(&ast.Named{
 						Name: ast.NewName(&ast.Name{
 							Value: "rld",
-							Loc:   testLoc(26, 29),
+							Loc:   testLoc(27, 30),
 						}),
-						Loc: testLoc(26, 29),
+						Loc: testLoc(27, 30),
+					}),
+				},
+				Fields: []*ast.FieldDefinition{},
+			}),
+		},
+	})
+	if !reflect.DeepEqual(astDoc, expected) {
+		t.Fatalf("unexpected document, expected: %v, got: %v", expected, astDoc)
+	}
+}
+
+func TestSchemaParser_SimpleTypeInheritingMultipleInterfacesWithLeadingAmpersand(t *testing.T) {
+	body := `type Hello implements & Wo & rld { }`
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
+		Loc: testLoc(0, 36),
+		Definitions: []ast.Node{
+			ast.NewObjectDefinition(&ast.ObjectDefinition{
+				Loc: testLoc(0, 36),
+				Name: ast.NewName(&ast.Name{
+					Value: "Hello",
+					Loc:   testLoc(5, 10),
+				}),
+				Directives: []*ast.Directive{},
+				Interfaces: []*ast.Named{
+					ast.NewNamed(&ast.Named{
+						Name: ast.NewName(&ast.Name{
+							Value: "Wo",
+							Loc:   testLoc(24, 26),
+						}),
+						Loc: testLoc(24, 26),
+					}),
+					ast.NewNamed(&ast.Named{
+						Name: ast.NewName(&ast.Name{
+							Value: "rld",
+							Loc:   testLoc(29, 32),
+						}),
+						Loc: testLoc(29, 32),
 					}),
 				},
 				Fields: []*ast.FieldDefinition{},

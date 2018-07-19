@@ -1149,6 +1149,18 @@ func (gt *InputObject) defineFieldMap() InputObjectFieldMap {
 	return resultFieldMap
 }
 
+func (gt *InputObject) AddFieldConfig(fieldName string, fieldConfig *InputObjectFieldConfig) {
+	if fieldName == "" || fieldConfig == nil {
+		return
+	}
+	fieldMap, ok := gt.typeConfig.Fields.(InputObjectConfigFieldMap)
+	if gt.err = invariant(ok, "Cannot add field to a thunk"); gt.err != nil {
+		return
+	}
+	fieldMap[fieldName] = fieldConfig
+	gt.fields = gt.defineFieldMap()
+}
+
 func (gt *InputObject) Fields() InputObjectFieldMap {
 	if !gt.init {
 		gt.fields = gt.defineFieldMap()

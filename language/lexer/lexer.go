@@ -31,6 +31,7 @@ const (
 	FLOAT
 	STRING
 	BLOCK_STRING
+	AMP
 )
 
 // NAME -> keyword relationship
@@ -97,6 +98,7 @@ func init() {
 		tokenDescription[TokenKind[FLOAT]] = "Float"
 		tokenDescription[TokenKind[STRING]] = "String"
 		tokenDescription[TokenKind[BLOCK_STRING]] = "BlockString"
+		tokenDescription[TokenKind[AMP]] = "&"
 	}
 }
 
@@ -526,6 +528,9 @@ func readToken(s *source.Source, fromPosition int) (Token, error) {
 	// $
 	case '$':
 		return makeToken(TokenKind[DOLLAR], position, position+1, ""), nil
+	// &
+	case '&':
+		return makeToken(TokenKind[AMP], position, position+1, ""), nil
 	// (
 	case '(':
 		return makeToken(TokenKind[PAREN_L], position, position+1, ""), nil

@@ -5,7 +5,7 @@ schema {
   mutation: MutationType
 }
 
-type Foo implements Bar {
+type Foo implements Bar & Baz {
   one: Type
   two(argument: InputType!): Type
   three(argument: InputType, other: String): Int
