@@ -265,6 +265,10 @@ func TestLists_NonNullListOfNullableObjectsReturnsNull(t *testing.T) {
 						Column: 10,
 					},
 				},
+				Path: []interface{}{
+					"nest",
+					"test",
+				},
 			},
 		},
 	}
@@ -334,6 +338,10 @@ func TestLists_NonNullListOfNullableFunc_ReturnsNull(t *testing.T) {
 						Line:   1,
 						Column: 10,
 					},
+				},
+				Path: []interface{}{
+					"nest",
+					"test",
 				},
 			},
 		},
@@ -431,6 +439,11 @@ func TestLists_NullableListOfNonNullObjects_ContainsNull(t *testing.T) {
 						Column: 10,
 					},
 				},
+				Path: []interface{}{
+					"nest",
+					"test",
+					1,
+				},
 			},
 		},
 	}
@@ -495,6 +508,11 @@ func TestLists_NullableListOfNonNullFunc_ContainsNull(t *testing.T) {
 						Line:   1,
 						Column: 10,
 					},
+				},
+				Path: []interface{}{
+					"nest",
+					"test",
+					1,
 				},
 			},
 		},
@@ -575,6 +593,11 @@ func TestLists_NullableListOfNonNullArrayOfFunc_ContainsNulls(t *testing.T) {
 						Column: 10,
 					},
 				},
+				Path: []interface{}{
+					"nest",
+					"test",
+					1,
+				},
 			},
 		},
 	}
@@ -616,6 +639,11 @@ func TestLists_NonNullListOfNonNullObjects_ContainsNull(t *testing.T) {
 						Column: 10,
 					},
 				},
+				Path: []interface{}{
+					"nest",
+					"test",
+					1,
+				},
 			},
 		},
 	}
@@ -636,6 +664,10 @@ func TestLists_NonNullListOfNonNullObjects_ReturnsNull(t *testing.T) {
 						Line:   1,
 						Column: 10,
 					},
+				},
+				Path: []interface{}{
+					"nest",
+					"test",
 				},
 			},
 		},
@@ -688,6 +720,11 @@ func TestLists_NonNullListOfNonNullFunc_ContainsNull(t *testing.T) {
 						Column: 10,
 					},
 				},
+				Path: []interface{}{
+					"nest",
+					"test",
+					1,
+				},
 			},
 		},
 	}
@@ -713,6 +750,10 @@ func TestLists_NonNullListOfNonNullFunc_ReturnsNull(t *testing.T) {
 						Line:   1,
 						Column: 10,
 					},
+				},
+				Path: []interface{}{
+					"nest",
+					"test",
 				},
 			},
 		},
@@ -774,6 +815,11 @@ func TestLists_NonNullListOfNonNullArrayOfFunc_ContainsNulls(t *testing.T) {
 						Column: 10,
 					},
 				},
+				Path: []interface{}{
+					"nest",
+					"test",
+					1,
+				},
 			},
 		},
 	}
@@ -791,8 +837,17 @@ func TestLists_UserErrorExpectIterableButDidNotGetOne(t *testing.T) {
 		},
 		Errors: []gqlerrors.FormattedError{
 			{
-				Message:   "User Error: expected iterable, but did not find one for field DataType.test.",
-				Locations: []location.SourceLocation{},
+				Message: "User Error: expected iterable, but did not find one for field DataType.test.",
+				Locations: []location.SourceLocation{
+					{
+						Line:   1,
+						Column: 10,
+					},
+				},
+				Path: []interface{}{
+					"nest",
+					"test",
+				},
 			},
 		},
 	}

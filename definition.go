@@ -1276,3 +1276,24 @@ func assertValidName(name string) error {
 		`Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "%v" does not.`, name)
 
 }
+
+type responsePath struct {
+	Prev *responsePath
+	Key  interface{}
+}
+
+// WithKey returns a new responsePath containing the new key.
+func (p *responsePath) WithKey(key interface{}) *responsePath {
+	return &responsePath{
+		Prev: p,
+		Key:  key,
+	}
+}
+
+// AsArray returns an array of path keys.
+func (p *responsePath) AsArray() []interface{} {
+	if p == nil {
+		return nil
+	}
+	return append(p.Prev.AsArray(), p.Key)
+}
