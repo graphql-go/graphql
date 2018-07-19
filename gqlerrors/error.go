@@ -17,7 +17,12 @@ type Error struct {
 	Positions     []int
 	Locations     []location.SourceLocation
 	OriginalError error
+	Extensions    ErrorExtensions
 }
+
+// ErrorExtensions contains custom extensions that are passed through to the
+// client.
+type ErrorExtensions map[string]interface{}
 
 // implements Golang's built-in `error` interface
 func (g Error) Error() string {
