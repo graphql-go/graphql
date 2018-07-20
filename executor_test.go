@@ -523,6 +523,9 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 					Line: 3, Column: 7,
 				},
 			},
+			Path: []interface{}{
+				"syncError",
+			},
 		},
 	}
 
@@ -1304,8 +1307,17 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 		},
 		Errors: []gqlerrors.FormattedError{
 			{
-				Message:   `Expected value of type "SpecialType" but got: graphql_test.testNotSpecialType.`,
-				Locations: []location.SourceLocation{},
+				Message: `Expected value of type "SpecialType" but got: graphql_test.testNotSpecialType.`,
+				Locations: []location.SourceLocation{
+					{
+						Line:   1,
+						Column: 3,
+					},
+				},
+				Path: []interface{}{
+					"specials",
+					1,
+				},
 			},
 		},
 	}
@@ -1893,4 +1905,225 @@ func TestThunkResultsProcessedCorrectly(t *testing.T) {
 		expectNoError(err)
 		t.Log(string(b))
 	}
+}
+
+func assertJSON(t *testing.T, expected string, actual interface{}) {
+	var e interface{}
+	if err := json.Unmarshal([]byte(expected), &e); err != nil {
+		t.Fatalf(err.Error())
+	}
+	aJSON, err := json.MarshalIndent(actual, "", "  ")
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	var a interface{}
+	if err := json.Unmarshal(aJSON, &a); err != nil {
+		t.Fatalf(err.Error())
+	}
+	if !reflect.DeepEqual(e, a) {
+		eNormalizedJSON, err := json.MarshalIndent(e, "", "  ")
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		t.Fatalf("Expected JSON:\n\n%v\n\nActual JSON:\n\n%v", string(eNormalizedJSON), string(aJSON))
+	}
+}
+
+type extendedError struct {
+	error
+	extensions map[string]interface{}
+}
+
+func (err extendedError) ErrorExtensions() map[string]interface{} {
+	return err.extensions
+}
+
+var _ gqlerrors.ExtendedError = &extendedError{}
+
+func testErrors(t *testing.T, nameType graphql.Output, extensions map[string]interface{}) *graphql.Result {
+	type Hero struct {
+		Id      string `graphql:"id"`
+		Name    string
+		Friends []Hero `graphql:"friends"`
+	}
+
+	var heroFields graphql.Fields
+
+	heroType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Hero",
+		Fields: graphql.FieldsThunk(func() graphql.Fields {
+			return heroFields
+		}),
+	})
+
+	heroFields = graphql.Fields{
+		"id": &graphql.Field{
+			Type: graphql.ID,
+		},
+		"name": &graphql.Field{
+			Type: nameType,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				hero := p.Source.(Hero)
+				if hero.Name != "" {
+					return hero.Name, nil
+				}
+				err := fmt.Errorf("Name for character with ID %v could not be fetched.", hero.Id)
+				if extensions != nil {
+					return nil, &extendedError{
+						error:      err,
+						extensions: extensions,
+					}
+				}
+				return nil, err
+			},
+		},
+		"friends": &graphql.Field{
+			Type: graphql.NewList(heroType),
+		},
+	}
+
+	queryType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Query",
+		Fields: graphql.Fields{
+			"hero": &graphql.Field{
+				Type: heroType,
+				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					return Hero{
+						Name: "R2-D2",
+						Friends: []Hero{
+							{Id: "1000", Name: "Luke Skywalker"},
+							{Id: "1002"},
+							{Id: "1003", Name: "Leia Organa"},
+						},
+					}, nil
+				},
+			},
+		},
+	})
+
+	expectNoError := func(err error) {
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	}
+
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: queryType,
+	})
+	expectNoError(err)
+
+	return graphql.Do(graphql.Params{
+		Schema: schema,
+		RequestString: `{
+  hero {
+    name
+    heroFriends: friends {
+      id
+      name
+    }
+  }
+}`,
+	})
+}
+
+// http://facebook.github.io/graphql/June2018/#example-bc485
+func TestQuery_ErrorPath(t *testing.T) {
+	result := testErrors(t, graphql.String, nil)
+
+	assertJSON(t, `{
+	  "errors": [
+		{
+		  "message": "Name for character with ID 1002 could not be fetched.",
+		  "locations": [ { "line": 6, "column": 7 } ],
+		  "path": [ "hero", "heroFriends", 1, "name" ]
+		}
+	  ],
+	  "data": {
+		"hero": {
+		  "name": "R2-D2",
+		  "heroFriends": [
+			{
+			  "id": "1000",
+			  "name": "Luke Skywalker"
+			},
+			{
+			  "id": "1002",
+			  "name": null
+			},
+			{
+			  "id": "1003",
+			  "name": "Leia Organa"
+			}
+		  ]
+		}
+	  }
+	}`, result)
+}
+
+// http://facebook.github.io/graphql/June2018/#example-08b62
+func TestQuery_ErrorPathForNonNullField(t *testing.T) {
+	result := testErrors(t, graphql.NewNonNull(graphql.String), nil)
+
+	assertJSON(t, `{
+	  "errors": [
+		{
+		  "message": "Name for character with ID 1002 could not be fetched.",
+		  "locations": [ { "line": 6, "column": 7 } ],
+		  "path": [ "hero", "heroFriends", 1, "name" ]
+		}
+	  ],
+	  "data": {
+		"hero": {
+		  "name": "R2-D2",
+		  "heroFriends": [
+			{
+			  "id": "1000",
+			  "name": "Luke Skywalker"
+			},
+			null,
+			{
+			  "id": "1003",
+			  "name": "Leia Organa"
+			}
+		  ]
+		}
+	  }
+	}`, result)
+}
+
+// http://facebook.github.io/graphql/June2018/#example-fce18
+func TestQuery_ErrorExtensions(t *testing.T) {
+	result := testErrors(t, graphql.NewNonNull(graphql.String), map[string]interface{}{
+		"code":      "CAN_NOT_FETCH_BY_ID",
+		"timestamp": "Fri Feb 9 14:33:09 UTC 2018",
+	})
+
+	assertJSON(t, `{
+	  "errors": [
+		{
+		  "message": "Name for character with ID 1002 could not be fetched.",
+		  "locations": [ { "line": 6, "column": 7 } ],
+		  "path": [ "hero", "heroFriends", 1, "name" ],
+		  "extensions": {
+			  "code": "CAN_NOT_FETCH_BY_ID",
+			  "timestamp": "Fri Feb 9 14:33:09 UTC 2018"
+		  }}
+	  ],
+	  "data": {
+		"hero": {
+		  "name": "R2-D2",
+		  "heroFriends": [
+			{
+			  "id": "1000",
+			  "name": "Luke Skywalker"
+			},
+			null,
+			{
+			  "id": "1003",
+			  "name": "Leia Organa"
+			}
+		  ]
+		}
+	  }
+	}`, result)
 }

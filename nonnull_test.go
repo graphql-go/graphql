@@ -128,6 +128,9 @@ func TestNonNull_NullsANullableFieldThatThrowsSynchronously(t *testing.T) {
 						Line: 3, Column: 9,
 					},
 				},
+				Path: []interface{}{
+					"sync",
+				},
 			},
 		},
 	}
@@ -165,6 +168,9 @@ func TestNonNull_NullsANullableFieldThatThrowsInAPromise(t *testing.T) {
 					{
 						Line: 3, Column: 9,
 					},
+				},
+				Path: []interface{}{
+					"promise",
 				},
 			},
 		},
@@ -206,6 +212,10 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANullableFieldThat
 						Line: 4, Column: 11,
 					},
 				},
+				Path: []interface{}{
+					"nest",
+					"nonNullSync",
+				},
 			},
 		},
 	}
@@ -245,6 +255,10 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
 					{
 						Line: 4, Column: 11,
 					},
+				},
+				Path: []interface{}{
+					"nest",
+					"nonNullPromise",
 				},
 			},
 		},
@@ -286,6 +300,10 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 						Line: 4, Column: 11,
 					},
 				},
+				Path: []interface{}{
+					"promiseNest",
+					"nonNullSync",
+				},
 			},
 		},
 	}
@@ -325,6 +343,10 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 					{
 						Line: 4, Column: 11,
 					},
+				},
+				Path: []interface{}{
+					"promiseNest",
+					"nonNullPromise",
 				},
 			},
 		},
@@ -409,11 +431,17 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Locations: []location.SourceLocation{
 					{Line: 4, Column: 11},
 				},
+				Path: []interface{}{
+					"nest", "sync",
+				},
 			},
 			{
 				Message: syncError,
 				Locations: []location.SourceLocation{
 					{Line: 7, Column: 13},
+				},
+				Path: []interface{}{
+					"nest", "nest", "sync",
 				},
 			},
 			{
@@ -421,11 +449,17 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Locations: []location.SourceLocation{
 					{Line: 11, Column: 13},
 				},
+				Path: []interface{}{
+					"nest", "promiseNest", "sync",
+				},
 			},
 			{
 				Message: syncError,
 				Locations: []location.SourceLocation{
 					{Line: 16, Column: 11},
+				},
+				Path: []interface{}{
+					"promiseNest", "sync",
 				},
 			},
 			{
@@ -433,11 +467,17 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Locations: []location.SourceLocation{
 					{Line: 19, Column: 13},
 				},
+				Path: []interface{}{
+					"promiseNest", "nest", "sync",
+				},
 			},
 			{
 				Message: syncError,
 				Locations: []location.SourceLocation{
 					{Line: 23, Column: 13},
+				},
+				Path: []interface{}{
+					"promiseNest", "promiseNest", "sync",
 				},
 			},
 			{
@@ -445,11 +485,17 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Locations: []location.SourceLocation{
 					{Line: 5, Column: 11},
 				},
+				Path: []interface{}{
+					"nest", "promise",
+				},
 			},
 			{
 				Message: promiseError,
 				Locations: []location.SourceLocation{
 					{Line: 8, Column: 13},
+				},
+				Path: []interface{}{
+					"nest", "nest", "promise",
 				},
 			},
 			{
@@ -457,11 +503,17 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Locations: []location.SourceLocation{
 					{Line: 12, Column: 13},
 				},
+				Path: []interface{}{
+					"nest", "promiseNest", "promise",
+				},
 			},
 			{
 				Message: promiseError,
 				Locations: []location.SourceLocation{
 					{Line: 17, Column: 11},
+				},
+				Path: []interface{}{
+					"promiseNest", "promise",
 				},
 			},
 			{
@@ -469,11 +521,17 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Locations: []location.SourceLocation{
 					{Line: 20, Column: 13},
 				},
+				Path: []interface{}{
+					"promiseNest", "nest", "promise",
+				},
 			},
 			{
 				Message: promiseError,
 				Locations: []location.SourceLocation{
 					{Line: 24, Column: 13},
+				},
+				Path: []interface{}{
+					"promiseNest", "promiseNest", "promise",
 				},
 			},
 		},
@@ -562,11 +620,19 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
 				Locations: []location.SourceLocation{
 					{Line: 8, Column: 19},
 				},
+				Path: []interface{}{
+					"nest", "nonNullNest", "nonNullPromiseNest", "nonNullNest",
+					"nonNullPromiseNest", "nonNullSync",
+				},
 			},
 			{
 				Message: nonNullSyncError,
 				Locations: []location.SourceLocation{
 					{Line: 19, Column: 19},
+				},
+				Path: []interface{}{
+					"promiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullNest",
+					"nonNullPromiseNest", "nonNullSync",
 				},
 			},
 			{
@@ -574,11 +640,19 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
 				Locations: []location.SourceLocation{
 					{Line: 30, Column: 19},
 				},
+				Path: []interface{}{
+					"anotherNest", "nonNullNest", "nonNullPromiseNest", "nonNullNest",
+					"nonNullPromiseNest", "nonNullPromise",
+				},
 			},
 			{
 				Message: nonNullPromiseError,
 				Locations: []location.SourceLocation{
 					{Line: 41, Column: 19},
+				},
+				Path: []interface{}{
+					"anotherPromiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullNest",
+					"nonNullPromiseNest", "nonNullPromise",
 				},
 			},
 		},
@@ -686,6 +760,10 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
 				Locations: []location.SourceLocation{
 					{Line: 4, Column: 11},
 				},
+				Path: []interface{}{
+					"nest",
+					"nonNullSync",
+				},
 			},
 		},
 	}
@@ -723,6 +801,10 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
 				Message: `Cannot return null for non-nullable field DataType.nonNullPromise.`,
 				Locations: []location.SourceLocation{
 					{Line: 4, Column: 11},
+				},
+				Path: []interface{}{
+					"nest",
+					"nonNullPromise",
 				},
 			},
 		},
@@ -763,6 +845,10 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 				Locations: []location.SourceLocation{
 					{Line: 4, Column: 11},
 				},
+				Path: []interface{}{
+					"promiseNest",
+					"nonNullSync",
+				},
 			},
 		},
 	}
@@ -800,6 +886,10 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 				Message: `Cannot return null for non-nullable field DataType.nonNullPromise.`,
 				Locations: []location.SourceLocation{
 					{Line: 4, Column: 11},
+				},
+				Path: []interface{}{
+					"promiseNest",
+					"nonNullPromise",
 				},
 			},
 		},
@@ -960,11 +1050,19 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldReturnsNullInALongChainOf
 				Locations: []location.SourceLocation{
 					{Line: 8, Column: 19},
 				},
+				Path: []interface{}{
+					"nest", "nonNullNest", "nonNullPromiseNest", "nonNullNest",
+					"nonNullPromiseNest", "nonNullSync",
+				},
 			},
 			{
 				Message: `Cannot return null for non-nullable field DataType.nonNullSync.`,
 				Locations: []location.SourceLocation{
 					{Line: 19, Column: 19},
+				},
+				Path: []interface{}{
+					"promiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullNest",
+					"nonNullPromiseNest", "nonNullSync",
 				},
 			},
 			{
@@ -972,11 +1070,19 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldReturnsNullInALongChainOf
 				Locations: []location.SourceLocation{
 					{Line: 30, Column: 19},
 				},
+				Path: []interface{}{
+					"anotherNest", "nonNullNest", "nonNullPromiseNest", "nonNullNest",
+					"nonNullPromiseNest", "nonNullPromise",
+				},
 			},
 			{
 				Message: `Cannot return null for non-nullable field DataType.nonNullPromise.`,
 				Locations: []location.SourceLocation{
 					{Line: 41, Column: 19},
+				},
+				Path: []interface{}{
+					"anotherPromiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullNest",
+					"nonNullPromiseNest", "nonNullPromise",
 				},
 			},
 		},
@@ -1016,6 +1122,9 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldThrows(t *testing.T) {
 				Locations: []location.SourceLocation{
 					{Line: 2, Column: 17},
 				},
+				Path: []interface{}{
+					"nonNullSync",
+				},
 			},
 		},
 	}
@@ -1047,6 +1156,9 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldErrors(t *testing.T) {
 				Message: nonNullPromiseError,
 				Locations: []location.SourceLocation{
 					{Line: 2, Column: 17},
+				},
+				Path: []interface{}{
+					"nonNullPromise",
 				},
 			},
 		},
@@ -1080,6 +1192,9 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldReturnsNull(t *testing.T)
 				Locations: []location.SourceLocation{
 					{Line: 2, Column: 17},
 				},
+				Path: []interface{}{
+					"nonNullSync",
+				},
 			},
 		},
 	}
@@ -1111,6 +1226,9 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldResolvesNull(t *testing.T
 				Message: `Cannot return null for non-nullable field DataType.nonNullPromise.`,
 				Locations: []location.SourceLocation{
 					{Line: 2, Column: 17},
+				},
+				Path: []interface{}{
+					"nonNullPromise",
 				},
 			},
 		},

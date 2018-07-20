@@ -6,9 +6,16 @@ import (
 	"github.com/graphql-go/graphql/language/location"
 )
 
+type ExtendedError interface {
+	error
+	ErrorExtensions() map[string]interface{}
+}
+
 type FormattedError struct {
-	Message   string                    `json:"message"`
-	Locations []location.SourceLocation `json:"locations"`
+	Message    string                    `json:"message"`
+	Locations  []location.SourceLocation `json:"locations"`
+	Path       []interface{}             `json:"path,omitempty"`
+	Extensions map[string]interface{}    `json:"extensions,omitempty"`
 }
 
 func (g FormattedError) Error() string {
@@ -25,15 +32,19 @@ func FormatError(err error) FormattedError {
 	case FormattedError:
 		return err
 	case *Error:
-		return FormattedError{
+		ret := FormattedError{
 			Message:   err.Error(),
 			Locations: err.Locations,
+			Path:      err.Path,
 		}
+		if err := err.OriginalError; err != nil {
+			if extended, ok := err.(ExtendedError); ok {
+				ret.Extensions = extended.ErrorExtensions()
+			}
+		}
+		return ret
 	case Error:
-		return FormattedError{
-			Message:   err.Error(),
-			Locations: err.Locations,
-		}
+		return FormatError(&err)
 	default:
 		return FormattedError{
 			Message:   err.Error(),
