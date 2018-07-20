@@ -8,7 +8,7 @@ import (
 
 type ExtendedError interface {
 	error
-	ErrorExtensions() map[string]interface{}
+	Extensions() map[string]interface{}
 }
 
 type FormattedError struct {
@@ -39,7 +39,7 @@ func FormatError(err error) FormattedError {
 		}
 		if err := err.OriginalError; err != nil {
 			if extended, ok := err.(ExtendedError); ok {
-				ret.Extensions = extended.ErrorExtensions()
+				ret.Extensions = extended.Extensions()
 			}
 		}
 		return ret
