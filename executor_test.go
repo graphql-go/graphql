@@ -1934,7 +1934,7 @@ type extendedError struct {
 	extensions map[string]interface{}
 }
 
-func (err extendedError) ErrorExtensions() map[string]interface{} {
+func (err extendedError) Extensions() map[string]interface{} {
 	return err.extensions
 }
 
