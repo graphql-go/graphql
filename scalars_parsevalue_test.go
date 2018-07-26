@@ -13,6 +13,7 @@ func TestTypeSystem_Scalar_ParseValueOutputDateTime(t *testing.T) {
 	tests := []dateTimeSerializationTest{
 		{nil, nil},
 		{"", nil},
+		{(*string)(nil), nil},
 		{"2017-07-23", nil},
 		{"2017-07-23T03:46:56.647Z", t1},
 	}

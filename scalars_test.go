@@ -27,6 +27,10 @@ func TestCoerceInt(t *testing.T) {
 			want: 1,
 		},
 		{
+			in:   (*bool)(nil),
+			want: nil,
+		},
+		{
 			in:   int(math.MinInt32) - 1,
 			want: nil,
 		},
@@ -85,12 +89,20 @@ func TestCoerceInt(t *testing.T) {
 			want: 12,
 		},
 		{
+			in:   (*int)(nil),
+			want: nil,
+		},
+		{
 			in:   int8(13),
 			want: int(13),
 		},
 		{
 			in:   int8Ptr(14),
 			want: int(14),
+		},
+		{
+			in:   (*int8)(nil),
+			want: nil,
 		},
 		{
 			in:   int16(15),
@@ -101,12 +113,20 @@ func TestCoerceInt(t *testing.T) {
 			want: int(16),
 		},
 		{
+			in:   (*int16)(nil),
+			want: nil,
+		},
+		{
 			in:   int32(17),
 			want: int(17),
 		},
 		{
 			in:   int32Ptr(18),
 			want: int(18),
+		},
+		{
+			in:   (*int32)(nil),
+			want: nil,
 		},
 		{
 			in:   int64(19),
@@ -117,12 +137,20 @@ func TestCoerceInt(t *testing.T) {
 			want: int(20),
 		},
 		{
+			in:   (*int64)(nil),
+			want: nil,
+		},
+		{
 			in:   uint8(21),
 			want: int(21),
 		},
 		{
 			in:   uint8Ptr(22),
 			want: int(22),
+		},
+		{
+			in:   (*uint8)(nil),
+			want: nil,
 		},
 		{
 			in:   uint16(23),
@@ -133,12 +161,20 @@ func TestCoerceInt(t *testing.T) {
 			want: int(24),
 		},
 		{
+			in:   (*uint16)(nil),
+			want: nil,
+		},
+		{
 			in:   uint32(25),
 			want: int(25),
 		},
 		{
 			in:   uint32Ptr(26),
 			want: int(26),
+		},
+		{
+			in:   (*uint32)(nil),
+			want: nil,
 		},
 		{
 			in:   uint64(27),
@@ -149,8 +185,16 @@ func TestCoerceInt(t *testing.T) {
 			want: int(28),
 		},
 		{
+			in:   (*uint64)(nil),
+			want: nil,
+		},
+		{
 			in:   uintPtr(29),
 			want: int(29),
+		},
+		{
+			in:   (*uint)(nil),
+			want: nil,
 		},
 		{
 			in:   float32(30.1),
@@ -161,6 +205,10 @@ func TestCoerceInt(t *testing.T) {
 			want: int(31),
 		},
 		{
+			in:   (*float32)(nil),
+			want: nil,
+		},
+		{
 			in:   float64(32),
 			want: int(32),
 		},
@@ -169,12 +217,20 @@ func TestCoerceInt(t *testing.T) {
 			want: int(33),
 		},
 		{
+			in:   (*float64)(nil),
+			want: nil,
+		},
+		{
 			in:   "34",
 			want: int(34),
 		},
 		{
 			in:   stringPtr("35"),
 			want: int(35),
+		},
+		{
+			in:   (*string)(nil),
+			want: nil,
 		},
 		{
 			in:   "I'm not a number",
@@ -215,6 +271,10 @@ func TestCoerceFloat(t *testing.T) {
 			want: 1.0,
 		},
 		{
+			in:   (*bool)(nil),
+			want: nil,
+		},
+		{
 			in:   int(math.MinInt32),
 			want: float64(math.MinInt32),
 		},
@@ -227,12 +287,20 @@ func TestCoerceFloat(t *testing.T) {
 			want: float64(12),
 		},
 		{
+			in:   (*int)(nil),
+			want: nil,
+		},
+		{
 			in:   int8(13),
 			want: float64(13),
 		},
 		{
 			in:   int8Ptr(14),
 			want: float64(14),
+		},
+		{
+			in:   (*int8)(nil),
+			want: nil,
 		},
 		{
 			in:   int16(15),
@@ -243,12 +311,20 @@ func TestCoerceFloat(t *testing.T) {
 			want: float64(16),
 		},
 		{
+			in:   (*int16)(nil),
+			want: nil,
+		},
+		{
 			in:   int32(17),
 			want: float64(17),
 		},
 		{
 			in:   int32Ptr(18),
 			want: float64(18),
+		},
+		{
+			in:   (*int32)(nil),
+			want: nil,
 		},
 		{
 			in:   int64(19),
@@ -259,12 +335,20 @@ func TestCoerceFloat(t *testing.T) {
 			want: float64(20),
 		},
 		{
+			in:   (*int64)(nil),
+			want: nil,
+		},
+		{
 			in:   uint8(21),
 			want: float64(21),
 		},
 		{
 			in:   uint8Ptr(22),
 			want: float64(22),
+		},
+		{
+			in:   (*uint8)(nil),
+			want: nil,
 		},
 		{
 			in:   uint16(23),
@@ -275,12 +359,20 @@ func TestCoerceFloat(t *testing.T) {
 			want: float64(24),
 		},
 		{
+			in:   (*uint16)(nil),
+			want: nil,
+		},
+		{
 			in:   uint32(25),
 			want: float64(25),
 		},
 		{
 			in:   uint32Ptr(26),
 			want: float64(26),
+		},
+		{
+			in:   (*uint32)(nil),
+			want: nil,
 		},
 		{
 			in:   uint64(27),
@@ -291,8 +383,16 @@ func TestCoerceFloat(t *testing.T) {
 			want: float64(28),
 		},
 		{
+			in:   (*uint64)(nil),
+			want: nil,
+		},
+		{
 			in:   uintPtr(29),
 			want: float64(29),
+		},
+		{
+			in:   (*uint)(nil),
+			want: nil,
 		},
 		{
 			in:   float32(30),
@@ -303,6 +403,10 @@ func TestCoerceFloat(t *testing.T) {
 			want: float32(31),
 		},
 		{
+			in:   (*float32)(nil),
+			want: nil,
+		},
+		{
 			in:   float64(32),
 			want: float64(32),
 		},
@@ -311,12 +415,20 @@ func TestCoerceFloat(t *testing.T) {
 			want: float64(33.2),
 		},
 		{
+			in:   (*float64)(nil),
+			want: nil,
+		},
+		{
 			in:   "34",
 			want: float64(34),
 		},
 		{
 			in:   stringPtr("35.2"),
 			want: float64(35.2),
+		},
+		{
+			in:   (*string)(nil),
+			want: nil,
 		},
 		{
 			in:   "I'm not a number",
@@ -357,6 +469,10 @@ func TestCoerceBool(t *testing.T) {
 			want: true,
 		},
 		{
+			in:   (*bool)(nil),
+			want: nil,
+		},
+		{
 			in:   int(math.MinInt32),
 			want: true,
 		},
@@ -377,6 +493,10 @@ func TestCoerceBool(t *testing.T) {
 			want: false,
 		},
 		{
+			in:   (*int)(nil),
+			want: nil,
+		},
+		{
 			in:   int8(13),
 			want: true,
 		},
@@ -391,6 +511,10 @@ func TestCoerceBool(t *testing.T) {
 		{
 			in:   int8Ptr(0),
 			want: false,
+		},
+		{
+			in:   (*int8)(nil),
+			want: nil,
 		},
 		{
 			in:   int16(15),
@@ -409,6 +533,10 @@ func TestCoerceBool(t *testing.T) {
 			want: false,
 		},
 		{
+			in:   (*int16)(nil),
+			want: nil,
+		},
+		{
 			in:   int32(17),
 			want: true,
 		},
@@ -423,6 +551,10 @@ func TestCoerceBool(t *testing.T) {
 		{
 			in:   int32Ptr(0),
 			want: false,
+		},
+		{
+			in:   (*int32)(nil),
+			want: nil,
 		},
 		{
 			in:   int64(19),
@@ -441,6 +573,10 @@ func TestCoerceBool(t *testing.T) {
 			want: false,
 		},
 		{
+			in:   (*int64)(nil),
+			want: nil,
+		},
+		{
 			in:   uint8(21),
 			want: true,
 		},
@@ -455,6 +591,10 @@ func TestCoerceBool(t *testing.T) {
 		{
 			in:   uint8Ptr(0),
 			want: false,
+		},
+		{
+			in:   (*uint8)(nil),
+			want: nil,
 		},
 		{
 			in:   uint16(23),
@@ -473,6 +613,10 @@ func TestCoerceBool(t *testing.T) {
 			want: false,
 		},
 		{
+			in:   (*uint16)(nil),
+			want: nil,
+		},
+		{
 			in:   uint32(25),
 			want: true,
 		},
@@ -489,6 +633,10 @@ func TestCoerceBool(t *testing.T) {
 			want: false,
 		},
 		{
+			in:   (*uint32)(nil),
+			want: nil,
+		},
+		{
 			in:   uint64(27),
 			want: true,
 		},
@@ -503,6 +651,10 @@ func TestCoerceBool(t *testing.T) {
 		{
 			in:   uint64Ptr(0),
 			want: false,
+		},
+		{
+			in:   (*uint64)(nil),
+			want: nil,
 		},
 		{
 			in:   uintPtr(29),
@@ -529,6 +681,10 @@ func TestCoerceBool(t *testing.T) {
 			want: false,
 		},
 		{
+			in:   (*float32)(nil),
+			want: nil,
+		},
+		{
 			in:   float64(32),
 			want: true,
 		},
@@ -545,6 +701,10 @@ func TestCoerceBool(t *testing.T) {
 			want: false,
 		},
 		{
+			in:   (*float64)(nil),
+			want: nil,
+		},
+		{
 			in:   "34",
 			want: true,
 		},
@@ -559,6 +719,10 @@ func TestCoerceBool(t *testing.T) {
 		{
 			in:   stringPtr("false"),
 			want: false,
+		},
+		{
+			in:   (*string)(nil),
+			want: nil,
 		},
 		{
 			in:   "I'm some random string",
