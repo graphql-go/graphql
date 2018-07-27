@@ -964,7 +964,10 @@ func (gt *Enum) Values() []*EnumValueDefinition {
 }
 func (gt *Enum) Serialize(value interface{}) interface{} {
 	v := value
-	if reflect.ValueOf(v).Kind() == reflect.Ptr {
+	rv := reflect.ValueOf(v)
+	if kind := rv.Kind(); kind == reflect.Ptr && rv.IsNil() {
+		return nil
+	} else if kind == reflect.Ptr {
 		v = reflect.Indirect(reflect.ValueOf(v)).Interface()
 	}
 	if enumValue, ok := gt.getValueLookup()[v]; ok {
