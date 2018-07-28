@@ -61,9 +61,9 @@ type Parser struct {
 
 func Parse(p ParseParams) (*ast.Document, error) {
 	var sourceObj *source.Source
-	switch p.Source.(type) {
+	switch src := p.Source.(type) {
 	case *source.Source:
-		sourceObj = p.Source.(*source.Source)
+		sourceObj = src
 	default:
 		body, _ := p.Source.(string)
 		sourceObj = source.NewSource(&source.Source{Body: []byte(body)})
@@ -83,9 +83,9 @@ func Parse(p ParseParams) (*ast.Document, error) {
 func parseValue(p ParseParams) (ast.Value, error) {
 	var value ast.Value
 	var sourceObj *source.Source
-	switch p.Source.(type) {
+	switch src := p.Source.(type) {
 	case *source.Source:
-		sourceObj = p.Source.(*source.Source)
+		sourceObj = src
 	default:
 		body, _ := p.Source.(string)
 		sourceObj = source.NewSource(&source.Source{Body: []byte(body)})
