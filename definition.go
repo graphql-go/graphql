@@ -1283,7 +1283,7 @@ func (gl *NonNull) Error() error {
 	return gl.err
 }
 
-var NameRegExp, _ = regexp.Compile("^[_a-zA-Z][_a-zA-Z0-9]*$")
+var NameRegExp = regexp.MustCompile("^[_a-zA-Z][_a-zA-Z0-9]*$")
 
 func assertValidName(name string) error {
 	return invariantf(
