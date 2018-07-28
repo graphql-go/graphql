@@ -1600,7 +1600,7 @@ func reverse(parser *Parser, openKind int, parseFn parseFn, closeKind int, zinte
 		}
 		nodes = append(nodes, node)
 	}
-	if zinteger && len(nodes) <= 0 {
+	if zinteger && len(nodes) == 0 {
 		return nodes, unexpectedEmpty(parser, token.Start, openKind, closeKind)
 	}
 	return nodes, nil
