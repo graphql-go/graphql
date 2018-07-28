@@ -609,19 +609,20 @@ func VisitInParallel(visitorOptsSlice ...*VisitorOptions) *VisitorOptions {
 		Enter: func(p VisitFuncParams) (string, interface{}) {
 			for i, visitorOpts := range visitorOptsSlice {
 				if _, ok := skipping[i]; !ok {
-					switch node := p.Node.(type) {
-					case ast.Node:
-						kind := node.GetKind()
-						fn := GetVisitFn(visitorOpts, kind, false)
-						if fn != nil {
-							action, result := fn(p)
-							if action == ActionSkip {
-								skipping[i] = node
-							} else if action == ActionBreak {
-								skipping[i] = ActionBreak
-							} else if action == ActionUpdate {
-								return ActionUpdate, result
-							}
+					node, ok := p.Node.(ast.Node)
+					if !ok {
+						continue
+					}
+					kind := node.GetKind()
+					fn := GetVisitFn(visitorOpts, kind, false)
+					if fn != nil {
+						action, result := fn(p)
+						if action == ActionSkip {
+							skipping[i] = node
+						} else if action == ActionBreak {
+							skipping[i] = ActionBreak
+						} else if action == ActionUpdate {
+							return ActionUpdate, result
 						}
 					}
 				}
@@ -632,8 +633,7 @@ func VisitInParallel(visitorOptsSlice ...*VisitorOptions) *VisitorOptions {
 			for i, visitorOpts := range visitorOptsSlice {
 				skippedNode, ok := skipping[i]
 				if !ok {
-					switch node := p.Node.(type) {
-					case ast.Node:
+					if node, ok := p.Node.(ast.Node); ok {
 						kind := node.GetKind()
 						fn := GetVisitFn(visitorOpts, kind, true)
 						if fn != nil {
