@@ -61,9 +61,9 @@ type Parser struct {
 
 func Parse(p ParseParams) (*ast.Document, error) {
 	var sourceObj *source.Source
-	switch p.Source.(type) {
+	switch src := p.Source.(type) {
 	case *source.Source:
-		sourceObj = p.Source.(*source.Source)
+		sourceObj = src
 	default:
 		body, _ := p.Source.(string)
 		sourceObj = source.NewSource(&source.Source{Body: []byte(body)})
@@ -83,9 +83,9 @@ func Parse(p ParseParams) (*ast.Document, error) {
 func parseValue(p ParseParams) (ast.Value, error) {
 	var value ast.Value
 	var sourceObj *source.Source
-	switch p.Source.(type) {
+	switch src := p.Source.(type) {
 	case *source.Source:
-		sourceObj = p.Source.(*source.Source)
+		sourceObj = src
 	default:
 		body, _ := p.Source.(string)
 		sourceObj = source.NewSource(&source.Source{Body: []byte(body)})
@@ -1600,7 +1600,7 @@ func reverse(parser *Parser, openKind int, parseFn parseFn, closeKind int, zinte
 		}
 		nodes = append(nodes, node)
 	}
-	if zinteger && len(nodes) <= 0 {
+	if zinteger && len(nodes) == 0 {
 		return nodes, unexpectedEmpty(parser, token.Start, openKind, closeKind)
 	}
 	return nodes, nil
