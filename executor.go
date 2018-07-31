@@ -628,12 +628,6 @@ func completeValueCatchingError(eCtx *ExecutionContext, returnType Type, fieldAS
 func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, stack []ExecuteStackFrame, result interface{}) interface{} {
 
 	resultVal := reflect.ValueOf(result)
-	if resultVal.Type().Kind() == reflect.Ptr {
-		if isNullish(result, true) {
-			return nil
-		}
-		return completeValue(eCtx, returnType, fieldASTs, info, stack, resultVal.Elem().Interface())
-	}
 	if resultVal.IsValid() && resultVal.Type().Kind() == reflect.Func {
 		if propertyFn, ok := result.(func() interface{}); ok {
 			return propertyFn()
@@ -662,6 +656,12 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	if returnType, ok := returnType.(*List); ok {
 		if resultVal.Kind() != reflect.Slice && isNullish(result, false) {
 			return nil
+		}
+		if resultVal.Type().Kind() == reflect.Ptr {
+			if isNullish(result, true) {
+				return nil
+			}
+			return completeValue(eCtx, returnType, fieldASTs, info, stack, resultVal.Elem().Interface())
 		}
 		return completeListValue(eCtx, returnType, fieldASTs, info, stack, result)
 	}
