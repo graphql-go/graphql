@@ -297,7 +297,7 @@ func getSuggestedTypeNames(schema *Schema, ttype Output, fieldName string) []str
 			if index < len(suggestedInterfaces) {
 				s := suggestedInterfaces[index]
 				if s.name == possibleInterface.Name() {
-					s.count = s.count + 1
+					s.count++
 				}
 			}
 		}
@@ -782,7 +782,7 @@ func LoneAnonymousOperationRule(context *ValidationContext) *ValidationRuleInsta
 						operationCount = 0
 						for _, definition := range node.Definitions {
 							if definition.GetKind() == kinds.OperationDefinition {
-								operationCount = operationCount + 1
+								operationCount++
 							}
 						}
 					}

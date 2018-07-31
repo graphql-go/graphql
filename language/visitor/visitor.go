@@ -203,7 +203,7 @@ func Visit(root ast.Node, visitorOpts *VisitorOptions, keyMap KeyMap) interface{
 	// abstract algorithm
 Loop:
 	for {
-		index = index + 1
+		index++
 
 		isLeaving := (len(keys) == index)
 		var (

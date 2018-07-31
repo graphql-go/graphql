@@ -604,7 +604,7 @@ func ExpectPassesRuleWithSchema(t *testing.T, schema *graphql.Schema, rule graph
 }
 func RuleError(message string, locs ...int) gqlerrors.FormattedError {
 	locations := []location.SourceLocation{}
-	for i := 0; i < len(locs); i = i + 2 {
+	for i := 0; i < len(locs); i += 2 {
 		line := locs[i]
 		col := 0
 		if i+1 < len(locs) {

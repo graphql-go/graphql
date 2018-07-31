@@ -81,7 +81,7 @@ func generateFieldNameFromX(x int) string {
 	for {
 		r := v % 10
 		out = alphabet[r] + out
-		v = v / 10
+		v /= 10
 		if v == 0 {
 			break
 		}
