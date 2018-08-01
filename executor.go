@@ -727,6 +727,9 @@ func completeLeafValue(returnType Leaf, result interface{}) interface{} {
 // completeListValue complete a list value by completing each item in the list with the inner type
 func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*ast.Field, info ResolveInfo, path *responsePath, result interface{}) interface{} {
 	resultVal := reflect.ValueOf(result)
+	if resultVal.Kind() == reflect.Ptr {
+		resultVal = resultVal.Elem()
+	}
 	parentTypeName := ""
 	if info.ParentType != nil {
 		parentTypeName = info.ParentType.Name()
