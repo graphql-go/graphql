@@ -585,3 +585,62 @@ func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(schema2, encounteredSchema))
 	}
 }
+
+func TestUnionIntersectionTypes_ValueMayBeNilPointer(t *testing.T) {
+	var unionInterfaceTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"query": &graphql.Field{
+					Type: graphql.NewObject(graphql.ObjectConfig{
+						Name: "query",
+						Fields: graphql.Fields{
+							"pet": &graphql.Field{
+								Type: petType,
+							},
+							"named": &graphql.Field{
+								Type: namedType,
+							},
+						},
+					}),
+					Resolve: func(_ graphql.ResolveParams) (interface{}, error) {
+						return struct {
+							Pet   *testCat2 `graphql:"pet"`
+							Named *testCat2 `graphql:"named"`
+						}{nil, nil}, nil
+					},
+				},
+			},
+		}),
+	})
+	query := `{
+		query {
+			pet {
+				__typename
+			}
+			named {
+				__typename
+				name
+			}
+		}
+	}`
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"query": map[string]interface{}{
+				"pet": map[string]interface{}{
+					"__typename": "Cat",
+				},
+				"named": map[string]interface{}{
+					"__typename": "Cat",
+					"name":       nil,
+				},
+			}},
+	}
+	result := g(t, graphql.Params{
+		Schema:        unionInterfaceTestSchema,
+		RequestString: query,
+	})
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}

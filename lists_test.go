@@ -884,3 +884,32 @@ func TestLists_ArrayOfNullableObjects_ContainsValues(t *testing.T) {
 	}
 	checkList(t, ttype, data, expected)
 }
+
+func TestLists_ValueMayBeNilPointer(t *testing.T) {
+	var listTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"list": &graphql.Field{
+					Type: graphql.NewList(graphql.Int),
+					Resolve: func(_ graphql.ResolveParams) (interface{}, error) {
+						return []int(nil), nil
+					},
+				},
+			},
+		}),
+	})
+	query := "{ list }"
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"list": []interface{}{},
+		},
+	}
+	result := g(t, graphql.Params{
+		Schema:        listTestSchema,
+		RequestString: query,
+	})
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}

@@ -403,9 +403,8 @@ func (gt *Object) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	if fieldName == "" || fieldConfig == nil {
 		return
 	}
-	switch gt.typeConfig.Fields.(type) {
-	case Fields:
-		gt.typeConfig.Fields.(Fields)[fieldName] = fieldConfig
+	if fields, ok := gt.typeConfig.Fields.(Fields); ok {
+		fields[fieldName] = fieldConfig
 		gt.initialisedFields = false
 	}
 }
@@ -424,11 +423,11 @@ func (gt *Object) Fields() FieldDefinitionMap {
 	}
 
 	var configureFields Fields
-	switch gt.typeConfig.Fields.(type) {
+	switch fields := gt.typeConfig.Fields.(type) {
 	case Fields:
-		configureFields = gt.typeConfig.Fields.(Fields)
+		configureFields = fields
 	case FieldsThunk:
-		configureFields = gt.typeConfig.Fields.(FieldsThunk)()
+		configureFields = fields()
 	}
 
 	gt.fields, gt.err = defineFieldMap(gt, configureFields)
@@ -442,11 +441,11 @@ func (gt *Object) Interfaces() []*Interface {
 	}
 
 	var configInterfaces []*Interface
-	switch gt.typeConfig.Interfaces.(type) {
+	switch iface := gt.typeConfig.Interfaces.(type) {
 	case InterfacesThunk:
-		configInterfaces = gt.typeConfig.Interfaces.(InterfacesThunk)()
+		configInterfaces = iface()
 	case []*Interface:
-		configInterfaces = gt.typeConfig.Interfaces.([]*Interface)
+		configInterfaces = iface
 	case nil:
 	default:
 		gt.err = fmt.Errorf("Unknown Object.Interfaces type: %T", gt.typeConfig.Interfaces)
@@ -721,9 +720,8 @@ func (it *Interface) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	if fieldName == "" || fieldConfig == nil {
 		return
 	}
-	switch it.typeConfig.Fields.(type) {
-	case Fields:
-		it.typeConfig.Fields.(Fields)[fieldName] = fieldConfig
+	if fields, ok := it.typeConfig.Fields.(Fields); ok {
+		fields[fieldName] = fieldConfig
 		it.initialisedFields = false
 	}
 }
@@ -742,11 +740,11 @@ func (it *Interface) Fields() (fields FieldDefinitionMap) {
 	}
 
 	var configureFields Fields
-	switch it.typeConfig.Fields.(type) {
+	switch fields := it.typeConfig.Fields.(type) {
 	case Fields:
-		configureFields = it.typeConfig.Fields.(Fields)
+		configureFields = fields
 	case FieldsThunk:
-		configureFields = it.typeConfig.Fields.(FieldsThunk)()
+		configureFields = fields()
 	}
 
 	it.fields, it.err = defineFieldMap(it, configureFields)
@@ -964,7 +962,10 @@ func (gt *Enum) Values() []*EnumValueDefinition {
 }
 func (gt *Enum) Serialize(value interface{}) interface{} {
 	v := value
-	if reflect.ValueOf(v).Kind() == reflect.Ptr {
+	rv := reflect.ValueOf(v)
+	if kind := rv.Kind(); kind == reflect.Ptr && rv.IsNil() {
+		return nil
+	} else if kind == reflect.Ptr {
 		v = reflect.Indirect(reflect.ValueOf(v)).Interface()
 	}
 	if enumValue, ok := gt.getValueLookup()[v]; ok {
@@ -1110,11 +1111,11 @@ func (gt *InputObject) defineFieldMap() InputObjectFieldMap {
 		fieldMap InputObjectConfigFieldMap
 		err      error
 	)
-	switch gt.typeConfig.Fields.(type) {
+	switch fields := gt.typeConfig.Fields.(type) {
 	case InputObjectConfigFieldMap:
-		fieldMap = gt.typeConfig.Fields.(InputObjectConfigFieldMap)
+		fieldMap = fields
 	case InputObjectConfigFieldMapThunk:
-		fieldMap = gt.typeConfig.Fields.(InputObjectConfigFieldMapThunk)()
+		fieldMap = fields()
 	}
 	resultFieldMap := InputObjectFieldMap{}
 
@@ -1280,7 +1281,7 @@ func (gl *NonNull) Error() error {
 	return gl.err
 }
 
-var NameRegExp, _ = regexp.Compile("^[_a-zA-Z][_a-zA-Z0-9]*$")
+var NameRegExp = regexp.MustCompile("^[_a-zA-Z][_a-zA-Z0-9]*$")
 
 func assertValidName(name string) error {
 	return invariantf(
