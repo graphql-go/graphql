@@ -302,6 +302,9 @@ func isNullish(src interface{}) bool {
 	}
 	value := reflect.ValueOf(src)
 	if value.Kind() == reflect.Ptr {
+		if value.IsNil() {
+			return true
+		}
 		value = value.Elem()
 	}
 	switch value.Kind() {
@@ -324,6 +327,9 @@ func isIterable(src interface{}) bool {
 		return false
 	}
 	t := reflect.TypeOf(src)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
 	return t.Kind() == reflect.Slice || t.Kind() == reflect.Array
 }
 

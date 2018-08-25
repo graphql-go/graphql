@@ -913,3 +913,17 @@ func TestLists_ValueMayBeNilPointer(t *testing.T) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
+
+func TestLists_NullableListOfInt_ReturnsNull(t *testing.T) {
+	ttype := graphql.NewList(graphql.Int)
+	type dataType *[]int
+	var data dataType
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"nest": map[string]interface{}{
+				"test": nil,
+			},
+		},
+	}
+	checkList(t, ttype, data, expected)
+}

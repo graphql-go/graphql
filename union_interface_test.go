@@ -627,13 +627,8 @@ func TestUnionIntersectionTypes_ValueMayBeNilPointer(t *testing.T) {
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"query": map[string]interface{}{
-				"pet": map[string]interface{}{
-					"__typename": "Cat",
-				},
-				"named": map[string]interface{}{
-					"__typename": "Cat",
-					"name":       nil,
-				},
+				"pet":   nil,
+				"named": nil,
 			}},
 	}
 	result := g(t, graphql.Params{
