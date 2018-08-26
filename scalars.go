@@ -566,3 +566,51 @@ var DateTime = NewScalar(ScalarConfig{
 		return nil
 	},
 })
+
+var Duration = NewScalar(ScalarConfig{
+	Name:        "Duration",
+	Description: "The `Duration` scalar type represents a window or span of time like 1h30m10s",
+	Serialize:   serializeDuration,
+	ParseValue:  unserializeDuration,
+	ParseLiteral: func(valueAST ast.Value) interface{} {
+		switch valueAST := valueAST.(type) {
+		case *ast.StringValue:
+			return valueAST.Value
+		}
+		return nil
+	},
+})
+
+func serializeDuration(v interface{}) interface{} {
+	switch value := v.(type) {
+	case time.Duration:
+		return value.String()
+	case *time.Duration:
+		if value == nil {
+			return nil
+		}
+		return value.String()
+	}
+	return nil
+}
+
+func unserializeDuration(v interface{}) interface{} {
+	switch val := v.(type) {
+	case int64:
+		return time.Duration(val)
+	case float64:
+		return unserializeDuration(fmt.Sprintf("%fs", val))
+	case string:
+		if d, err := time.ParseDuration(val); err == nil {
+			return d
+		}
+	case *string:
+		if val == nil {
+			return nil
+		}
+
+		return unserializeDuration(*val)
+	}
+
+	return nil
+}
