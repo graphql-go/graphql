@@ -197,3 +197,34 @@ func TestTypeSystem_Scalar_SerializeOutputDateTime(t *testing.T) {
 		}
 	}
 }
+
+func TestTypeSystem_Scalar_SerializesOutputDuration(t *testing.T) {
+	d, err := time.ParseDuration("2h34m9s340ms9ns")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		in  interface{}
+		out interface{}
+	}{
+		{"string", nil},
+		{int(1), nil},
+		{float64(-1.1), nil},
+		{true, nil},
+		{false, nil},
+		{30 * time.Minute, "30m0s"},
+		{1*time.Hour + 30*time.Minute, "1h30m0s"},
+		{d, d.String()},
+		{&d, d.String()},
+		{(*time.Duration)(nil), nil},
+	}
+
+	for _, test := range tests {
+		val := graphql.Duration.Serialize(test.in)
+		if val != test.out {
+			reflectedValue := reflect.ValueOf(test.in)
+			t.Fatalf("Failed Duration.Serialize(%v(%v)), expected: %v, got %v", reflectedValue.Type(), test.in, test.out, val)
+		}
+	}
+}
