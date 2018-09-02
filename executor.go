@@ -227,21 +227,6 @@ type executeFieldsParams struct {
 	Path             *responsePath
 }
 
-// dethunkQueue is a structure that allows us to execute a classic breadth-first search.
-type dethunkQueue struct {
-	DethunkFuncs []func()
-}
-
-func (d *dethunkQueue) push(f func()) {
-	d.DethunkFuncs = append(d.DethunkFuncs, f)
-}
-
-func (d *dethunkQueue) shift() func() {
-	f := d.DethunkFuncs[0]
-	d.DethunkFuncs = d.DethunkFuncs[1:]
-	return f
-}
-
 // Implements the "Evaluating selection sets" section of the spec for "write" mode.
 func executeFieldsSerially(p executeFieldsParams) *Result {
 	if p.Source == nil {
@@ -260,7 +245,7 @@ func executeFieldsSerially(p executeFieldsParams) *Result {
 		}
 		finalResults[responseName] = resolved
 	}
-	dethunkWithBreadthFirstSearch(finalResults)
+	dethunkWithBreadthFirstTraversal(finalResults)
 
 	return &Result{
 		Data:   finalResults,
@@ -268,20 +253,11 @@ func executeFieldsSerially(p executeFieldsParams) *Result {
 	}
 }
 
-func dethunkWithBreadthFirstSearch(finalResults map[string]interface{}) {
-	dethunkQueue := &dethunkQueue{DethunkFuncs: []func(){}}
-	dethunkMap(finalResults, dethunkQueue)
-	for len(dethunkQueue.DethunkFuncs) > 0 {
-		f := dethunkQueue.shift()
-		f()
-	}
-}
-
 // Implements the "Evaluating selection sets" section of the spec for "read" mode.
 func executeFields(p executeFieldsParams) *Result {
 	finalResults := executeSubFields(p)
 
-	dethunkWithBreadthFirstSearch(finalResults)
+	dethunkWithBreadthFirstTraversal(finalResults)
 
 	return &Result{
 		Data:   finalResults,
@@ -310,8 +286,32 @@ func executeSubFields(p executeFieldsParams) map[string]interface{} {
 	return finalResults
 }
 
-// dethunkMap performs a breadth-first descent of the map, calling any thunks
+// dethunkQueue is a structure that allows us to execute a classic breadth-first traversal.
+type dethunkQueue struct {
+	DethunkFuncs []func()
+}
+
+func (d *dethunkQueue) push(f func()) {
+	d.DethunkFuncs = append(d.DethunkFuncs, f)
+}
+
+func (d *dethunkQueue) shift() func() {
+	f := d.DethunkFuncs[0]
+	d.DethunkFuncs = d.DethunkFuncs[1:]
+	return f
+}
+
+// dethunkWithBreadthFirstTraversal performs a breadth-first descent of the map, calling any thunks
 // in the map values and replacing each thunk with that thunk's return value.
+func dethunkWithBreadthFirstTraversal(finalResults map[string]interface{}) {
+	dethunkQueue := &dethunkQueue{DethunkFuncs: []func(){}}
+	dethunkMap(finalResults, dethunkQueue)
+	for len(dethunkQueue.DethunkFuncs) > 0 {
+		f := dethunkQueue.shift()
+		f()
+	}
+}
+
 func dethunkMap(m map[string]interface{}, dethunkQueue *dethunkQueue) {
 	for k, v := range m {
 		if f, ok := v.(func() interface{}); ok {
@@ -328,8 +328,6 @@ func dethunkMap(m map[string]interface{}, dethunkQueue *dethunkQueue) {
 	}
 }
 
-// dethunkList iterates through the list, calling any thunks in the list
-// and replacing each thunk with that thunk's return value.
 func dethunkList(list []interface{}, dethunkQueue *dethunkQueue) {
 	for i, v := range list {
 		if f, ok := v.(func() interface{}); ok {
