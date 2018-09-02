@@ -319,9 +319,7 @@ func dethunkMapBreadthFirst(m map[string]interface{}, dethunkQueue *dethunkQueue
 		if f, ok := v.(func() interface{}); ok {
 			m[k] = f()
 		}
-	}
-	for _, v := range m {
-		switch val := v.(type) {
+		switch val := m[k].(type) {
 		case map[string]interface{}:
 			dethunkQueue.push(func() { dethunkMapBreadthFirst(val, dethunkQueue) })
 		case []interface{}:
@@ -335,9 +333,7 @@ func dethunkListBreadthFirst(list []interface{}, dethunkQueue *dethunkQueue) {
 		if f, ok := v.(func() interface{}); ok {
 			list[i] = f()
 		}
-	}
-	for _, v := range list {
-		switch val := v.(type) {
+		switch val := list[i].(type) {
 		case map[string]interface{}:
 			dethunkQueue.push(func() { dethunkMapBreadthFirst(val, dethunkQueue) })
 		case []interface{}:
