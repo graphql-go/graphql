@@ -245,7 +245,7 @@ func executeFieldsSerially(p executeFieldsParams) *Result {
 		}
 		finalResults[responseName] = resolved
 	}
-	dethunkWithBreadthFirstTraversal(finalResults)
+	dethunkMapDepthFirst(finalResults)
 
 	return &Result{
 		Data:   finalResults,
@@ -257,7 +257,7 @@ func executeFieldsSerially(p executeFieldsParams) *Result {
 func executeFields(p executeFieldsParams) *Result {
 	finalResults := executeSubFields(p)
 
-	dethunkWithBreadthFirstTraversal(finalResults)
+	dethunkMapWithBreadthFirstTraversal(finalResults)
 
 	return &Result{
 		Data:   finalResults,
@@ -302,17 +302,19 @@ func (d *dethunkQueue) shift() func() {
 }
 
 // dethunkWithBreadthFirstTraversal performs a breadth-first descent of the map, calling any thunks
-// in the map values and replacing each thunk with that thunk's return value.
-func dethunkWithBreadthFirstTraversal(finalResults map[string]interface{}) {
+// in the map values and replacing each thunk with that thunk's return value. This parallels
+// the reference graphql-js implementation, which calls Promise.all on thunks at each depth (which
+// is an implicit parallel descent).
+func dethunkMapWithBreadthFirstTraversal(finalResults map[string]interface{}) {
 	dethunkQueue := &dethunkQueue{DethunkFuncs: []func(){}}
-	dethunkMap(finalResults, dethunkQueue)
+	dethunkMapBreadthFirst(finalResults, dethunkQueue)
 	for len(dethunkQueue.DethunkFuncs) > 0 {
 		f := dethunkQueue.shift()
 		f()
 	}
 }
 
-func dethunkMap(m map[string]interface{}, dethunkQueue *dethunkQueue) {
+func dethunkMapBreadthFirst(m map[string]interface{}, dethunkQueue *dethunkQueue) {
 	for k, v := range m {
 		if f, ok := v.(func() interface{}); ok {
 			m[k] = f()
@@ -321,14 +323,14 @@ func dethunkMap(m map[string]interface{}, dethunkQueue *dethunkQueue) {
 	for _, v := range m {
 		switch val := v.(type) {
 		case map[string]interface{}:
-			dethunkQueue.push(func() { dethunkMap(val, dethunkQueue) })
+			dethunkQueue.push(func() { dethunkMapBreadthFirst(val, dethunkQueue) })
 		case []interface{}:
-			dethunkQueue.push(func() { dethunkList(val, dethunkQueue) })
+			dethunkQueue.push(func() { dethunkListBreadthFirst(val, dethunkQueue) })
 		}
 	}
 }
 
-func dethunkList(list []interface{}, dethunkQueue *dethunkQueue) {
+func dethunkListBreadthFirst(list []interface{}, dethunkQueue *dethunkQueue) {
 	for i, v := range list {
 		if f, ok := v.(func() interface{}); ok {
 			list[i] = f()
@@ -337,9 +339,41 @@ func dethunkList(list []interface{}, dethunkQueue *dethunkQueue) {
 	for _, v := range list {
 		switch val := v.(type) {
 		case map[string]interface{}:
-			dethunkQueue.push(func() { dethunkMap(val, dethunkQueue) })
+			dethunkQueue.push(func() { dethunkMapBreadthFirst(val, dethunkQueue) })
 		case []interface{}:
-			dethunkQueue.push(func() { dethunkList(val, dethunkQueue) })
+			dethunkQueue.push(func() { dethunkListBreadthFirst(val, dethunkQueue) })
+		}
+	}
+}
+
+// dethunkMapDepthFirst performs a serial descent of the map, calling any thunks
+// in the map values and replacing each thunk with that thunk's return value. This is needed
+// to conform to the graphql-js reference implementation, which requires serial (depth-first)
+// implementations for mutation selects.
+func dethunkMapDepthFirst(m map[string]interface{}) {
+	for k, v := range m {
+		if f, ok := v.(func() interface{}); ok {
+			m[k] = f()
+		}
+		switch val := m[k].(type) {
+		case map[string]interface{}:
+			dethunkMapDepthFirst(val)
+		case []interface{}:
+			dethunkListDepthFirst(val)
+		}
+	}
+}
+
+func dethunkListDepthFirst(list []interface{}) {
+	for i, v := range list {
+		if f, ok := v.(func() interface{}); ok {
+			list[i] = f()
+		}
+		switch val := list[i].(type) {
+		case map[string]interface{}:
+			dethunkMapDepthFirst(val)
+		case []interface{}:
+			dethunkListDepthFirst(val)
 		}
 	}
 }
