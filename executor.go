@@ -227,6 +227,21 @@ type executeFieldsParams struct {
 	Path             *responsePath
 }
 
+// dethunkQueue is a structure that allows us to execute a classic breadth-first search.
+type dethunkQueue struct {
+	DethunkFuncs []func()
+}
+
+func (d *dethunkQueue) push(f func()) {
+	d.DethunkFuncs = append(d.DethunkFuncs, f)
+}
+
+func (d *dethunkQueue) shift() func() {
+	f := d.DethunkFuncs[0]
+	d.DethunkFuncs = d.DethunkFuncs[1:]
+	return f
+}
+
 // Implements the "Evaluating selection sets" section of the spec for "write" mode.
 func executeFieldsSerially(p executeFieldsParams) *Result {
 	if p.Source == nil {
@@ -245,6 +260,7 @@ func executeFieldsSerially(p executeFieldsParams) *Result {
 		}
 		finalResults[responseName] = resolved
 	}
+	dethunkWithBreadthFirstSearch(finalResults)
 
 	return &Result{
 		Data:   finalResults,
@@ -252,8 +268,28 @@ func executeFieldsSerially(p executeFieldsParams) *Result {
 	}
 }
 
+func dethunkWithBreadthFirstSearch(finalResults map[string]interface{}) {
+	dethunkQueue := &dethunkQueue{DethunkFuncs: []func(){}}
+	dethunkMap(finalResults, dethunkQueue)
+	for len(dethunkQueue.DethunkFuncs) > 0 {
+		f := dethunkQueue.shift()
+		f()
+	}
+}
+
 // Implements the "Evaluating selection sets" section of the spec for "read" mode.
 func executeFields(p executeFieldsParams) *Result {
+	finalResults := executeSubFields(p)
+
+	dethunkWithBreadthFirstSearch(finalResults)
+
+	return &Result{
+		Data:   finalResults,
+		Errors: p.ExecutionContext.Errors,
+	}
+}
+
+func executeSubFields(p executeFieldsParams) map[string]interface{} {
 	if p.Source == nil {
 		p.Source = map[string]interface{}{}
 	}
@@ -271,9 +307,42 @@ func executeFields(p executeFieldsParams) *Result {
 		finalResults[responseName] = resolved
 	}
 
-	return &Result{
-		Data:   finalResults,
-		Errors: p.ExecutionContext.Errors,
+	return finalResults
+}
+
+// dethunkMap performs a breadth-first descent of the map, calling any thunks
+// in the map values and replacing each thunk with that thunk's return value.
+func dethunkMap(m map[string]interface{}, dethunkQueue *dethunkQueue) {
+	for k, v := range m {
+		if f, ok := v.(func() interface{}); ok {
+			m[k] = f()
+		}
+	}
+	for _, v := range m {
+		switch val := v.(type) {
+		case map[string]interface{}:
+			dethunkQueue.push(func() { dethunkMap(val, dethunkQueue) })
+		case []interface{}:
+			dethunkQueue.push(func() { dethunkList(val, dethunkQueue) })
+		}
+	}
+}
+
+// dethunkList iterates through the list, calling any thunks in the list
+// and replacing each thunk with that thunk's return value.
+func dethunkList(list []interface{}, dethunkQueue *dethunkQueue) {
+	for i, v := range list {
+		if f, ok := v.(func() interface{}); ok {
+			list[i] = f()
+		}
+	}
+	for _, v := range list {
+		switch val := v.(type) {
+		case map[string]interface{}:
+			dethunkQueue.push(func() { dethunkMap(val, dethunkQueue) })
+		case []interface{}:
+			dethunkQueue.push(func() { dethunkList(val, dethunkQueue) })
+		}
 	}
 }
 
@@ -558,13 +627,9 @@ func completeValueCatchingError(eCtx *executionContext, returnType Type, fieldAS
 func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, path *responsePath, result interface{}) interface{} {
 
 	resultVal := reflect.ValueOf(result)
-	for resultVal.IsValid() && resultVal.Type().Kind() == reflect.Func {
-		if propertyFn, ok := result.(func() interface{}); ok {
-			result = propertyFn()
-			resultVal = reflect.ValueOf(result)
-		} else {
-			err := gqlerrors.NewFormattedError("Error resolving func. Expected `func() interface{}` signature")
-			panic(gqlerrors.FormatError(err))
+	if resultVal.IsValid() && resultVal.Kind() == reflect.Func {
+		return func() interface{} {
+			return completeThunkValueCatchingError(eCtx, returnType, fieldASTs, info, path, result)
 		}
 	}
 
@@ -624,6 +689,30 @@ func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Fie
 		panic(gqlerrors.FormatError(err))
 	}
 	return nil
+}
+
+func completeThunkValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, path *responsePath, result interface{}) (completed interface{}) {
+
+	// catch any panic invoked from the propertyFn (thunk)
+	defer func() {
+		if r := recover(); r != nil {
+			handleFieldError(r, FieldASTsToNodeASTs(fieldASTs), path, returnType, eCtx)
+		}
+	}()
+
+	propertyFn, ok := result.(func() interface{})
+	if !ok {
+		err := gqlerrors.NewFormattedError("Error resolving func. Expected `func() interface{}` signature")
+		panic(gqlerrors.FormatError(err))
+	}
+	result = propertyFn()
+
+	if returnType, ok := returnType.(*NonNull); ok {
+		completed := completeValue(eCtx, returnType, fieldASTs, info, path, result)
+		return completed
+	}
+	completed = completeValue(eCtx, returnType, fieldASTs, info, path, result)
+	return completed
 }
 
 // completeAbstractValue completes value of an Abstract type (Union / Interface) by determining the runtime type
@@ -709,10 +798,7 @@ func completeObjectValue(eCtx *executionContext, returnType *Object, fieldASTs [
 		Fields:           subFieldASTs,
 		Path:             path,
 	}
-	results := executeFields(executeFieldsParams)
-
-	return results.Data
-
+	return executeSubFields(executeFieldsParams)
 }
 
 // completeLeafValue complete a leaf value (Scalar / Enum) by serializing to a valid value, returning nil if serialization is not possible.
