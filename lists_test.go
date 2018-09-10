@@ -169,13 +169,13 @@ func TestLists_ListOfNullableArrayOfFuncContainsValues(t *testing.T) {
 	ttype := graphql.NewList(graphql.Int)
 
 	// `data` is a slice of functions that return values
-	// Note that its uses the expected signature `func() interface{} {...}`
+	// Note that its uses the expected signature `func() (interface{}, error) {...}`
 	data := []interface{}{
-		func() interface{} {
-			return 1
+		func() (interface{}, error) {
+			return 1, nil
 		},
-		func() interface{} {
-			return 2
+		func() (interface{}, error) {
+			return 2, nil
 		},
 	}
 	expected := &graphql.Result{
@@ -193,16 +193,16 @@ func TestLists_ListOfNullableArrayOfFuncContainsNulls(t *testing.T) {
 	ttype := graphql.NewList(graphql.Int)
 
 	// `data` is a slice of functions that return values
-	// Note that its uses the expected signature `func() interface{} {...}`
+	// Note that its uses the expected signature `func() (interface{}, error) {...}`
 	data := []interface{}{
-		func() interface{} {
-			return 1
+		func() (interface{}, error) {
+			return 1, nil
 		},
-		func() interface{} {
-			return nil
+		func() (interface{}, error) {
+			return nil, nil
 		},
-		func() interface{} {
-			return 2
+		func() (interface{}, error) {
+			return 2, nil
 		},
 	}
 	expected := &graphql.Result{
@@ -354,13 +354,13 @@ func TestLists_NonNullListOfNullableArrayOfFunc_ContainsValues(t *testing.T) {
 	ttype := graphql.NewNonNull(graphql.NewList(graphql.Int))
 
 	// `data` is a slice of functions that return values
-	// Note that its uses the expected signature `func() interface{} {...}`
+	// Note that its uses the expected signature `func() (interface{}, error) {...}`
 	data := []interface{}{
-		func() interface{} {
-			return 1
+		func() (interface{}, error) {
+			return 1, nil
 		},
-		func() interface{} {
-			return 2
+		func() (interface{}, error) {
+			return 2, nil
 		},
 	}
 	expected := &graphql.Result{
@@ -378,16 +378,16 @@ func TestLists_NonNullListOfNullableArrayOfFunc_ContainsNulls(t *testing.T) {
 	ttype := graphql.NewNonNull(graphql.NewList(graphql.Int))
 
 	// `data` is a slice of functions that return values
-	// Note that its uses the expected signature `func() interface{} {...}`
+	// Note that its uses the expected signature `func() (interface{}, error) {...}`
 	data := []interface{}{
-		func() interface{} {
-			return 1
+		func() (interface{}, error) {
+			return 1, nil
 		},
-		func() interface{} {
-			return nil
+		func() (interface{}, error) {
+			return nil, nil
 		},
-		func() interface{} {
-			return 2
+		func() (interface{}, error) {
+			return 2, nil
 		},
 	}
 	expected := &graphql.Result{
@@ -544,11 +544,11 @@ func TestLists_NullableListOfNonNullArrayOfFunc_ContainsValues(t *testing.T) {
 	// `data` is a slice of functions that return values
 	// Note that its uses the expected signature `func() interface{} {...}`
 	data := []interface{}{
-		func() interface{} {
-			return 1
+		func() (interface{}, error) {
+			return 1, nil
 		},
-		func() interface{} {
-			return 2
+		func() (interface{}, error) {
+			return 2, nil
 		},
 	}
 	expected := &graphql.Result{
@@ -566,16 +566,16 @@ func TestLists_NullableListOfNonNullArrayOfFunc_ContainsNulls(t *testing.T) {
 	ttype := graphql.NewList(graphql.NewNonNull(graphql.Int))
 
 	// `data` is a slice of functions that return values
-	// Note that its uses the expected signature `func() interface{} {...}`
+	// Note that its uses the expected signature `func() (interface{}, error){...}`
 	data := []interface{}{
-		func() interface{} {
-			return 1
+		func() (interface{}, error) {
+			return 1, nil
 		},
-		func() interface{} {
-			return nil
+		func() (interface{}, error) {
+			return nil, nil
 		},
-		func() interface{} {
-			return 2
+		func() (interface{}, error) {
+			return 2, nil
 		},
 	}
 	expected := &graphql.Result{
@@ -773,13 +773,13 @@ func TestLists_NonNullListOfNonNullArrayOfFunc_ContainsValues(t *testing.T) {
 	ttype := graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.Int)))
 
 	// `data` is a slice of functions that return values
-	// Note that its uses the expected signature `func() interface{} {...}`
+	// Note that its uses the expected signature `func() (interface{}, error) {...}`
 	data := []interface{}{
-		func() interface{} {
-			return 1
+		func() (interface{}, error) {
+			return 1, nil
 		},
-		func() interface{} {
-			return 2
+		func() (interface{}, error) {
+			return 2, nil
 		},
 	}
 	expected := &graphql.Result{
@@ -797,16 +797,16 @@ func TestLists_NonNullListOfNonNullArrayOfFunc_ContainsNulls(t *testing.T) {
 	ttype := graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.Int)))
 
 	// `data` is a slice of functions that return values
-	// Note that its uses the expected signature `func() interface{} {...}`
+	// Note that its uses the expected signature `func() (interface{}, error) {...}`
 	data := []interface{}{
-		func() interface{} {
-			return 1
+		func() (interface{}, error) {
+			return 1, nil
 		},
-		func() interface{} {
-			return nil
+		func() (interface{}, error) {
+			return nil, nil
 		},
-		func() interface{} {
-			return 2
+		func() (interface{}, error) {
+			return 2, nil
 		},
 	}
 	expected := &graphql.Result{
