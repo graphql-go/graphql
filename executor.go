@@ -728,18 +728,24 @@ func completeThunkValueCatchingError(eCtx *executionContext, returnType Type, fi
 		}
 	}()
 
-	propertyFn, ok := result.(func() interface{})
+	propertyFn, ok := result.(func() (interface{}, error))
 	if !ok {
-		err := gqlerrors.NewFormattedError("Error resolving func. Expected `func() interface{}` signature")
+		err := gqlerrors.NewFormattedError("Error resolving func. Expected `func() (interface{}, error)` signature")
 		panic(gqlerrors.FormatError(err))
 	}
-	result = propertyFn()
+	fnResult, err := propertyFn()
+	if err != nil {
+		panic(gqlerrors.FormatError(err))
+	}
+
+	result = fnResult
 
 	if returnType, ok := returnType.(*NonNull); ok {
 		completed := completeValue(eCtx, returnType, fieldASTs, info, path, result)
 		return completed
 	}
 	completed = completeValue(eCtx, returnType, fieldASTs, info, path, result)
+
 	return completed
 }
 

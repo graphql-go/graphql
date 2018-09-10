@@ -1846,7 +1846,7 @@ func TestThunkResultsProcessedCorrectly(t *testing.T) {
 					bar.BazA = "A"
 					bar.BazB = "B"
 
-					thunk := func() interface{} { return &bar }
+					thunk := func() (interface{}, error) { return &bar, nil }
 					return thunk, nil
 				},
 			},
@@ -1903,6 +1903,111 @@ func TestThunkResultsProcessedCorrectly(t *testing.T) {
 	if t.Failed() {
 		b, err := json.Marshal(result.Data)
 		expectNoError(err)
+		t.Log(string(b))
+	}
+}
+
+func TestThunkErrorsAreHandledCorrectly(t *testing.T) {
+	var bazCError = errors.New("barC error")
+	barType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Bar",
+		Fields: graphql.Fields{
+			"bazA": &graphql.Field{
+				Type: graphql.String,
+			},
+			"bazB": &graphql.Field{
+				Type: graphql.String,
+			},
+			"bazC": &graphql.Field{
+				Type: graphql.String,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					thunk := func() (interface{}, error) {
+						return nil, bazCError
+					}
+					return thunk, nil
+				},
+			},
+		},
+	})
+
+	fooType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Foo",
+		Fields: graphql.Fields{
+			"bar": &graphql.Field{
+				Type: barType,
+				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					var bar struct {
+						BazA string
+						BazB string
+					}
+					bar.BazA = "A"
+					bar.BazB = "B"
+
+					thunk := func() (interface{}, error) {
+						return &bar, nil
+					}
+					return thunk, nil
+				},
+			},
+		},
+	})
+
+	queryType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Query",
+		Fields: graphql.Fields{
+			"foo": &graphql.Field{
+				Type: fooType,
+				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					var foo struct{}
+					return foo, nil
+				},
+			},
+		},
+	})
+
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: queryType,
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error, got: %v", err)
+	}
+
+	query := "{ foo { bar { bazA bazB bazC } } }"
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+	})
+
+	foo := result.Data.(map[string]interface{})["foo"].(map[string]interface{})
+	bar, ok := foo["bar"].(map[string]interface{})
+
+	if !ok {
+		t.Errorf("expected bar to be a map[string]interface{}: actual = %v", reflect.TypeOf(foo["bar"]))
+	} else {
+		if got, want := bar["bazA"], "A"; got != want {
+			t.Errorf("foo.bar.bazA: got=%v, want=%v", got, want)
+		}
+		if got, want := bar["bazB"], "B"; got != want {
+			t.Errorf("foo.bar.bazB: got=%v, want=%v", got, want)
+		}
+		if got := bar["bazC"]; got != nil {
+			t.Errorf("foo.bar.bazC: got=%v, want=nil", got)
+		}
+		var errs = result.Errors
+		if len(errs) != 1 {
+			t.Fatalf("expected 1 error, got %v", result.Errors)
+		}
+		if got, want := errs[0].Message, bazCError.Error(); got != want {
+			t.Errorf("expected error: got=%v, want=%v", got, want)
+		}
+	}
+
+	if t.Failed() {
+		b, err := json.Marshal(result.Data)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 		t.Log(string(b))
 	}
 }
