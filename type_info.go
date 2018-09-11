@@ -206,11 +206,7 @@ func (ti *TypeInfo) Leave(node ast.Node) {
 		}
 	case kinds.Directive:
 		ti.directive = nil
-	case kinds.OperationDefinition:
-		fallthrough
-	case kinds.InlineFragment:
-		fallthrough
-	case kinds.FragmentDefinition:
+	case kinds.OperationDefinition, kinds.InlineFragment, kinds.FragmentDefinition:
 		// pop ti.typeStack
 		if len(ti.typeStack) > 0 {
 			_, ti.typeStack = ti.typeStack[len(ti.typeStack)-1], ti.typeStack[:len(ti.typeStack)-1]
@@ -226,9 +222,7 @@ func (ti *TypeInfo) Leave(node ast.Node) {
 		if len(ti.inputTypeStack) > 0 {
 			_, ti.inputTypeStack = ti.inputTypeStack[len(ti.inputTypeStack)-1], ti.inputTypeStack[:len(ti.inputTypeStack)-1]
 		}
-	case kinds.ListValue:
-		fallthrough
-	case kinds.ObjectField:
+	case kinds.ListValue, kinds.ObjectField:
 		// pop ti.inputTypeStack
 		if len(ti.inputTypeStack) > 0 {
 			_, ti.inputTypeStack = ti.inputTypeStack[len(ti.inputTypeStack)-1], ti.inputTypeStack[:len(ti.inputTypeStack)-1]
