@@ -1102,7 +1102,6 @@ func NewInputObject(config InputObjectConfig) *InputObject {
 	gt.PrivateName = config.Name
 	gt.PrivateDescription = config.Description
 	gt.typeConfig = config
-	//gt.fields = gt.defineFieldMap()
 	return gt
 }
 
