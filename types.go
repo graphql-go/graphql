@@ -9,7 +9,7 @@ import (
 type Result struct {
 	Data            interface{}                `json:"data"`
 	Errors          []gqlerrors.FormattedError `json:"errors,omitempty"`
-	QueryComplexity int                        `json:"query_complexity,omitempty"`
+	QueryComplexity int                        `json:"queryComplexity,omitempty"`
 }
 
 func (r *Result) HasErrors() bool {
