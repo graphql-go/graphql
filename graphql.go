@@ -2,6 +2,7 @@ package graphql
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/GannettDigital/graphql/gqlerrors"
 	"github.com/GannettDigital/graphql/language/parser"
@@ -28,6 +29,9 @@ type Params struct {
 	// one operation.
 	OperationName string
 
+	// The maximum complexity cost of a query, any query exceeding this will error
+	MaxCost int
+
 	// Context may be provided to pass application-specific per-request
 	// information to resolve functions.
 	Context context.Context
@@ -52,12 +56,32 @@ func Do(p Params) *Result {
 		}
 	}
 
-	return Execute(ExecuteParams{
+	ep := ExecuteParams{
 		Schema:        p.Schema,
 		Root:          p.RootObject,
 		AST:           AST,
 		OperationName: p.OperationName,
 		Args:          p.VariableValues,
 		Context:       p.Context,
-	})
+	}
+
+	var cost int
+	if p.MaxCost > 0 {
+		cost, err = QueryComplexity(ep)
+		if err != nil {
+			return &Result{Errors: []gqlerrors.FormattedError{gqlerrors.FormatError(err)}}
+		}
+		if cost > p.MaxCost {
+			return &Result{
+				Errors: []gqlerrors.FormattedError{
+					gqlerrors.NewFormattedError(fmt.Sprintf("maximum complexity cost %d exceeded, query cost %d", p.MaxCost, cost)),
+				},
+			}
+		}
+	}
+
+	result := Execute(ep)
+	result.QueryComplexity = cost
+
+	return result
 }

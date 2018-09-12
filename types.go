@@ -7,8 +7,9 @@ import (
 // type Schema interface{}
 
 type Result struct {
-	Data   interface{}                `json:"data"`
-	Errors []gqlerrors.FormattedError `json:"errors,omitempty"`
+	Data            interface{}                `json:"data"`
+	Errors          []gqlerrors.FormattedError `json:"errors,omitempty"`
+	QueryComplexity int                        `json:"query_complexity,omitempty"`
 }
 
 func (r *Result) HasErrors() bool {

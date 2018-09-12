@@ -526,6 +526,7 @@ func defineFieldMap(ttype Named, fieldMap Fields) (FieldDefinitionMap, error) {
 		}
 		fieldDef := &FieldDefinition{
 			Name:              fieldName,
+			Cost:              field.Cost,
 			Description:       field.Description,
 			Type:              field.Type,
 			Resolve:           field.Resolve,
@@ -597,6 +598,7 @@ type Fields map[string]*Field
 
 type Field struct {
 	Name              string              `json:"name"` // used by graphlql-relay
+	Cost              int                 `json:"cost"`
 	Type              Output              `json:"type"`
 	Args              FieldConfigArgument `json:"args"`
 	Resolve           FieldResolveFn      `json:"-"`
@@ -615,6 +617,7 @@ type ArgumentConfig struct {
 type FieldDefinitionMap map[string]*FieldDefinition
 type FieldDefinition struct {
 	Name              string         `json:"name"`
+	Cost              int            `json:"cost"`
 	Description       string         `json:"description"`
 	Type              Output         `json:"type"`
 	Args              []*Argument    `json:"args"`
