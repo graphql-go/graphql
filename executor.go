@@ -23,7 +23,7 @@ type ExecuteParams struct {
 	Context context.Context
 }
 
-func Execute(p ExecuteParams) (result *Result) {
+func Execute(p ExecuteParams) *Result {
 	// Use background context if no context was provided
 	ctx := p.Context
 	if ctx == nil {
@@ -31,18 +31,17 @@ func Execute(p ExecuteParams) (result *Result) {
 	}
 
 	resultChannel := make(chan *Result)
-	result = &Result{}
 
 	go func(out chan<- *Result, done <-chan struct{}) {
+		var result *Result
+
 		defer func() {
-			if err := recover(); err != nil {
-				result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
-			}
 			select {
 			case out <- result:
 			case <-done:
 			}
 		}()
+
 		exeContext, err := buildExecutionContext(buildExecutionCtxParams{
 			Schema:        p.Schema,
 			Root:          p.Root,
@@ -54,7 +53,9 @@ func Execute(p ExecuteParams) (result *Result) {
 		})
 
 		if err != nil {
-			result.Errors = append(result.Errors, gqlerrors.FormatError(err))
+			result = &Result{
+				Errors: gqlerrors.FormatErrors(err),
+			}
 			return
 		}
 
@@ -63,15 +64,18 @@ func Execute(p ExecuteParams) (result *Result) {
 			Root:             p.Root,
 			Operation:        exeContext.Operation,
 		})
+
+		return
 	}(resultChannel, ctx.Done())
 
 	select {
 	case <-ctx.Done():
-		result.Errors = append(result.Errors, gqlerrors.FormatError(ctx.Err()))
+		return &Result{
+			Errors: gqlerrors.FormatErrors(ctx.Err()),
+		}
 	case r := <-resultChannel:
-		result = r
+		return r
 	}
-	return
 }
 
 type buildExecutionCtxParams struct {
@@ -165,11 +169,20 @@ func executeOperation(p executeOperationParams) *Result {
 		Fields:           fields,
 	}
 
+	var result *Result
 	if p.Operation.GetOperation() == ast.OperationTypeMutation {
-		return executeFieldsSerially(executeFieldsParams)
+		result, err = executeFieldsSerially(executeFieldsParams)
+	} else {
+		result, err = executeFields(executeFieldsParams)
 	}
-	return executeFields(executeFieldsParams)
 
+	if err != nil {
+		return &Result{
+			Errors: gqlerrors.FormatErrors(err),
+		}
+	}
+
+	return result
 }
 
 // Extracts the root type of the operation from the schema.
@@ -228,7 +241,7 @@ type executeFieldsParams struct {
 }
 
 // Implements the "Evaluating selection sets" section of the spec for "write" mode.
-func executeFieldsSerially(p executeFieldsParams) *Result {
+func executeFieldsSerially(p executeFieldsParams) (*Result, error) {
 	if p.Source == nil {
 		p.Source = map[string]interface{}{}
 	}
@@ -239,33 +252,45 @@ func executeFieldsSerially(p executeFieldsParams) *Result {
 	finalResults := make(map[string]interface{}, len(p.Fields))
 	for responseName, fieldASTs := range p.Fields {
 		fieldPath := p.Path.WithKey(responseName)
-		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs, fieldPath)
-		if state.hasNoFieldDefs {
+		resolved, err := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs, fieldPath)
+		if err != nil {
+			if err != errNoSuchField {
+				return nil, err
+			}
 			continue
 		}
 		finalResults[responseName] = resolved
 	}
-	dethunkMapDepthFirst(finalResults)
+
+
+	if err := dethunkMapDepthFirst(finalResults); err != nil {
+		return nil, err
+	}
 
 	return &Result{
 		Data:   finalResults,
 		Errors: p.ExecutionContext.Errors,
-	}
+	}, nil
 }
 
 // Implements the "Evaluating selection sets" section of the spec for "read" mode.
-func executeFields(p executeFieldsParams) *Result {
-	finalResults := executeSubFields(p)
+func executeFields(p executeFieldsParams) (*Result, error) {
+	finalResults, err := executeSubFields(p)
+	if err != nil {
+		return nil, err
+	}
 
-	dethunkMapWithBreadthFirstTraversal(finalResults)
+	if err := dethunkMapWithBreadthFirstTraversal(finalResults); err != nil {
+		return nil, err
+	}
 
 	return &Result{
 		Data:   finalResults,
 		Errors: p.ExecutionContext.Errors,
-	}
+	}, nil
 }
 
-func executeSubFields(p executeFieldsParams) map[string]interface{} {
+func executeSubFields(p executeFieldsParams) (map[string]interface{}, error) {
 	if p.Source == nil {
 		p.Source = map[string]interface{}{}
 	}
@@ -276,26 +301,29 @@ func executeSubFields(p executeFieldsParams) map[string]interface{} {
 	finalResults := make(map[string]interface{}, len(p.Fields))
 	for responseName, fieldASTs := range p.Fields {
 		fieldPath := p.Path.WithKey(responseName)
-		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs, fieldPath)
-		if state.hasNoFieldDefs {
+		resolved, err := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs, fieldPath)
+		if err != nil {
+			if err != errNoSuchField {
+				return nil, err
+			}
 			continue
 		}
 		finalResults[responseName] = resolved
 	}
 
-	return finalResults
+	return finalResults, nil
 }
 
 // dethunkQueue is a structure that allows us to execute a classic breadth-first traversal.
 type dethunkQueue struct {
-	DethunkFuncs []func()
+	DethunkFuncs []func() error
 }
 
-func (d *dethunkQueue) push(f func()) {
+func (d *dethunkQueue) push(f func() error) {
 	d.DethunkFuncs = append(d.DethunkFuncs, f)
 }
 
-func (d *dethunkQueue) shift() func() {
+func (d *dethunkQueue) shift() func() error {
 	f := d.DethunkFuncs[0]
 	d.DethunkFuncs = d.DethunkFuncs[1:]
 	return f
@@ -305,73 +333,98 @@ func (d *dethunkQueue) shift() func() {
 // in the map values and replacing each thunk with that thunk's return value. This parallels
 // the reference graphql-js implementation, which calls Promise.all on thunks at each depth (which
 // is an implicit parallel descent).
-func dethunkMapWithBreadthFirstTraversal(finalResults map[string]interface{}) {
-	dethunkQueue := &dethunkQueue{DethunkFuncs: []func(){}}
-	dethunkMapBreadthFirst(finalResults, dethunkQueue)
+func dethunkMapWithBreadthFirstTraversal(finalResults map[string]interface{}) error {
+	dethunkQueue := &dethunkQueue{DethunkFuncs: []func() error{}}
+	if err := dethunkMapBreadthFirst(finalResults, dethunkQueue); err != nil {
+		return err
+	}
 	for len(dethunkQueue.DethunkFuncs) > 0 {
 		f := dethunkQueue.shift()
-		f()
+		if err := f(); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func dethunkMapBreadthFirst(m map[string]interface{}, dethunkQueue *dethunkQueue) {
+func dethunkMapBreadthFirst(m map[string]interface{}, dethunkQueue *dethunkQueue) (err error) {
 	for k, v := range m {
-		if f, ok := v.(func() interface{}); ok {
-			m[k] = f()
+		if f, ok := v.(func() (interface{}, error)); ok {
+			if m[k], err = f(); err != nil {
+				return err
+			}
 		}
 		switch val := m[k].(type) {
 		case map[string]interface{}:
-			dethunkQueue.push(func() { dethunkMapBreadthFirst(val, dethunkQueue) })
+			dethunkQueue.push(func() error { return dethunkMapBreadthFirst(val, dethunkQueue) })
 		case []interface{}:
-			dethunkQueue.push(func() { dethunkListBreadthFirst(val, dethunkQueue) })
+			dethunkQueue.push(func() error { return dethunkListBreadthFirst(val, dethunkQueue) })
 		}
 	}
+	return nil
 }
 
-func dethunkListBreadthFirst(list []interface{}, dethunkQueue *dethunkQueue) {
+func dethunkListBreadthFirst(list []interface{}, dethunkQueue *dethunkQueue) (err error) {
 	for i, v := range list {
-		if f, ok := v.(func() interface{}); ok {
-			list[i] = f()
+		if f, ok := v.(func() (interface{}, error)); ok {
+			if list[i], err = f(); err != nil {
+				return err
+			}
 		}
 		switch val := list[i].(type) {
 		case map[string]interface{}:
-			dethunkQueue.push(func() { dethunkMapBreadthFirst(val, dethunkQueue) })
+			dethunkQueue.push(func() error { return dethunkMapBreadthFirst(val, dethunkQueue) })
 		case []interface{}:
-			dethunkQueue.push(func() { dethunkListBreadthFirst(val, dethunkQueue) })
+			dethunkQueue.push(func() error { return dethunkListBreadthFirst(val, dethunkQueue) })
 		}
 	}
+	return nil
 }
 
 // dethunkMapDepthFirst performs a serial descent of the map, calling any thunks
 // in the map values and replacing each thunk with that thunk's return value. This is needed
 // to conform to the graphql-js reference implementation, which requires serial (depth-first)
 // implementations for mutation selects.
-func dethunkMapDepthFirst(m map[string]interface{}) {
+func dethunkMapDepthFirst(m map[string]interface{}) (err error) {
 	for k, v := range m {
-		if f, ok := v.(func() interface{}); ok {
-			m[k] = f()
+		if f, ok := v.(func() (interface{}, error)); ok {
+			if m[k], err = f(); err != nil {
+				return err
+			}
 		}
 		switch val := m[k].(type) {
 		case map[string]interface{}:
-			dethunkMapDepthFirst(val)
+			if err = dethunkMapDepthFirst(val); err != nil {
+				return err
+			}
 		case []interface{}:
-			dethunkListDepthFirst(val)
+			if err = dethunkListDepthFirst(val); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func dethunkListDepthFirst(list []interface{}) {
+func dethunkListDepthFirst(list []interface{}) (err error) {
 	for i, v := range list {
-		if f, ok := v.(func() interface{}); ok {
-			list[i] = f()
+		if f, ok := v.(func() (interface{}, error)); ok {
+			if list[i], err = f(); err != nil {
+				return err
+			}
 		}
 		switch val := list[i].(type) {
 		case map[string]interface{}:
-			dethunkMapDepthFirst(val)
+			if err = dethunkMapDepthFirst(val); err != nil {
+				return err
+			}
 		case []interface{}:
-			dethunkListDepthFirst(val)
+			if err = dethunkListDepthFirst(val); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 type collectFieldsParams struct {
@@ -554,35 +607,28 @@ func getFieldEntryKey(node *ast.Field) string {
 	return ""
 }
 
-// Internal resolveField state
-type resolveFieldResultState struct {
-	hasNoFieldDefs bool
+func handleFieldError(r interface{}, fieldNodes []ast.Node, path *ResponsePath, returnType Output, eCtx *executionContext) error {
+	err := NewLocatedErrorWithPath(r, fieldNodes, path.AsArray())
+
+	// If the field type is non-nullable, then it is resolved without any protection from errors,
+	// however it still properly locates the error.
+	if IsNonNullType(returnType) {
+		return err
+	}
+
+	// Otherwise, error protection is applied, logging the error and resolving a null value for this
+	// field if one is encountered.
+	eCtx.Errors = append(eCtx.Errors, gqlerrors.FormatError(err))
+	return nil
 }
 
-func handleFieldError(r interface{}, fieldNodes []ast.Node, path *ResponsePath, returnType Output, eCtx *executionContext) {
-	err := NewLocatedErrorWithPath(r, fieldNodes, path.AsArray())
-	// send panic upstream
-	if _, ok := returnType.(*NonNull); ok {
-		panic(err)
-	}
-	eCtx.Errors = append(eCtx.Errors, gqlerrors.FormatError(err))
-}
+var errNoSuchField = errors.New("cannot find field def for given name")
 
 // Resolves the field on the given source object. In particular, this
 // figures out the value that the field returns by calling its resolve function,
 // then calls completeValue to complete promises, serialize scalars, or execute
 // the sub-selection-set for objects.
-func resolveField(eCtx *executionContext, parentType *Object, source interface{}, fieldASTs []*ast.Field, path *ResponsePath) (result interface{}, resultState resolveFieldResultState) {
-	// catch panic from resolveFn
-	var returnType Output
-	defer func() (interface{}, resolveFieldResultState) {
-		if r := recover(); r != nil {
-			handleFieldError(r, FieldASTsToNodeASTs(fieldASTs), path, returnType, eCtx)
-			return result, resultState
-		}
-		return result, resultState
-	}()
-
+func resolveField(eCtx *executionContext, parentType *Object, source interface{}, fieldASTs []*ast.Field, path *ResponsePath) (result interface{}, err error) {
 	fieldAST := fieldASTs[0]
 	fieldName := ""
 	if fieldAST.Name != nil {
@@ -591,14 +637,26 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 
 	fieldDef := getFieldDef(eCtx.Schema, parentType, fieldName)
 	if fieldDef == nil {
-		resultState.hasNoFieldDefs = true
-		return nil, resultState
+		return nil, errNoSuchField
 	}
-	returnType = fieldDef.Type
+	returnType := fieldDef.Type
 	resolveFn := fieldDef.Resolve
 	if resolveFn == nil {
 		resolveFn = DefaultResolveFn
 	}
+
+	defer func() {
+		// Long ago when the executor implementation used panic() to throw errors [1], we also
+		// acquiesced user-defined functions for resolving fields in reporting errors with panic() [2].
+		// Today, we've switched to Go's idiomatic error handling. The recover() here is solely for
+		// compatibility. More specifically, to avoid panic() being crashed in legacy Resolve code.
+		//
+		// [1]: https://github.com/graphql-go/graphql/issues/28
+		// [2]: https://github.com/graphql-go/graphql/issues/66#issuecomment-154703490
+		if r := recover(); r != nil {
+			err = handleFieldError(r, FieldASTsToNodeASTs(fieldASTs), path, returnType, eCtx)
+		}
+	}()
 
 	// Build a map of arguments from the field.arguments AST, using the
 	// variables scope to fulfill any variable references.
@@ -618,68 +676,59 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		VariableValues: eCtx.VariableValues,
 	}
 
-	var resolveFnError error
-
-	result, resolveFnError = resolveFn(ResolveParams{
+	result, err = resolveFn(ResolveParams{
 		Source:  source,
 		Args:    args,
 		Info:    info,
 		Context: eCtx.Context,
 	})
 
-	if resolveFnError != nil {
-		panic(resolveFnError)
+	if err != nil {
+		return nil, handleFieldError(err, FieldASTsToNodeASTs(fieldASTs), path, returnType, eCtx)
 	}
 
-	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, path, result)
-	return completed, resultState
+	return completeValueCatchingError(eCtx, returnType, fieldASTs, info, path, result)
 }
 
-func completeValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) (completed interface{}) {
-	// catch panic
-	defer func() interface{} {
-		if r := recover(); r != nil {
-			handleFieldError(r, FieldASTsToNodeASTs(fieldASTs), path, returnType, eCtx)
-			return completed
-		}
-		return completed
-	}()
-
-	if returnType, ok := returnType.(*NonNull); ok {
-		completed := completeValue(eCtx, returnType, fieldASTs, info, path, result)
-		return completed
+// completeValueCatchingError is a wrapper around completeValue which detects and logs errors in the
+// execution context.
+func completeValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) (interface{}, error) {
+	completed, err := completeValue(eCtx, returnType, fieldASTs, info, path, result)
+	if err == nil {
+		return completed, nil
 	}
-	completed = completeValue(eCtx, returnType, fieldASTs, info, path, result)
-	return completed
+
+	// Handle error.
+	return nil, handleFieldError(err, FieldASTsToNodeASTs(fieldASTs), path, returnType, eCtx)
 }
 
-func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) interface{} {
-
+func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) (interface{}, error) {
 	resultVal := reflect.ValueOf(result)
 	if resultVal.IsValid() && resultVal.Kind() == reflect.Func {
-		return func() interface{} {
+		return func() (interface{}, error) {
 			return completeThunkValueCatchingError(eCtx, returnType, fieldASTs, info, path, result)
-		}
+		}, nil
 	}
 
-	// If field type is NonNull, complete for inner type, and throw field error
-	// if result is null.
-	if returnType, ok := returnType.(*NonNull); ok {
-		completed := completeValue(eCtx, returnType.OfType, fieldASTs, info, path, result)
-		if completed == nil {
+	// If field type is NonNull, complete for inner type, and throw field error if result is null.
+	if IsNonNullType(returnType) {
+		completed, err := completeValue(eCtx, returnType.(*NonNull).OfType, fieldASTs, info, path, result)
+		if err != nil {
+			return nil, err
+		} else if completed == nil {
 			err := NewLocatedErrorWithPath(
 				fmt.Sprintf("Cannot return null for non-nullable field %v.%v.", info.ParentType, info.FieldName),
 				FieldASTsToNodeASTs(fieldASTs),
 				path.AsArray(),
 			)
-			panic(gqlerrors.FormatError(err))
+			return nil, gqlerrors.FormatError(err)
 		}
-		return completed
+		return completed, nil
 	}
 
 	// If result value is null-ish (null, undefined, or NaN) then return null.
 	if isNullish(result) {
-		return nil
+		return nil, nil
 	}
 
 	// If field type is List, complete each item in the list with the inner type
@@ -711,49 +760,30 @@ func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Fie
 	}
 
 	// Not reachable. All possible output types have been considered.
-	err := invariantf(false,
-		`Cannot complete value of unexpected type "%v."`, returnType)
-
-	if err != nil {
-		panic(gqlerrors.FormatError(err))
-	}
-	return nil
+	return nil, gqlerrors.NewFormattedError(fmt.Sprintf(`Cannot complete value of unexpected type "%v."`, returnType))
 }
 
-func completeThunkValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) (completed interface{}) {
-
-	// catch any panic invoked from the propertyFn (thunk)
-	defer func() {
-		if r := recover(); r != nil {
-			handleFieldError(r, FieldASTsToNodeASTs(fieldASTs), path, returnType, eCtx)
-		}
-	}()
-
+func completeThunkValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) (interface{}, error) {
 	propertyFn, ok := result.(func() (interface{}, error))
 	if !ok {
-		err := gqlerrors.NewFormattedError("Error resolving func. Expected `func() (interface{}, error)` signature")
-		panic(gqlerrors.FormatError(err))
+		err := handleFieldError(
+			gqlerrors.NewFormattedError("Error resolving func. Expected `func() (interface{}, error)` signature"),
+			FieldASTsToNodeASTs(fieldASTs), path, returnType, eCtx)
+		return nil, err
 	}
-	fnResult, err := propertyFn()
+
+	result, err := propertyFn()
 	if err != nil {
-		panic(gqlerrors.FormatError(err))
+		return nil, handleFieldError(
+			gqlerrors.FormatError(err), FieldASTsToNodeASTs(fieldASTs), path, returnType, eCtx)
 	}
 
-	result = fnResult
-
-	if returnType, ok := returnType.(*NonNull); ok {
-		completed := completeValue(eCtx, returnType, fieldASTs, info, path, result)
-		return completed
-	}
-	completed = completeValue(eCtx, returnType, fieldASTs, info, path, result)
-
-	return completed
+	return completeValueCatchingError(eCtx, returnType, fieldASTs, info, path, result)
 }
 
 // completeAbstractValue completes value of an Abstract type (Union / Interface) by determining the runtime type
 // of that value, then completing based on that type.
-func completeAbstractValue(eCtx *executionContext, returnType Abstract, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) interface{} {
-
+func completeAbstractValue(eCtx *executionContext, returnType Abstract, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) (interface{}, error) {
 	var runtimeType *Object
 
 	resolveTypeParams := ResolveTypeParams{
@@ -769,31 +799,27 @@ func completeAbstractValue(eCtx *executionContext, returnType Abstract, fieldAST
 		runtimeType = defaultResolveTypeFn(resolveTypeParams, returnType)
 	}
 
-	err := invariant(runtimeType != nil,
-		fmt.Sprintf(`Abstract type %v must resolve to an Object type at runtime `+
+	err := invariantf(runtimeType != nil,
+		`Abstract type %v must resolve to an Object type at runtime `+
 			`for field %v.%v with value "%v", received "%v".`,
-			returnType, info.ParentType, info.FieldName, result, runtimeType),
-	)
+			returnType, info.ParentType, info.FieldName, result, runtimeType)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	if !eCtx.Schema.IsPossibleType(returnType, runtimeType) {
-		panic(gqlerrors.NewFormattedError(
+		return nil, gqlerrors.NewFormattedError(
 			fmt.Sprintf(`Runtime Object type "%v" is not a possible type `+
-				`for "%v".`, runtimeType, returnType),
-		))
+				`for "%v".`, runtimeType, returnType))
 	}
 
 	return completeObjectValue(eCtx, runtimeType, fieldASTs, info, path, result)
 }
 
 // completeObjectValue complete an Object value by executing all sub-selections.
-func completeObjectValue(eCtx *executionContext, returnType *Object, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) interface{} {
-
-	// If there is an isTypeOf predicate function, call it with the
-	// current result. If isTypeOf returns false, then raise an error rather
-	// than continuing execution.
+func completeObjectValue(eCtx *executionContext, returnType *Object, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) (interface{}, error) {
+	// If there is an isTypeOf predicate function, call it with the current result. If isTypeOf
+	// returns false, then raise an error rather than continuing execution.
 	if returnType.IsTypeOf != nil {
 		p := IsTypeOfParams{
 			Value:   result,
@@ -801,9 +827,8 @@ func completeObjectValue(eCtx *executionContext, returnType *Object, fieldASTs [
 			Context: eCtx.Context,
 		}
 		if !returnType.IsTypeOf(p) {
-			panic(gqlerrors.NewFormattedError(
-				fmt.Sprintf(`Expected value of type "%v" but got: %T.`, returnType, result),
-			))
+			return nil, gqlerrors.NewFormattedError(
+				fmt.Sprintf(`Expected value of type "%v" but got: %T.`, returnType, result))
 		}
 	}
 
@@ -837,16 +862,17 @@ func completeObjectValue(eCtx *executionContext, returnType *Object, fieldASTs [
 }
 
 // completeLeafValue complete a leaf value (Scalar / Enum) by serializing to a valid value, returning nil if serialization is not possible.
-func completeLeafValue(returnType Leaf, result interface{}) interface{} {
+func completeLeafValue(returnType Leaf, result interface{}) (interface{}, error) {
 	serializedResult := returnType.Serialize(result)
 	if isNullish(serializedResult) {
-		return nil
+		// FIXME: This should returns an error indicating that an invalid value was encountered.
+		return nil, nil
 	}
-	return serializedResult
+	return serializedResult, nil
 }
 
 // completeListValue complete a list value by completing each item in the list with the inner type
-func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) interface{} {
+func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) (interface{}, error) {
 	resultVal := reflect.ValueOf(result)
 	if resultVal.Kind() == reflect.Ptr {
 		resultVal = resultVal.Elem()
@@ -861,7 +887,7 @@ func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*as
 			"for field %v.%v.", parentTypeName, info.FieldName)
 
 	if err != nil {
-		panic(gqlerrors.FormatError(err))
+		return nil, gqlerrors.FormatError(err)
 	}
 
 	itemType := returnType.OfType
@@ -869,10 +895,13 @@ func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*as
 	for i := 0; i < resultVal.Len(); i++ {
 		val := resultVal.Index(i).Interface()
 		fieldPath := path.WithKey(i)
-		completedItem := completeValueCatchingError(eCtx, itemType, fieldASTs, info, fieldPath, val)
+		completedItem, err := completeValueCatchingError(eCtx, itemType, fieldASTs, info, fieldPath, val)
+		if err != nil {
+			return nil, err
+		}
 		completedResults = append(completedResults, completedItem)
 	}
-	return completedResults
+	return completedResults, nil
 }
 
 // defaultResolveTypeFn If a resolveType function is not given, then a default resolve behavior is

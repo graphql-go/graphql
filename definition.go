@@ -1254,6 +1254,12 @@ type NonNull struct {
 	err error
 }
 
+// IsNonNullType determines if given type is a GraphQLNonNull
+func IsNonNullType(ttype Type) bool {
+	_, ok := ttype.(*NonNull)
+	return ok
+}
+
 func NewNonNull(ofType Type) *NonNull {
 	gl := &NonNull{}
 
