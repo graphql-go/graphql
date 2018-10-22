@@ -1130,11 +1130,33 @@ func NewInputObject(config InputObjectConfig) *InputObject {
 	gt.PrivateName = config.Name
 	gt.PrivateDescription = config.Description
 	gt.typeConfig = config
-	gt.fields = gt.defineFieldMap()
+	gt.defineFieldMap()
 	return gt
 }
 
-func (gt *InputObject) defineFieldMap() InputObjectFieldMap {
+func (gt *InputObject) AddFieldConfig(name string, config *InputObjectFieldConfig) {
+	err := assertValidName(name)
+	if err != nil {
+		gt.err = err
+		return
+	}
+	err = invariantf(
+		config.Type != nil,
+		`%v.%v field type must be Input Type but got: %v.`, gt, name, config.Type,
+	)
+	if err != nil {
+		gt.err = err
+		return
+	}
+	field := &InputObjectField{}
+	field.PrivateName = name
+	field.Type = config.Type
+	field.PrivateDescription = config.Description
+	field.DefaultValue = config.DefaultValue
+	gt.fields[name] = field
+}
+
+func (gt *InputObject) defineFieldMap() {
 	var fieldMap InputObjectConfigFieldMap
 	switch gt.typeConfig.Fields.(type) {
 	case InputObjectConfigFieldMap:
@@ -1142,7 +1164,7 @@ func (gt *InputObject) defineFieldMap() InputObjectFieldMap {
 	case InputObjectConfigFieldMapThunk:
 		fieldMap = gt.typeConfig.Fields.(InputObjectConfigFieldMapThunk)()
 	}
-	resultFieldMap := InputObjectFieldMap{}
+	gt.fields = InputObjectFieldMap{}
 
 	err := invariantf(
 		len(fieldMap) > 0,
@@ -1150,33 +1172,15 @@ func (gt *InputObject) defineFieldMap() InputObjectFieldMap {
 	)
 	if err != nil {
 		gt.err = err
-		return resultFieldMap
+		return
 	}
 
 	for fieldName, fieldConfig := range fieldMap {
 		if fieldConfig == nil {
 			continue
 		}
-		err := assertValidName(fieldName)
-		if err != nil {
-			continue
-		}
-		err = invariantf(
-			fieldConfig.Type != nil,
-			`%v.%v field type must be Input Type but got: %v.`, gt, fieldName, fieldConfig.Type,
-		)
-		if err != nil {
-			gt.err = err
-			return resultFieldMap
-		}
-		field := &InputObjectField{}
-		field.PrivateName = fieldName
-		field.Type = fieldConfig.Type
-		field.PrivateDescription = fieldConfig.Description
-		field.DefaultValue = fieldConfig.DefaultValue
-		resultFieldMap[fieldName] = field
+		gt.AddFieldConfig(fieldName, fieldConfig)
 	}
-	return resultFieldMap
 }
 func (gt *InputObject) Fields() InputObjectFieldMap {
 	return gt.fields
