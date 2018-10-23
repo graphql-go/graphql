@@ -1166,15 +1166,6 @@ func (gt *InputObject) defineFieldMap() {
 	}
 	gt.fields = InputObjectFieldMap{}
 
-	err := invariantf(
-		len(fieldMap) > 0,
-		`%v fields must be an object with field names as keys or a function which return such an object.`, gt,
-	)
-	if err != nil {
-		gt.err = err
-		return
-	}
-
 	for fieldName, fieldConfig := range fieldMap {
 		if fieldConfig == nil {
 			continue
