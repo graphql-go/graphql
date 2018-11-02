@@ -1732,6 +1732,12 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 
 		// This function only tests literals, and assumes variables will provide
 		// values of the correct type.
+		if valueAST.GetKind() == kinds.NullValue {
+			return true, nil
+		}
+
+		// This function only tests literals, and assumes variables will provide
+		// values of the correct type.
 		if valueAST.GetKind() == kinds.Variable {
 			return true, nil
 		}
