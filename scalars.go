@@ -561,7 +561,7 @@ var DateTime = NewScalar(ScalarConfig{
 	ParseLiteral: func(valueAST ast.Value) interface{} {
 		switch valueAST := valueAST.(type) {
 		case *ast.StringValue:
-			return valueAST.Value
+			return unserializeDateTime(valueAST.Value)
 		}
 		return nil
 	},
