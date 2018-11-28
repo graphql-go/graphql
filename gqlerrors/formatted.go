@@ -41,7 +41,7 @@ func FormatError(err error) FormattedError {
 			Message:       err.Error(),
 			Locations:     err.Locations,
 			Path:          err.Path,
-			originalError: err,
+			originalError: err.OriginalError,
 		}
 		if err := err.OriginalError; err != nil {
 			if extended, ok := err.(ExtendedError); ok {

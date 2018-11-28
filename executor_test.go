@@ -515,18 +515,19 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 		"sync":      "sync",
 		"syncError": nil,
 	}
-	expectedErrors := []gqlerrors.FormattedError{
-		{
-			Message: "Error getting syncError",
-			Locations: []location.SourceLocation{
-				{
-					Line: 3, Column: 7,
-				},
-			},
-			Path: []interface{}{
-				"syncError",
+	originalError := errors.New("Error getting syncError")
+	expectedErrors := []gqlerrors.FormattedError{gqlerrors.FormatError(gqlerrors.Error{
+		Message: originalError.Error(),
+		Locations: []location.SourceLocation{
+			{
+				Line: 3, Column: 7,
 			},
 		},
+		Path: []interface{}{
+			"syncError",
+		},
+		OriginalError: originalError,
+	}),
 	}
 
 	data := map[string]interface{}{
@@ -1296,6 +1297,7 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 		},
 	}
 
+	originalError := gqlerrors.NewFormattedError(`Expected value of type "SpecialType" but got: graphql_test.testNotSpecialType.`)
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"specials": []interface{}{
@@ -1305,21 +1307,20 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 				nil,
 			},
 		},
-		Errors: []gqlerrors.FormattedError{
-			{
-				Message: `Expected value of type "SpecialType" but got: graphql_test.testNotSpecialType.`,
-				Locations: []location.SourceLocation{
-					{
-						Line:   1,
-						Column: 3,
-					},
-				},
-				Path: []interface{}{
-					"specials",
-					1,
+		Errors: []gqlerrors.FormattedError{gqlerrors.FormatError(gqlerrors.Error{
+			Message: originalError.Message,
+			Locations: []location.SourceLocation{
+				{
+					Line:   1,
+					Column: 3,
 				},
 			},
-		},
+			Path: []interface{}{
+				"specials",
+				1,
+			},
+			OriginalError: originalError,
+		})},
 	}
 
 	specialType := graphql.NewObject(graphql.ObjectConfig{
