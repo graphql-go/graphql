@@ -491,6 +491,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
       }
     }`
 
+	originalError := gqlerrors.NewFormattedError(`Runtime Object type "Human" is not a possible type for "Pet".`)
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"pets": []interface{}{
@@ -505,27 +506,27 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 				nil,
 			},
 		},
-		Errors: []gqlerrors.FormattedError{
-			{
-				Message: `Runtime Object type "Human" is not a possible type for "Pet".`,
-				Locations: []location.SourceLocation{
-					{
-						Line:   2,
-						Column: 7,
-					},
-				},
-				Path: []interface{}{
-					"pets",
-					2,
+		Errors: []gqlerrors.FormattedError{gqlerrors.FormatError(gqlerrors.Error{
+			Message: originalError.Message,
+			Locations: []location.SourceLocation{
+				{
+					Line:   2,
+					Column: 7,
 				},
 			},
-		},
+			Path: []interface{}{
+				"pets",
+				2,
+			},
+			OriginalError: originalError,
+		})},
 	}
 
 	result := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
+
 	if len(result.Errors) == 0 {
 		t.Fatalf("wrong result, expected errors: %v, got: %v", len(expected.Errors), len(result.Errors))
 	}
@@ -618,6 +619,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
       }
     }`
 
+	originalError := gqlerrors.NewFormattedError(`Runtime Object type "Human" is not a possible type for "Pet".`)
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"pets": []interface{}{
@@ -633,8 +635,8 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 			},
 		},
 		Errors: []gqlerrors.FormattedError{
-			{
-				Message: `Runtime Object type "Human" is not a possible type for "Pet".`,
+			gqlerrors.FormatError(gqlerrors.Error{
+				Message: originalError.Message,
 				Locations: []location.SourceLocation{
 					{
 						Line:   2,
@@ -645,7 +647,8 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 					"pets",
 					2,
 				},
-			},
+				OriginalError: originalError,
+			}),
 		},
 	}
 

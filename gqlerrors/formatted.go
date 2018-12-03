@@ -12,10 +12,15 @@ type ExtendedError interface {
 }
 
 type FormattedError struct {
-	Message    string                    `json:"message"`
-	Locations  []location.SourceLocation `json:"locations"`
-	Path       []interface{}             `json:"path,omitempty"`
-	Extensions map[string]interface{}    `json:"extensions,omitempty"`
+	Message       string                    `json:"message"`
+	Locations     []location.SourceLocation `json:"locations"`
+	Path          []interface{}             `json:"path,omitempty"`
+	Extensions    map[string]interface{}    `json:"extensions,omitempty"`
+	originalError error
+}
+
+func (g FormattedError) OriginalError() error {
+	return g.originalError
 }
 
 func (g FormattedError) Error() string {
@@ -33,9 +38,10 @@ func FormatError(err error) FormattedError {
 		return err
 	case *Error:
 		ret := FormattedError{
-			Message:   err.Error(),
-			Locations: err.Locations,
-			Path:      err.Path,
+			Message:       err.Error(),
+			Locations:     err.Locations,
+			Path:          err.Path,
+			originalError: err.OriginalError,
 		}
 		if err := err.OriginalError; err != nil {
 			if extended, ok := err.(ExtendedError); ok {
