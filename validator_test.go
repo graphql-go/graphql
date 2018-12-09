@@ -1,7 +1,6 @@
 package graphql_test
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/graphql-go/graphql"
@@ -92,7 +91,7 @@ func TestValidator_SupportsFullValidation_ValidatesUsingACustomTypeInfo(t *testi
 			},
 		},
 	}
-	if !reflect.DeepEqual(expectedErrors, errors) {
+	if !testutil.EqualFormattedErrors(expectedErrors, errors) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expectedErrors, errors))
 	}
 }
