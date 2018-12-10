@@ -31,6 +31,9 @@ type Params struct {
 	// Context may be provided to pass application-specific per-request
 	// information to resolve functions.
 	Context context.Context
+
+	// Tracer ...
+	Tracer Tracer
 }
 
 func Do(p Params) *Result {
@@ -52,12 +55,25 @@ func Do(p Params) *Result {
 		}
 	}
 
-	return Execute(ExecuteParams{
+	var traceFinish TraceQueryFinishFunc
+	ctx2 := p.Context
+	if p.Tracer != nil {
+		ctx2, traceFinish = p.Tracer.TraceQuery(p.Context, p.RequestString, p.OperationName)
+	}
+
+	result := Execute(ExecuteParams{
 		Schema:        p.Schema,
 		Root:          p.RootObject,
 		AST:           AST,
 		OperationName: p.OperationName,
 		Args:          p.VariableValues,
-		Context:       p.Context,
+		Context:       ctx2,
+		Tracer:        p.Tracer,
 	})
+
+	if p.Tracer != nil {
+		traceFinish(result.Errors)
+	}
+
+	return result
 }

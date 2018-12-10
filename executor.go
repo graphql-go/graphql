@@ -21,6 +21,9 @@ type ExecuteParams struct {
 	// Context may be provided to pass application-specific per-request
 	// information to resolve functions.
 	Context context.Context
+
+	// Tracer ...
+	Tracer Tracer
 }
 
 func Execute(p ExecuteParams) (result *Result) {
@@ -51,6 +54,7 @@ func Execute(p ExecuteParams) (result *Result) {
 			Args:          p.Args,
 			Result:        result,
 			Context:       p.Context,
+			Tracer:        p.Tracer,
 		})
 
 		if err != nil {
@@ -82,16 +86,18 @@ type buildExecutionCtxParams struct {
 	Args          map[string]interface{}
 	Result        *Result
 	Context       context.Context
+	Tracer        Tracer
 }
 
 type executionContext struct {
-	Schema         Schema
-	Fragments      map[string]ast.Definition
-	Root           interface{}
-	Operation      ast.Definition
-	VariableValues map[string]interface{}
-	Errors         []gqlerrors.FormattedError
 	Context        context.Context
+	Errors         []gqlerrors.FormattedError
+	Fragments      map[string]ast.Definition
+	Operation      ast.Definition
+	Root           interface{}
+	Schema         Schema
+	Tracer         Tracer
+	VariableValues map[string]interface{}
 }
 
 func buildExecutionContext(p buildExecutionCtxParams) (*executionContext, error) {
@@ -137,6 +143,7 @@ func buildExecutionContext(p buildExecutionCtxParams) (*executionContext, error)
 	eCtx.Operation = operation
 	eCtx.VariableValues = variableValues
 	eCtx.Context = p.Context
+	eCtx.Tracer = p.Tracer
 	return eCtx, nil
 }
 
@@ -573,21 +580,30 @@ func handleFieldError(r interface{}, fieldNodes []ast.Node, path *ResponsePath, 
 // then calls completeValue to complete promises, serialize scalars, or execute
 // the sub-selection-set for objects.
 func resolveField(eCtx *executionContext, parentType *Object, source interface{}, fieldASTs []*ast.Field, path *ResponsePath) (result interface{}, resultState resolveFieldResultState) {
-	// catch panic from resolveFn
-	var returnType Output
-	defer func() (interface{}, resolveFieldResultState) {
-		if r := recover(); r != nil {
-			handleFieldError(r, FieldASTsToNodeASTs(fieldASTs), path, returnType, eCtx)
-			return result, resultState
-		}
-		return result, resultState
-	}()
-
 	fieldAST := fieldASTs[0]
 	fieldName := ""
 	if fieldAST.Name != nil {
 		fieldName = fieldAST.Name.Value
 	}
+
+	var finishTraceField TraceFieldFinishFunc
+	if eCtx.Tracer != nil {
+		finishTraceField = eCtx.Tracer.TraceField(eCtx.Context, fieldName)
+		finishTraceField(gqlerrors.FormattedError{})
+	}
+
+	// catch panic from resolveFn
+	var returnType Output
+	defer func() (interface{}, resolveFieldResultState) {
+		if r := recover(); r != nil {
+			handleFieldError(r, FieldASTsToNodeASTs(fieldASTs), path, returnType, eCtx)
+			if eCtx.Tracer != nil {
+				finishTraceField(gqlerrors.FormatError(errors.New("todo")))
+			}
+			return result, resultState
+		}
+		return result, resultState
+	}()
 
 	fieldDef := getFieldDef(eCtx.Schema, parentType, fieldName)
 	if fieldDef == nil {
