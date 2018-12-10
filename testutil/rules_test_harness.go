@@ -3,8 +3,6 @@ package testutil
 import (
 	"testing"
 
-	"reflect"
-
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/location"
@@ -579,7 +577,7 @@ func expectInvalidRule(t *testing.T, schema *graphql.Schema, rules []graphql.Val
 	for _, expectedErr := range expectedErrors {
 		found := false
 		for _, err := range result.Errors {
-			if reflect.DeepEqual(expectedErr, err) {
+			if EqualFormattedError(expectedErr, err) {
 				found = true
 				break
 			}

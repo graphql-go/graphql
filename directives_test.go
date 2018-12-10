@@ -1,12 +1,11 @@
 package graphql_test
 
 import (
-	"reflect"
+	"errors"
 	"testing"
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/location"
 	"github.com/graphql-go/graphql/testutil"
 )
 
@@ -56,12 +55,10 @@ func TestDirectives_DirectivesMustBeNamed(t *testing.T) {
 		}),
 		Directives: []*graphql.Directive{invalidDirective},
 	})
-	expectedErr := gqlerrors.FormattedError{
-		Message:   "Directive must be named.",
-		Locations: []location.SourceLocation{},
-	}
-	if !reflect.DeepEqual(expectedErr, err) {
-		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, err))
+	actualErr := gqlerrors.FormatError(err)
+	expectedErr := gqlerrors.FormatError(errors.New("Directive must be named."))
+	if !testutil.EqualFormattedError(expectedErr, actualErr) {
+		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, actualErr))
 	}
 }
 
@@ -83,12 +80,10 @@ func TestDirectives_DirectiveNameMustBeValid(t *testing.T) {
 		}),
 		Directives: []*graphql.Directive{invalidDirective},
 	})
-	expectedErr := gqlerrors.FormattedError{
-		Message:   `Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "123invalid name" does not.`,
-		Locations: []location.SourceLocation{},
-	}
-	if !reflect.DeepEqual(expectedErr, err) {
-		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, err))
+	actualErr := gqlerrors.FormatError(err)
+	expectedErr := gqlerrors.FormatError(errors.New(`Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "123invalid name" does not.`))
+	if !testutil.EqualFormattedError(expectedErr, actualErr) {
+		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, actualErr))
 	}
 }
 
@@ -107,12 +102,10 @@ func TestDirectives_DirectiveNameMustProvideLocations(t *testing.T) {
 		}),
 		Directives: []*graphql.Directive{invalidDirective},
 	})
-	expectedErr := gqlerrors.FormattedError{
-		Message:   `Must provide locations for directive.`,
-		Locations: []location.SourceLocation{},
-	}
-	if !reflect.DeepEqual(expectedErr, err) {
-		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, err))
+	actualErr := gqlerrors.FormatError(err)
+	expectedErr := gqlerrors.FormatError(errors.New(`Must provide locations for directive.`))
+	if !testutil.EqualFormattedError(expectedErr, actualErr) {
+		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, actualErr))
 	}
 }
 
@@ -144,12 +137,10 @@ func TestDirectives_DirectiveArgNamesMustBeValid(t *testing.T) {
 		}),
 		Directives: []*graphql.Directive{invalidDirective},
 	})
-	expectedErr := gqlerrors.FormattedError{
-		Message:   `Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "123if" does not.`,
-		Locations: []location.SourceLocation{},
-	}
-	if !reflect.DeepEqual(expectedErr, err) {
-		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, err))
+	actualErr := gqlerrors.FormatError(err)
+	expectedErr := gqlerrors.FormatError(errors.New(`Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "123if" does not.`))
+	if !testutil.EqualFormattedError(expectedErr, actualErr) {
+		t.Fatalf("Expected error to be equal, got: %v", testutil.Diff(expectedErr, actualErr))
 	}
 }
 
@@ -162,10 +153,7 @@ func TestDirectivesWorksWithoutDirectives(t *testing.T) {
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -179,10 +167,7 @@ func TestDirectivesWorksOnScalarsIfTrueIncludesScalar(t *testing.T) {
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -195,10 +180,7 @@ func TestDirectivesWorksOnScalarsIfFalseOmitsOnScalar(t *testing.T) {
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -212,10 +194,7 @@ func TestDirectivesWorksOnScalarsUnlessFalseIncludesScalar(t *testing.T) {
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -228,10 +207,7 @@ func TestDirectivesWorksOnScalarsUnlessTrueOmitsScalar(t *testing.T) {
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -252,10 +228,7 @@ func TestDirectivesWorksOnFragmentSpreadsIfFalseOmitsFragmentSpread(t *testing.T
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -277,10 +250,7 @@ func TestDirectivesWorksOnFragmentSpreadsIfTrueIncludesFragmentSpread(t *testing
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -302,10 +272,7 @@ func TestDirectivesWorksOnFragmentSpreadsUnlessFalseIncludesFragmentSpread(t *te
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -326,10 +293,7 @@ func TestDirectivesWorksOnFragmentSpreadsUnlessTrueOmitsFragmentSpread(t *testin
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -349,10 +313,7 @@ func TestDirectivesWorksOnInlineFragmentIfFalseOmitsInlineFragment(t *testing.T)
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -373,10 +334,7 @@ func TestDirectivesWorksOnInlineFragmentIfTrueIncludesInlineFragment(t *testing.
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -397,10 +355,7 @@ func TestDirectivesWorksOnInlineFragmentUnlessFalseIncludesInlineFragment(t *tes
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -420,10 +375,7 @@ func TestDirectivesWorksOnInlineFragmentUnlessTrueIncludesInlineFragment(t *test
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -443,10 +395,7 @@ func TestDirectivesWorksOnAnonymousInlineFragmentIfFalseOmitsAnonymousInlineFrag
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -467,10 +416,7 @@ func TestDirectivesWorksOnAnonymousInlineFragmentIfTrueIncludesAnonymousInlineFr
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -491,10 +437,7 @@ func TestDirectivesWorksOnAnonymousInlineFragmentUnlessFalseIncludesAnonymousInl
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -514,10 +457,7 @@ func TestDirectivesWorksOnAnonymousInlineFragmentUnlessTrueIncludesAnonymousInli
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -531,10 +471,7 @@ func TestDirectivesWorksWithSkipAndIncludeDirectives_IncludeAndNoSkip(t *testing
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -547,10 +484,7 @@ func TestDirectivesWorksWithSkipAndIncludeDirectives_IncludeAndSkip(t *testing.T
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -563,10 +497,7 @@ func TestDirectivesWorksWithSkipAndIncludeDirectives_NoIncludeAndSkip(t *testing
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -579,10 +510,7 @@ func TestDirectivesWorksWithSkipAndIncludeDirectives_NoIncludeOrSkip(t *testing.
 		},
 	}
 	result := executeDirectivesTestQuery(t, query)
-	if len(result.Errors) != 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }

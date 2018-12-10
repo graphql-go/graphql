@@ -438,10 +438,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnNullForNestedNon
 		Args:   params,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -472,10 +469,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnIncorrectType(t 
 		Args:   params,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -510,10 +504,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNested
 		Args:   params,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -555,10 +546,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnDeepNestedErrors
 		Args:   params,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -595,10 +583,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknow
 		Args:   params,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -804,10 +789,7 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeOmittedIn
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -844,10 +826,7 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeSetToNull
 		Args:   params,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -1070,10 +1049,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListsToBeNull(t *testi
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -1230,10 +1206,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t
 		Args:   params,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -1268,10 +1241,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToBeNull
 		Args:   params,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -1338,10 +1308,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContai
 		Args:   params,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -1381,7 +1348,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowInvalidTypesToBeUsedAsValues(
 	if len(result.Errors) != len(expected.Errors) {
 		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -1416,10 +1383,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowUnknownTypesToBeUsedAsValues(
 		Args:   params,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
