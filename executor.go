@@ -33,6 +33,10 @@ func Execute(p ExecuteParams) (result *Result) {
 		ctx = context.Background()
 	}
 
+	if p.Tracer == nil {
+		p.Tracer = NoopTracer{}
+	}
+
 	resultChannel := make(chan *Result)
 	result = &Result{}
 
