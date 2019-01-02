@@ -55,11 +55,11 @@ func Do(p Params) *Result {
 		}
 	}
 
-	var traceFinish TraceQueryFinishFunc
-	ctx2 := p.Context
-	if p.Tracer != nil {
-		ctx2, traceFinish = p.Tracer.TraceQuery(p.Context, p.RequestString, p.OperationName)
+	if p.Tracer == nil {
+		p.Tracer = NoopTracer{}
 	}
+
+	ctx, traceFinish := p.Tracer.TraceQuery(p.Context, p.RequestString, p.OperationName)
 
 	result := Execute(ExecuteParams{
 		Schema:        p.Schema,
@@ -67,13 +67,11 @@ func Do(p Params) *Result {
 		AST:           AST,
 		OperationName: p.OperationName,
 		Args:          p.VariableValues,
-		Context:       ctx2,
+		Context:       ctx,
 		Tracer:        p.Tracer,
 	})
 
-	if p.Tracer != nil {
-		traceFinish(result.Errors)
-	}
+	traceFinish(result.Errors)
 
 	return result
 }
