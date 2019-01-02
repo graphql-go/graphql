@@ -7,7 +7,7 @@ import (
 )
 
 type TraceQueryFinishFunc func([]gqlerrors.FormattedError)
-type TraceFieldFinishFunc func(gqlerrors.FormattedError)
+type TraceFieldFinishFunc func([]gqlerrors.FormattedError)
 
 type Tracer interface {
 	TraceQuery(ctx context.Context, queryString string, operationName string) (context.Context, TraceQueryFinishFunc)
@@ -21,5 +21,5 @@ func (NoopTracer) TraceQuery(ctx context.Context, queryString string, operationN
 }
 
 func (NoopTracer) TraceField(ctx context.Context, fieldName string, typeName string) (context.Context, TraceFieldFinishFunc) {
-	return ctx, func(err gqlerrors.FormattedError) {}
+	return ctx, func(errs []gqlerrors.FormattedError) {}
 }
