@@ -246,7 +246,7 @@ func executeFieldsSerially(p executeFieldsParams) *Result {
 	finalResults := make(map[string]interface{}, len(p.Fields))
 	for responseName, fieldASTs := range p.Fields {
 		fieldPath := p.Path.WithKey(responseName)
-		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs, fieldPath)
+		resolved, state := resolveField(p.ExecutionContext.Context, p.ExecutionContext, p.ParentType, p.Source, fieldASTs, fieldPath)
 		if state.hasNoFieldDefs {
 			continue
 		}
@@ -262,7 +262,7 @@ func executeFieldsSerially(p executeFieldsParams) *Result {
 
 // Implements the "Evaluating selection sets" section of the spec for "read" mode.
 func executeFields(p executeFieldsParams) *Result {
-	finalResults := executeSubFields(p)
+	finalResults := executeSubFields(p.ExecutionContext.Context, p)
 
 	dethunkMapWithBreadthFirstTraversal(finalResults)
 
@@ -272,7 +272,7 @@ func executeFields(p executeFieldsParams) *Result {
 	}
 }
 
-func executeSubFields(p executeFieldsParams) map[string]interface{} {
+func executeSubFields(ctx context.Context, p executeFieldsParams) map[string]interface{} {
 	if p.Source == nil {
 		p.Source = map[string]interface{}{}
 	}
@@ -283,7 +283,9 @@ func executeSubFields(p executeFieldsParams) map[string]interface{} {
 	finalResults := make(map[string]interface{}, len(p.Fields))
 	for responseName, fieldASTs := range p.Fields {
 		fieldPath := p.Path.WithKey(responseName)
-		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs, fieldPath)
+
+		resolved, state := resolveField(ctx, p.ExecutionContext, p.ParentType, p.Source,
+			fieldASTs, fieldPath)
 		if state.hasNoFieldDefs {
 			continue
 		}
@@ -579,38 +581,34 @@ func handleFieldError(r interface{}, fieldNodes []ast.Node, path *ResponsePath, 
 // figures out the value that the field returns by calling its resolve function,
 // then calls completeValue to complete promises, serialize scalars, or execute
 // the sub-selection-set for objects.
-func resolveField(eCtx *executionContext, parentType *Object, source interface{}, fieldASTs []*ast.Field, path *ResponsePath) (result interface{}, resultState resolveFieldResultState) {
+func resolveField(ctx context.Context, eCtx *executionContext, parentType *Object, source interface{}, fieldASTs []*ast.Field, path *ResponsePath) (result interface{}, resultState resolveFieldResultState) {
 	fieldAST := fieldASTs[0]
 	fieldName := ""
 	if fieldAST.Name != nil {
 		fieldName = fieldAST.Name.Value
 	}
 
-	var finishTraceField TraceFieldFinishFunc
-	if eCtx.Tracer != nil {
-		finishTraceField = eCtx.Tracer.TraceField(eCtx.Context, fieldName)
-		finishTraceField(gqlerrors.FormattedError{})
-	}
-
-	// catch panic from resolveFn
-	var returnType Output
-	defer func() (interface{}, resolveFieldResultState) {
-		if r := recover(); r != nil {
-			handleFieldError(r, FieldASTsToNodeASTs(fieldASTs), path, returnType, eCtx)
-			if eCtx.Tracer != nil {
-				finishTraceField(gqlerrors.FormatError(errors.New("todo")))
-			}
-			return result, resultState
-		}
-		return result, resultState
-	}()
-
 	fieldDef := getFieldDef(eCtx.Schema, parentType, fieldName)
 	if fieldDef == nil {
 		resultState.hasNoFieldDefs = true
 		return nil, resultState
 	}
-	returnType = fieldDef.Type
+	returnType := fieldDef.Type
+
+	traceCtx, finishTraceField := eCtx.Tracer.TraceField(ctx, fieldName,
+		returnType.Name())
+
+	// catch panic from resolveFn
+	defer func() (interface{}, resolveFieldResultState) {
+		if r := recover(); r != nil {
+			handleFieldError(r, FieldASTsToNodeASTs(fieldASTs), path, returnType, eCtx)
+			finishTraceField(eCtx.Errors)
+			return result, resultState
+		}
+		finishTraceField([]gqlerrors.FormattedError{})
+		return result, resultState
+	}()
+
 	resolveFn := fieldDef.Resolve
 	if resolveFn == nil {
 		resolveFn = DefaultResolveFn
@@ -647,11 +645,13 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		panic(resolveFnError)
 	}
 
-	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, path, result)
+	completed := completeValueCatchingError(traceCtx, eCtx, returnType, fieldASTs,
+		info, path, result)
+
 	return completed, resultState
 }
 
-func completeValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) (completed interface{}) {
+func completeValueCatchingError(ctx context.Context, eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) (completed interface{}) {
 	// catch panic
 	defer func() interface{} {
 		if r := recover(); r != nil {
@@ -662,26 +662,26 @@ func completeValueCatchingError(eCtx *executionContext, returnType Type, fieldAS
 	}()
 
 	if returnType, ok := returnType.(*NonNull); ok {
-		completed := completeValue(eCtx, returnType, fieldASTs, info, path, result)
+		completed := completeValue(ctx, eCtx, returnType, fieldASTs, info, path, result)
 		return completed
 	}
-	completed = completeValue(eCtx, returnType, fieldASTs, info, path, result)
+	completed = completeValue(ctx, eCtx, returnType, fieldASTs, info, path, result)
 	return completed
 }
 
-func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) interface{} {
+func completeValue(ctx context.Context, eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) interface{} {
 
 	resultVal := reflect.ValueOf(result)
 	if resultVal.IsValid() && resultVal.Kind() == reflect.Func {
 		return func() interface{} {
-			return completeThunkValueCatchingError(eCtx, returnType, fieldASTs, info, path, result)
+			return completeThunkValueCatchingError(ctx, eCtx, returnType, fieldASTs, info, path, result)
 		}
 	}
 
 	// If field type is NonNull, complete for inner type, and throw field error
 	// if result is null.
 	if returnType, ok := returnType.(*NonNull); ok {
-		completed := completeValue(eCtx, returnType.OfType, fieldASTs, info, path, result)
+		completed := completeValue(ctx, eCtx, returnType.OfType, fieldASTs, info, path, result)
 		if completed == nil {
 			err := NewLocatedErrorWithPath(
 				fmt.Sprintf("Cannot return null for non-nullable field %v.%v.", info.ParentType, info.FieldName),
@@ -700,7 +700,7 @@ func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Fie
 
 	// If field type is List, complete each item in the list with the inner type
 	if returnType, ok := returnType.(*List); ok {
-		return completeListValue(eCtx, returnType, fieldASTs, info, path, result)
+		return completeListValue(ctx, eCtx, returnType, fieldASTs, info, path, result)
 	}
 
 	// If field type is a leaf type, Scalar or Enum, serialize to a valid value,
@@ -715,15 +715,15 @@ func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Fie
 	// If field type is an abstract type, Interface or Union, determine the
 	// runtime Object type and complete for that type.
 	if returnType, ok := returnType.(*Union); ok {
-		return completeAbstractValue(eCtx, returnType, fieldASTs, info, path, result)
+		return completeAbstractValue(ctx, eCtx, returnType, fieldASTs, info, path, result)
 	}
 	if returnType, ok := returnType.(*Interface); ok {
-		return completeAbstractValue(eCtx, returnType, fieldASTs, info, path, result)
+		return completeAbstractValue(ctx, eCtx, returnType, fieldASTs, info, path, result)
 	}
 
 	// If field type is Object, execute and complete all sub-selections.
 	if returnType, ok := returnType.(*Object); ok {
-		return completeObjectValue(eCtx, returnType, fieldASTs, info, path, result)
+		return completeObjectValue(ctx, eCtx, returnType, fieldASTs, info, path, result)
 	}
 
 	// Not reachable. All possible output types have been considered.
@@ -736,7 +736,7 @@ func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Fie
 	return nil
 }
 
-func completeThunkValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) (completed interface{}) {
+func completeThunkValueCatchingError(ctx context.Context, eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) (completed interface{}) {
 
 	// catch any panic invoked from the propertyFn (thunk)
 	defer func() {
@@ -758,17 +758,17 @@ func completeThunkValueCatchingError(eCtx *executionContext, returnType Type, fi
 	result = fnResult
 
 	if returnType, ok := returnType.(*NonNull); ok {
-		completed := completeValue(eCtx, returnType, fieldASTs, info, path, result)
+		completed := completeValue(ctx, eCtx, returnType, fieldASTs, info, path, result)
 		return completed
 	}
-	completed = completeValue(eCtx, returnType, fieldASTs, info, path, result)
+	completed = completeValue(ctx, eCtx, returnType, fieldASTs, info, path, result)
 
 	return completed
 }
 
 // completeAbstractValue completes value of an Abstract type (Union / Interface) by determining the runtime type
 // of that value, then completing based on that type.
-func completeAbstractValue(eCtx *executionContext, returnType Abstract, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) interface{} {
+func completeAbstractValue(ctx context.Context, eCtx *executionContext, returnType Abstract, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) interface{} {
 
 	var runtimeType *Object
 
@@ -801,11 +801,11 @@ func completeAbstractValue(eCtx *executionContext, returnType Abstract, fieldAST
 		))
 	}
 
-	return completeObjectValue(eCtx, runtimeType, fieldASTs, info, path, result)
+	return completeObjectValue(ctx, eCtx, runtimeType, fieldASTs, info, path, result)
 }
 
 // completeObjectValue complete an Object value by executing all sub-selections.
-func completeObjectValue(eCtx *executionContext, returnType *Object, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) interface{} {
+func completeObjectValue(ctx context.Context, eCtx *executionContext, returnType *Object, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) interface{} {
 
 	// If there is an isTypeOf predicate function, call it with the
 	// current result. If isTypeOf returns false, then raise an error rather
@@ -849,7 +849,7 @@ func completeObjectValue(eCtx *executionContext, returnType *Object, fieldASTs [
 		Fields:           subFieldASTs,
 		Path:             path,
 	}
-	return executeSubFields(executeFieldsParams)
+	return executeSubFields(ctx, executeFieldsParams)
 }
 
 // completeLeafValue complete a leaf value (Scalar / Enum) by serializing to a valid value, returning nil if serialization is not possible.
@@ -862,7 +862,7 @@ func completeLeafValue(returnType Leaf, result interface{}) interface{} {
 }
 
 // completeListValue complete a list value by completing each item in the list with the inner type
-func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) interface{} {
+func completeListValue(ctx context.Context, eCtx *executionContext, returnType *List, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) interface{} {
 	resultVal := reflect.ValueOf(result)
 	if resultVal.Kind() == reflect.Ptr {
 		resultVal = resultVal.Elem()
@@ -885,7 +885,7 @@ func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*as
 	for i := 0; i < resultVal.Len(); i++ {
 		val := resultVal.Index(i).Interface()
 		fieldPath := path.WithKey(i)
-		completedItem := completeValueCatchingError(eCtx, itemType, fieldASTs, info, fieldPath, val)
+		completedItem := completeValueCatchingError(ctx, eCtx, itemType, fieldASTs, info, fieldPath, val)
 		completedResults = append(completedResults, completedItem)
 	}
 	return completedResults
