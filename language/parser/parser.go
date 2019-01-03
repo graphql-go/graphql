@@ -20,10 +20,10 @@ func init() {
 	tokenDefinitionFn = make(map[string]parseDefinitionFn)
 	{
 		// for sign
-		tokenDefinitionFn[lexer.GetTokenKindDesc(lexer.BRACE_L)] = parseOperationDefinition
-		tokenDefinitionFn[lexer.GetTokenKindDesc(lexer.STRING)] = parseTypeSystemDefinition
-		tokenDefinitionFn[lexer.GetTokenKindDesc(lexer.BLOCK_STRING)] = parseTypeSystemDefinition
-		tokenDefinitionFn[lexer.GetTokenKindDesc(lexer.NAME)] = parseTypeSystemDefinition
+		tokenDefinitionFn[lexer.BRACE_L.String()] = parseOperationDefinition
+		tokenDefinitionFn[lexer.STRING.String()] = parseTypeSystemDefinition
+		tokenDefinitionFn[lexer.BLOCK_STRING.String()] = parseTypeSystemDefinition
+		tokenDefinitionFn[lexer.NAME.String()] = parseTypeSystemDefinition
 		// for NAME
 		tokenDefinitionFn[lexer.FRAGMENT] = parseFragmentDefinition
 		tokenDefinitionFn[lexer.QUERY] = parseOperationDefinition
@@ -144,15 +144,9 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
 		} else if skp {
 			break
 		}
-		switch parser.Token.Kind {
-		case lexer.BRACE_L:
-			item = tokenDefinitionFn[lexer.GetTokenKindDesc(lexer.BRACE_L)]
-		case lexer.NAME:
-			item = tokenDefinitionFn[lexer.GetTokenKindDesc(lexer.NAME)]
-		case lexer.STRING:
-			item = tokenDefinitionFn[lexer.GetTokenKindDesc(lexer.STRING)]
-		case lexer.BLOCK_STRING:
-			item = tokenDefinitionFn[lexer.GetTokenKindDesc(lexer.BLOCK_STRING)]
+		switch kind := parser.Token.Kind; kind {
+		case lexer.BRACE_L, lexer.NAME, lexer.STRING, lexer.BLOCK_STRING:
+			item = tokenDefinitionFn[kind.String()]
 		default:
 			return nil, unexpected(parser, lexer.Token{})
 		}
@@ -1541,7 +1535,7 @@ func expect(parser *Parser, kind lexer.TokenKind) (lexer.Token, error) {
 	if token.Kind == kind {
 		return token, advance(parser)
 	}
-	descp := fmt.Sprintf("Expected %s, found %s", lexer.GetTokenKindDesc(kind), lexer.GetTokenDesc(token))
+	descp := fmt.Sprintf("Expected %s, found %s", kind, lexer.GetTokenDesc(token))
 	return token, gqlerrors.NewSyntaxError(parser.Source, token.Start, descp)
 }
 
@@ -1568,10 +1562,7 @@ func unexpected(parser *Parser, atToken lexer.Token) error {
 }
 
 func unexpectedEmpty(parser *Parser, beginLoc int, openKind, closeKind lexer.TokenKind) error {
-	description := fmt.Sprintf("Unexpected empty IN %s%s",
-		lexer.GetTokenKindDesc(openKind),
-		lexer.GetTokenKindDesc(closeKind),
-	)
+	description := fmt.Sprintf("Unexpected empty IN %s%s", openKind, closeKind)
 	return gqlerrors.NewSyntaxError(parser.Source, beginLoc, description)
 }
 

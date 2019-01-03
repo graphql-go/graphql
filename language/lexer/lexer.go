@@ -36,23 +36,6 @@ const (
 	AMP
 )
 
-// NAME -> keyword relationship
-const (
-	FRAGMENT     = "fragment"
-	QUERY        = "query"
-	MUTATION     = "mutation"
-	SUBSCRIPTION = "subscription"
-	SCHEMA       = "schema"
-	SCALAR       = "scalar"
-	TYPE         = "type"
-	INTERFACE    = "interface"
-	UNION        = "union"
-	ENUM         = "enum"
-	INPUT        = "input"
-	EXTEND       = "extend"
-	DIRECTIVE    = "directive"
-)
-
 var tokenDescription = map[TokenKind]string{
 	EOF:          "EOF",
 	BANG:         "!",
@@ -75,6 +58,27 @@ var tokenDescription = map[TokenKind]string{
 	BLOCK_STRING: "BlockString",
 	AMP:          "&",
 }
+
+func (kind TokenKind) String() string {
+	return tokenDescription[kind]
+}
+
+// NAME -> keyword relationship
+const (
+	FRAGMENT     = "fragment"
+	QUERY        = "query"
+	MUTATION     = "mutation"
+	SUBSCRIPTION = "subscription"
+	SCHEMA       = "schema"
+	SCALAR       = "scalar"
+	TYPE         = "type"
+	INTERFACE    = "interface"
+	UNION        = "union"
+	ENUM         = "enum"
+	INPUT        = "input"
+	EXTEND       = "extend"
+	DIRECTIVE    = "directive"
+)
 
 // Token is a representation of a lexed Token. Value only appears for non-punctuation
 // tokens: NAME, INT, FLOAT, and STRING.
@@ -646,11 +650,7 @@ func positionAfterWhitespace(body []byte, startPosition int) (position int, rune
 
 func GetTokenDesc(token Token) string {
 	if token.Value == "" {
-		return GetTokenKindDesc(token.Kind)
+		return token.Kind.String()
 	}
-	return fmt.Sprintf("%s \"%s\"", GetTokenKindDesc(token.Kind), token.Value)
-}
-
-func GetTokenKindDesc(kind TokenKind) string {
-	return tokenDescription[kind]
+	return fmt.Sprintf("%s \"%s\"", token.Kind.String(), token.Value)
 }
