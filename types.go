@@ -4,11 +4,10 @@ import (
 	"github.com/graphql-go/graphql/gqlerrors"
 )
 
-// type Schema interface{}
-
 type Result struct {
-	Data   interface{}                `json:"data"`
-	Errors []gqlerrors.FormattedError `json:"errors,omitempty"`
+	Data       interface{}                `json:"data"`
+	Errors     []gqlerrors.FormattedError `json:"errors,omitempty"`
+	Extensions map[string]interface{}     `json:"extensions,omitempty"`
 }
 
 func (r *Result) HasErrors() bool {
