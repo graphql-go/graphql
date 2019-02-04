@@ -297,6 +297,62 @@ func TestMergesParallelFragments(t *testing.T) {
 	}
 }
 
+type CustomMap map[string]interface{}
+
+func TestCustomMapType(t *testing.T) {
+	query := `
+		query Example { data { a } }
+	`
+	data := CustomMap{
+		"a": "1",
+		"b": "2",
+	}
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "RootQuery",
+			Fields: graphql.Fields{
+				"data": &graphql.Field{
+					Type: graphql.NewObject(graphql.ObjectConfig{
+						Name: "Data",
+						Fields: graphql.Fields{
+							"a": &graphql.Field{
+								Type: graphql.String,
+							},
+							"b": &graphql.Field{
+								Type: graphql.String,
+							},
+						},
+					}),
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return data, nil
+					},
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	result := testutil.TestExecute(t, graphql.ExecuteParams{
+		Schema: schema,
+		Root:   data,
+		AST:    testutil.TestParse(t, query),
+	})
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+
+	expected := map[string]interface{}{
+		"data": map[string]interface{}{
+			"a": "1",
+		},
+	}
+	if !reflect.DeepEqual(result.Data, expected) {
+		t.Fatalf("Expected context.key to equal %v, got %v", expected, result.Data)
+	}
+}
+
 func TestThreadsSourceCorrectly(t *testing.T) {
 
 	query := `
