@@ -427,6 +427,9 @@ func blockStringValue(in string) string {
 
 	// Remove leading blank lines.
 	for {
+		if len(lines) == 1 {
+			break
+		}
 		if isBlank := lineIsBlank(lines[0]); !isBlank {
 			break
 		}

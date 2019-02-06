@@ -450,6 +450,15 @@ func TestLexer_ReportsUsefulStringErrors(t *testing.T) {
 func TestLexer_LexesBlockStrings(t *testing.T) {
 	tests := []Test{
 		{
+			Body: `""""""`,
+			Expected: Token{
+				Kind:  TokenKind[BLOCK_STRING],
+				Start: 0,
+				End:   6,
+				Value: "",
+			},
+		},
+		{
 			Body: `"""simple"""`,
 			Expected: Token{
 				Kind:  TokenKind[BLOCK_STRING],
