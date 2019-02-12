@@ -624,7 +624,7 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 	})
 
 	if resolveFnError != nil {
-		panic(gqlerrors.FormatError(resolveFnError))
+		eCtx.addError(gqlerrors.FormatError(resolveFnError))
 	}
 
 	if deferredResolveFn, ok := result.(func() (interface{}, error)); ok {
