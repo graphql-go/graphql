@@ -38,19 +38,30 @@ func Do(p Params) *Result {
 		Body: []byte(p.RequestString),
 		Name: "GraphQL request",
 	})
+	handleExtensionsInits(&p)
+
+	// parse the source
+	handleExtensionsParseDidStart(&p)
 	AST, err := parser.Parse(parser.ParseParams{Source: source})
 	if err != nil {
+		handleExtensionsParseEnded(&p, err)
 		return &Result{
 			Errors: gqlerrors.FormatErrors(err),
 		}
 	}
+	handleExtensionsParseEnded(&p, err)
+
+	// validate document
+	handleExtensionsValidationDidStart(&p)
 	validationResult := ValidateDocument(&p.Schema, AST, nil)
 
 	if !validationResult.IsValid {
+		handleExtensionsValidationEnded(&p, validationResult.Errors)
 		return &Result{
 			Errors: validationResult.Errors,
 		}
 	}
+	handleExtensionsValidationEnded(&p, validationResult.Errors)
 
 	return Execute(ExecuteParams{
 		Schema:        p.Schema,

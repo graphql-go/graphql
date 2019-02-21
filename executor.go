@@ -29,9 +29,12 @@ func Execute(p ExecuteParams) (result *Result) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	handleExtensionsExecutionDidStart(&p)
 
 	resultChannel := make(chan *Result)
-	result = &Result{}
+	result = &Result{
+		Extensions: map[string]interface{}{},
+	}
 
 	go func(out chan<- *Result, done <-chan struct{}) {
 		defer func() {
@@ -63,6 +66,7 @@ func Execute(p ExecuteParams) (result *Result) {
 			Root:             p.Root,
 			Operation:        exeContext.Operation,
 		})
+
 	}(resultChannel, ctx.Done())
 
 	select {
@@ -71,6 +75,9 @@ func Execute(p ExecuteParams) (result *Result) {
 	case r := <-resultChannel:
 		result = r
 	}
+
+	handleExtensionsExecutionEnded(&p)
+	result.addExtensionResults(&p)
 	return
 }
 
@@ -266,6 +273,7 @@ func executeFields(p executeFieldsParams) *Result {
 }
 
 func executeSubFields(p executeFieldsParams) map[string]interface{} {
+
 	if p.Source == nil {
 		p.Source = map[string]interface{}{}
 	}
@@ -620,12 +628,16 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 
 	var resolveFnError error
 
+	handleExtensionsResolveFieldDidStart(eCtx.Schema.extensions, eCtx, &info)
+
 	result, resolveFnError = resolveFn(ResolveParams{
 		Source:  source,
 		Args:    args,
 		Info:    info,
 		Context: eCtx.Context,
 	})
+
+	defer handleExtensionsResolveFieldEnded(eCtx.Schema.extensions, eCtx, &info)
 
 	if resolveFnError != nil {
 		panic(resolveFnError)
