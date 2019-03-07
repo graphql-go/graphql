@@ -38,30 +38,72 @@ func Do(p Params) *Result {
 		Body: []byte(p.RequestString),
 		Name: "GraphQL request",
 	})
-	handleExtensionsInits(&p)
 
-	// parse the source
-	handleExtensionsParseDidStart(&p)
-	AST, err := parser.Parse(parser.ParseParams{Source: source})
-	if err != nil {
-		handleExtensionsParseEnded(&p, err)
+	// run init on the extensions
+	extErrs := handleExtensionsInits(&p)
+	if len(extErrs) != 0 {
 		return &Result{
-			Errors: gqlerrors.FormatErrors(err),
+			Errors: extErrs,
 		}
 	}
-	handleExtensionsParseEnded(&p, err)
+
+	extErrs, parseFinishFn := handleExtensionsParseDidStart(&p)
+	if len(extErrs) != 0 {
+		return &Result{
+			Errors: extErrs,
+		}
+	}
+
+	// parse the source
+	AST, err := parser.Parse(parser.ParseParams{Source: source})
+	if err != nil {
+		// run parseFinishFuncs for extensions
+		extErrs = parseFinishFn(err)
+
+		// merge the errors from extensions and the original error from parser
+		extErrs = append(extErrs, gqlerrors.FormatErrors(err)...)
+		return &Result{
+			Errors: extErrs,
+		}
+	}
+
+	// run parseFinish functions for extensions
+	extErrs = parseFinishFn(err)
+	if len(extErrs) != 0 {
+		return &Result{
+			Errors: extErrs,
+		}
+	}
+
+	// notify extensions abput the start of the validation
+	extErrs, validationFinishFn := handleExtensionsValidationDidStart(&p)
+	if len(extErrs) != 0 {
+		return &Result{
+			Errors: extErrs,
+		}
+	}
 
 	// validate document
-	handleExtensionsValidationDidStart(&p)
 	validationResult := ValidateDocument(&p.Schema, AST, nil)
 
 	if !validationResult.IsValid {
-		handleExtensionsValidationEnded(&p, validationResult.Errors)
+		// run validation finish functions for extensions
+		extErrs = validationFinishFn(validationResult.Errors)
+
+		// merge the errors from extensions and the original error from parser
+		extErrs = append(extErrs, validationResult.Errors...)
 		return &Result{
-			Errors: validationResult.Errors,
+			Errors: extErrs,
 		}
 	}
-	handleExtensionsValidationEnded(&p, validationResult.Errors)
+
+	// run the validationFinishFuncs for extensions
+	extErrs = validationFinishFn(validationResult.Errors)
+	if len(extErrs) != 0 {
+		return &Result{
+			Errors: extErrs,
+		}
+	}
 
 	return Execute(ExecuteParams{
 		Schema:        p.Schema,

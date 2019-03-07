@@ -29,7 +29,24 @@ func Execute(p ExecuteParams) (result *Result) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	handleExtensionsExecutionDidStart(&p)
+	// run executionDidStart functions from extensions
+	extErrs, executionFinishFn := handleExtensionsExecutionDidStart(&p)
+	if len(extErrs) != 0 {
+		return &Result{
+			Errors: extErrs,
+		}
+	}
+
+	defer func() {
+		extErrs = executionFinishFn(result)
+		if len(extErrs) != 0 {
+			result.Errors = append(result.Errors, extErrs...)
+		}
+
+		// TODO: make addExtensionResults into a separate fn
+		// TODO: catch panics from "Extension.GetResult(ctx) interface{}"
+		addExtensionResults(&p, result)
+	}()
 
 	resultChannel := make(chan *Result)
 	result = &Result{
@@ -76,8 +93,6 @@ func Execute(p ExecuteParams) (result *Result) {
 		result = r
 	}
 
-	handleExtensionsExecutionEnded(&p)
-	result.addExtensionResults(&p)
 	return
 }
 
@@ -628,7 +643,10 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 
 	var resolveFnError error
 
-	handleExtensionsResolveFieldDidStart(eCtx.Schema.extensions, eCtx, &info)
+	extErrs, resolveFieldFinishFn := handleExtensionsResolveFieldDidStart(eCtx.Schema.extensions, eCtx, &info)
+	if len(extErrs) != 0 {
+		eCtx.Errors = append(eCtx.Errors, extErrs...)
+	}
 
 	result, resolveFnError = resolveFn(ResolveParams{
 		Source:  source,
@@ -637,10 +655,13 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		Context: eCtx.Context,
 	})
 
-	defer handleExtensionsResolveFieldEnded(eCtx.Schema.extensions, eCtx, &info)
-
 	if resolveFnError != nil {
 		panic(resolveFnError)
+	}
+
+	extErrs = resolveFieldFinishFn(result, resolveFnError)
+	if len(extErrs) != 0 {
+		eCtx.Errors = append(eCtx.Errors, extErrs...)
 	}
 
 	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, path, result)

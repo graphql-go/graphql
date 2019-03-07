@@ -17,16 +17,3 @@ type Result struct {
 func (r *Result) HasErrors() bool {
 	return len(r.Errors) > 0
 }
-
-func (r *Result) addExtensionResults(p *ExecuteParams) {
-	if len(p.Schema.extensions) != 0 {
-		r.Extensions = map[string]interface{}{}
-		for _, ext := range p.Schema.extensions {
-			if ext.HasResult() {
-				r.Extensions[ext.Name()] = ext.GetResult(p.Context)
-			}
-		}
-	} else {
-		r.Extensions = nil
-	}
-}
