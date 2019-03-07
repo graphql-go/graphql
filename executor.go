@@ -43,8 +43,6 @@ func Execute(p ExecuteParams) (result *Result) {
 			result.Errors = append(result.Errors, extErrs...)
 		}
 
-		// TODO: make addExtensionResults into a separate fn
-		// TODO: catch panics from "Extension.GetResult(ctx) interface{}"
 		addExtensionResults(&p, result)
 	}()
 
