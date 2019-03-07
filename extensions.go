@@ -148,7 +148,7 @@ func handleExtensionsValidationDidStart(p *Params) ([]gqlerrors.FormattedError, 
 				finishFn(errs)
 			}()
 		}
-		return errs
+		return extErrs
 	}
 }
 
