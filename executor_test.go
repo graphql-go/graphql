@@ -843,6 +843,57 @@ func TestThrowsIfUnknownOperationNameIsProvided(t *testing.T) {
 		t.Fatalf("unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
 	}
 }
+
+func TestThrowsIfOperationTypeIsUnsupported(t *testing.T) {
+	query := `mutation Mut { a } subscription Sub { a }`
+	operations := []string{"Mut", "Sub"}
+
+	expectedErrors := [][]gqlerrors.FormattedError{
+		{{
+			Message:   `Schema is not configured for mutations`,
+			Locations: []location.SourceLocation{{Line: 1, Column: 1}},
+		}},
+		{{
+			Message:   `Schema is not configured for subscriptions`,
+			Locations: []location.SourceLocation{{Line: 1, Column: 20}},
+		}},
+	}
+
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{
+					Type: graphql.String,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	// parse query
+	ast := testutil.TestParse(t, query)
+
+	for opIndex, operation := range operations {
+		expectedErrors := expectedErrors[opIndex]
+
+		// execute
+		ep := graphql.ExecuteParams{
+			Schema:        schema,
+			AST:           ast,
+			OperationName: operation,
+		}
+		result := testutil.TestExecute(t, ep)
+		if result.Data != nil {
+			t.Fatalf("wrong result, expected nil result.Data, got %v", result.Data)
+		}
+		if !testutil.EqualFormattedErrors(expectedErrors, result.Errors) {
+			t.Fatalf("unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
+		}
+	}
+}
 func TestUsesTheQuerySchemaForQueries(t *testing.T) {
 
 	doc := `query Q { a } mutation M { c } subscription S { a }`
