@@ -36,7 +36,7 @@ func Execute(p ExecuteParams) (result *Result) {
 	go func(out chan<- *Result, done <-chan struct{}) {
 		defer func() {
 			if err := recover(); err != nil {
-				result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
+				result.AppendErrors(gqlerrors.FormatError(err.(error)))
 			}
 			select {
 			case out <- result:
@@ -54,7 +54,7 @@ func Execute(p ExecuteParams) (result *Result) {
 		})
 
 		if err != nil {
-			result.Errors = append(result.Errors, gqlerrors.FormatError(err))
+			result.AppendErrors(gqlerrors.FormatError(err))
 			return
 		}
 
@@ -67,7 +67,7 @@ func Execute(p ExecuteParams) (result *Result) {
 
 	select {
 	case <-ctx.Done():
-		result.Errors = append(result.Errors, gqlerrors.FormatError(ctx.Err()))
+		result.AppendErrors(gqlerrors.FormatError(ctx.Err()))
 	case r := <-resultChannel:
 		result = r
 	}
