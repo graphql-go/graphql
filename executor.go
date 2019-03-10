@@ -46,7 +46,7 @@ func Execute(p ExecuteParams) (result *Result) {
 		addExtensionResults(&p, result)
 	}()
 
-	resultChannel := make(chan *Result)
+	resultChannel := make(chan *Result, 2)
 
 	go func() {
 		result := &Result{}
@@ -55,10 +55,7 @@ func Execute(p ExecuteParams) (result *Result) {
 			if err := recover(); err != nil {
 				result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
 			}
-			select {
-			case resultChannel <- result:
-			case <-ctx.Done():
-			}
+			resultChannel <- result
 		}()
 
 		exeContext, err := buildExecutionContext(buildExecutionCtxParams{
