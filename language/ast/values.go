@@ -19,6 +19,7 @@ var _ Value = (*BooleanValue)(nil)
 var _ Value = (*EnumValue)(nil)
 var _ Value = (*ListValue)(nil)
 var _ Value = (*ObjectValue)(nil)
+var _ Value = (*NullValue)(nil)
 
 // Variable implements Node, Value
 type Variable struct {
@@ -299,4 +300,32 @@ func (f *ObjectField) GetLoc() *Location {
 
 func (f *ObjectField) GetValue() interface{} {
 	return f.Value
+}
+
+// NullField implements Node, Value
+type NullValue struct {
+	Kind string
+	Loc  *Location
+}
+
+func NewNullValue(v *NullValue) *NullValue {
+	if v == nil {
+		v = &NullValue{}
+	}
+	return &NullValue{
+		Kind: kinds.NullValue,
+		Loc:  v.Loc,
+	}
+}
+
+func (v *NullValue) GetKind() string {
+	return v.Kind
+}
+
+func (v *NullValue) GetLoc() *Location {
+	return v.Loc
+}
+
+func (v *NullValue) GetValue() interface{} {
+	return nil
 }

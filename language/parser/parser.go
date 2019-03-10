@@ -610,15 +610,21 @@ func parseValueLiteral(parser *Parser, isConst bool) (ast.Value, error) {
 				Value: value,
 				Loc:   loc(parser, token.Start),
 			}), nil
-		} else if token.Value != "null" {
+		} else if token.Value == "null" {
 			if err := advance(parser); err != nil {
 				return nil, err
 			}
-			return ast.NewEnumValue(&ast.EnumValue{
-				Value: token.Value,
-				Loc:   loc(parser, token.Start),
+			return ast.NewNullValue(&ast.NullValue{
+				Loc: loc(parser, token.Start),
 			}), nil
 		}
+		if err := advance(parser); err != nil {
+			return nil, err
+		}
+		return ast.NewEnumValue(&ast.EnumValue{
+			Value: token.Value,
+			Loc:   loc(parser, token.Start),
+		}), nil
 	case lexer.DOLLAR:
 		if !isConst {
 			return parseVariable(parser)
