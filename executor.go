@@ -47,20 +47,20 @@ func Execute(p ExecuteParams) (result *Result) {
 	}()
 
 	resultChannel := make(chan *Result)
-	result = &Result{
-		Extensions: map[string]interface{}{},
-	}
 
-	go func(out chan<- *Result, done <-chan struct{}) {
+	go func() {
+		result := &Result{}
+
 		defer func() {
 			if err := recover(); err != nil {
-				result.AppendErrors(gqlerrors.FormatError(err.(error)))
+				result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
 			}
 			select {
-			case out <- result:
-			case <-done:
+			case resultChannel <- result:
+			case <-ctx.Done():
 			}
 		}()
+
 		exeContext, err := buildExecutionContext(buildExecutionCtxParams{
 			Schema:        p.Schema,
 			Root:          p.Root,
@@ -72,26 +72,26 @@ func Execute(p ExecuteParams) (result *Result) {
 		})
 
 		if err != nil {
-			result.AppendErrors(gqlerrors.FormatError(err))
+			result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
+			resultChannel <- result
 			return
 		}
 
-		result = executeOperation(executeOperationParams{
+		resultChannel <- executeOperation(executeOperationParams{
 			ExecutionContext: exeContext,
 			Root:             p.Root,
 			Operation:        exeContext.Operation,
 		})
-
-	}(resultChannel, ctx.Done())
+	}()
 
 	select {
 	case <-ctx.Done():
-		result.AppendErrors(gqlerrors.FormatError(ctx.Err()))
+		result := &Result{}
+		result.Errors = append(result.Errors, gqlerrors.FormatError(ctx.Err()))
+		return result
 	case r := <-resultChannel:
-		result = r
+		return r
 	}
-
-	return
 }
 
 type buildExecutionCtxParams struct {
