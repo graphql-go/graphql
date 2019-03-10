@@ -404,25 +404,13 @@ func blockStringValue(in string) string {
 	}
 
 	// Remove leading blank lines.
-	for {
-		if isBlank := lineIsBlank(lines[0]); !isBlank {
-			break
-		}
-		if len(lines) == 1 {
-			break
-		}
+	for len(lines) > 0 && lineIsBlank(lines[0]) {
 		lines = lines[1:]
 	}
 
 	// Remove trailing blank lines.
-	for {
+	for len(lines) > 0 && lineIsBlank(lines[len(lines)-1]) {
 		i := len(lines) - 1
-		if isBlank := lineIsBlank(lines[i]); !isBlank {
-			break
-		}
-		if len(lines) == 1 {
-			break
-		}
 		lines = append(lines[:i], lines[i+1:]...)
 	}
 
