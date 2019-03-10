@@ -452,7 +452,7 @@ func TestLexer_LexesBlockStrings(t *testing.T) {
 		{
 			Body: `""""""`,
 			Expected: Token{
-				Kind:  TokenKind[BLOCK_STRING],
+				Kind:  BLOCK_STRING,
 				Start: 0,
 				End:   6,
 				Value: "",
