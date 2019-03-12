@@ -54,7 +54,7 @@ func Execute(p ExecuteParams) (result *Result) {
 	go func(out chan<- *Result, done <-chan struct{}) {
 		defer func() {
 			if err := recover(); err != nil {
-				result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
+				result.AppendErrors(gqlerrors.FormatError(err.(error)))
 			}
 			select {
 			case out <- result:
@@ -72,7 +72,7 @@ func Execute(p ExecuteParams) (result *Result) {
 		})
 
 		if err != nil {
-			result.Errors = append(result.Errors, gqlerrors.FormatError(err))
+			result.AppendErrors(gqlerrors.FormatError(err))
 			return
 		}
 
@@ -86,7 +86,7 @@ func Execute(p ExecuteParams) (result *Result) {
 
 	select {
 	case <-ctx.Done():
-		result.Errors = append(result.Errors, gqlerrors.FormatError(ctx.Err()))
+		result.AppendErrors(gqlerrors.FormatError(ctx.Err()))
 	case r := <-resultChannel:
 		result = r
 	}
@@ -993,6 +993,22 @@ func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 			}
 		}
 		return property, nil
+	}
+
+	// Try accessing as map via reflection
+	if r := reflect.ValueOf(p.Source); r.Kind() == reflect.Map && r.Type().Key().Kind() == reflect.String {
+		val := r.MapIndex(reflect.ValueOf(p.Info.FieldName))
+		if val.IsValid() {
+			property := val.Interface()
+			if val.Type().Kind() == reflect.Func {
+				// try type casting the func to the most basic func signature
+				// for more complex signatures, user have to define ResolveFn
+				if propertyFn, ok := property.(func() interface{}); ok {
+					return propertyFn(), nil
+				}
+			}
+			return property, nil
+		}
 	}
 
 	// last resort, return nil
