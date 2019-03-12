@@ -902,6 +902,38 @@ type FieldResolver interface {
 	Resolve(p ResolveParams) (interface{}, error)
 }
 
+func defaultResolveStruct(sourceVal reflect.Value, fieldName string) (interface{}, error) {
+	for i := 0; i < sourceVal.NumField(); i++ {
+		valueField := sourceVal.Field(i)
+		typeField := sourceVal.Type().Field(i)
+		// try matching the field name first
+		if strings.EqualFold(typeField.Name, fieldName) {
+			return valueField.Interface(), nil
+		}
+		if typeField.Anonymous && typeField.Type.Kind() == reflect.Struct {
+			return defaultResolveStruct(valueField, fieldName)
+		}
+		tag := typeField.Tag
+		checkTag := func(tagName string) bool {
+			t := tag.Get(tagName)
+			tOptions := strings.Split(t, ",")
+			if len(tOptions) == 0 {
+				return false
+			}
+			if tOptions[0] != fieldName {
+				return false
+			}
+			return true
+		}
+		if checkTag("json") || checkTag("graphql") {
+			return valueField.Interface(), nil
+		} else {
+			continue
+		}
+	}
+	return nil, nil
+}
+
 // defaultResolveFn If a resolve function is not given, then a default resolve behavior is used
 // which takes the property of the source object of the same name as the field
 // and returns it as the result, or if it's a function, returns the result
@@ -922,32 +954,7 @@ func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 	}
 
 	if sourceVal.Type().Kind() == reflect.Struct {
-		for i := 0; i < sourceVal.NumField(); i++ {
-			valueField := sourceVal.Field(i)
-			typeField := sourceVal.Type().Field(i)
-			// try matching the field name first
-			if strings.EqualFold(typeField.Name, p.Info.FieldName) {
-				return valueField.Interface(), nil
-			}
-			tag := typeField.Tag
-			checkTag := func(tagName string) bool {
-				t := tag.Get(tagName)
-				tOptions := strings.Split(t, ",")
-				if len(tOptions) == 0 {
-					return false
-				}
-				if tOptions[0] != p.Info.FieldName {
-					return false
-				}
-				return true
-			}
-			if checkTag("json") || checkTag("graphql") {
-				return valueField.Interface(), nil
-			} else {
-				continue
-			}
-		}
-		return nil, nil
+		return defaultResolveStruct(sourceVal, p.Info.FieldName)
 	}
 
 	// try p.Source as a map[string]interface

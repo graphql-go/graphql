@@ -191,7 +191,7 @@ func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_With
 
 func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_WithJSONTags(t *testing.T) {
 
-	// For structs without JSON tags, it will map to upper-cased exported field names
+	// For structs with JSON tags, it will use those tags as field names
 	type SubObjectWithJSONTags struct {
 		OtherField string `json:""`
 		Str        string `json:"str"`
@@ -259,6 +259,88 @@ func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_With
 	result = graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: `{ test(aInt: -123, aStr: "String!") { str, int } }`,
+	})
+	if !reflect.DeepEqual(expected, result.Data) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result.Data))
+	}
+}
+
+func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_WithContainedStruct(t *testing.T) {
+
+	// For anonymous contained structs, it will use the field names within
+	type ContainedObjectWithJSONTags struct {
+		Str        string `json:"str"`
+		Int        int
+	}
+
+	type SubObjectWithContained struct {
+		ContainedObjectWithJSONTags
+		AnotherStr        string `json:"anotherStr"`
+	}
+
+	schema := testSchema(t, &graphql.Field{
+		Type: graphql.NewObject(graphql.ObjectConfig{
+			Name:        "SubObject",
+			Description: "Maps GraphQL Object `SubObject` to Go struct `SubObjectWithContained`",
+			Fields: graphql.Fields{
+				"str": &graphql.Field{Type: graphql.String},
+				"Int": &graphql.Field{Type: graphql.Int},
+			},
+		}),
+		Args: graphql.FieldConfigArgument{
+			"aStr": &graphql.ArgumentConfig{Type: graphql.String},
+			"aInt": &graphql.ArgumentConfig{Type: graphql.Int},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			aStr, _ := p.Args["aStr"].(string)
+			aInt, _ := p.Args["aInt"].(int)
+			return &SubObjectWithContained{
+				ContainedObjectWithJSONTags: ContainedObjectWithJSONTags{
+					Str: aStr,
+					Int: aInt,
+				},
+			}, nil
+		},
+	})
+
+	expected := map[string]interface{}{
+		"test": map[string]interface{}{
+			"str": "",
+			"Int": 0,
+		},
+	}
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: `{ test { str, Int } }`,
+	})
+
+	if !reflect.DeepEqual(expected, result.Data) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result.Data))
+	}
+
+	expected = map[string]interface{}{
+		"test": map[string]interface{}{
+			"str": "String!",
+			"Int": 0,
+		},
+	}
+	result = graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: `{ test(aStr: "String!") { str, Int } }`,
+	})
+	if !reflect.DeepEqual(expected, result.Data) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result.Data))
+	}
+
+	expected = map[string]interface{}{
+		"test": map[string]interface{}{
+			"str": "String!",
+			"Int": -123,
+		},
+	}
+	result = graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: `{ test(aInt: -123, aStr: "String!") { str, Int } }`,
 	})
 	if !reflect.DeepEqual(expected, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result.Data))
