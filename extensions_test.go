@@ -35,7 +35,9 @@ func tinit(t *testing.T) graphql.Schema {
 func TestExtensionInitPanic(t *testing.T) {
 	ext := newtestExt("testExt")
 	ext.initFn = func(ctx context.Context, p *graphql.Params) context.Context {
-		panic(errors.New("test error"))
+		if true {
+			panic(errors.New("test error"))
+		}
 		return ctx
 	}
 
@@ -62,7 +64,9 @@ func TestExtensionInitPanic(t *testing.T) {
 func TestExtensionParseDidStartPanic(t *testing.T) {
 	ext := newtestExt("testExt")
 	ext.parseDidStartFn = func(ctx context.Context) (context.Context, graphql.ParseFinishFunc) {
-		panic(errors.New("test error"))
+		if true {
+			panic(errors.New("test error"))
+		}
 		return ctx, func(err error) {
 
 		}
@@ -119,7 +123,9 @@ func TestExtensionParseFinishFuncPanic(t *testing.T) {
 func TestExtensionValidationDidStartPanic(t *testing.T) {
 	ext := newtestExt("testExt")
 	ext.validationDidStartFn = func(ctx context.Context) (context.Context, graphql.ValidationFinishFunc) {
-		panic(errors.New("test error"))
+		if true {
+			panic(errors.New("test error"))
+		}
 		return ctx, func([]gqlerrors.FormattedError) {
 
 		}
@@ -176,7 +182,9 @@ func TestExtensionValidationFinishFuncPanic(t *testing.T) {
 func TestExtensionExecutionDidStartPanic(t *testing.T) {
 	ext := newtestExt("testExt")
 	ext.executionDidStartFn = func(ctx context.Context) (context.Context, graphql.ExecutionFinishFunc) {
-		panic(errors.New("test error"))
+		if true {
+			panic(errors.New("test error"))
+		}
 		return ctx, func(r *graphql.Result) {
 
 		}
@@ -236,7 +244,9 @@ func TestExtensionExecutionFinishFuncPanic(t *testing.T) {
 func TestExtensionResolveFieldDidStartPanic(t *testing.T) {
 	ext := newtestExt("testExt")
 	ext.resolveFieldDidStartFn = func(ctx context.Context, i *graphql.ResolveInfo) (context.Context, graphql.ResolveFieldFinishFunc) {
-		panic(errors.New("test error"))
+		if true {
+			panic(errors.New("test error"))
+		}
 		return ctx, func(v interface{}, err error) {
 
 		}
@@ -299,7 +309,9 @@ func TestExtensionResolveFieldFinishFuncPanic(t *testing.T) {
 func TestExtensionGetResultPanic(t *testing.T) {
 	ext := newtestExt("testExt")
 	ext.getResultFn = func(context.Context) interface{} {
-		panic(errors.New("test error"))
+		if true {
+			panic(errors.New("test error"))
+		}
 		return nil
 	}
 	ext.hasResultFn = func() bool {
