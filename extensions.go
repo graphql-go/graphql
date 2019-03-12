@@ -165,7 +165,7 @@ func handleExtensionsExecutionDidStart(p *ExecuteParams) ([]gqlerrors.FormattedE
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					errs = append(errs, gqlerrors.FormatError(fmt.Errorf("%s.ResolveFieldDidStart: %v", ext.Name(), r.(error))))
+					errs = append(errs, gqlerrors.FormatError(fmt.Errorf("%s.ExecutionDidStart: %v", ext.Name(), r.(error))))
 				}
 			}()
 			ctx, finishFn = ext.ExecutionDidStart(p.Context)
@@ -187,7 +187,7 @@ func handleExtensionsExecutionDidStart(p *ExecuteParams) ([]gqlerrors.FormattedE
 				finishFn(result)
 			}()
 		}
-		return errs
+		return extErrs
 	}
 }
 
@@ -226,13 +226,12 @@ func handleExtensionsResolveFieldDidStart(exts []Extension, p *executionContext,
 				finishFn(val, err)
 			}()
 		}
-		return errs
+		return extErrs
 	}
 }
 
 func addExtensionResults(p *ExecuteParams, result *Result) {
 	if len(p.Schema.extensions) != 0 {
-		result.Extensions = map[string]interface{}{}
 		for _, ext := range p.Schema.extensions {
 			func() {
 				defer func() {
@@ -241,11 +240,12 @@ func addExtensionResults(p *ExecuteParams, result *Result) {
 					}
 				}()
 				if ext.HasResult() {
+					if result.Extensions == nil {
+						result.Extensions = make(map[string]interface{})
+					}
 					result.Extensions[ext.Name()] = ext.GetResult(p.Context)
 				}
 			}()
 		}
-	} else {
-		result.Extensions = nil
 	}
 }
