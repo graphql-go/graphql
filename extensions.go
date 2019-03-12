@@ -236,7 +236,7 @@ func addExtensionResults(p *ExecuteParams, result *Result) {
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
-						result.Errors = append(result.Errors, gqlerrors.FormatError(fmt.Errorf("%s.GetResult: %v", ext.Name(), r.(error))))
+						result.AppendErrors(gqlerrors.FormatError(fmt.Errorf("%s.GetResult: %v", ext.Name(), r.(error))))
 					}
 				}()
 				if ext.HasResult() {
