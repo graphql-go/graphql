@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -56,11 +57,20 @@ var QueryType = graphql.NewObject(graphql.ObjectConfig{
 				go func() {
 					defer close(ch)
 					bar := &Bar{Name: "Bar's name"}
-					ch <- &result{data: bar, err: nil}
+					// graphql.Do will finish immediately in the case concurrentFieldFoo returns an error. Therefore,
+					// when using goroutines make sure to utilize a done channel to avoid leaking goroutines.
+					select {
+					case ch <- &result{data: bar, err: nil}:
+					case <-p.Context.Done():
+					}
 				}()
 				return func() (interface{}, error) {
-					r := <-ch
-					return r.data, r.err
+					select {
+					case r := <-ch:
+						return r.data, r.err
+					case <-p.Context.Done():
+						return nil, nil
+					}
 				}, nil
 			},
 		},
@@ -84,10 +94,13 @@ func main() {
 			}
 		}
 	`
+	ctx, cancel := context.WithCancel(context.Background())
 	result := graphql.Do(graphql.Params{
 		RequestString: query,
 		Schema:        schema,
+		Context:       ctx,
 	})
+	cancel() // Notify via a done channel that the request is over.
 	b, err := json.Marshal(result)
 	if err != nil {
 		log.Fatal(err)
