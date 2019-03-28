@@ -22,6 +22,8 @@ type ExecuteParams struct {
 	// Context may be provided to pass application-specific per-request
 	// information to resolve functions.
 	Context context.Context
+
+	manager *resolveManager
 }
 
 func Execute(p ExecuteParams) (result *Result) {
@@ -29,6 +31,9 @@ func Execute(p ExecuteParams) (result *Result) {
 	ctx := p.Context
 	if ctx == nil {
 		ctx = context.Background()
+	}
+	if p.manager == nil {
+		p.manager = manager
 	}
 
 	resultChannel := make(chan *Result)
@@ -45,6 +50,7 @@ func Execute(p ExecuteParams) (result *Result) {
 			Errors:        nil,
 			Result:        result,
 			Context:       p.Context,
+			manager:       p.manager,
 		})
 
 		if err != nil {
@@ -102,6 +108,7 @@ type buildExecutionCtxParams struct {
 	Errors        []gqlerrors.FormattedError
 	Result        *Result
 	Context       context.Context
+	manager       *resolveManager
 }
 
 type executionContext struct {
@@ -114,6 +121,7 @@ type executionContext struct {
 
 	errors      []gqlerrors.FormattedError
 	errorsMutex sync.Mutex
+	manager     *resolveManager
 }
 
 func (eCtx *executionContext) addError(gqlErrors ...gqlerrors.FormattedError) {
@@ -172,6 +180,7 @@ func buildExecutionContext(p buildExecutionCtxParams) (*executionContext, error)
 	eCtx.VariableValues = variableValues
 	eCtx.addError(p.Errors...)
 	eCtx.Context = p.Context
+	eCtx.manager = p.manager
 	return eCtx, nil
 }
 
@@ -272,17 +281,45 @@ func executeFieldsSerially(p executeFieldsParams) *Result {
 
 	finalResults := make(map[string]interface{}, len(p.Fields))
 	for responseName, fieldASTs := range p.Fields {
-		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
-		if state.hasNoFieldDefs {
+		fn, params := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+		if fn == nil {
 			continue
 		}
-		finalResults[responseName] = resolved
+
+		result, err := resolveSerially(fn, params)
+		if err != nil {
+			p.ExecutionContext.addError(gqlerrors.FormatError(err))
+		}
+
+		finalResults[responseName] = completeValueCatchingError(p.ExecutionContext, params.Info.ReturnType, params.Info.FieldASTs, params.Info, result)
 	}
 
 	return &Result{
 		Data:   finalResults,
 		Errors: p.ExecutionContext.Errors(),
 	}
+}
+
+func resolveSerially(fn FieldResolveFn, params ResolveParams) (result interface{}, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			if r, ok := r.(string); ok {
+				err = NewLocatedError(
+					fmt.Sprintf("%v", r),
+					FieldASTsToNodeASTs(params.Info.FieldASTs),
+				)
+			}
+			if r, ok := r.(error); ok {
+				err = gqlerrors.FormatError(r)
+			}
+			if _, ok := params.Info.ReturnType.(*NonNull); ok {
+				panic(gqlerrors.FormatError(err))
+			}
+
+		}
+	}()
+	result, err = fn(params)
+	return
 }
 
 // Implements the "Evaluating selection sets" section of the spec for "read" mode.
@@ -294,41 +331,35 @@ func executeFields(p executeFieldsParams) *Result {
 		p.Fields = map[string][]*ast.Field{}
 	}
 
-	var numberOfDeferredFunctions int
-	recoverChan := make(chan interface{}, len(p.Fields))
-
-	var resultsMutex sync.Mutex
 	finalResults := make(map[string]interface{}, len(p.Fields))
+	requests := make(map[string]ResolveParams)
+	responses := make(chan resolverResponse, len(p.Fields))
 	for responseName, fieldASTs := range p.Fields {
-		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
-		if state.hasNoFieldDefs {
+		fn, params := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
+		if fn == nil {
 			continue
 		}
-		if resolve, ok := resolved.(deferredResolveFunction); ok {
-			numberOfDeferredFunctions += 1
-			go func(responseName string) {
-				defer func() {
-					recoverChan <- recover()
-				}()
-
-				res := resolve()
-
-				resultsMutex.Lock()
-				defer resultsMutex.Unlock()
-				finalResults[responseName] = res
-			}(responseName)
-		} else {
-			resultsMutex.Lock()
-			finalResults[responseName] = resolved
-			resultsMutex.Unlock()
-		}
+		requests[responseName] = params
+		p.ExecutionContext.manager.resolveRequest(responseName, responses, fn, params)
 	}
-
-	for i := 0; i < numberOfDeferredFunctions; i++ {
-		if r := <-recoverChan; r != nil {
-			panic(r)
-		}
+	completed := make(map[string]resolverResponse)
+	for range requests {
+		resp := <-responses
+		completed[resp.name] = resp
 	}
+	for responseName, resp := range completed {
+		if resp.err != nil {
+			p.ExecutionContext.addError(gqlerrors.FormatError(resp.err))
+			if resp.result == nil {
+				finalResults[responseName] = nil
+				continue
+			}
+		}
+
+		params := requests[responseName]
+		finalResults[responseName] = completeValueCatchingError(p.ExecutionContext, params.Info.ReturnType, params.Info.FieldASTs, params.Info, resp.result)
+	}
+	close(responses)
 
 	return &Result{
 		Data:   finalResults,
@@ -541,45 +572,11 @@ func getFieldEntryKey(node *ast.Field) string {
 	return ""
 }
 
-// Internal resolveField state
-type resolveFieldResultState struct {
-	hasNoFieldDefs bool
-}
-
-type deferredResolveFunction func() interface{}
-
 // Resolves the field on the given source object. In particular, this
 // figures out the value that the field returns by calling its resolve function,
 // then calls completeValue to complete promises, serialize scalars, or execute
 // the sub-selection-set for objects.
-func resolveField(eCtx *executionContext, parentType *Object, source interface{}, fieldASTs []*ast.Field) (result interface{}, resultState resolveFieldResultState) {
-	// catch panic from resolveFn
-	var returnType Output
-	handleRecover := func(r interface{}) {
-		var err error
-		if r, ok := r.(string); ok {
-			err = NewLocatedError(
-				fmt.Sprintf("%v", r),
-				FieldASTsToNodeASTs(fieldASTs),
-			)
-		}
-		if r, ok := r.(error); ok {
-			err = gqlerrors.FormatError(r)
-		}
-		// send panic upstream
-		if _, ok := returnType.(*NonNull); ok {
-			panic(gqlerrors.FormatError(err))
-		}
-		eCtx.addError(gqlerrors.FormatError(err))
-	}
-
-	defer func() (interface{}, resolveFieldResultState) {
-		if r := recover(); r != nil {
-			handleRecover(r)
-		}
-		return result, resultState
-	}()
-
+func resolveField(eCtx *executionContext, parentType *Object, source interface{}, fieldASTs []*ast.Field) (FieldResolveFn, ResolveParams) {
 	fieldAST := fieldASTs[0]
 	fieldName := ""
 	if fieldAST.Name != nil {
@@ -588,10 +585,9 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 
 	fieldDef := getFieldDef(eCtx.Schema, parentType, fieldName)
 	if fieldDef == nil {
-		resultState.hasNoFieldDefs = true
-		return nil, resultState
+		return nil, ResolveParams{}
 	}
-	returnType = fieldDef.Type
+	returnType := fieldDef.Type
 	resolveFn := fieldDef.Resolve
 	if resolveFn == nil {
 		resolveFn = DefaultResolveFn
@@ -614,50 +610,19 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		VariableValues: eCtx.VariableValues,
 	}
 
-	var resolveFnError error
-
-	result, resolveFnError = resolveFn(ResolveParams{
+	return resolveFn, ResolveParams{
 		Source:  source,
 		Args:    args,
 		Info:    info,
 		Context: eCtx.Context,
-	})
-
-	if resolveFnError != nil {
-		eCtx.addError(gqlerrors.FormatError(resolveFnError))
 	}
-
-	if deferredResolveFn, ok := result.(func() (interface{}, error)); ok {
-		return deferredResolveFunction(func() (result interface{}) {
-			defer func() interface{} {
-				if r := recover(); r != nil {
-					handleRecover(r)
-				}
-
-				return result
-			}()
-
-			result, resolveFnError = deferredResolveFn()
-			if resolveFnError != nil {
-				panic(gqlerrors.FormatError(resolveFnError))
-			}
-
-			return completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
-		}), resultState
-	}
-
-	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
-	return completed, resultState
 }
 
+// TODO do I need returnType, fieldASTs here? It seems they are always matching the same named values in the ResolveInfo
 func completeValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) (completed interface{}) {
 	// catch panic
 	defer func() interface{} {
 		if r := recover(); r != nil {
-			//send panic upstream
-			if _, ok := returnType.(*NonNull); ok {
-				panic(r)
-			}
 			if err, ok := r.(gqlerrors.FormattedError); ok {
 				eCtx.addError(err)
 			}
@@ -819,7 +784,9 @@ func completeObjectValue(eCtx *executionContext, returnType *Object, fieldASTs [
 		Source:           result,
 		Fields:           subFieldASTs,
 	}
-	results := executeFields(executeFieldsParams)
+	// Note I could run `results := executeFields(executeFieldsParams)` but this explodes the number of needed go
+	// routines with little benefit
+	results := executeFieldsSerially(executeFieldsParams)
 
 	return results.Data
 
@@ -850,34 +817,29 @@ func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*as
 		panic(gqlerrors.FormatError(err))
 	}
 
-	// concurrently resolve list elements
 	itemType := returnType.OfType
-	wg := sync.WaitGroup{}
-	completedResults := make([]interface{}, resultVal.Len())
-	panics := make(chan interface{}, resultVal.Len())
+	responses := make(chan completeResponse, resultVal.Len())
+
 	for i := 0; i < resultVal.Len(); i++ {
-		wg.Add(1)
-		go func(j int) {
-			defer func() {
-				if r := recover(); r != nil {
-					panics <- r
-				}
-				wg.Done()
-			}()
-			val := resultVal.Index(j).Interface()
-			completedResults[j] = completeValueCatchingError(eCtx, itemType, fieldASTs, info, val)
-		}(i)
+		req := completeRequest{
+			index:    i,
+			response: responses,
+
+			eCtx:       eCtx,
+			returnType: itemType,
+			fieldASTs:  fieldASTs,
+			info:       info,
+			value:      resultVal.Index(i).Interface(),
+		}
+		eCtx.manager.completeRequest(req)
 	}
 
-	// wait for all routines to complete and then perform clean up
-	wg.Wait()
-	close(panics)
-
-	// re-panic if a goroutine panicked
-	for p := range panics {
-		panic(p)
+	completedResults := make([]interface{}, resultVal.Len())
+	for i := 0; i < resultVal.Len(); i++ {
+		resp := <-responses
+		completedResults[resp.index] = resp.result
 	}
-
+	close(responses)
 	return completedResults
 }
 
