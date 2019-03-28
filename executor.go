@@ -29,9 +29,27 @@ func Execute(p ExecuteParams) (result *Result) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	// run executionDidStart functions from extensions
+	extErrs, executionFinishFn := handleExtensionsExecutionDidStart(&p)
+	if len(extErrs) != 0 {
+		return &Result{
+			Errors: extErrs,
+		}
+	}
+
+	defer func() {
+		extErrs = executionFinishFn(result)
+		if len(extErrs) != 0 {
+			result.Errors = append(result.Errors, extErrs...)
+		}
+
+		addExtensionResults(&p, result)
+	}()
 
 	resultChannel := make(chan *Result)
-	result = &Result{}
+	result = &Result{
+		Extensions: map[string]interface{}{},
+	}
 
 	go func(out chan<- *Result, done <-chan struct{}) {
 		defer func() {
@@ -63,6 +81,7 @@ func Execute(p ExecuteParams) (result *Result) {
 			Root:             p.Root,
 			Operation:        exeContext.Operation,
 		})
+
 	}(resultChannel, ctx.Done())
 
 	select {
@@ -71,6 +90,7 @@ func Execute(p ExecuteParams) (result *Result) {
 	case r := <-resultChannel:
 		result = r
 	}
+
 	return
 }
 
@@ -266,6 +286,7 @@ func executeFields(p executeFieldsParams) *Result {
 }
 
 func executeSubFields(p executeFieldsParams) map[string]interface{} {
+
 	if p.Source == nil {
 		p.Source = map[string]interface{}{}
 	}
@@ -620,6 +641,11 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 
 	var resolveFnError error
 
+	extErrs, resolveFieldFinishFn := handleExtensionsResolveFieldDidStart(eCtx.Schema.extensions, eCtx, &info)
+	if len(extErrs) != 0 {
+		eCtx.Errors = append(eCtx.Errors, extErrs...)
+	}
+
 	result, resolveFnError = resolveFn(ResolveParams{
 		Source:  source,
 		Args:    args,
@@ -629,6 +655,11 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 
 	if resolveFnError != nil {
 		panic(resolveFnError)
+	}
+
+	extErrs = resolveFieldFinishFn(result, resolveFnError)
+	if len(extErrs) != 0 {
+		eCtx.Errors = append(eCtx.Errors, extErrs...)
 	}
 
 	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, path, result)
@@ -902,7 +933,7 @@ type FieldResolver interface {
 	Resolve(p ResolveParams) (interface{}, error)
 }
 
-// defaultResolveFn If a resolve function is not given, then a default resolve behavior is used
+// DefaultResolveFn If a resolve function is not given, then a default resolve behavior is used
 // which takes the property of the source object of the same name as the field
 // and returns it as the result, or if it's a function, returns the result
 // of calling that function.
