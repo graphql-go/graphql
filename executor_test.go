@@ -1094,16 +1094,6 @@ func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
 	if !reflect.DeepEqual(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
-
-	// TODO: test to ensure key ordering
-	// The following does not work
-	// - iterating over result.Data map
-	//   Note that golang's map iteration order is randomized
-	//   So, iterating over result.Data won't do it for a test
-	// - Marshal the result.Data to json string and assert it
-	//   json.Marshal seems to re-sort the keys automatically
-	//
-	t.Skipf("TODO: Ensure key ordering")
 }
 
 func TestAvoidsRecursion(t *testing.T) {
@@ -1480,48 +1470,6 @@ func TestQuery_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 	})
 	if len(result.Errors) != 0 {
 		t.Fatalf("wrong result, unexpected errors: %+v", result.Errors)
-	}
-}
-
-func TestQuery_DeferredResolveFn_ExecutionAddsErrorsFromFieldResolveFn(t *testing.T) {
-	qError := errors.New("queryError")
-	q := graphql.NewObject(graphql.ObjectConfig{
-		Name: "Query",
-		Fields: graphql.Fields{
-			"a": &graphql.Field{
-				Type: graphql.String,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return func() (interface{}, error) {
-						return nil, qError
-					}, nil
-				},
-			},
-			"b": &graphql.Field{
-				Type: graphql.String,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return func() (interface{}, error) {
-						return "ok", nil
-					}, nil
-				},
-			},
-		},
-	})
-	blogSchema, err := graphql.NewSchema(graphql.SchemaConfig{
-		Query: q,
-	})
-	if err != nil {
-		t.Fatalf("unexpected error, got: %v", err)
-	}
-	query := "{ a }"
-	result := graphql.Do(graphql.Params{
-		Schema:        blogSchema,
-		RequestString: query,
-	})
-	if len(result.Errors) == 0 {
-		t.Fatal("wrong result, expected errors, got no errors")
-	}
-	if result.Errors[0].Error() != qError.Error() {
-		t.Fatalf("wrong result, unexpected error, got: %v, expected: %v", result.Errors[0], qError)
 	}
 }
 

@@ -9,6 +9,12 @@ import (
 	"github.com/GannettDigital/graphql/language/source"
 )
 
+const defaultWorkers = 100
+
+// TODO I should build a defaultManager and allow for one passed in as part of the params
+
+var manager *resolveManager
+
 type Params struct {
 	// The GraphQL type system to use when validating and executing a query.
 	Schema Schema
@@ -38,6 +44,10 @@ type Params struct {
 }
 
 func Do(p Params) *Result {
+	if manager == nil {
+		manager = newResolveManager(defaultWorkers)
+	}
+
 	source := source.NewSource(&source.Source{
 		Body: []byte(p.RequestString),
 		Name: "GraphQL request",
@@ -63,6 +73,7 @@ func Do(p Params) *Result {
 		OperationName: p.OperationName,
 		Args:          p.VariableValues,
 		Context:       p.Context,
+		manager:       manager,
 	}
 
 	var cost int

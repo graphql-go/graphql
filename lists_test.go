@@ -252,7 +252,7 @@ func TestLists_NonNullListOfNullableObjectsReturnsNull(t *testing.T) {
 	ttype := graphql.NewNonNull(graphql.NewList(graphql.Int))
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
-			"nest": nil,
+			"nest": map[string]interface{}{"test": nil},
 		},
 		Errors: []gqlerrors.FormattedError{
 			{
@@ -322,7 +322,9 @@ func TestLists_NonNullListOfNullableFunc_ReturnsNull(t *testing.T) {
 	}
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
-			"nest": nil,
+			"nest": map[string]interface{}{
+				"test": nil,
+			},
 		},
 		Errors: []gqlerrors.FormattedError{
 			{
@@ -417,7 +419,9 @@ func TestLists_NullableListOfNonNullObjects_ContainsNull(t *testing.T) {
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
-				"test": nil,
+				"test": []interface{}{
+					1, nil, 2,
+				},
 			},
 		},
 		Errors: []gqlerrors.FormattedError{
@@ -482,7 +486,9 @@ func TestLists_NullableListOfNonNullFunc_ContainsNull(t *testing.T) {
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nest": map[string]interface{}{
-				"test": nil,
+				"test": []interface{}{
+					1, nil, 2,
+				},
 			},
 		},
 		Errors: []gqlerrors.FormattedError{
@@ -594,7 +600,11 @@ func TestLists_NonNullListOfNonNullObjects_ContainsNull(t *testing.T) {
 	}
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
-			"nest": nil,
+			"nest": map[string]interface{}{
+				"test": []interface{}{
+					1, nil, 2,
+				},
+			},
 		},
 		Errors: []gqlerrors.FormattedError{
 			{
@@ -615,7 +625,9 @@ func TestLists_NonNullListOfNonNullObjects_ReturnsNull(t *testing.T) {
 
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
-			"nest": nil,
+			"nest": map[string]interface{}{
+				"test": nil,
+			},
 		},
 		Errors: []gqlerrors.FormattedError{
 			{
@@ -666,7 +678,11 @@ func TestLists_NonNullListOfNonNullFunc_ContainsNull(t *testing.T) {
 	}
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
-			"nest": nil,
+			"nest": map[string]interface{}{
+				"test": []interface{}{
+					1, nil, 2,
+				},
+			},
 		},
 		Errors: []gqlerrors.FormattedError{
 			{
@@ -692,7 +708,9 @@ func TestLists_NonNullListOfNonNullFunc_ReturnsNull(t *testing.T) {
 	}
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
-			"nest": nil,
+			"nest": map[string]interface{}{
+				"test": nil,
+			},
 		},
 		Errors: []gqlerrors.FormattedError{
 			{
