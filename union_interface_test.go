@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/testutil"
+	"github.com/bigdrum/graphql"
+	"github.com/bigdrum/graphql/testutil"
 	"golang.org/x/net/context"
 )
 

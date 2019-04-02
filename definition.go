@@ -1082,7 +1082,8 @@ type InputObject struct {
 	typeConfig InputObjectConfig
 	fields     InputObjectFieldMap
 
-	err error
+	validated bool
+	err       error
 }
 type InputObjectFieldConfig struct {
 	Type         Input       `json:"type"`
@@ -1174,6 +1175,10 @@ func (gt *InputObject) defineFieldMap() {
 	}
 }
 func (gt *InputObject) Fields() InputObjectFieldMap {
+	if !gt.validated {
+		gt.Validate()
+		gt.validated = true
+	}
 	return gt.fields
 }
 func (gt *InputObject) Name() string {
@@ -1187,6 +1192,16 @@ func (gt *InputObject) String() string {
 }
 func (gt *InputObject) Error() error {
 	return gt.err
+}
+func (gt *InputObject) Validate() error {
+	err := invariant(
+		len(gt.fields) > 0,
+		fmt.Sprintf(`%v fields must be an object with field names as keys or a function which return such an object.`, gt),
+	)
+	if err != nil {
+		gt.err = err
+	}
+	return err
 }
 
 // List Modifier
