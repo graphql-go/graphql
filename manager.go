@@ -11,8 +11,8 @@ import (
 
 const (
 	requestQueueBuffer = 10
-	workerMaxRequests  = 10000
-	workerStartDelay   = 50 * time.Microsecond
+	workerMaxRequests  = 5000
+	workerStartDelay   = 500 * time.Microsecond
 )
 
 // completeRequest contains the information needed to complete a field.
@@ -87,12 +87,19 @@ func newResolveManager(startingWorkers int) *resolveManager {
 }
 
 func (manager *resolveManager) completeRequest(req completeRequest) {
+	t := time.NewTimer(workerStartDelay)
+	defer func() {
+		if !t.Stop() {
+			<-t.C
+		}
+	}()
 	for {
 		select {
 		case manager.completeRequests <- req:
 			return
-		case <-time.After(workerStartDelay):
+		case <-t.C:
 			go manager.newWorker(false)
+			t.Reset(workerStartDelay)
 		}
 	}
 }
@@ -105,12 +112,19 @@ func (manager *resolveManager) resolveRequest(name string, response chan<- resol
 		response: response,
 	}
 
+	t := time.NewTimer(workerStartDelay)
+	defer func() {
+		if !t.Stop() {
+			<-t.C
+		}
+	}()
 	for {
 		select {
 		case manager.resolveRequests <- req:
 			return
-		case <-time.After(workerStartDelay):
+		case <-t.C:
 			go manager.newWorker(false)
+			t.Reset(workerStartDelay)
 		}
 	}
 }
