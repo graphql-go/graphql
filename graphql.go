@@ -3,17 +3,18 @@ package graphql
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/GannettDigital/graphql/gqlerrors"
 	"github.com/GannettDigital/graphql/language/parser"
 	"github.com/GannettDigital/graphql/language/source"
 )
 
-const defaultWorkers = 100
-
 // TODO I should build a defaultManager and allow for one passed in as part of the params
-
-var manager *resolveManager
+var (
+	manager     *resolveManager
+	managerInit sync.Once
+)
 
 type Params struct {
 	// The GraphQL type system to use when validating and executing a query.
@@ -45,7 +46,9 @@ type Params struct {
 
 func Do(p Params) *Result {
 	if manager == nil {
-		manager = newResolveManager(defaultWorkers)
+		managerInit.Do(func() {
+			manager = newResolveManager()
+		})
 	}
 
 	source := source.NewSource(&source.Source{

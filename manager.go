@@ -2,17 +2,13 @@ package graphql
 
 import (
 	"fmt"
-	"sync"
-	"time"
 
 	"github.com/GannettDigital/graphql/gqlerrors"
 	"github.com/GannettDigital/graphql/language/ast"
 )
 
 const (
-	requestQueueBuffer = 10
-	workerMaxRequests  = 5000
-	workerStartDelay   = 500 * time.Microsecond
+	requestQueueBuffer = 50 // this also defines the number of permanent workers
 )
 
 // completeRequest contains the information needed to complete a field.
@@ -53,89 +49,46 @@ type resolverResponse struct {
 	result interface{}
 }
 
-// resolveManager runs resolve functions and completeValue requests in a set of worker go routines.
-// Having a set number of workers limits the churn of go routines while still providing parallel resolving of results
+// resolveManager runs resolve functions and completeValue requests with a set of worker go routines.
+// Having a set of workers limits the churn of go routines while still providing parallel resolving of results
 // which is key to performance when some resolving requires a network call.
 //
 // The nature of the GraphQL resolving code is that a single resolve call could end up calling other resolve calls
 // as part of it. This means to avoid a full deadlock a hard limit on the number of workers can't be set, instead
 // a slight buffer and a slight delay is added to give preference to reusing workers over creating new.
 //
-// A spike in traffic can lead to an increase in the number of workers many of which are subsequently idle. To
-// allow slowly dropping back down to a reasonable pool workers will exit after processing a set number of requests.
-// The original set of workers will always recreate a new worker on exit to avoid the number dropping too much.
+// A small set of workers are long lived to allow some processing to happen at all times and enable a buffered channel
+// Most other workers are not long lived but will only exit when the request channels are empty.
 type resolveManager struct {
 	completeRequests chan completeRequest
-	once             sync.Once
-	quit             chan bool
 	resolveRequests  chan resolveRequest
 }
 
-func newResolveManager(startingWorkers int) *resolveManager {
+func newResolveManager() *resolveManager {
 	manager := &resolveManager{
 		completeRequests: make(chan completeRequest, requestQueueBuffer),
-		once:             sync.Once{},
-		quit:             make(chan bool),
 		resolveRequests:  make(chan resolveRequest, requestQueueBuffer),
 	}
 
-	for i := 0; i < startingWorkers; i++ {
-		go manager.newWorker(true)
+	for i := 0; i < requestQueueBuffer; i++ {
+		go manager.infiniteWorker()
 	}
-
 	return manager
 }
 
 func (manager *resolveManager) completeRequest(req completeRequest) {
-	t := time.NewTimer(workerStartDelay)
-	defer func() {
-		if !t.Stop() {
-			<-t.C
-		}
-	}()
-	for {
-		select {
-		case manager.completeRequests <- req:
-			return
-		case <-t.C:
-			go manager.newWorker(false)
-			t.Reset(workerStartDelay)
-		}
+	select {
+	case manager.completeRequests <- req:
+		return
+	default:
+		go manager.newWorker()
+		manager.completeRequests <- req
 	}
 }
 
-func (manager *resolveManager) resolveRequest(name string, response chan<- resolverResponse, fn FieldResolveFn, params ResolveParams) {
-	req := resolveRequest{
-		fn:       fn,
-		name:     name,
-		params:   params,
-		response: response,
-	}
-
-	t := time.NewTimer(workerStartDelay)
-	defer func() {
-		if !t.Stop() {
-			<-t.C
-		}
-	}()
+func (manager *resolveManager) infiniteWorker() {
 	for {
 		select {
-		case manager.resolveRequests <- req:
-			return
-		case <-t.C:
-			go manager.newWorker(false)
-			t.Reset(workerStartDelay)
-		}
-	}
-}
-
-func (manager *resolveManager) newWorker(revive bool) {
-	// This is a simplistic means of dropping the number of workers back down eventually after a spike but other
-	// methods such as added a timer caused a performance impact.
-	for i := 0; i < workerMaxRequests; i++ {
-		select {
-		case <-manager.quit:
-			return
 		case req := <-manager.completeRequests:
 			result := completeValueCatchingError(req.eCtx, req.returnType, req.fieldASTs, req.info, req.value)
 			req.response <- completeResponse{index: req.index, result: result}
@@ -143,8 +96,19 @@ func (manager *resolveManager) newWorker(revive bool) {
 			manager.resolve(req)
 		}
 	}
-	if revive {
-		go manager.newWorker(revive)
+}
+
+func (manager *resolveManager) newWorker() {
+	for {
+		select {
+		case req := <-manager.completeRequests:
+			result := completeValueCatchingError(req.eCtx, req.returnType, req.fieldASTs, req.info, req.value)
+			req.response <- completeResponse{index: req.index, result: result}
+		case req := <-manager.resolveRequests:
+			manager.resolve(req)
+		default:
+			return
+		}
 	}
 }
 
@@ -169,6 +133,19 @@ func (manager *resolveManager) resolve(req resolveRequest) {
 	req.response <- resolverResponse{name: req.name, result: result, err: err}
 }
 
-func (manager *resolveManager) stop() {
-	manager.once.Do(func() { close(manager.quit) })
+func (manager *resolveManager) resolveRequest(name string, response chan<- resolverResponse, fn FieldResolveFn, params ResolveParams) {
+	req := resolveRequest{
+		fn:       fn,
+		name:     name,
+		params:   params,
+		response: response,
+	}
+
+	select {
+	case manager.resolveRequests <- req:
+		return
+	default:
+		go manager.newWorker()
+		manager.resolveRequests <- req
+	}
 }
