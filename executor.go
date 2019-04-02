@@ -334,6 +334,8 @@ func executeFields(p executeFieldsParams) *Result {
 	finalResults := make(map[string]interface{}, len(p.Fields))
 	requests := make(map[string]ResolveParams)
 	responses := make(chan resolverResponse, len(p.Fields))
+	defer close(responses)
+
 	for responseName, fieldASTs := range p.Fields {
 		fn, params := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
 		if fn == nil {
@@ -359,8 +361,6 @@ func executeFields(p executeFieldsParams) *Result {
 		params := requests[responseName]
 		finalResults[responseName] = completeValueCatchingError(p.ExecutionContext, params.Info.ReturnType, params.Info.FieldASTs, params.Info, resp.result)
 	}
-	close(responses)
-
 	return &Result{
 		Data:   finalResults,
 		Errors: p.ExecutionContext.Errors(),
@@ -819,6 +819,7 @@ func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*as
 
 	itemType := returnType.OfType
 	responses := make(chan completeResponse, resultVal.Len())
+	defer close(responses)
 
 	for i := 0; i < resultVal.Len(); i++ {
 		req := completeRequest{
@@ -839,7 +840,6 @@ func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*as
 		resp := <-responses
 		completedResults[resp.index] = resp.result
 	}
-	close(responses)
 	return completedResults
 }
 
