@@ -4,20 +4,19 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 )
 
 func TestRace(t *testing.T) {
-	tempfile, err := ioutil.TempFile("", "examplerace.*.go")
+	tempdir, err := ioutil.TempDir("", "race")
 	if err != nil {
 		t.Fatal(err)
 	}
-	filename := tempfile.Name()
-	t.Log(filename)
+	defer os.RemoveAll(tempdir)
 
-	defer os.Remove(filename)
-
-	_, err = tempfile.Write([]byte(`
+	filename := filepath.Join(tempdir, "example.go")
+	err = ioutil.WriteFile(filename, []byte(`
 		package main
 
 		import (
@@ -52,12 +51,8 @@ func TestRace(t *testing.T) {
 
 			wg.Wait()
 		} 
-	`))
+	`), 0755)
 	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := tempfile.Close(); err != nil {
 		t.Fatal(err)
 	}
 
