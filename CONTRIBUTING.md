@@ -2,12 +2,11 @@
 
 This document is based on the [Node.js contribution guidelines](https://github.com/nodejs/node/blob/master/CONTRIBUTING.md)
 
-## Chat room 
+## Chat room
 
-[![Join the chat at https://gitter.im/graphql-go/graphql](https://badges.gitter.im/Join%20Chat.svg)]
-(https://gitter.im/graphql-go/graphql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/graphql-go/graphql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/graphql-go/graphql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Feel free to participate in the chat room for informal discussions and queries. 
+Feel free to participate in the chat room for informal discussions and queries.
 
 Just drop by and say hi!
 

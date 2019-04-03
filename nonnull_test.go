@@ -1,7 +1,6 @@
 package graphql_test
 
 import (
-	"reflect"
 	"sort"
 	"testing"
 
@@ -144,10 +143,7 @@ func TestNonNull_NullsANullableFieldThatThrowsSynchronously(t *testing.T) {
 		Root:   throwingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -185,10 +181,7 @@ func TestNonNull_NullsANullableFieldThatThrowsInAPromise(t *testing.T) {
 		Root:   throwingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -229,10 +222,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANullableFieldThat
 		Root:   throwingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -273,10 +263,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
 		Root:   throwingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -317,10 +304,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 		Root:   throwingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -361,10 +345,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 		Root:   throwingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -426,7 +407,7 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 			},
 		},
 		Errors: []gqlerrors.FormattedError{
-			{
+			gqlerrors.FormatError(gqlerrors.Error{
 				Message: syncError,
 				Locations: []location.SourceLocation{
 					{Line: 4, Column: 11},
@@ -434,8 +415,8 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Path: []interface{}{
 					"nest", "sync",
 				},
-			},
-			{
+			}),
+			gqlerrors.FormatError(gqlerrors.Error{
 				Message: syncError,
 				Locations: []location.SourceLocation{
 					{Line: 7, Column: 13},
@@ -443,8 +424,8 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Path: []interface{}{
 					"nest", "nest", "sync",
 				},
-			},
-			{
+			}),
+			gqlerrors.FormatError(gqlerrors.Error{
 				Message: syncError,
 				Locations: []location.SourceLocation{
 					{Line: 11, Column: 13},
@@ -452,8 +433,8 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Path: []interface{}{
 					"nest", "promiseNest", "sync",
 				},
-			},
-			{
+			}),
+			gqlerrors.FormatError(gqlerrors.Error{
 				Message: syncError,
 				Locations: []location.SourceLocation{
 					{Line: 16, Column: 11},
@@ -461,8 +442,8 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Path: []interface{}{
 					"promiseNest", "sync",
 				},
-			},
-			{
+			}),
+			gqlerrors.FormatError(gqlerrors.Error{
 				Message: syncError,
 				Locations: []location.SourceLocation{
 					{Line: 19, Column: 13},
@@ -470,8 +451,8 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Path: []interface{}{
 					"promiseNest", "nest", "sync",
 				},
-			},
-			{
+			}),
+			gqlerrors.FormatError(gqlerrors.Error{
 				Message: syncError,
 				Locations: []location.SourceLocation{
 					{Line: 23, Column: 13},
@@ -479,8 +460,8 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Path: []interface{}{
 					"promiseNest", "promiseNest", "sync",
 				},
-			},
-			{
+			}),
+			gqlerrors.FormatError(gqlerrors.Error{
 				Message: promiseError,
 				Locations: []location.SourceLocation{
 					{Line: 5, Column: 11},
@@ -488,8 +469,8 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Path: []interface{}{
 					"nest", "promise",
 				},
-			},
-			{
+			}),
+			gqlerrors.FormatError(gqlerrors.Error{
 				Message: promiseError,
 				Locations: []location.SourceLocation{
 					{Line: 8, Column: 13},
@@ -497,8 +478,8 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Path: []interface{}{
 					"nest", "nest", "promise",
 				},
-			},
-			{
+			}),
+			gqlerrors.FormatError(gqlerrors.Error{
 				Message: promiseError,
 				Locations: []location.SourceLocation{
 					{Line: 12, Column: 13},
@@ -506,8 +487,8 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Path: []interface{}{
 					"nest", "promiseNest", "promise",
 				},
-			},
-			{
+			}),
+			gqlerrors.FormatError(gqlerrors.Error{
 				Message: promiseError,
 				Locations: []location.SourceLocation{
 					{Line: 17, Column: 11},
@@ -515,8 +496,8 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Path: []interface{}{
 					"promiseNest", "promise",
 				},
-			},
-			{
+			}),
+			gqlerrors.FormatError(gqlerrors.Error{
 				Message: promiseError,
 				Locations: []location.SourceLocation{
 					{Line: 20, Column: 13},
@@ -524,8 +505,8 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Path: []interface{}{
 					"promiseNest", "nest", "promise",
 				},
-			},
-			{
+			}),
+			gqlerrors.FormatError(gqlerrors.Error{
 				Message: promiseError,
 				Locations: []location.SourceLocation{
 					{Line: 24, Column: 13},
@@ -533,7 +514,7 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 				Path: []interface{}{
 					"promiseNest", "promiseNest", "promise",
 				},
-			},
+			}),
 		},
 	}
 	// parse query
@@ -546,15 +527,9 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 		Root:   throwingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected.Data, result.Data) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
-	}
 	sort.Sort(gqlerrors.FormattedErrors(expected.Errors))
 	sort.Sort(gqlerrors.FormattedErrors(result.Errors))
-	if !reflect.DeepEqual(expected.Errors, result.Errors) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 }
@@ -615,7 +590,7 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
 			"anotherPromiseNest": nil,
 		},
 		Errors: []gqlerrors.FormattedError{
-			{
+			gqlerrors.FormatError(gqlerrors.Error{
 				Message: nonNullSyncError,
 				Locations: []location.SourceLocation{
 					{Line: 8, Column: 19},
@@ -624,8 +599,8 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
 					"nest", "nonNullNest", "nonNullPromiseNest", "nonNullNest",
 					"nonNullPromiseNest", "nonNullSync",
 				},
-			},
-			{
+			}),
+			gqlerrors.FormatError(gqlerrors.Error{
 				Message: nonNullSyncError,
 				Locations: []location.SourceLocation{
 					{Line: 19, Column: 19},
@@ -634,8 +609,8 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
 					"promiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullNest",
 					"nonNullPromiseNest", "nonNullSync",
 				},
-			},
-			{
+			}),
+			gqlerrors.FormatError(gqlerrors.Error{
 				Message: nonNullPromiseError,
 				Locations: []location.SourceLocation{
 					{Line: 30, Column: 19},
@@ -644,8 +619,8 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
 					"anotherNest", "nonNullNest", "nonNullPromiseNest", "nonNullNest",
 					"nonNullPromiseNest", "nonNullPromise",
 				},
-			},
-			{
+			}),
+			gqlerrors.FormatError(gqlerrors.Error{
 				Message: nonNullPromiseError,
 				Locations: []location.SourceLocation{
 					{Line: 41, Column: 19},
@@ -654,7 +629,7 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
 					"anotherPromiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullNest",
 					"nonNullPromiseNest", "nonNullPromise",
 				},
-			},
+			}),
 		},
 	}
 	// parse query
@@ -667,15 +642,9 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
 		Root:   throwingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected.Data, result.Data) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
-	}
 	sort.Sort(gqlerrors.FormattedErrors(expected.Errors))
 	sort.Sort(gqlerrors.FormattedErrors(result.Errors))
-	if !reflect.DeepEqual(expected.Errors, result.Errors) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 
@@ -701,14 +670,8 @@ func TestNonNull_NullsANullableFieldThatSynchronouslyReturnsNull(t *testing.T) {
 		Root:   nullingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected.Data, result.Data) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
-	}
-	if !reflect.DeepEqual(expected.Errors, result.Errors) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
+	if !testutil.EqualResults(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestNonNull_NullsANullableFieldThatSynchronouslyReturnsNullInAPromise(t *testing.T) {
@@ -732,14 +695,8 @@ func TestNonNull_NullsANullableFieldThatSynchronouslyReturnsNullInAPromise(t *te
 		Root:   nullingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected.Data, result.Data) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
-	}
-	if !reflect.DeepEqual(expected.Errors, result.Errors) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
+	if !testutil.EqualResults(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldThatReturnsNullSynchronously(t *testing.T) {
@@ -777,10 +734,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
 		Root:   nullingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -819,10 +773,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
 		Root:   nullingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -862,10 +813,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 		Root:   nullingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -904,10 +852,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 		Root:   nullingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -978,14 +923,8 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatReturnNull(t *testing.T) {
 		Root:   nullingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected.Data, result.Data) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
-	}
-	if !reflect.DeepEqual(expected.Errors, result.Errors) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
 	}
 }
 func TestNonNull_NullsTheFirstNullableObjectAfterAFieldReturnsNullInALongChainOfFieldsThatAreNonNull(t *testing.T) {
@@ -1097,16 +1036,10 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldReturnsNullInALongChainOf
 		Root:   nullingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected.Data, result.Data) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Data, result.Data))
-	}
 	sort.Sort(gqlerrors.FormattedErrors(expected.Errors))
 	sort.Sort(gqlerrors.FormattedErrors(result.Errors))
-	if !reflect.DeepEqual(expected.Errors, result.Errors) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
+	if !testutil.EqualResults(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
 
@@ -1138,10 +1071,7 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldThrows(t *testing.T) {
 		Root:   throwingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -1173,10 +1103,7 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldErrors(t *testing.T) {
 		Root:   throwingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -1208,10 +1135,7 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldReturnsNull(t *testing.T)
 		Root:   nullingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -1243,10 +1167,7 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldResolvesNull(t *testing.T
 		Root:   nullingData,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(result.Errors) != len(expected.Errors) {
-		t.Fatalf("Unexpected errors, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }

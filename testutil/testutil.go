@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
 )
@@ -465,4 +466,39 @@ func ContainSubset(super map[string]interface{}, sub map[string]interface{}) boo
 
 func EqualErrorMessage(expected, result *graphql.Result, i int) bool {
 	return expected.Errors[i].Message == result.Errors[i].Message
+}
+
+func EqualFormattedError(exp, act gqlerrors.FormattedError) bool {
+	if exp.Message != act.Message {
+		return false
+	}
+	if !reflect.DeepEqual(exp.Locations, act.Locations) {
+		return false
+	}
+	if !reflect.DeepEqual(exp.Path, act.Path) {
+		return false
+	}
+	if !reflect.DeepEqual(exp.Extensions, act.Extensions) {
+		return false
+	}
+	return true
+}
+
+func EqualFormattedErrors(expected, actual []gqlerrors.FormattedError) bool {
+	if len(expected) != len(actual) {
+		return false
+	}
+	for i := range expected {
+		if !EqualFormattedError(expected[i], actual[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func EqualResults(expected, result *graphql.Result) bool {
+	if !reflect.DeepEqual(expected.Data, result.Data) {
+		return false
+	}
+	return EqualFormattedErrors(expected.Errors, result.Errors)
 }

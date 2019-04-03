@@ -49,10 +49,7 @@ func checkList(t *testing.T, testType graphql.Type, testData interface{}, expect
 		Root:   data,
 	}
 	result := testutil.TestExecute(t, ep)
-	if len(expected.Errors) != len(result.Errors) {
-		t.Fatalf("wrong result, Diff: %v", testutil.Diff(expected.Errors, result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 
@@ -658,7 +655,6 @@ func TestLists_NonNullListOfNonNullObjects_ContainsNull(t *testing.T) {
 }
 func TestLists_NonNullListOfNonNullObjects_ReturnsNull(t *testing.T) {
 	ttype := graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.Int)))
-
 	expected := &graphql.Result{
 		Data: map[string]interface{}{
 			"nest": nil,

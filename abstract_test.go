@@ -526,10 +526,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 		Schema:        schema,
 		RequestString: query,
 	})
-	if len(result.Errors) == 0 {
-		t.Fatalf("wrong result, expected errors: %v, got: %v", len(expected.Errors), len(result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -653,10 +650,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 		Schema:        schema,
 		RequestString: query,
 	})
-	if len(result.Errors) == 0 {
-		t.Fatalf("wrong result, expected errors: %v, got: %v", len(expected.Errors), len(result.Errors))
-	}
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }

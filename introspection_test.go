@@ -1,7 +1,6 @@
 package graphql_test
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/graphql-go/graphql"
@@ -980,7 +979,7 @@ func TestIntrospection_SupportsThe__TypeRootField(t *testing.T) {
 		Schema:        schema,
 		RequestString: query,
 	})
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
@@ -1314,7 +1313,7 @@ func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testin
 		Schema:        schema,
 		RequestString: query,
 	})
-	if !reflect.DeepEqual(expected, result) {
+	if !testutil.EqualResults(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
