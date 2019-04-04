@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	requestQueueBuffer = 50 // this also defines the number of permanent workers
+	requestQueueBuffer = 50 // this also defines the number of permanent workers which is double this number
 )
 
 // completeRequest contains the information needed to complete a field.
@@ -70,7 +70,7 @@ func newResolveManager() *resolveManager {
 		resolveRequests:  make(chan resolveRequest, requestQueueBuffer),
 	}
 
-	for i := 0; i < requestQueueBuffer; i++ {
+	for i := 0; i < 2*requestQueueBuffer; i++ {
 		go manager.infiniteWorker()
 	}
 	return manager
