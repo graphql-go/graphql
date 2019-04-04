@@ -611,6 +611,13 @@ func init() {
 		Type: TypeType,
 	})
 
+	SchemaType.ensureCache()
+	DirectiveType.ensureCache()
+	TypeType.ensureCache()
+	FieldType.ensureCache()
+	InputValueType.ensureCache()
+	EnumValueType.ensureCache()
+
 	// Note that these are FieldDefinition and not FieldConfig,
 	// so the format for args is different.
 	SchemaMetaFieldDef = &FieldDefinition{
