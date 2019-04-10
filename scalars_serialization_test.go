@@ -1,6 +1,7 @@
 package graphql_test
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 	"testing"
@@ -33,6 +34,45 @@ type boolSerializationTest struct {
 	Value    interface{}
 	Expected bool
 }
+
+type customType struct {
+	Value     interface{}
+	IsNumeric bool
+}
+
+func (ct *customType) MarshalText() ([]byte, error) {
+	if ct.IsNumeric {
+		return []byte(fmt.Sprintf("%v", ct.Value)), nil
+	}
+	return []byte(fmt.Sprintf("\"%v\"", ct.Value)), nil
+}
+
+var (
+	customInt = &customType{
+		Value:     int(42),
+		IsNumeric: true,
+	}
+
+	customFloat64 = &customType{
+		Value:     float64(42.13),
+		IsNumeric: true,
+	}
+
+	customString = &customType{
+		Value:     "foo bar",
+		IsNumeric: true,
+	}
+
+	customDateTime = &customType{
+		Value:     time.Now().String(),
+		IsNumeric: true,
+	}
+
+	customBool = &customType{
+		Value:     false,
+		IsNumeric: true,
+	}
+)
 
 func TestTypeSystem_Scalar_SerializesOutputInt(t *testing.T) {
 	tests := []intSerializationTest{
@@ -82,6 +122,7 @@ func TestTypeSystem_Scalar_SerializesOutputInt(t *testing.T) {
 		{'世', int('世')},
 		// testing types that don't match a value in the array.
 		{[]int{}, nil},
+		{customInt, 42},
 	}
 
 	for i, test := range tests {
@@ -114,6 +155,7 @@ func TestTypeSystem_Scalar_SerializesOutputFloat(t *testing.T) {
 		{"one", nil},
 		{false, 0.0},
 		{true, 1.0},
+		{customFloat64, 42.13},
 	}
 
 	for i, test := range tests {
@@ -139,6 +181,7 @@ func TestTypeSystem_Scalar_SerializesOutputStrings(t *testing.T) {
 		{float64(-1.1), "-1.1"},
 		{true, "true"},
 		{false, "false"},
+		{customString, "foo bar"},
 	}
 
 	for _, test := range tests {
@@ -160,6 +203,7 @@ func TestTypeSystem_Scalar_SerializesOutputBoolean(t *testing.T) {
 		{int(0), false},
 		{true, true},
 		{false, false},
+		{customBool, false},
 	}
 
 	for _, test := range tests {
@@ -187,6 +231,7 @@ func TestTypeSystem_Scalar_SerializeOutputDateTime(t *testing.T) {
 		{false, nil},
 		{now, string(nowString)},
 		{&now, string(nowString)},
+		{customDateTime, customDateTime.Value},
 	}
 
 	for _, test := range tests {
