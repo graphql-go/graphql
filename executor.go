@@ -111,6 +111,14 @@ type executionContext struct {
 	Context        context.Context
 }
 
+// WithContext creates a shallow copy of the executionContext and replaces the embedded context.Context of the copy with ctx
+func (eCtx *executionContext) WithContext(ctx context.Context) *executionContext {
+	eCtx2 := new(executionContext)
+	*eCtx2 = *eCtx
+	eCtx2.Context = ctx
+	return eCtx2
+}
+
 func buildExecutionContext(p buildExecutionCtxParams) (*executionContext, error) {
 	eCtx := &executionContext{}
 	var operation *ast.OperationDefinition
@@ -638,7 +646,7 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 
 	var resolveFnError error
 
-	extErrs, resolveFieldFinishFn := handleExtensionsResolveFieldDidStart(eCtx.Schema.extensions, eCtx, &info)
+	eCtx, extErrs, resolveFieldFinishFn := handleExtensionsResolveFieldDidStart(eCtx.Schema.extensions, eCtx, &info)
 	if len(extErrs) != 0 {
 		eCtx.Errors = append(eCtx.Errors, extErrs...)
 	}

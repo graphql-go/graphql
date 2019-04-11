@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/graphql-go/graphql"
@@ -339,6 +340,104 @@ func TestExtensionGetResultPanic(t *testing.T) {
 
 	if !reflect.DeepEqual(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
+func TestExtensionContextPropagation(t *testing.T) {
+	testType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Test",
+		Fields: graphql.Fields{
+			"foo": &graphql.Field{Type: graphql.String},
+			"bar": &graphql.Field{Type: graphql.String},
+			"baz": &graphql.Field{Type: graphql.String},
+		},
+	})
+	type test struct {
+		Foo string
+		Bar string
+		Baz string
+	}
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{
+					Type: testType,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return test{"foo", "bar", "baz"}, nil
+					},
+				},
+				"b": &graphql.Field{
+					Type: graphql.NewList(testType),
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return []test{{"foo", "bar", "baz"}, {"foo", "bar", "baz"}}, nil
+					},
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatal("Error in schema", err)
+	}
+
+	type ctxPathKey struct{}
+	ctxPathTrace := map[string]int{}
+
+	ext := newtestExt("testExt")
+	ext.resolveFieldDidStartFn = func(ctx context.Context, i *graphql.ResolveInfo) (context.Context, graphql.ResolveFieldFinishFunc) {
+		ctxPath := ctx.Value(ctxPathKey{}).([]string)
+		ctxPath = append(append([]string(nil), ctxPath...), i.FieldName)
+		ctx = context.WithValue(ctx, ctxPathKey{}, ctxPath)
+		ctxPathTrace[strings.Join(ctxPath, ".")] += 1
+		return ctx, func(interface{}, error) {}
+	}
+
+	query := `query { a { foo bar baz } b { foo bar baz } }`
+	schema.AddExtensions(ext)
+
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+		Context:       context.WithValue(context.Background(), ctxPathKey{}, []string{}),
+	})
+
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"a": map[string]interface{}{
+				"foo": "foo",
+				"bar": "bar",
+				"baz": "baz",
+			},
+			"b": []interface{}{
+				map[string]interface{}{
+					"foo": "foo",
+					"bar": "bar",
+					"baz": "baz",
+				},
+				map[string]interface{}{
+					"foo": "foo",
+					"bar": "bar",
+					"baz": "baz",
+				},
+			},
+		},
+	}
+	expectedCtxPathTrace := map[string]int{
+		"a":     1,
+		"a.bar": 1,
+		"a.baz": 1,
+		"a.foo": 1,
+		"b":     1,
+		"b.bar": 2,
+		"b.baz": 2,
+		"b.foo": 2,
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+
+	if !reflect.DeepEqual(expectedCtxPathTrace, ctxPathTrace) {
+		t.Fatalf("Unexpected ctx path trace, Diff: %v", testutil.Diff(expectedCtxPathTrace, ctxPathTrace))
 	}
 }
 
