@@ -64,7 +64,6 @@ func Execute(p ExecuteParams) (result *Result) {
 			AST:           p.AST,
 			OperationName: p.OperationName,
 			Args:          p.Args,
-			Result:        result,
 			Context:       p.Context,
 		})
 
@@ -97,7 +96,6 @@ type buildExecutionCtxParams struct {
 	AST           *ast.Document
 	OperationName string
 	Args          map[string]interface{}
-	Result        *Result
 	Context       context.Context
 }
 
