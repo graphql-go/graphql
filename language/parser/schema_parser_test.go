@@ -121,6 +121,194 @@ extend type Hello {
 	}
 }
 
+func TestSchemaParser_SimpleInputExtension(t *testing.T) {
+
+	body := `
+extend input hello {
+	world: string
+}
+`
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
+		Loc: testLoc(1, 38),
+		Definitions: []ast.Node{
+			ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
+				Loc: testLoc(1, 38),
+				Definition: ast.NewObjectDefinition(&ast.ObjectDefinition{
+					Loc: testLoc(8, 38),
+					Name: ast.NewName(&ast.Name{
+						Value: "Hello",
+						Loc:   testLoc(13, 18),
+					}),
+					Directives: []*ast.Directive{},
+					Interfaces: []*ast.Named{},
+					Fields: []*ast.FieldDefinition{
+						ast.NewFieldDefinition(&ast.FieldDefinition{
+							Loc: testLoc(23, 36),
+							Name: ast.NewName(&ast.Name{
+								Value: "world",
+								Loc:   testLoc(23, 28),
+							}),
+							Directives: []*ast.Directive{},
+							Arguments:  []*ast.InputValueDefinition{},
+							Type: ast.NewNamed(&ast.Named{
+								Loc: testLoc(30, 36),
+								Name: ast.NewName(&ast.Name{
+									Value: "String",
+									Loc:   testLoc(30, 36),
+								}),
+							}),
+						}),
+					},
+				}),
+			}),
+		},
+	})
+	if !reflect.DeepEqual(astDoc, expected) {
+		t.Fatalf("unexpected document, expected: %v, got: %v", expected, astDoc)
+	}
+}
+
+func TestSchemaParser_SimpleInterfaceExtension(t *testing.T) {
+
+	body := `
+extend interface hello {
+	world: string
+}
+`
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
+		Loc: testLoc(1, 38),
+		Definitions: []ast.Node{
+			ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
+				Loc: testLoc(1, 38),
+				Definition: ast.NewObjectDefinition(&ast.ObjectDefinition{
+					Loc: testLoc(8, 38),
+					Name: ast.NewName(&ast.Name{
+						Value: "Hello",
+						Loc:   testLoc(13, 18),
+					}),
+					Directives: []*ast.Directive{},
+					Interfaces: []*ast.Named{},
+					Fields: []*ast.FieldDefinition{
+						ast.NewFieldDefinition(&ast.FieldDefinition{
+							Loc: testLoc(23, 36),
+							Name: ast.NewName(&ast.Name{
+								Value: "world",
+								Loc:   testLoc(23, 28),
+							}),
+							Directives: []*ast.Directive{},
+							Arguments:  []*ast.InputValueDefinition{},
+							Type: ast.NewNamed(&ast.Named{
+								Loc: testLoc(30, 36),
+								Name: ast.NewName(&ast.Name{
+									Value: "String",
+									Loc:   testLoc(30, 36),
+								}),
+							}),
+						}),
+					},
+				}),
+			}),
+		},
+	})
+	if !reflect.DeepEqual(astDoc, expected) {
+		t.Fatalf("unexpected document, expected: %v, got: %v", expected, astDoc)
+	}
+}
+
+func TestSchemaParser_SimpleScalarExtension(t *testing.T) {
+
+	body := `
+directive @example on SCALAR
+extend scalar string @example`
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
+		Loc: testLoc(1, 38),
+		Definitions: []ast.Node{
+			ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
+				Loc: testLoc(1, 38),
+				Definition: ast.NewObjectDefinition(&ast.ObjectDefinition{
+					Loc: testLoc(8, 38),
+					Name: ast.NewName(&ast.Name{
+						Value: "Hello",
+						Loc:   testLoc(13, 18),
+					}),
+					Directives: []*ast.Directive{},
+					Interfaces: []*ast.Named{},
+					Fields: []*ast.FieldDefinition{
+						ast.NewFieldDefinition(&ast.FieldDefinition{
+							Loc: testLoc(23, 36),
+							Name: ast.NewName(&ast.Name{
+								Value: "world",
+								Loc:   testLoc(23, 28),
+							}),
+							Directives: []*ast.Directive{},
+							Arguments:  []*ast.InputValueDefinition{},
+							Type: ast.NewNamed(&ast.Named{
+								Loc: testLoc(30, 36),
+								Name: ast.NewName(&ast.Name{
+									Value: "String",
+									Loc:   testLoc(30, 36),
+								}),
+							}),
+						}),
+					},
+				}),
+			}),
+		},
+	})
+	if !reflect.DeepEqual(astDoc, expected) {
+		t.Fatalf("unexpected document, expected: %v, got: %v", expected, astDoc)
+	}
+}
+
+func TestSchemaParser_SimpleUnionExtension(t *testing.T) {
+
+	body := `
+directive @example on UNION
+extend union @example`
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
+		Loc: testLoc(1, 38),
+		Definitions: []ast.Node{
+			ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
+				Loc: testLoc(1, 38),
+				Definition: ast.NewObjectDefinition(&ast.ObjectDefinition{
+					Loc: testLoc(8, 38),
+					Name: ast.NewName(&ast.Name{
+						Value: "Hello",
+						Loc:   testLoc(13, 18),
+					}),
+					Directives: []*ast.Directive{},
+					Interfaces: []*ast.Named{},
+					Fields: []*ast.FieldDefinition{
+						ast.NewFieldDefinition(&ast.FieldDefinition{
+							Loc: testLoc(23, 36),
+							Name: ast.NewName(&ast.Name{
+								Value: "world",
+								Loc:   testLoc(23, 28),
+							}),
+							Directives: []*ast.Directive{},
+							Arguments:  []*ast.InputValueDefinition{},
+							Type: ast.NewNamed(&ast.Named{
+								Loc: testLoc(30, 36),
+								Name: ast.NewName(&ast.Name{
+									Value: "String",
+									Loc:   testLoc(30, 36),
+								}),
+							}),
+						}),
+					},
+				}),
+			}),
+		},
+	})
+	if !reflect.DeepEqual(astDoc, expected) {
+		t.Fatalf("unexpected document, expected: %v, got: %v", expected, astDoc)
+	}
+}
+
 func TestSchemaParser_SimpleNonNullType(t *testing.T) {
 
 	body := `
