@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/go-test/deep"
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/location"
@@ -74,7 +75,7 @@ type Hello {
 	}
 }
 
-func TestSchemaParser_SimpleExtension(t *testing.T) {
+func TestSchemaParser_SimpleTypeExtension(t *testing.T) {
 
 	body := `
 extend type Hello {
@@ -116,41 +117,39 @@ extend type Hello {
 			}),
 		},
 	})
-	if !reflect.DeepEqual(astDoc, expected) {
-		t.Fatalf("unexpected document, expected: %v, got: %v", expected, astDoc)
+	if diff := deep.Equal(astDoc, expected); diff != nil {
+		t.Fatal(diff)
 	}
 }
 
 func TestSchemaParser_SimpleInputExtension(t *testing.T) {
 
 	body := `
-extend input hello {
-	world: string
+extend input Hello {
+	world: String
 }
 `
 	astDoc := parse(t, body)
 	expected := ast.NewDocument(&ast.Document{
-		Loc: testLoc(1, 38),
+		Loc: testLoc(1, 39),
 		Definitions: []ast.Node{
 			ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
 				Loc: testLoc(1, 38),
-				Definition: ast.NewObjectDefinition(&ast.ObjectDefinition{
+				Definition: ast.NewInputObjectDefinition(&ast.InputObjectDefinition{
 					Loc: testLoc(8, 38),
 					Name: ast.NewName(&ast.Name{
 						Value: "Hello",
-						Loc:   testLoc(13, 18),
+						Loc:   testLoc(14, 19),
 					}),
 					Directives: []*ast.Directive{},
-					Interfaces: []*ast.Named{},
-					Fields: []*ast.FieldDefinition{
-						ast.NewFieldDefinition(&ast.FieldDefinition{
+					Fields: []*ast.InputValueDefinition{
+						ast.NewInputValueDefinition(&ast.InputValueDefinition{
 							Loc: testLoc(23, 36),
 							Name: ast.NewName(&ast.Name{
 								Value: "world",
 								Loc:   testLoc(23, 28),
 							}),
 							Directives: []*ast.Directive{},
-							Arguments:  []*ast.InputValueDefinition{},
 							Type: ast.NewNamed(&ast.Named{
 								Loc: testLoc(30, 36),
 								Name: ast.NewName(&ast.Name{
@@ -164,46 +163,45 @@ extend input hello {
 			}),
 		},
 	})
-	if !reflect.DeepEqual(astDoc, expected) {
-		t.Fatalf("unexpected document, expected: %v, got: %v", expected, astDoc)
+	if diff := deep.Equal(astDoc, expected); diff != nil {
+		t.Fatal(diff)
 	}
 }
 
 func TestSchemaParser_SimpleInterfaceExtension(t *testing.T) {
 
 	body := `
-extend interface hello {
-	world: string
+extend interface Hello {
+	world: String
 }
 `
 	astDoc := parse(t, body)
 	expected := ast.NewDocument(&ast.Document{
-		Loc: testLoc(1, 38),
+		Loc: testLoc(1, 43),
 		Definitions: []ast.Node{
 			ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
-				Loc: testLoc(1, 38),
-				Definition: ast.NewObjectDefinition(&ast.ObjectDefinition{
-					Loc: testLoc(8, 38),
+				Loc: testLoc(1, 42),
+				Definition: ast.NewInterfaceDefinition(&ast.InterfaceDefinition{
+					Loc: testLoc(8, 42),
 					Name: ast.NewName(&ast.Name{
 						Value: "Hello",
-						Loc:   testLoc(13, 18),
+						Loc:   testLoc(18, 23),
 					}),
 					Directives: []*ast.Directive{},
-					Interfaces: []*ast.Named{},
 					Fields: []*ast.FieldDefinition{
 						ast.NewFieldDefinition(&ast.FieldDefinition{
-							Loc: testLoc(23, 36),
+							Loc: testLoc(27, 40),
 							Name: ast.NewName(&ast.Name{
 								Value: "world",
-								Loc:   testLoc(23, 28),
+								Loc:   testLoc(27, 32),
 							}),
 							Directives: []*ast.Directive{},
 							Arguments:  []*ast.InputValueDefinition{},
 							Type: ast.NewNamed(&ast.Named{
-								Loc: testLoc(30, 36),
+								Loc: testLoc(34, 40),
 								Name: ast.NewName(&ast.Name{
 									Value: "String",
-									Loc:   testLoc(30, 36),
+									Loc:   testLoc(34, 40),
 								}),
 							}),
 						}),
@@ -212,100 +210,77 @@ extend interface hello {
 			}),
 		},
 	})
-	if !reflect.DeepEqual(astDoc, expected) {
-		t.Fatalf("unexpected document, expected: %v, got: %v", expected, astDoc)
+	if diff := deep.Equal(astDoc, expected); diff != nil {
+		t.Fatal(diff)
 	}
 }
 
 func TestSchemaParser_SimpleScalarExtension(t *testing.T) {
 
-	body := `
-directive @example on SCALAR
-extend scalar string @example`
+	body := `extend scalar string @example`
 	astDoc := parse(t, body)
 	expected := ast.NewDocument(&ast.Document{
-		Loc: testLoc(1, 38),
+		Loc: testLoc(0, 29),
 		Definitions: []ast.Node{
 			ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
-				Loc: testLoc(1, 38),
-				Definition: ast.NewObjectDefinition(&ast.ObjectDefinition{
-					Loc: testLoc(8, 38),
+				Loc: testLoc(0, 29),
+				Definition: ast.NewScalarDefinition(&ast.ScalarDefinition{
+					Loc: testLoc(7, 29),
 					Name: ast.NewName(&ast.Name{
-						Value: "Hello",
-						Loc:   testLoc(13, 18),
+						Value: "string",
+						Loc:   testLoc(14, 20),
 					}),
-					Directives: []*ast.Directive{},
-					Interfaces: []*ast.Named{},
-					Fields: []*ast.FieldDefinition{
-						ast.NewFieldDefinition(&ast.FieldDefinition{
-							Loc: testLoc(23, 36),
+					Directives: []*ast.Directive{
+						ast.NewDirective(&ast.Directive{
+							Loc: testLoc(21, 29),
 							Name: ast.NewName(&ast.Name{
-								Value: "world",
-								Loc:   testLoc(23, 28),
+								Value: "example",
+								Loc:   testLoc(22, 29),
 							}),
-							Directives: []*ast.Directive{},
-							Arguments:  []*ast.InputValueDefinition{},
-							Type: ast.NewNamed(&ast.Named{
-								Loc: testLoc(30, 36),
-								Name: ast.NewName(&ast.Name{
-									Value: "String",
-									Loc:   testLoc(30, 36),
-								}),
-							}),
+							Arguments: []*ast.Argument{},
 						}),
 					},
 				}),
 			}),
 		},
 	})
-	if !reflect.DeepEqual(astDoc, expected) {
-		t.Fatalf("unexpected document, expected: %v, got: %v", expected, astDoc)
+	if diff := deep.Equal(astDoc, expected); diff != nil {
+		t.Fatal(diff)
 	}
 }
 
 func TestSchemaParser_SimpleUnionExtension(t *testing.T) {
 
-	body := `
-directive @example on UNION
-extend union @example`
+	body := `extend union Hello @example`
 	astDoc := parse(t, body)
 	expected := ast.NewDocument(&ast.Document{
-		Loc: testLoc(1, 38),
+		Loc: testLoc(0, 27),
 		Definitions: []ast.Node{
 			ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
-				Loc: testLoc(1, 38),
-				Definition: ast.NewObjectDefinition(&ast.ObjectDefinition{
-					Loc: testLoc(8, 38),
+				Loc: testLoc(0, 27),
+				Definition: ast.NewUnionDefinition(&ast.UnionDefinition{
+					Loc: testLoc(7, 27),
 					Name: ast.NewName(&ast.Name{
 						Value: "Hello",
 						Loc:   testLoc(13, 18),
 					}),
-					Directives: []*ast.Directive{},
-					Interfaces: []*ast.Named{},
-					Fields: []*ast.FieldDefinition{
-						ast.NewFieldDefinition(&ast.FieldDefinition{
-							Loc: testLoc(23, 36),
+					Directives: []*ast.Directive{
+						ast.NewDirective(&ast.Directive{
+							Loc: testLoc(19, 27),
 							Name: ast.NewName(&ast.Name{
-								Value: "world",
-								Loc:   testLoc(23, 28),
+								Loc:   testLoc(20, 27),
+								Value: "example",
 							}),
-							Directives: []*ast.Directive{},
-							Arguments:  []*ast.InputValueDefinition{},
-							Type: ast.NewNamed(&ast.Named{
-								Loc: testLoc(30, 36),
-								Name: ast.NewName(&ast.Name{
-									Value: "String",
-									Loc:   testLoc(30, 36),
-								}),
-							}),
+							Arguments: []*ast.Argument{},
 						}),
 					},
+					Types: []*ast.Named{},
 				}),
 			}),
 		},
 	})
-	if !reflect.DeepEqual(astDoc, expected) {
-		t.Fatalf("unexpected document, expected: %v, got: %v", expected, astDoc)
+	if diff := deep.Equal(astDoc, expected); diff != nil {
+		t.Fatal(diff)
 	}
 }
 

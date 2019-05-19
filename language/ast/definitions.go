@@ -148,44 +148,6 @@ func (vd *VariableDefinition) GetLoc() *Location {
 	return vd.Loc
 }
 
-// TypeExtensionDefinition implements Node, Definition
-type TypeExtensionDefinition struct {
-	Kind       string
-	Loc        *Location
-	Definition *ObjectDefinition
-}
-
-func NewTypeExtensionDefinition(def *TypeExtensionDefinition) *TypeExtensionDefinition {
-	if def == nil {
-		def = &TypeExtensionDefinition{}
-	}
-	return &TypeExtensionDefinition{
-		Kind:       kinds.TypeExtensionDefinition,
-		Loc:        def.Loc,
-		Definition: def.Definition,
-	}
-}
-
-func (def *TypeExtensionDefinition) GetKind() string {
-	return def.Kind
-}
-
-func (def *TypeExtensionDefinition) GetLoc() *Location {
-	return def.Loc
-}
-
-func (def *TypeExtensionDefinition) GetVariableDefinitions() []*VariableDefinition {
-	return []*VariableDefinition{}
-}
-
-func (def *TypeExtensionDefinition) GetSelectionSet() *SelectionSet {
-	return &SelectionSet{}
-}
-
-func (def *TypeExtensionDefinition) GetOperation() string {
-	return ""
-}
-
 // DirectiveDefinition implements Node, Definition
 type DirectiveDefinition struct {
 	Kind        string

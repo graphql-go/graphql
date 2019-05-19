@@ -925,6 +925,31 @@ func parseOperationTypeDefinition(parser *Parser) (interface{}, error) {
 }
 
 /**
+ * ScalarTypeExtensionDefinition : extend scalar Name Directives
+ */
+func parseScalarTypeExtensionDefinition(parser *Parser) (ast.Node, error) {
+	start := parser.Token.Start
+	_, err := expectKeyWord(parser, lexer.SCALAR)
+	if err != nil {
+		return nil, err
+	}
+	name, err := parseName(parser)
+	if err != nil {
+		return nil, err
+	}
+	directives, err := parseDirectives(parser)
+	if err != nil {
+		return nil, err
+	}
+	def := ast.NewScalarDefinition(&ast.ScalarDefinition{
+		Name:       name,
+		Directives: directives,
+		Loc:        loc(parser, start),
+	})
+	return def, nil
+}
+
+/**
  * ScalarTypeDefinition : Description? scalar Name Directives?
  */
 func parseScalarTypeDefinition(parser *Parser) (ast.Node, error) {
@@ -952,6 +977,58 @@ func parseScalarTypeDefinition(parser *Parser) (ast.Node, error) {
 		Loc:         loc(parser, start),
 	})
 	return def, nil
+}
+
+/**
+ * ObjectTypeExtensionDefinition :
+ *   extend type Name ImplementsInterfaces? Directives? { FieldDefinition+ }
+ *   extend type Name ImplementsInterfaces? Directives
+ *   extend type Name ImplementsInterfaces
+ */
+func parseObjectTypeExtensionDefinition(parser *Parser) (ast.Node, error) {
+	start := parser.Token.Start
+	_, err := expectKeyWord(parser, lexer.TYPE)
+	if err != nil {
+		return nil, err
+	}
+	name, err := parseName(parser)
+	if err != nil {
+		return nil, err
+	}
+	interfaces, err := parseImplementsInterfaces(parser)
+	if err != nil {
+		return nil, err
+	}
+	directives, err := parseDirectives(parser)
+	if err != nil {
+		return nil, err
+	}
+	iFields, err := reverse(parser,
+		lexer.BRACE_L, parseFieldDefinition, lexer.BRACE_R,
+		false,
+	)
+	if err != nil {
+		return nil, err
+	}
+	fields := []*ast.FieldDefinition{}
+	for _, iField := range iFields {
+		if iField != nil {
+			fields = append(fields, iField.(*ast.FieldDefinition))
+		}
+	}
+
+	// Must have at least one defined
+	if len(fields) == 0 && len(directives) == 0 && len(interfaces) == 0 {
+		return nil, unexpected(parser, parser.Token)
+	}
+
+	return ast.NewObjectDefinition(&ast.ObjectDefinition{
+		Name:       name,
+		Loc:        loc(parser, start),
+		Interfaces: interfaces,
+		Directives: directives,
+		Fields:     fields,
+	}), nil
 }
 
 /**
@@ -1146,6 +1223,49 @@ func parseInputValueDef(parser *Parser) (interface{}, error) {
 }
 
 /**
+ * InterfaceTypeExtensionDefinition :
+ *   extend interface Name Directives? { FieldDefinition+ }
+ *   extend interface Name Directives
+ */
+func parseInterfaceTypeExtensionDefinition(parser *Parser) (ast.Node, error) {
+	start := parser.Token.Start
+	_, err := expectKeyWord(parser, lexer.INTERFACE)
+	if err != nil {
+		return nil, err
+	}
+	name, err := parseName(parser)
+	if err != nil {
+		return nil, err
+	}
+	directives, err := parseDirectives(parser)
+	if err != nil {
+		return nil, err
+	}
+	iFields, err := reverse(parser,
+		lexer.BRACE_L, parseFieldDefinition, lexer.BRACE_R,
+		false,
+	)
+	if err != nil {
+		return nil, err
+	}
+	fields := []*ast.FieldDefinition{}
+	for _, iField := range iFields {
+		if iField != nil {
+			fields = append(fields, iField.(*ast.FieldDefinition))
+		}
+	}
+	if len(fields) == 0 && len(directives) == 0 {
+		return nil, unexpected(parser, parser.Token)
+	}
+	return ast.NewInterfaceDefinition(&ast.InterfaceDefinition{
+		Name:       name,
+		Directives: directives,
+		Loc:        loc(parser, start),
+		Fields:     fields,
+	}), nil
+}
+
+/**
  * InterfaceTypeDefinition :
  *   Description?
  *   interface Name Directives? { FieldDefinition+ }
@@ -1187,6 +1307,49 @@ func parseInterfaceTypeDefinition(parser *Parser) (ast.Node, error) {
 		Directives:  directives,
 		Loc:         loc(parser, start),
 		Fields:      fields,
+	}), nil
+}
+
+/**
+ * UnionTypeExtension :
+ *   extend union Name Directives? = UnionMembers
+ *   extend union Name Directives
+ */
+func parseUnionTypeExtensionDefinition(parser *Parser) (ast.Node, error) {
+	start := parser.Token.Start
+	_, err := expectKeyWord(parser, lexer.UNION)
+	if err != nil {
+		return nil, err
+	}
+	name, err := parseName(parser)
+	if err != nil {
+		return nil, err
+	}
+	directives, err := parseDirectives(parser)
+	if err != nil {
+		return nil, err
+	}
+	_, err = expect(parser, lexer.EQUALS)
+	if err != nil {
+		return ast.NewUnionDefinition(&ast.UnionDefinition{
+			Name:       name,
+			Directives: directives,
+			Loc:        loc(parser, start),
+			Types:      []*ast.Named{},
+		}), nil
+	}
+	types, err := parseUnionMembers(parser)
+	if err != nil {
+		return nil, err
+	}
+	if len(types) == 0 && len(directives) == 0 {
+		return nil, unexpected(parser, parser.Token)
+	}
+	return ast.NewUnionDefinition(&ast.UnionDefinition{
+		Name:       name,
+		Directives: directives,
+		Loc:        loc(parser, start),
+		Types:      types,
 	}), nil
 }
 
@@ -1248,6 +1411,49 @@ func parseUnionMembers(parser *Parser) ([]*ast.Named, error) {
 		}
 	}
 	return members, nil
+}
+
+/**
+ * EnumTypeExtensionDefinition :
+ *   extend enum Name Directives? { EnumValueDefinition+ }
+ *   extend enum Name Directives
+ */
+func parseEnumTypeExtensionDefinition(parser *Parser) (ast.Node, error) {
+	start := parser.Token.Start
+	_, err := expectKeyWord(parser, lexer.ENUM)
+	if err != nil {
+		return nil, err
+	}
+	name, err := parseName(parser)
+	if err != nil {
+		return nil, err
+	}
+	directives, err := parseDirectives(parser)
+	if err != nil {
+		return nil, err
+	}
+	iEnumValueDefs, err := reverse(parser,
+		lexer.BRACE_L, parseEnumValueDefinition, lexer.BRACE_R,
+		false,
+	)
+	if err != nil {
+		return nil, err
+	}
+	values := []*ast.EnumValueDefinition{}
+	for _, iEnumValueDef := range iEnumValueDefs {
+		if iEnumValueDef != nil {
+			values = append(values, iEnumValueDef.(*ast.EnumValueDefinition))
+		}
+	}
+	if len(values) == 0 && len(directives) == 0 {
+		return nil, unexpected(parser, parser.Token)
+	}
+	return ast.NewEnumDefinition(&ast.EnumDefinition{
+		Name:       name,
+		Directives: directives,
+		Loc:        loc(parser, start),
+		Values:     values,
+	}), nil
 }
 
 /**
@@ -1321,6 +1527,49 @@ func parseEnumValueDefinition(parser *Parser) (interface{}, error) {
 }
 
 /**
+ * InputObjectTypeExtensionDefinition :
+ *   extend input Name Directives? { InputValueDefinition+ }
+ *   extend input Name Directives
+ */
+func parseInputObjectTypeExtensionDefinition(parser *Parser) (ast.Node, error) {
+	start := parser.Token.Start
+	_, err := expectKeyWord(parser, lexer.INPUT)
+	if err != nil {
+		return nil, err
+	}
+	name, err := parseName(parser)
+	if err != nil {
+		return nil, err
+	}
+	directives, err := parseDirectives(parser)
+	if err != nil {
+		return nil, err
+	}
+	iInputValueDefinitions, err := reverse(parser,
+		lexer.BRACE_L, parseInputValueDef, lexer.BRACE_R,
+		false,
+	)
+	if err != nil {
+		return nil, err
+	}
+	fields := []*ast.InputValueDefinition{}
+	for _, iInputValueDefinition := range iInputValueDefinitions {
+		if iInputValueDefinition != nil {
+			fields = append(fields, iInputValueDefinition.(*ast.InputValueDefinition))
+		}
+	}
+	if len(fields) == 0 && len(directives) == 0 {
+		return nil, unexpected(parser, parser.Token)
+	}
+	return ast.NewInputObjectDefinition(&ast.InputObjectDefinition{
+		Name:       name,
+		Directives: directives,
+		Loc:        loc(parser, start),
+		Fields:     fields,
+	}), nil
+}
+
+/**
  * InputObjectTypeDefinition :
  *   - Description? input Name Directives? { InputValueDefinition+ }
  */
@@ -1365,7 +1614,13 @@ func parseInputObjectTypeDefinition(parser *Parser) (ast.Node, error) {
 }
 
 /**
- * TypeExtensionDefinition : extend ObjectTypeDefinition
+ * TypeExtensionDefinition :
+ *   ScalarTypeExtension
+ *   ObjectTypeExtension
+ *   InterfaceTypeExtension
+ *   UnionTypeExtension
+ *   EnumTypeExtension
+ *   InputObjectTypeExtension
  */
 func parseTypeExtensionDefinition(parser *Parser) (ast.Node, error) {
 	start := parser.Token.Start
@@ -1374,13 +1629,31 @@ func parseTypeExtensionDefinition(parser *Parser) (ast.Node, error) {
 		return nil, err
 	}
 
-	definition, err := parseObjectTypeDefinition(parser)
+	token := parser.Token
+	var definition ast.TypeExtension
+	switch token.Value {
+	case lexer.SCALAR:
+		definition, err = parseScalarTypeExtensionDefinition(parser)
+	case lexer.TYPE:
+		definition, err = parseObjectTypeExtensionDefinition(parser)
+	case lexer.INTERFACE:
+		definition, err = parseInterfaceTypeExtensionDefinition(parser)
+	case lexer.UNION:
+		definition, err = parseUnionTypeExtensionDefinition(parser)
+	case lexer.ENUM:
+		definition, err = parseEnumTypeExtensionDefinition(parser)
+	case lexer.INPUT:
+		definition, err = parseInputObjectTypeExtensionDefinition(parser)
+	default:
+		return nil, unexpected(parser, token)
+	}
 	if err != nil {
 		return nil, err
 	}
+
 	return ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
 		Loc:        loc(parser, start),
-		Definition: definition.(*ast.ObjectDefinition),
+		Definition: definition,
 	}), nil
 }
 
