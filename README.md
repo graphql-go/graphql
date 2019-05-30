@@ -1,18 +1,20 @@
-# graphql [![Build Status](https://travis-ci.org/graphql-go/graphql.svg)](https://travis-ci.org/graphql-go/graphql) [![GoDoc](https://godoc.org/graphql.co/graphql?status.svg)](https://godoc.org/github.com/graphql-go/graphql) [![Coverage Status](https://coveralls.io/repos/graphql-go/graphql/badge.svg?branch=master&service=github)](https://coveralls.io/github/graphql-go/graphql?branch=master)
+# graphql [![Build Status](https://travis-ci.org/GannettDigital/graphql.svg?branch=master)](https://travis-ci.org/GannettDigital/graphql) [![GoDoc](https://godoc.org/github.com/GannettDigital/graphql?status.svg)](https://godoc.org/github.com/GannettDigital/graphql) [![Coverage Status](https://coveralls.io/repos/github/GannettDigital/graphql/badge.svg?branch=master)](https://coveralls.io/github/GannettDigital/graphql?branch=master)
 
 An implementation of GraphQL in Go. Follows the official reference implementation [`graphql-js`](https://github.com/graphql/graphql-js).
 
 Supports: queries, mutations & subscriptions.
 
+This is a fork of the original repo [here](https://github.com/graphql-go/graphql). We maintain this fork mostly for speed of development. We've added features the original repo now has, like resolving fields in parallel. We've also added additional improvements, like query complexity costs.
+
 ### Documentation
 
-godoc: https://godoc.org/github.com/graphql-go/graphql
+godoc: https://godoc.org/github.com/GannettDigital/graphql
 
 ### Getting Started
 
 To install the library, run:
 ```bash
-go get github.com/graphql-go/graphql
+go get github.com/GannettDigital/graphql
 ```
 
 The following is a simple example which defines a schema with a single `hello` string-type field and a `Resolve` method which returns the string `world`. A GraphQL query is performed against this schema with the resulting output printed in JSON format.
@@ -25,7 +27,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/graphql-go/graphql"
+	"github.com/GannettDigital/graphql"
 )
 
 func main() {
@@ -60,7 +62,7 @@ func main() {
 	fmt.Printf("%s \n", rJSON) // {“data”:{“hello”:”world”}}
 }
 ```
-For more complex examples, refer to the [examples/](https://github.com/graphql-go/graphql/tree/master/examples/) directory and [graphql_test.go](https://github.com/graphql-go/graphql/blob/master/graphql_test.go).
+For more complex examples, refer to the [examples/](https://github.com/GannettDigital/graphql/tree/master/examples/) directory and [graphql_test.go](https://github.com/GannettDigital/graphql/blob/master/graphql_test.go).
 
 ### Third Party Libraries
 | Name          | Author        | Description  |

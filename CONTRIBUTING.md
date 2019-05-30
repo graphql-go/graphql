@@ -56,8 +56,8 @@ The basics are as follows:
 2. `go get` the upstream repo and set it up as the `upstream` remote and your own repo as the `origin` remote:
 
 ```bash
-$ go get github.com/graphql-go/graphql
-$ cd $GOPATH/src/github.com/graphql-go/graphql
+$ go get github.com/GannettDigital/graphql
+$ cd $GOPATH/src/github.com/GannettDigital/graphql
 $ git remote rename origin upstream
 $ git remote add origin git@github.com/YOUR_GITHUB_NAME/graphql
 ```
