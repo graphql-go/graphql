@@ -70,25 +70,6 @@ func getMapValueString(m map[string]interface{}, key string) string {
 	}
 	return ""
 }
-func getDescription(raw interface{}) string {
-	var desc string
-
-	switch node := raw.(type) {
-	case ast.DescribableNode:
-		if sval := node.GetDescription(); sval != nil {
-			desc = sval.Value
-		}
-	case map[string]interface{}:
-		desc = getMapValueString(node, "Description.Value")
-	}
-	if desc != "" {
-		if strings.ContainsRune(desc, '\n') {
-
-		}
-		desc = fmt.Sprintf(`"""%s"""`, desc)
-	}
-	return desc
-}
 
 func toSliceString(slice interface{}) []string {
 	if slice == nil {
@@ -525,9 +506,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				fmt.Sprintf("%v", node.Name),
 				join(directives, " "),
 			}, " ")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
@@ -540,9 +518,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				name,
 				join(directives, " "),
 			}, " ")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		}
 		return visitor.ActionNoChange, nil
@@ -564,9 +539,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				join(directives, " "),
 				block(fields),
 			}, " ")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
@@ -583,9 +555,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				join(directives, " "),
 				block(fields),
 			}, " ")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		}
 		return visitor.ActionNoChange, nil
@@ -601,9 +570,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				directives = append(directives, fmt.Sprintf("%v", directive.Name))
 			}
 			str := name + wrap("(", join(args, ", "), ")") + ": " + ttype + wrap(" ", join(directives, " "), "")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
@@ -614,9 +580,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				directives = append(directives, fmt.Sprintf("%v", directive))
 			}
 			str := name + wrap("(", join(args, ", "), ")") + ": " + ttype + wrap(" ", join(directives, " "), "")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		}
 		return visitor.ActionNoChange, nil
@@ -636,9 +599,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				wrap("= ", defaultValue, ""),
 				join(directives, " "),
 			}, " ")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, " ")
-			}
+
 			return visitor.ActionUpdate, str
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
@@ -653,9 +614,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				wrap("= ", defaultValue, ""),
 				join(directives, " "),
 			}, " ")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, " ")
-			}
 			return visitor.ActionUpdate, str
 		}
 		return visitor.ActionNoChange, nil
@@ -675,9 +633,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				join(directives, " "),
 				block(fields),
 			}, " ")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
@@ -692,9 +647,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				join(directives, " "),
 				block(fields),
 			}, " ")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		}
 		return visitor.ActionNoChange, nil
@@ -714,9 +666,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				join(directives, " "),
 				"= " + join(types, " | "),
 			}, " ")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
@@ -731,9 +680,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				join(directives, " "),
 				"= " + join(types, " | "),
 			}, " ")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		}
 		return visitor.ActionNoChange, nil
@@ -753,9 +699,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				join(directives, " "),
 				block(values),
 			}, " ")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
@@ -770,9 +713,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				join(directives, " "),
 				block(values),
 			}, " ")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		}
 		return visitor.ActionNoChange, nil
@@ -789,9 +729,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				name,
 				join(directives, " "),
 			}, " ")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
@@ -803,9 +740,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				name,
 				join(directives, " "),
 			}, " ")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		}
 		return visitor.ActionNoChange, nil
@@ -825,9 +759,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				join(directives, " "),
 				block(fields),
 			}, " ")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
@@ -842,9 +773,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 				join(directives, " "),
 				block(fields),
 			}, " ")
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		}
 		return visitor.ActionNoChange, nil
@@ -854,16 +782,10 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		case *ast.TypeExtensionDefinition:
 			definition := fmt.Sprintf("%v", node.Definition)
 			str := "extend " + definition
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		case map[string]interface{}:
 			definition := getMapValueString(node, "Definition")
 			str := "extend " + definition
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		}
 		return visitor.ActionNoChange, nil
@@ -873,9 +795,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		case *ast.DirectiveDefinition:
 			args := wrap("(", join(toSliceString(node.Arguments), ", "), ")")
 			str := fmt.Sprintf("directive @%v%v on %v", node.Name, args, join(toSliceString(node.Locations), " | "))
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		case map[string]interface{}:
 			name := getMapValueString(node, "Name")
@@ -883,9 +802,6 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 			args := toSliceString(getMapValue(node, "Arguments"))
 			argsStr := wrap("(", join(args, ", "), ")")
 			str := fmt.Sprintf("directive @%v%v on %v", name, argsStr, join(locations, " | "))
-			if desc := getDescription(node); desc != "" {
-				str = join([]string{desc, str}, "\n")
-			}
 			return visitor.ActionUpdate, str
 		}
 		return visitor.ActionNoChange, nil
