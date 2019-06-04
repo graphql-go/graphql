@@ -166,5 +166,3 @@ multi line
 directive description
 """
 directive @DirectiveMultiLine on SCALAR
-
-
