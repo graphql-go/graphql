@@ -82,6 +82,9 @@ func getDescription(raw interface{}) string {
 		desc = getMapValueString(node, "Description.Value")
 	}
 	if desc != "" {
+		if strings.ContainsRune(desc, '\n') {
+
+		}
 		desc = fmt.Sprintf(`"""%s"""`, desc)
 	}
 	return desc
