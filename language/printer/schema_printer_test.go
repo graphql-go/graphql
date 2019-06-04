@@ -58,10 +58,13 @@ func TestSchemaPrinter_PrintsKitchenSink(t *testing.T) {
   mutation: MutationType
 }
 
+"""object description"""
 type Foo implements Bar & Baz {
+  """one field description"""
   one: Type
   two(argument: InputType!): Type
-  three(argument: InputType, other: String): Int
+  three(argument: InputType, """arg description""" other: String): Int
+  """four field description"""
   four(argument: String = "string"): String
   five(argument: [String] = ["string", "string"]): String
   six(argument: InputType = {key: "value"}): Type
@@ -71,6 +74,9 @@ type AnnotatedObject @onObject(arg: "value") {
   annotatedField(arg: Type = "default" @onArg): Type @onField
 }
 
+"""interface description
+
+multiple lines"""
 interface Bar {
   one: Type
   four(argument: String = "string"): String
@@ -82,14 +88,18 @@ interface AnnotatedInterface @onInterface {
 
 union Feed = Story | Article | Advert
 
+"""union description"""
 union AnnotatedUnion @onUnion = A | B
 
+"""scalar description"""
 scalar CustomScalar
 
 scalar AnnotatedScalar @onScalar
 
+"""enum description"""
 enum Site {
   DESKTOP
+  """enum member description"""
   MOBILE
 }
 
@@ -98,8 +108,10 @@ enum AnnotatedEnum @onEnum {
   OTHER_VALUE
 }
 
+"""input description"""
 input InputType {
   key: String!
+  """input value description"""
   answer: Int = 42
 }
 
@@ -115,6 +127,7 @@ extend type Foo @onType {}
 
 type NoFields {}
 
+"""directive description"""
 directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 
 directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
