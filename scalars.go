@@ -3,11 +3,78 @@ package graphql
 import (
 	"fmt"
 	"math"
+	"reflect"
 	"strconv"
 	"time"
 
 	"github.com/graphql-go/graphql/language/ast"
 )
+
+func unwrapInt(value interface{}) (interface{}, bool) {
+	r := reflect.Indirect(reflect.ValueOf(value))
+	if !r.IsValid() || (r.Kind() == reflect.Ptr && r.IsNil()) {
+		return nil, false
+	}
+
+	switch r.Kind() {
+	case reflect.Int:
+		return int(r.Int()), true
+	case reflect.Int8:
+		return int8(r.Int()), true
+	case reflect.Int16:
+		return int16(r.Int()), true
+	case reflect.Int32:
+		return int32(r.Int()), true
+	case reflect.Int64:
+		return r.Int(), true
+	default:
+		return nil, false
+	}
+}
+
+func unwrapFloat(value interface{}) (interface{}, bool) {
+	r := reflect.Indirect(reflect.ValueOf(value))
+	if !r.IsValid() || (r.Kind() == reflect.Ptr && r.IsNil()) {
+		return nil, false
+	}
+
+	switch r.Kind() {
+	case reflect.Float32:
+		return float32(r.Float()), true
+	case reflect.Float64:
+		return r.Float(), true
+	default:
+		return nil, false
+	}
+}
+
+func unwrapBool(value interface{}) (interface{}, bool) {
+	r := reflect.Indirect(reflect.ValueOf(value))
+	if !r.IsValid() || (r.Kind() == reflect.Ptr && r.IsNil()) {
+		return nil, false
+	}
+
+	switch r.Kind() {
+	case reflect.Bool:
+		return r.Bool(), true
+	default:
+		return nil, false
+	}
+}
+
+func unwrapString(value interface{}) (interface{}, bool) {
+	r := reflect.Indirect(reflect.ValueOf(value))
+	if !r.IsValid() || (r.Kind() == reflect.Ptr && r.IsNil()) {
+		return nil, false
+	}
+
+	switch r.Kind() {
+	case reflect.String:
+		return r.String(), true
+	default:
+		return nil, false
+	}
+}
 
 // As per the GraphQL Spec, Integers are only treated as valid when a valid
 // 32-bit signed integer, providing the broadest support across platforms.
@@ -142,11 +209,14 @@ func coerceInt(value interface{}) interface{} {
 			return nil
 		}
 		return coerceInt(*value)
+	default:
+		if v, ok := unwrapInt(value); ok {
+			return coerceInt(v)
+		}
+		// If the value cannot be transformed into an int, return nil instead of '0'
+		// to denote 'no integer found'
+		return nil
 	}
-
-	// If the value cannot be transformed into an int, return nil instead of '0'
-	// to denote 'no integer found'
-	return nil
 }
 
 // Int is the GraphQL Integer type definition.
@@ -276,6 +346,10 @@ func coerceFloat(value interface{}) interface{} {
 		return coerceFloat(*value)
 	}
 
+	if v, ok := unwrapFloat(value); ok {
+		return coerceFloat(v)
+	}
+
 	// If the value cannot be transformed into an float, return nil instead of '0.0'
 	// to denote 'no float found'
 	return nil
@@ -305,13 +379,23 @@ var Float = NewScalar(ScalarConfig{
 })
 
 func coerceString(value interface{}) interface{} {
-	if v, ok := value.(*string); ok {
-		if v == nil {
+	switch t := value.(type) {
+	case *string:
+		if t == nil {
 			return nil
 		}
-		return *v
+		return *t
+	case string:
+		return t
+	default:
+		if v, ok := unwrapString(value); ok {
+			return coerceString(v)
+		}
+		if r := reflect.ValueOf(value); r.Kind() == reflect.Ptr && r.IsNil() {
+			return nil
+		}
+		return fmt.Sprintf("%v", value)
 	}
-	return fmt.Sprintf("%v", value)
 }
 
 // String is the GraphQL string type definition
@@ -471,6 +555,13 @@ func coerceBool(value interface{}) interface{} {
 			return nil
 		}
 		return coerceBool(*value)
+	}
+
+	if v, ok := unwrapBool(value); ok {
+		return coerceBool(v)
+	}
+	if r := reflect.ValueOf(value); r.Kind() == reflect.Ptr && r.IsNil() {
+		return nil
 	}
 	return false
 }
