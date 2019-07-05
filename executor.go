@@ -29,20 +29,35 @@ func Execute(p ExecuteParams) (result *Result) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	// run executionDidStart functions from extensions
+	extErrs, executionFinishFn := handleExtensionsExecutionDidStart(&p)
+	if len(extErrs) != 0 {
+		return &Result{
+			Errors: extErrs,
+		}
+	}
 
-	resultChannel := make(chan *Result)
-	result = &Result{}
+	defer func() {
+		extErrs = executionFinishFn(result)
+		if len(extErrs) != 0 {
+			result.Errors = append(result.Errors, extErrs...)
+		}
 
-	go func(out chan<- *Result, done <-chan struct{}) {
+		addExtensionResults(&p, result)
+	}()
+
+	resultChannel := make(chan *Result, 2)
+
+	go func() {
+		result := &Result{}
+
 		defer func() {
 			if err := recover(); err != nil {
 				result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
 			}
-			select {
-			case out <- result:
-			case <-done:
-			}
+			resultChannel <- result
 		}()
+
 		exeContext, err := buildExecutionContext(buildExecutionCtxParams{
 			Schema:        p.Schema,
 			Root:          p.Root,
@@ -54,24 +69,26 @@ func Execute(p ExecuteParams) (result *Result) {
 		})
 
 		if err != nil {
-			result.Errors = append(result.Errors, gqlerrors.FormatError(err))
+			result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
+			resultChannel <- result
 			return
 		}
 
-		result = executeOperation(executeOperationParams{
+		resultChannel <- executeOperation(executeOperationParams{
 			ExecutionContext: exeContext,
 			Root:             p.Root,
 			Operation:        exeContext.Operation,
 		})
-	}(resultChannel, ctx.Done())
+	}()
 
 	select {
 	case <-ctx.Done():
+		result := &Result{}
 		result.Errors = append(result.Errors, gqlerrors.FormatError(ctx.Err()))
+		return result
 	case r := <-resultChannel:
-		result = r
+		return r
 	}
-	return
 }
 
 type buildExecutionCtxParams struct {
@@ -175,7 +192,7 @@ func executeOperation(p executeOperationParams) *Result {
 // Extracts the root type of the operation from the schema.
 func getOperationRootType(schema Schema, operation ast.Definition) (*Object, error) {
 	if operation == nil {
-		return nil, errors.New("Can only execute queries and mutations")
+		return nil, errors.New("Can only execute queries, mutations and subscription")
 	}
 
 	switch operation.GetOperation() {
@@ -183,7 +200,7 @@ func getOperationRootType(schema Schema, operation ast.Definition) (*Object, err
 		return schema.QueryType(), nil
 	case ast.OperationTypeMutation:
 		mutationType := schema.MutationType()
-		if mutationType.PrivateName == "" {
+		if mutationType == nil || mutationType.PrivateName == "" {
 			return nil, gqlerrors.NewError(
 				"Schema is not configured for mutations",
 				[]ast.Node{operation},
@@ -196,7 +213,7 @@ func getOperationRootType(schema Schema, operation ast.Definition) (*Object, err
 		return mutationType, nil
 	case ast.OperationTypeSubscription:
 		subscriptionType := schema.SubscriptionType()
-		if subscriptionType.PrivateName == "" {
+		if subscriptionType == nil || subscriptionType.PrivateName == "" {
 			return nil, gqlerrors.NewError(
 				"Schema is not configured for subscriptions",
 				[]ast.Node{operation},
@@ -266,6 +283,7 @@ func executeFields(p executeFieldsParams) *Result {
 }
 
 func executeSubFields(p executeFieldsParams) map[string]interface{} {
+
 	if p.Source == nil {
 		p.Source = map[string]interface{}{}
 	}
@@ -620,6 +638,11 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 
 	var resolveFnError error
 
+	extErrs, resolveFieldFinishFn := handleExtensionsResolveFieldDidStart(eCtx.Schema.extensions, eCtx, &info)
+	if len(extErrs) != 0 {
+		eCtx.Errors = append(eCtx.Errors, extErrs...)
+	}
+
 	result, resolveFnError = resolveFn(ResolveParams{
 		Source:  source,
 		Args:    args,
@@ -629,6 +652,11 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 
 	if resolveFnError != nil {
 		panic(resolveFnError)
+	}
+
+	extErrs = resolveFieldFinishFn(result, resolveFnError)
+	if len(extErrs) != 0 {
+		eCtx.Errors = append(eCtx.Errors, extErrs...)
 	}
 
 	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, path, result)
@@ -901,7 +929,7 @@ type FieldResolver interface {
 	Resolve(p ResolveParams) (interface{}, error)
 }
 
-// defaultResolveFn If a resolve function is not given, then a default resolve behavior is used
+// DefaultResolveFn If a resolve function is not given, then a default resolve behavior is used
 // which takes the property of the source object of the same name as the field
 // and returns it as the result, or if it's a function, returns the result
 // of calling that function.
@@ -961,6 +989,22 @@ func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 			}
 		}
 		return property, nil
+	}
+
+	// Try accessing as map via reflection
+	if r := reflect.ValueOf(p.Source); r.Kind() == reflect.Map && r.Type().Key().Kind() == reflect.String {
+		val := r.MapIndex(reflect.ValueOf(p.Info.FieldName))
+		if val.IsValid() {
+			property := val.Interface()
+			if val.Type().Kind() == reflect.Func {
+				// try type casting the func to the most basic func signature
+				// for more complex signatures, user have to define ResolveFn
+				if propertyFn, ok := property.(func() interface{}); ok {
+					return propertyFn(), nil
+				}
+			}
+			return property, nil
+		}
 	}
 
 	// last resort, return nil

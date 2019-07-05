@@ -297,6 +297,62 @@ func TestMergesParallelFragments(t *testing.T) {
 	}
 }
 
+type CustomMap map[string]interface{}
+
+func TestCustomMapType(t *testing.T) {
+	query := `
+		query Example { data { a } }
+	`
+	data := CustomMap{
+		"a": "1",
+		"b": "2",
+	}
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "RootQuery",
+			Fields: graphql.Fields{
+				"data": &graphql.Field{
+					Type: graphql.NewObject(graphql.ObjectConfig{
+						Name: "Data",
+						Fields: graphql.Fields{
+							"a": &graphql.Field{
+								Type: graphql.String,
+							},
+							"b": &graphql.Field{
+								Type: graphql.String,
+							},
+						},
+					}),
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return data, nil
+					},
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	result := testutil.TestExecute(t, graphql.ExecuteParams{
+		Schema: schema,
+		Root:   data,
+		AST:    testutil.TestParse(t, query),
+	})
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+
+	expected := map[string]interface{}{
+		"data": map[string]interface{}{
+			"a": "1",
+		},
+	}
+	if !reflect.DeepEqual(result.Data, expected) {
+		t.Fatalf("Expected context.key to equal %v, got %v", expected, result.Data)
+	}
+}
+
 func TestThreadsSourceCorrectly(t *testing.T) {
 
 	query := `
@@ -841,6 +897,57 @@ func TestThrowsIfUnknownOperationNameIsProvided(t *testing.T) {
 	}
 	if !testutil.EqualFormattedErrors(expectedErrors, result.Errors) {
 		t.Fatalf("unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
+	}
+}
+
+func TestThrowsIfOperationTypeIsUnsupported(t *testing.T) {
+	query := `mutation Mut { a } subscription Sub { a }`
+	operations := []string{"Mut", "Sub"}
+
+	expectedErrors := [][]gqlerrors.FormattedError{
+		{{
+			Message:   `Schema is not configured for mutations`,
+			Locations: []location.SourceLocation{{Line: 1, Column: 1}},
+		}},
+		{{
+			Message:   `Schema is not configured for subscriptions`,
+			Locations: []location.SourceLocation{{Line: 1, Column: 20}},
+		}},
+	}
+
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{
+					Type: graphql.String,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+
+	// parse query
+	ast := testutil.TestParse(t, query)
+
+	for opIndex, operation := range operations {
+		expectedErrors := expectedErrors[opIndex]
+
+		// execute
+		ep := graphql.ExecuteParams{
+			Schema:        schema,
+			AST:           ast,
+			OperationName: operation,
+		}
+		result := testutil.TestExecute(t, ep)
+		if result.Data != nil {
+			t.Fatalf("wrong result, expected nil result.Data, got %v", result.Data)
+		}
+		if !testutil.EqualFormattedErrors(expectedErrors, result.Errors) {
+			t.Fatalf("unexpected result, Diff: %v", testutil.Diff(expectedErrors, result.Errors))
+		}
 	}
 }
 func TestUsesTheQuerySchemaForQueries(t *testing.T) {
