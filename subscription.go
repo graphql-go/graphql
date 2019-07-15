@@ -3,6 +3,7 @@ package graphql
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
@@ -12,6 +13,7 @@ type ResultIteratorFn func(count int64, result *Result, doneFunc func())
 
 type ResultIterator struct {
 	count      int64
+	wg         sync.WaitGroup
 	ctx        context.Context
 	ch         chan *Result
 	cancelFunc context.CancelFunc
@@ -43,8 +45,12 @@ func NewResultIterator(ctx context.Context, ch chan *Result) *ResultIterator {
 				if iterator.cancelled {
 					return
 				}
-				iterator.count += 1
+				iterator.wg.Wait()
+				iterator.wg.Add(1)
+				iterator.count++
+				iterator.wg.Done()
 				for _, handler := range iterator.handlers {
+					iterator.wg.Wait()
 					handler(iterator.count, res, iterator.Done)
 				}
 			}
@@ -55,7 +61,9 @@ func NewResultIterator(ctx context.Context, ch chan *Result) *ResultIterator {
 }
 
 func (c *ResultIterator) ForEach(handler ResultIteratorFn) {
+	c.wg.Add(1)
 	c.handlers = append(c.handlers, handler)
+	c.wg.Done()
 }
 
 func (c *ResultIterator) Done() {
