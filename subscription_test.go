@@ -79,13 +79,13 @@ func TestSubscription(t *testing.T) {
 	})
 
 	// test a subscribe that should fail due to no return value
-	failIterator.ForEach(func(count int64, res *Result, doneFunc func()) {
-		if !res.HasErrors() {
+	failIterator.ForEach(func(p ResultIteratorParams) {
+		if !p.Result.HasErrors() {
 			t.Errorf("subscribe failed to catch nil result from subscribe")
-			doneFunc()
+			p.Done()
 			return
 		}
-		doneFunc()
+		p.Done()
 		return
 	})
 
@@ -95,27 +95,27 @@ func TestSubscription(t *testing.T) {
 		ContextValue: context.Background(),
 	})
 
-	resultIterator.ForEach(func(count int64, res *Result, doneFunc func()) {
-		if res.HasErrors() {
-			t.Errorf("subscribe error(s): %v", res.Errors)
-			doneFunc()
+	resultIterator.ForEach(func(p ResultIteratorParams) {
+		if p.Result.HasErrors() {
+			t.Errorf("subscribe error(s): %v", p.Result.Errors)
+			p.Done()
 			return
 		}
 
-		if res.Data != nil {
-			data := res.Data.(map[string]interface{})["watch_count"]
-			expected := fmt.Sprintf("count=%d", count)
+		if p.Result.Data != nil {
+			data := p.Result.Data.(map[string]interface{})["watch_count"]
+			expected := fmt.Sprintf("count=%d", p.ResultCount)
 			actual := fmt.Sprintf("%v", data)
 			if actual != expected {
 				t.Errorf("subscription result error: expected %q, actual %q", expected, actual)
-				doneFunc()
+				p.Done()
 				return
 			}
 
 			// test the done func by quitting after 3 iterations
 			// the publisher will publish up to 5
-			if count >= int64(maxPublish-2) {
-				doneFunc()
+			if p.ResultCount >= int64(maxPublish-2) {
+				p.Done()
 				return
 			}
 		}
