@@ -39,18 +39,13 @@ type ResultIterator struct {
 }
 
 // NewResultIterator creates a new iterator and starts handling message on the result channel
-func NewResultIterator(ctx context.Context, ch chan *Result) *ResultIterator {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	cctx, cancelFunc := context.WithCancel(ctx)
+func NewResultIterator(ctx context.Context, cancelFunc context.CancelFunc, ch chan *Result) *ResultIterator {
 	iterator := &ResultIterator{
 		currentHandlerID: 0,
 		count:            0,
-		ctx:              cctx,
-		ch:               ch,
+		ctx:              ctx,
 		cancelFunc:       cancelFunc,
+		ch:               ch,
 		cancelled:        false,
 		handlers:         map[int64]*subscriptionHanlderConfig{},
 	}
@@ -140,6 +135,8 @@ func Subscribe(p SubscribeParams) *ResultIterator {
 		ctx = context.Background()
 	}
 
+	sctx, cancelFunc := context.WithCancel(ctx)
+
 	var mapSourceToResponse = func(payload interface{}) *Result {
 		return Execute(ExecuteParams{
 			Schema:        p.Schema,
@@ -147,7 +144,7 @@ func Subscribe(p SubscribeParams) *ResultIterator {
 			AST:           p.Document,
 			OperationName: p.OperationName,
 			Args:          p.VariableValues,
-			Context:       p.ContextValue,
+			Context:       sctx,
 		})
 	}
 
@@ -168,7 +165,7 @@ func Subscribe(p SubscribeParams) *ResultIterator {
 			OperationName: p.OperationName,
 			Args:          p.VariableValues,
 			Result:        result,
-			Context:       p.ContextValue,
+			Context:       sctx,
 		})
 
 		if err != nil {
@@ -236,7 +233,7 @@ func Subscribe(p SubscribeParams) *ResultIterator {
 			Source:  p.RootValue,
 			Args:    args,
 			Info:    info,
-			Context: exeContext.Context,
+			Context: sctx,
 		})
 		if err != nil {
 			result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
@@ -255,11 +252,9 @@ func Subscribe(p SubscribeParams) *ResultIterator {
 		case chan interface{}:
 			for {
 				select {
-				case <-ctx.Done():
-					fmt.Printf("done context called")
+				case <-sctx.Done():
 					return
 				case res := <-fieldResult.(chan interface{}):
-
 					resultChannel <- mapSourceToResponse(res)
 				}
 			}
@@ -270,5 +265,5 @@ func Subscribe(p SubscribeParams) *ResultIterator {
 	}()
 
 	// return a result iterator
-	return NewResultIterator(p.ContextValue, resultChannel)
+	return NewResultIterator(sctx, cancelFunc, resultChannel)
 }
