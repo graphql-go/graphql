@@ -52,7 +52,8 @@ func TestSubscription(t *testing.T) {
 						return fmt.Sprintf("count=%v", p.Source), nil
 					},
 					Subscribe: func(p ResolveParams) (interface{}, error) {
-						return m, nil
+						sub := NewSubscriber(m, make(chan interface{}))
+						return sub, nil
 					},
 				},
 				"watch_should_fail": &Field{

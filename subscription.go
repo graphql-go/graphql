@@ -9,6 +9,30 @@ import (
 	"github.com/graphql-go/graphql/language/ast"
 )
 
+// Subscriber subscriber
+type Subscriber struct {
+	message chan interface{}
+	done    chan interface{}
+}
+
+// Message returns the subscriber message channel
+func (c *Subscriber) Message() chan interface{} {
+	return c.message
+}
+
+// Done returns the subscriber done channel
+func (c *Subscriber) Done() chan interface{} {
+	return c.done
+}
+
+// NewSubscriber creates a new subscriber
+func NewSubscriber(message, done chan interface{}) *Subscriber {
+	return &Subscriber{
+		message: message,
+		done:    done,
+	}
+}
+
 // ResultIteratorParams parameters passed to the result iterator handler
 type ResultIteratorParams struct {
 	ResultCount int64   // number of results this iterator has processed
@@ -30,21 +54,28 @@ type subscriptionHanlderConfig struct {
 type ResultIterator struct {
 	currentHandlerID int64
 	count            int64
-	wg               sync.WaitGroup
-	ctx              context.Context
+	mx               sync.Mutex
 	ch               chan *Result
-	cancelFunc       context.CancelFunc
+	iterDone         chan interface{}
+	subDone          chan interface{}
 	cancelled        bool
 	handlers         map[int64]*subscriptionHanlderConfig
 }
 
+func (c *ResultIterator) incrimentCount() int64 {
+	c.mx.Lock()
+	defer c.mx.Unlock()
+	c.count++
+	return c.count
+}
+
 // NewResultIterator creates a new iterator and starts handling message on the result channel
-func NewResultIterator(ctx context.Context, cancelFunc context.CancelFunc, ch chan *Result) *ResultIterator {
+func NewResultIterator(subDone chan interface{}, ch chan *Result) *ResultIterator {
 	iterator := &ResultIterator{
 		currentHandlerID: 0,
 		count:            0,
-		ctx:              ctx,
-		cancelFunc:       cancelFunc,
+		iterDone:         make(chan interface{}),
+		subDone:          subDone,
 		ch:               ch,
 		cancelled:        false,
 		handlers:         map[int64]*subscriptionHanlderConfig{},
@@ -53,20 +84,18 @@ func NewResultIterator(ctx context.Context, cancelFunc context.CancelFunc, ch ch
 	go func() {
 		for {
 			select {
-			case <-iterator.ctx.Done():
+			case <-iterator.iterDone:
+				subDone <- true
 				return
 			case res := <-iterator.ch:
 				if iterator.cancelled {
 					return
 				}
-				iterator.wg.Wait()
-				iterator.wg.Add(1)
-				iterator.count++
-				iterator.wg.Done()
+
+				count := iterator.incrimentCount()
 				for _, h := range iterator.handlers {
-					iterator.wg.Wait()
 					h.handler(ResultIteratorParams{
-						ResultCount: iterator.count,
+						ResultCount: int64(count),
 						Result:      res,
 						Done:        h.doneFunc,
 						Cancel:      iterator.Cancel,
@@ -81,7 +110,9 @@ func NewResultIterator(ctx context.Context, cancelFunc context.CancelFunc, ch ch
 
 // adds a new handler
 func (c *ResultIterator) addHandler(handler ResultIteratorFn) {
-	c.wg.Add(1)
+	c.mx.Lock()
+	defer c.mx.Unlock()
+
 	handlerID := c.currentHandlerID + 1
 	c.currentHandlerID = handlerID
 	c.handlers[handlerID] = &subscriptionHanlderConfig{
@@ -90,17 +121,17 @@ func (c *ResultIterator) addHandler(handler ResultIteratorFn) {
 			c.removeHandler(handlerID)
 		},
 	}
-	c.wg.Done()
 }
 
 // removes a handler and cancels if no more handlers exist
 func (c *ResultIterator) removeHandler(handlerID int64) {
-	c.wg.Add(1)
+	c.mx.Lock()
+	defer c.mx.Unlock()
+
 	delete(c.handlers, handlerID)
 	if len(c.handlers) == 0 {
 		c.Cancel()
 	}
-	c.wg.Done()
 }
 
 // ForEach adds a handler and handles each message as they come
@@ -111,7 +142,7 @@ func (c *ResultIterator) ForEach(handler ResultIteratorFn) {
 // Cancel cancels the iterator
 func (c *ResultIterator) Cancel() {
 	c.cancelled = true
-	c.cancelFunc()
+	c.iterDone <- true
 }
 
 // SubscribeParams parameters for subscribing
@@ -129,13 +160,12 @@ type SubscribeParams struct {
 // Subscribe performs a subscribe operation
 func Subscribe(p SubscribeParams) *ResultIterator {
 	resultChannel := make(chan *Result)
+	doneChannel := make(chan interface{})
 	// Use background context if no context was provided
 	ctx := p.ContextValue
 	if ctx == nil {
 		ctx = context.Background()
 	}
-
-	sctx, cancelFunc := context.WithCancel(ctx)
 
 	var mapSourceToResponse = func(payload interface{}) *Result {
 		return Execute(ExecuteParams{
@@ -144,15 +174,15 @@ func Subscribe(p SubscribeParams) *ResultIterator {
 			AST:           p.Document,
 			OperationName: p.OperationName,
 			Args:          p.VariableValues,
-			Context:       sctx,
+			Context:       ctx,
 		})
 	}
 
 	go func() {
-
 		result := &Result{}
 		defer func() {
 			if err := recover(); err != nil {
+				fmt.Println("SUBSCRIPTION RECOVERER", err)
 				result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
 			}
 			resultChannel <- result
@@ -165,7 +195,7 @@ func Subscribe(p SubscribeParams) *ResultIterator {
 			OperationName: p.OperationName,
 			Args:          p.VariableValues,
 			Result:        result,
-			Context:       sctx,
+			Context:       ctx,
 		})
 
 		if err != nil {
@@ -233,7 +263,7 @@ func Subscribe(p SubscribeParams) *ResultIterator {
 			Source:  p.RootValue,
 			Args:    args,
 			Info:    info,
-			Context: sctx,
+			Context: ctx,
 		})
 		if err != nil {
 			result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
@@ -249,12 +279,14 @@ func Subscribe(p SubscribeParams) *ResultIterator {
 		}
 
 		switch fieldResult.(type) {
-		case chan interface{}:
+		case *Subscriber:
+			sub := fieldResult.(*Subscriber)
 			for {
 				select {
-				case <-sctx.Done():
+				case <-doneChannel:
+					sub.done <- true
 					return
-				case res := <-fieldResult.(chan interface{}):
+				case res := <-sub.message:
 					resultChannel <- mapSourceToResponse(res)
 				}
 			}
@@ -265,5 +297,5 @@ func Subscribe(p SubscribeParams) *ResultIterator {
 	}()
 
 	// return a result iterator
-	return NewResultIterator(sctx, cancelFunc, resultChannel)
+	return NewResultIterator(doneChannel, resultChannel)
 }
