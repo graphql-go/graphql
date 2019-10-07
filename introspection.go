@@ -288,6 +288,19 @@ func init() {
 			},
 			"description": &Field{
 				Type: String,
+				Resolve: func(p ResolveParams) (interface{}, error) {
+					if field, ok := p.Source.(*FieldDefinition); ok {
+						description := field.Description
+						if field.Cost != 0 {
+							if description != "" {
+								description += "\n\n"
+							}
+							description += fmt.Sprintf("Query Complexity Cost: +%d", field.Cost)
+						}
+						return description, nil
+					}
+					return nil, nil
+				},
 			},
 			"args": &Field{
 				Type: NewNonNull(NewList(NewNonNull(InputValueType))),
