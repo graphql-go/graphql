@@ -296,7 +296,7 @@ var Float = NewScalar(ScalarConfig{
 				return floatValue
 			}
 		case *ast.IntValue:
-			if floatValue, err := strconv.ParseFloat(valueAST.Value, 32); err == nil {
+			if floatValue, err := strconv.ParseFloat(valueAST.Value, 64); err == nil {
 				return floatValue
 			}
 		}
@@ -547,6 +547,8 @@ func unserializeDateTime(value interface{}) interface{} {
 			return nil
 		}
 		return unserializeDateTime([]byte(*value))
+	case time.Time:
+		return value
 	default:
 		return nil
 	}
