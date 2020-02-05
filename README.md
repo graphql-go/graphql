@@ -71,5 +71,5 @@ For more complex examples, refer to the [examples/](https://github.com/graphql-g
 | [dataloader](https://github.com/nicksrandall/dataloader) | [Nick Randall](https://github.com/nicksrandall) | [DataLoader](https://github.com/facebook/dataloader) implementation in Go. |
 
 ### Blog Posts
-- [Golang + GraphQL + Relay](http://wehavefaces.net/)
+- [Golang + GraphQL + Relay](https://wehavefaces.net/learn-golang-graphql-relay-1-e59ea174a902)
 
