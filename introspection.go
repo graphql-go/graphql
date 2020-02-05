@@ -312,6 +312,14 @@ func init() {
 			},
 			"deprecationReason": &Field{
 				Type: String,
+				Resolve: func(p ResolveParams) (interface{}, error) {
+					if field, ok := p.Source.(*FieldDefinition); ok {
+						if field.DeprecationReason != "" {
+							return field.DeprecationReason, nil
+						}
+					}
+					return nil, nil
+				},
 			},
 		},
 	})
@@ -497,6 +505,14 @@ func init() {
 			},
 			"deprecationReason": &Field{
 				Type: String,
+				Resolve: func(p ResolveParams) (interface{}, error) {
+					if field, ok := p.Source.(*EnumValueDefinition); ok {
+						if field.DeprecationReason != "" {
+							return field.DeprecationReason, nil
+						}
+					}
+					return nil, nil
+				},
 			},
 		},
 	})

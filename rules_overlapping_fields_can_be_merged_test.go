@@ -32,6 +32,14 @@ func TestValidate_OverlappingFieldsCanBeMerged_IdenticalFieldsWithIdenticalArgs(
       }
     `)
 }
+func TestValidate_OverlappingFieldsCanBeMerged_IdenticalFieldsWithMultipleIdenticalArgs(t *testing.T) {
+	testutil.ExpectPassesRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
+      fragment mergeIdenticalFieldsWithIdenticalArgs on Dog {
+        doesKnowCommand(dogCommand: SIT nextDogCommand: DOWN)
+        doesKnowCommand(dogCommand: SIT nextDogCommand: DOWN)
+      }
+    `)
+}
 func TestValidate_OverlappingFieldsCanBeMerged_IdenticalFieldsWithIdenticalDirectives(t *testing.T) {
 	testutil.ExpectPassesRule(t, graphql.OverlappingFieldsCanBeMergedRule, `
       fragment mergeSameFieldsWithSameDirectives on Dog {
