@@ -650,13 +650,13 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		Context: eCtx.Context,
 	})
 
-	if resolveFnError != nil {
-		panic(resolveFnError)
-	}
-
 	extErrs = resolveFieldFinishFn(result, resolveFnError)
 	if len(extErrs) != 0 {
 		eCtx.Errors = append(eCtx.Errors, extErrs...)
+	}
+
+	if resolveFnError != nil {
+		panic(resolveFnError)
 	}
 
 	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, path, result)
