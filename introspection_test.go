@@ -67,7 +67,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "queryType",
@@ -81,7 +81,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "mutationType",
@@ -91,7 +91,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								"name": "__Type",
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "subscriptionType",
@@ -101,7 +101,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								"name": "__Type",
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "directives",
@@ -123,7 +123,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 					},
 					"inputFields":   nil,
@@ -148,7 +148,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "name",
@@ -159,7 +159,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								"ofType": nil,
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "description",
@@ -170,7 +170,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								"ofType": nil,
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "fields",
@@ -199,7 +199,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "interfaces",
@@ -218,7 +218,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "possibleTypes",
@@ -237,7 +237,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "enumValues",
@@ -266,7 +266,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "inputFields",
@@ -285,7 +285,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "ofType",
@@ -296,7 +296,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								"ofType": nil,
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 					},
 					"inputFields":   nil,
@@ -314,42 +314,42 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 						map[string]interface{}{
 							"name":              "SCALAR",
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name":              "OBJECT",
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name":              "INTERFACE",
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name":              "UNION",
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name":              "ENUM",
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name":              "INPUT_OBJECT",
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name":              "LIST",
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name":              "NON_NULL",
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 					},
 					"possibleTypes": nil,
@@ -389,7 +389,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "description",
@@ -400,7 +400,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								"ofType": nil,
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "args",
@@ -422,7 +422,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "type",
@@ -437,7 +437,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "isDeprecated",
@@ -452,7 +452,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "deprecationReason",
@@ -463,7 +463,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								"ofType": nil,
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 					},
 					"inputFields":   nil,
@@ -488,7 +488,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "description",
@@ -499,7 +499,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								"ofType": nil,
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "type",
@@ -514,7 +514,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "defaultValue",
@@ -525,7 +525,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								"ofType": nil,
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 					},
 					"inputFields":   nil,
@@ -550,7 +550,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "description",
@@ -561,7 +561,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								"ofType": nil,
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "isDeprecated",
@@ -576,7 +576,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "deprecationReason",
@@ -587,7 +587,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								"ofType": nil,
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 					},
 					"inputFields":   nil,
@@ -612,7 +612,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "description",
@@ -623,7 +623,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								"ofType": nil,
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "locations",
@@ -645,7 +645,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "args",
@@ -667,7 +667,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 								},
 							},
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name": "onOperation",
@@ -730,37 +730,37 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 						map[string]interface{}{
 							"name":              "QUERY",
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name":              "MUTATION",
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name":              "SUBSCRIPTION",
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name":              "FIELD",
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name":              "FRAGMENT_DEFINITION",
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name":              "FRAGMENT_SPREAD",
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 						map[string]interface{}{
 							"name":              "INLINE_FRAGMENT",
 							"isDeprecated":      false,
-							"deprecationReason": "",
+							"deprecationReason": nil,
 						},
 					},
 					"possibleTypes": nil,
@@ -1023,7 +1023,7 @@ func TestIntrospection_IdentifiesDeprecatedFields(t *testing.T) {
 					map[string]interface{}{
 						"name":              "nonDeprecated",
 						"isDeprecated":      false,
-						"deprecationReason": "",
+						"deprecationReason": nil,
 					},
 					map[string]interface{}{
 						"name":              "deprecated",
@@ -1162,7 +1162,7 @@ func TestIntrospection_IdentifiesDeprecatedEnumValues(t *testing.T) {
 					map[string]interface{}{
 						"name":              "NONDEPRECATED",
 						"isDeprecated":      false,
-						"deprecationReason": "",
+						"deprecationReason": nil,
 					},
 					map[string]interface{}{
 						"name":              "DEPRECATED",
@@ -1172,7 +1172,7 @@ func TestIntrospection_IdentifiesDeprecatedEnumValues(t *testing.T) {
 					map[string]interface{}{
 						"name":              "ALSONONDEPRECATED",
 						"isDeprecated":      false,
-						"deprecationReason": "",
+						"deprecationReason": nil,
 					},
 				},
 			},

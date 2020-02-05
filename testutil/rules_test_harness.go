@@ -96,6 +96,9 @@ func init() {
 					"dogCommand": &graphql.ArgumentConfig{
 						Type: dogCommandEnum,
 					},
+					"nextDogCommand": &graphql.ArgumentConfig{
+						Type: dogCommandEnum,
+					},
 				},
 			},
 			"isHousetrained": &graphql.Field{
