@@ -23,6 +23,12 @@ func tinit(t *testing.T) graphql.Schema {
 						return "foo", nil
 					},
 				},
+				"erred": &graphql.Field{
+					Type: graphql.String,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return "", errors.New("ooops")
+					},
+				},
 			},
 		}),
 	})
@@ -303,6 +309,35 @@ func TestExtensionResolveFieldFinishFuncPanic(t *testing.T) {
 
 	if !reflect.DeepEqual(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
+func TestExtensionResolveFieldFinishFuncAfterError(t *testing.T) {
+	var fnErrs int
+	ext := newtestExt("testExt")
+	ext.resolveFieldDidStartFn = func(ctx context.Context, i *graphql.ResolveInfo) (context.Context, graphql.ResolveFieldFinishFunc) {
+		return ctx, func(v interface{}, err error) {
+			if err != nil {
+				fnErrs++
+			}
+		}
+	}
+
+	schema := tinit(t)
+	query := `query Example { erred }`
+	schema.AddExtensions(ext)
+
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+	})
+
+	if resErrs := len(result.Errors); resErrs != 1 {
+		t.Errorf("Incorrect number of returned result errors: %d", resErrs)
+	}
+
+	if fnErrs != 1 {
+		t.Errorf("Incorrect number of errors captured: %d", fnErrs)
 	}
 }
 
