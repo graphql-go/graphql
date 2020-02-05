@@ -111,7 +111,7 @@ func TestValidate_KnownArgumentNames_UnknownArgsAmongstKnownArgsWithSuggestions(
       }
     `, []gqlerrors.FormattedError{
 		testutil.RuleError(`Unknown argument "ddogCommand" on field "doesKnowCommand" of type "Dog". `+
-			`Did you mean "dogCommand"?`, 3, 25),
+			`Did you mean "dogCommand" or "nextDogCommand"?`, 3, 25),
 	})
 }
 func TestValidate_KnownArgumentNames_UnknownArgsDeeply(t *testing.T) {
