@@ -80,7 +80,7 @@ func init() {
 		PrimaryFunction: "Astromech",
 	}
 	Luke.Friends = append(Luke.Friends, []StarWarsChar{Han, Leia, Threepio, Artoo}...)
-	Vader.Friends = append(Luke.Friends, []StarWarsChar{Tarkin}...)
+	Vader.Friends = append(Vader.Friends, []StarWarsChar{Tarkin}...)
 	Han.Friends = append(Han.Friends, []StarWarsChar{Luke, Leia, Artoo}...)
 	Leia.Friends = append(Leia.Friends, []StarWarsChar{Luke, Han, Threepio, Artoo}...)
 	Tarkin.Friends = append(Tarkin.Friends, []StarWarsChar{Vader}...)
