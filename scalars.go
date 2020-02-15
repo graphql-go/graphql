@@ -547,6 +547,8 @@ func unserializeDateTime(value interface{}) interface{} {
 			return nil
 		}
 		return unserializeDateTime([]byte(*value))
+	case time.Time:
+		return value
 	default:
 		return nil
 	}
