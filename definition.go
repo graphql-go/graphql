@@ -339,6 +339,7 @@ type Object struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
 	IsTypeOf           IsTypeOfFn
+	Subscribe          SubscribeFn
 
 	typeConfig            ObjectConfig
 	initialisedFields     bool
@@ -368,12 +369,15 @@ type IsTypeOfFn func(p IsTypeOfParams) bool
 
 type InterfacesThunk func() []*Interface
 
+type SubscribeFn func(p ResolveParams) error
+
 type ObjectConfig struct {
 	Name        string      `json:"name"`
 	Interfaces  interface{} `json:"interfaces"`
 	Fields      interface{} `json:"fields"`
 	IsTypeOf    IsTypeOfFn  `json:"isTypeOf"`
 	Description string      `json:"description"`
+	Subscribe   SubscribeFn `json:"-"`
 }
 
 type FieldsThunk func() Fields
@@ -396,6 +400,7 @@ func NewObject(config ObjectConfig) *Object {
 	objectType.PrivateDescription = config.Description
 	objectType.IsTypeOf = config.IsTypeOf
 	objectType.typeConfig = config
+	objectType.Subscribe = config.Subscribe
 
 	return objectType
 }
@@ -535,6 +540,7 @@ func defineFieldMap(ttype Named, fieldMap Fields) (FieldDefinitionMap, error) {
 			Type:              field.Type,
 			Resolve:           field.Resolve,
 			DeprecationReason: field.DeprecationReason,
+			Subscribe:         field.Subscribe,
 		}
 
 		fieldDef.Args = []*Argument{}
@@ -602,10 +608,11 @@ type ResolveInfo struct {
 type Fields map[string]*Field
 
 type Field struct {
-	Name              string              `json:"name"` // used by graphlql-relay
+	Name              string              `json:"name"` // used by graphql-relay
 	Type              Output              `json:"type"`
 	Args              FieldConfigArgument `json:"args"`
 	Resolve           FieldResolveFn      `json:"-"`
+	Subscribe         SubscribeFn         `json:"-"`
 	DeprecationReason string              `json:"deprecationReason"`
 	Description       string              `json:"description"`
 }
@@ -625,6 +632,7 @@ type FieldDefinition struct {
 	Type              Output         `json:"type"`
 	Args              []*Argument    `json:"args"`
 	Resolve           FieldResolveFn `json:"-"`
+	Subscribe         SubscribeFn    `json:"-"`
 	DeprecationReason string         `json:"deprecationReason"`
 }
 
