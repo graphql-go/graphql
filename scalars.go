@@ -162,8 +162,6 @@ var Int = NewScalar(ScalarConfig{
 			if intValue, err := strconv.Atoi(valueAST.Value); err == nil {
 				return intValue
 			}
-		case *ast.NullValue:
-			return NullValue{}
 		}
 		return nil
 	},
@@ -301,8 +299,6 @@ var Float = NewScalar(ScalarConfig{
 			if floatValue, err := strconv.ParseFloat(valueAST.Value, 64); err == nil {
 				return floatValue
 			}
-		case *ast.NullValue:
-			return NullValue{}
 		}
 		return nil
 	},
@@ -330,8 +326,6 @@ var String = NewScalar(ScalarConfig{
 		switch valueAST := valueAST.(type) {
 		case *ast.StringValue:
 			return valueAST.Value
-		case *ast.NullValue:
-			return NullValue{}
 		}
 
 		return nil
@@ -492,8 +486,6 @@ var Boolean = NewScalar(ScalarConfig{
 		switch valueAST := valueAST.(type) {
 		case *ast.BooleanValue:
 			return valueAST.Value
-		case *ast.NullValue:
-			return NullValue{}
 		}
 		return nil
 	},
@@ -515,8 +507,6 @@ var ID = NewScalar(ScalarConfig{
 			return valueAST.Value
 		case *ast.StringValue:
 			return valueAST.Value
-		case *ast.NullValue:
-			return NullValue{}
 		}
 		return nil
 	},
@@ -576,8 +566,6 @@ var DateTime = NewScalar(ScalarConfig{
 		case *ast.StringValue:
 			return unserializeDateTime(valueAST.Value)
 			return valueAST.Value
-		case *ast.NullValue:
-			return NullValue{}
 		}
 		return nil
 	},

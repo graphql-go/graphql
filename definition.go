@@ -158,9 +158,6 @@ func GetNullable(ttype Type) Nullable {
 	return ttype
 }
 
-// NullValue to be able to detect if a value is set to null or if it is omitted
-type NullValue struct {}
-
 // Named interface for types that do not include modifiers like List or NonNull.
 type Named interface {
 	String() string
