@@ -1761,9 +1761,9 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 		itemType, _ := ttype.OfType.(Input)
 		if valueAST, ok := valueAST.(*ast.ListValue); ok {
 			messagesReduce := []string{}
-			for _, value := range valueAST.Values {
+			for idx, value := range valueAST.Values {
 				_, messages := isValidLiteralValue(itemType, value)
-				for idx, message := range messages {
+				for _, message := range messages {
 					messagesReduce = append(messagesReduce, fmt.Sprintf(`In element #%v: %v`, idx+1, message))
 				}
 			}
