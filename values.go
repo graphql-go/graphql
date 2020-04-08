@@ -83,9 +83,6 @@ func getArgumentValues(
 			tmp = argDef.DefaultValue
 		}
 		addValueOrNull(results, argDef.PrivateName, tmp)
-		//if !isNullish(tmp) {
-		//	results[argDef.PrivateName] = tmp
-		//}
 	}
 	return results
 }
