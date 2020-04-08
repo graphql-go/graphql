@@ -327,7 +327,6 @@ var String = NewScalar(ScalarConfig{
 		case *ast.StringValue:
 			return valueAST.Value
 		}
-
 		return nil
 	},
 })
@@ -565,7 +564,6 @@ var DateTime = NewScalar(ScalarConfig{
 		switch valueAST := valueAST.(type) {
 		case *ast.StringValue:
 			return unserializeDateTime(valueAST.Value)
-			return valueAST.Value
 		}
 		return nil
 	},
