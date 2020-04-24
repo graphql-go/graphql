@@ -623,8 +623,8 @@ func sameArguments(args1 []*ast.Argument, args2 []*ast.Argument) bool {
 			}
 			if arg1Name == arg2Name {
 				foundArgs2 = arg2
+				break
 			}
-			break
 		}
 		if foundArgs2 == nil {
 			return false
