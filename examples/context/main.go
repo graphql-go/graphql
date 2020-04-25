@@ -70,5 +70,5 @@ func init() {
 	if err != nil {
 		log.Fatalf("failed to create schema, error: %v", err)
 	}
-	Schema = s
+	Schema = *s
 }

@@ -91,7 +91,7 @@ func TestBindFields(t *testing.T) {
 			}
 		}
 	`
-	params := graphql.Params{Schema: schema, RequestString: query}
+	params := graphql.Params{Schema: *schema, RequestString: query}
 	r := graphql.Do(params)
 	if len(r.Errors) > 0 {
 		log.Fatalf("failed to execute graphql operation, errors: %+v", r.Errors)
@@ -152,7 +152,7 @@ func TestBindArg(t *testing.T) {
 			}
 		}
 	`
-	params := graphql.Params{Schema: schema, RequestString: query}
+	params := graphql.Params{Schema: *schema, RequestString: query}
 	r := graphql.Do(params)
 	if len(r.Errors) > 0 {
 		log.Fatalf("failed to execute graphql operation, errors: %+v", r.Errors)

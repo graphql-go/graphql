@@ -35,7 +35,7 @@ func tinit(t *testing.T) graphql.Schema {
 	if err != nil {
 		t.Fatalf("Error in schema %v", err.Error())
 	}
-	return schema
+	return *schema
 }
 
 func TestExtensionInitPanic(t *testing.T) {

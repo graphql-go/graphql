@@ -33,7 +33,7 @@ func WideSchemaWithXFieldsAndYItems(x int, y int) graphql.Schema {
 		Query: queryType,
 	})
 
-	return wideSchema
+	return *wideSchema
 }
 
 func generateXWideFields(x int) graphql.Fields {

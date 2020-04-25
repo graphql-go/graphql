@@ -103,7 +103,7 @@ var inputTypes = withModifiers([]graphql.Type{
 	someInputObject,
 })
 
-func schemaWithFieldType(ttype graphql.Output) (graphql.Schema, error) {
+func schemaWithFieldType(ttype graphql.Output) (*graphql.Schema, error) {
 	return graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
@@ -116,7 +116,7 @@ func schemaWithFieldType(ttype graphql.Output) (graphql.Schema, error) {
 		Types: []graphql.Type{ttype},
 	})
 }
-func schemaWithInputObject(ttype graphql.Input) (graphql.Schema, error) {
+func schemaWithInputObject(ttype graphql.Input) (*graphql.Schema, error) {
 	return graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "Query",
@@ -133,7 +133,7 @@ func schemaWithInputObject(ttype graphql.Input) (graphql.Schema, error) {
 		}),
 	})
 }
-func schemaWithObjectFieldOfType(fieldType graphql.Input) (graphql.Schema, error) {
+func schemaWithObjectFieldOfType(fieldType graphql.Input) (*graphql.Schema, error) {
 
 	badObjectType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "BadObject",
@@ -154,7 +154,7 @@ func schemaWithObjectFieldOfType(fieldType graphql.Input) (graphql.Schema, error
 		}),
 	})
 }
-func schemaWithObjectImplementingType(implementedType *graphql.Interface) (graphql.Schema, error) {
+func schemaWithObjectImplementingType(implementedType *graphql.Interface) (*graphql.Schema, error) {
 
 	badObjectType := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "BadObject",
@@ -177,7 +177,7 @@ func schemaWithObjectImplementingType(implementedType *graphql.Interface) (graph
 		Types: []graphql.Type{badObjectType},
 	})
 }
-func schemaWithUnionOfType(ttype *graphql.Object) (graphql.Schema, error) {
+func schemaWithUnionOfType(ttype *graphql.Object) (*graphql.Schema, error) {
 
 	badObjectType := graphql.NewUnion(graphql.UnionConfig{
 		Name: "BadUnion",
@@ -197,7 +197,7 @@ func schemaWithUnionOfType(ttype *graphql.Object) (graphql.Schema, error) {
 		}),
 	})
 }
-func schemaWithInterfaceFieldOfType(ttype graphql.Type) (graphql.Schema, error) {
+func schemaWithInterfaceFieldOfType(ttype graphql.Type) (*graphql.Schema, error) {
 
 	badInterfaceType := graphql.NewInterface(graphql.InterfaceConfig{
 		Name: "BadInterface",
@@ -218,7 +218,7 @@ func schemaWithInterfaceFieldOfType(ttype graphql.Type) (graphql.Schema, error) 
 		}),
 	})
 }
-func schemaWithArgOfType(ttype graphql.Type) (graphql.Schema, error) {
+func schemaWithArgOfType(ttype graphql.Type) (*graphql.Schema, error) {
 
 	badObject := graphql.NewObject(graphql.ObjectConfig{
 		Name: "BadObject",
@@ -244,7 +244,7 @@ func schemaWithArgOfType(ttype graphql.Type) (graphql.Schema, error) {
 		}),
 	})
 }
-func schemaWithInputFieldOfType(ttype graphql.Type) (graphql.Schema, error) {
+func schemaWithInputFieldOfType(ttype graphql.Type) (*graphql.Schema, error) {
 
 	badInputObject := graphql.NewInputObject(graphql.InputObjectConfig{
 		Name: "BadInputObject",

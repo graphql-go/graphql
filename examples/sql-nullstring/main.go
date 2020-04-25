@@ -178,11 +178,11 @@ query {
   }
 }`
 	r1 := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	r2 := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: queryWithArgument,
 	})
 	if len(r1.Errors) > 0 {

@@ -322,9 +322,11 @@ func init() {
 			},
 		},
 	})
-	StarWarsSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
+	schema, _ := graphql.NewSchema(graphql.SchemaConfig{
 		Query: queryType,
 	})
+
+	StarWarsSchema = *schema
 }
 
 func GetHuman(id int) StarWarsChar {

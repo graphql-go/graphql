@@ -80,7 +80,7 @@ func ListSchemaWithXItems(x int) graphql.Schema {
 		Query: queryType,
 	})
 
-	return colorSchema
+	return *colorSchema
 }
 
 var colors []color

@@ -400,7 +400,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_IgnoresUnknownFragments(t *testin
 var someBoxInterface *graphql.Interface
 var stringBoxObject *graphql.Object
 var intBoxObject *graphql.Object
-var schema graphql.Schema
+var schema *graphql.Schema
 
 func init() {
 	someBoxInterface = graphql.NewInterface(graphql.InterfaceConfig{
@@ -587,7 +587,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Conf
 	// type IntBox and the interface type NonNullStringBox1. While that
 	// condition does not exist in the current schema, the schema could
 	// expand in the future to allow this. Thus it is invalid.
-	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+	testutil.ExpectFailsRuleWithSchema(t, schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
           someBox {
             ...on IntBox {
@@ -609,7 +609,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Comp
 	// In this case `deepBox` returns `SomeBox` in the first usage, and
 	// `StringBox` in the second usage. These return types are not the same!
 	// however this is valid because the return *shapes* are compatible.
-	testutil.ExpectPassesRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+	testutil.ExpectPassesRuleWithSchema(t, schema, graphql.OverlappingFieldsCanBeMergedRule, `
       {
         someBox {
           ... on SomeBox {
@@ -627,7 +627,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Comp
     `)
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_DisallowsDifferingReturnTypesDespiteNoOverlap(t *testing.T) {
-	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+	testutil.ExpectFailsRuleWithSchema(t, schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
           someBox {
             ... on IntBox {
@@ -646,7 +646,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Disa
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_ReportsCorrectlyWhenANonExclusiveFollosAnExclusive(t *testing.T) {
-	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+	testutil.ExpectFailsRuleWithSchema(t, schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
           someBox {
             ... on IntBox {
@@ -700,7 +700,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Repo
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_DisallowsDifferingReturnTypeNullabilityDespiteNoOverlap(t *testing.T) {
-	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+	testutil.ExpectFailsRuleWithSchema(t, schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
           someBox {
             ... on NonNullStringBox1 {
@@ -719,7 +719,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Disa
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_DisallowsDifferingReturnTypeListDespiteNoOverlap(t *testing.T) {
-	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+	testutil.ExpectFailsRuleWithSchema(t, schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
           someBox {
             ... on IntBox {
@@ -741,7 +741,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Disa
 			10, 15),
 	})
 
-	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+	testutil.ExpectFailsRuleWithSchema(t, schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
           someBox {
             ... on IntBox {
@@ -764,7 +764,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Disa
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_DisallowsDifferingSubfields(t *testing.T) {
-	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+	testutil.ExpectFailsRuleWithSchema(t, schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
           someBox {
             ... on IntBox {
@@ -788,7 +788,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Disa
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_DisallowsDifferingDeepReturnTypesDespiteNoOverlap(t *testing.T) {
-	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+	testutil.ExpectFailsRuleWithSchema(t, schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
           someBox {
             ... on IntBox {
@@ -813,7 +813,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Disa
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_AllowsNonConflictingOverlappingTypes(t *testing.T) {
-	testutil.ExpectPassesRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+	testutil.ExpectPassesRuleWithSchema(t, schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
           someBox {
             ... on IntBox {
@@ -827,7 +827,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Allo
     `)
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_SameWrappedScalarReturnTypes(t *testing.T) {
-	testutil.ExpectPassesRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+	testutil.ExpectPassesRuleWithSchema(t, schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
           someBox {
             ...on NonNullStringBox1 {
@@ -841,7 +841,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Same
     `)
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_AllowsInlineTypelessFragments(t *testing.T) {
-	testutil.ExpectPassesRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+	testutil.ExpectPassesRuleWithSchema(t, schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
           a
           ... {
@@ -851,7 +851,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Allo
     `)
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_ComparesDeepTypesIncludingList(t *testing.T) {
-	testutil.ExpectFailsRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+	testutil.ExpectFailsRuleWithSchema(t, schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
           connection {
             ...edgeID
@@ -883,7 +883,7 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Comp
 	})
 }
 func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_IgnoresUnknownTypes(t *testing.T) {
-	testutil.ExpectPassesRuleWithSchema(t, &schema, graphql.OverlappingFieldsCanBeMergedRule, `
+	testutil.ExpectPassesRuleWithSchema(t, schema, graphql.OverlappingFieldsCanBeMergedRule, `
         {
           someBox {
             ...on UnknownType {

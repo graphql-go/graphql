@@ -20,7 +20,7 @@ func testSchema(t *testing.T, testField *graphql.Field) graphql.Schema {
 	if err != nil {
 		t.Fatalf("Invalid schema: %v", err)
 	}
-	return schema
+	return *schema
 }
 
 func TestExecutesResolveFunction_DefaultFunctionAccessesProperties(t *testing.T) {
