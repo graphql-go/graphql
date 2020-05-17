@@ -52,8 +52,7 @@ func TestSubscription(t *testing.T) {
 						return fmt.Sprintf("count=%v", p.Source), nil
 					},
 					Subscribe: func(p ResolveParams) (interface{}, error) {
-						sub := NewSubscriber(m, make(chan interface{}))
-						return sub, nil
+						return m, nil
 					},
 				},
 				"watch_should_fail": &Field{
@@ -74,53 +73,62 @@ func TestSubscription(t *testing.T) {
 		return
 	}
 
-	failIterator := Subscribe(SubscribeParams{
+	// test a subscribe that should fail due to no return value
+	fctx, fCancelFunc := context.WithCancel(context.Background())
+	fail := Subscribe(fctx, SubscribeParams{
 		Schema:   schema,
 		Document: document2,
 	})
 
-	// test a subscribe that should fail due to no return value
-	failIterator.ForEach(func(p ResultIteratorParams) {
-		if !p.Result.HasErrors() {
-			t.Errorf("subscribe failed to catch nil result from subscribe")
-			p.Done()
+	go func() {
+		for {
+			result := <-fail
+			if !result.HasErrors() {
+				t.Errorf("subscribe failed to catch nil result from subscribe")
+			}
+			fCancelFunc()
 			return
 		}
-		p.Done()
-		return
-	})
+	}()
 
-	resultIterator := Subscribe(SubscribeParams{
+	// test subscription data
+	resultCount := 0
+	rctx, rCancelFunc := context.WithCancel(context.Background())
+	results := Subscribe(rctx, SubscribeParams{
 		Schema:       schema,
 		Document:     document1,
 		ContextValue: context.Background(),
 	})
 
-	resultIterator.ForEach(func(p ResultIteratorParams) {
-		if p.Result.HasErrors() {
-			t.Errorf("subscribe error(s): %v", p.Result.Errors)
-			p.Done()
-			return
-		}
-
-		if p.Result.Data != nil {
-			data := p.Result.Data.(map[string]interface{})["watch_count"]
-			expected := fmt.Sprintf("count=%d", p.ResultCount)
-			actual := fmt.Sprintf("%v", data)
-			if actual != expected {
-				t.Errorf("subscription result error: expected %q, actual %q", expected, actual)
-				p.Done()
+	go func() {
+		for {
+			result := <-results
+			if result.HasErrors() {
+				t.Errorf("subscribe error(s): %v", result.Errors)
+				rCancelFunc()
 				return
 			}
 
-			// test the done func by quitting after 3 iterations
-			// the publisher will publish up to 5
-			if p.ResultCount >= int64(maxPublish-2) {
-				p.Done()
-				return
+			if result.Data != nil {
+				resultCount++
+				data := result.Data.(map[string]interface{})["watch_count"]
+				expected := fmt.Sprintf("count=%d", resultCount)
+				actual := fmt.Sprintf("%v", data)
+				if actual != expected {
+					t.Errorf("subscription result error: expected %q, actual %q", expected, actual)
+					rCancelFunc()
+					return
+				}
+
+				// test the done func by quitting after 3 iterations
+				// the publisher will publish up to 5
+				if resultCount >= maxPublish-2 {
+					rCancelFunc()
+					return
+				}
 			}
 		}
-	})
+	}()
 
 	// start publishing
 	go func() {
@@ -128,6 +136,7 @@ func TestSubscription(t *testing.T) {
 			time.Sleep(200 * time.Millisecond)
 			m <- i
 		}
+		close(m)
 	}()
 
 	// give time for the test to complete
