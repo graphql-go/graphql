@@ -62,7 +62,7 @@ func RunSubscribe(t *testing.T, test *TestSubscription) {
 
 	var results []*graphql.Result
 	for res := range c {
-		println(pretty(res))
+		t.Log(pretty(res))
 		results = append(results, res)
 	}
 

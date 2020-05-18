@@ -224,7 +224,6 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 			for {
 				select {
 				case <-p.Context.Done():
-					println("context cancelled")
 					// TODO send the context error to the resultchannel?
 					return
 
