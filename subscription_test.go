@@ -1,6 +1,7 @@
 package graphql_test
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -84,7 +85,7 @@ func TestSchemaSubscribe(t *testing.T) {
 			},
 		},
 		{
-			Name: "receive parse error",
+			Name: "receive query validation error",
 			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
 				Name: "Subscription",
 				Fields: graphql.Fields{
@@ -171,52 +172,30 @@ func TestSchemaSubscribe(t *testing.T) {
 			},
 		},
 
-		// {
-		// 	Name:   "parse_errors",
-		// 	Schema: schema,
-		// 	Query:  `invalid graphQL query`,
-		// 	ExpectedResults: []testutil.TestResponse{
-		// 		{
-		// 			Errors: []gqlerrors.FormattedError{{Message: ""}},
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	Name:   "subscribe_to_query_succeeds",
-		// 	Schema: schema,
-		// 	Query: `
-		// 		query Hello {
-		// 			hello
-		// 		}
-		// 	`,
-		// 	ExpectedResults: []testutil.TestResponse{
-		// 		{
-		// 			Data: json.RawMessage(`
-		// 				{
-		// 					"hello": "Hello world!"
-		// 				}
-		// 			`),
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	Name:   "subscription_resolver_can_error",
-		// 	Schema: schema,
-		// 	Query: `
-		// 		subscription onHelloSaid {
-		// 			helloSaid {
-		// 				msg
-		// 			}
-		// 		}
-		// 	`,
-		// 	ExpectedResults: []testutil.TestResponse{
-		// 		{
-		// 			Data: json.RawMessage(`
-		// 				null
-		// 			`),
-		// 			Errors: []gqlerrors.FormattedError{{Message: ""}}},
-		// 	},
-		// },
+		{
+			Name: "subscription_resolver_can_error",
+			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
+				Name: "Subscription",
+				Fields: graphql.Fields{
+					"should_error": &graphql.Field{
+						Type: graphql.String,
+						Subscribe: func(p graphql.ResolveParams) (interface{}, error) {
+							return nil, errors.New("got a subscribe error")
+						},
+					},
+				},
+			}),
+			Query: `
+				subscription {
+					should_error
+				}
+			`,
+			ExpectedResults: []testutil.TestResponse{
+				{
+					Errors: []string{"got a subscribe error"},
+				},
+			},
+		},
 		// {
 		// 	Name:   "subscription_resolver_can_error_optional_msg",
 		// 	Schema: schema,

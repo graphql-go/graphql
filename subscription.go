@@ -106,6 +106,7 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 	}
 	var resultChannel = make(chan *Result)
 	go func() {
+		defer close(resultChannel)
 		defer func() {
 			if err := recover(); err != nil {
 				e, ok := err.(error)
@@ -113,11 +114,10 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 					fmt.Println("strange program path")
 					return
 				}
-				sendOneResultAndClose(&Result{
+				resultChannel <- &Result{
 					Errors: gqlerrors.FormatErrors(e),
-				})
+				}
 			}
-			// close(resultChannel)
 			return
 		}()
 
@@ -132,17 +132,19 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 		})
 
 		if err != nil {
-			sendOneResultAndClose(&Result{
+			resultChannel <- &Result{
 				Errors: gqlerrors.FormatErrors(err),
-			})
+			}
+
 			return
 		}
 
 		operationType, err := getOperationRootType(p.Schema, exeContext.Operation)
 		if err != nil {
-			sendOneResultAndClose(&Result{
+			resultChannel <- &Result{
 				Errors: gqlerrors.FormatErrors(err),
-			})
+			}
+
 			return
 		}
 
@@ -163,18 +165,20 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 		fieldDef := getFieldDef(p.Schema, operationType, fieldName)
 
 		if fieldDef == nil {
-			sendOneResultAndClose(&Result{
+			resultChannel <- &Result{
 				Errors: gqlerrors.FormatErrors(fmt.Errorf("the subscription field %q is not defined", fieldName)),
-			})
+			}
+
 			return
 		}
 
 		resolveFn := fieldDef.Subscribe
 
 		if resolveFn == nil {
-			sendOneResultAndClose(&Result{
+			resultChannel <- &Result{
 				Errors: gqlerrors.FormatErrors(fmt.Errorf("the subscription function %q is not defined", fieldName)),
-			})
+			}
+
 			return
 		}
 		fieldPath := &ResponsePath{
@@ -202,16 +206,18 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 			Context: p.Context,
 		})
 		if err != nil {
-			sendOneResultAndClose(&Result{
+			resultChannel <- &Result{
 				Errors: gqlerrors.FormatErrors(err),
-			})
+			}
+
 			return
 		}
 
 		if fieldResult == nil {
-			sendOneResultAndClose(&Result{
+			resultChannel <- &Result{
 				Errors: gqlerrors.FormatErrors(fmt.Errorf("no field result")),
-			})
+			}
+
 			return
 		}
 
@@ -222,13 +228,13 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 				select {
 				case <-p.Context.Done():
 					println("context cancelled")
-					close(resultChannel)
+
 					// TODO send the context error to the resultchannel
 					return
 
 				case res, more := <-sub:
 					if !more {
-						close(resultChannel)
+
 						return
 					}
 					resultChannel <- mapSourceToResponse(res)
@@ -237,7 +243,7 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 		default:
 			fmt.Println(fieldResult)
 			resultChannel <- mapSourceToResponse(fieldResult)
-			close(resultChannel)
+
 			return
 		}
 	}()
