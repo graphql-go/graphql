@@ -110,6 +110,7 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 			if err := recover(); err != nil {
 				e, ok := err.(error)
 				if !ok {
+					fmt.Println("strange program path")
 					return
 				}
 				sendOneResultandClose(&Result{
@@ -217,16 +218,17 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 		switch fieldResult.(type) {
 		case chan interface{}:
 			sub := fieldResult.(chan interface{})
-			defer close(resultChannel)
 			for {
 				select {
 				case <-p.Context.Done():
 					println("context cancelled")
+					close(resultChannel)
 					// TODO send the context error to the resultchannel
 					return
 
 				case res, more := <-sub:
 					if !more {
+						close(resultChannel)
 						return
 					}
 					resultChannel <- mapSourceToResponse(res)

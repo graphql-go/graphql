@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 	"testing"
 
@@ -65,7 +64,7 @@ func RunSubscribe(t *testing.T, test *TestSubscription) {
 
 	var results []*graphql.Result
 	for res := range c {
-		fmt.Println(res)
+		println(pretty(res))
 		results = append(results, res)
 	}
 
@@ -138,4 +137,12 @@ func formatJSON(data string) ([]byte, error) {
 		return nil, err
 	}
 	return formatted, nil
+}
+
+func pretty(x interface{}) string {
+	got, err := json.MarshalIndent(x, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	return string(got)
 }

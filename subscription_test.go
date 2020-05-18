@@ -66,7 +66,7 @@ func TestSchemaSubscribe(t *testing.T) {
 					"sub_without_resolver": &graphql.Field{
 						Type:      graphql.String,
 						Subscribe: makeSubscribeToStringFunction([]string{"a", "b", "c"}),
-						Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						Resolve: func(p graphql.ResolveParams) (interface{}, error) { // TODO remove dummy resolver
 							return p.Source, nil
 						},
 					},
@@ -108,44 +108,46 @@ func TestSchemaSubscribe(t *testing.T) {
 				{Data: `{ "sub_with_resolver": "result=c" }`},
 			},
 		},
-		// {
-		// 	Name: "subscribe to a nested object",
-		// 	Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
-		// 		Name: "Subscription",
-		// 		Fields: graphql.Fields{
-		// 			"sub_with_object": &graphql.Field{
-		// 				Type: graphql.String,
-		// 				Subscribe: makeSubscribeToMapFunction([]map[string]interface{}{
-		// 					{
-		// 						"field": "hello",
-		// 						"obj": map[string]interface{}{
-		// 							"field": "hello",
-		// 						},
-		// 					},
-		// 					{
-		// 						"field": "bye",
-		// 						"obj": map[string]interface{}{
-		// 							"field": "bye",
-		// 						},
-		// 					},
-		// 				}),
-		// 			},
-		// 		},
-		// 	}),
-		// 	Query: `
-		// 		subscription onHelloSaid {
-		// 			sub_with_object {
-		// 				field
-		// 				obj {
-		// 					field
-		// 				}
-		// 			}
-		// 		}
-		// 	`,
-		// 	ExpectedResults: []testutil.TestResponse{
-		// 		{Data: `{ "sub_with_object": { "field": "hello", "obj": { "field": "hello" } } }`},
-		// 	},
-		// },
+		{
+			Name: "subscribe to a nested object",
+			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
+				Name: "Subscription",
+				Fields: graphql.Fields{
+					"sub_with_object": &graphql.Field{
+						Type: graphql.NewObject(graphql.ObjectConfig{
+							Name: "Obj",
+							Fields: graphql.Fields{
+								"field": &graphql.Field{
+									Type: graphql.String,
+								},
+							},
+						}),
+						Resolve: func(p graphql.ResolveParams) (interface{}, error) { // TODO remove dummy resolver
+							return p.Source, nil
+						},
+						Subscribe: makeSubscribeToMapFunction([]map[string]interface{}{
+							{
+								"field": "hello",
+							},
+							{
+								"field": "bye",
+							},
+						}),
+					},
+				},
+			}),
+			Query: `
+				subscription onHelloSaid {
+					sub_with_object {
+						field
+					}
+				}
+			`,
+			ExpectedResults: []testutil.TestResponse{
+				{Data: `{ "sub_with_object": { "field": "hello" } }`},
+				{Data: `{ "sub_with_object": { "field": "bye" } }`},
+			},
+		},
 
 		// {
 		// 	Name:   "parse_errors",
