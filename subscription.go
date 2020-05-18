@@ -41,14 +41,16 @@ func (self *SubscriptableSchema) Subscribe(ctx context.Context, queryString stri
 	to := make(chan interface{})
 	go func() {
 		defer close(to)
-		select {
-		case <-ctx.Done():
-			return
-		case res, more := <-c:
-			if !more {
+		for {
+			select {
+			case <-ctx.Done():
 				return
+			case res, more := <-c:
+				if !more {
+					return
+				}
+				to <- res
 			}
-			to <- res
 		}
 	}()
 	return to, nil
