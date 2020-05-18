@@ -5,66 +5,143 @@ import (
 	"fmt"
 
 	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/ast"
+	"github.com/graphql-go/graphql/language/parser"
+	"github.com/graphql-go/graphql/language/source"
 )
 
 // SubscribeParams parameters for subscribing
 type SubscribeParams struct {
-	Schema          Schema
-	Document        *ast.Document
-	RootValue       interface{}
-	ContextValue    context.Context
+	Schema        Schema
+	RequestString string
+	RootValue     interface{}
+	// ContextValue    context.Context
 	VariableValues  map[string]interface{}
 	OperationName   string
 	FieldResolver   FieldResolveFn
 	FieldSubscriber FieldResolveFn
 }
 
+// SubscriptableSchema implements `graphql-transport-ws` `GraphQLService` interface: https://github.com/graph-gophers/graphql-transport-ws/blob/40c0484322990a129cac2f2d2763c3315230280c/graphqlws/internal/connection/connection.go#L53
+type SubscriptableSchema struct {
+	Schema     Schema
+	RootObject map[string]interface{}
+}
+
+func (self *SubscriptableSchema) Subscribe(ctx context.Context, queryString string, operationName string, variables map[string]interface{}) (<-chan *Result, error) {
+	c := Subscribe(Params{
+		Schema:         self.Schema,
+		Context:        ctx,
+		OperationName:  operationName,
+		RequestString:  queryString,
+		RootObject:     self.RootObject,
+		VariableValues: variables,
+	})
+	return c, nil
+}
+
 // Subscribe performs a subscribe operation
-func Subscribe(ctx context.Context, p SubscribeParams) chan *Result {
+func Subscribe(p Params) chan *Result {
+
+	source := source.NewSource(&source.Source{
+		Body: []byte(p.RequestString),
+		Name: "GraphQL request",
+	})
+
+	// TODO run extensions hooks
+
+	// parse the source
+	AST, err := parser.Parse(parser.ParseParams{Source: source})
+	if err != nil {
+
+		// merge the errors from extensions and the original error from parser
+		return sendOneResultandClose(&Result{
+			Errors: gqlerrors.FormatErrors(err),
+		})
+	}
+
+	// validate document
+	validationResult := ValidateDocument(&p.Schema, AST, nil)
+
+	if !validationResult.IsValid {
+		// run validation finish functions for extensions
+		return sendOneResultandClose(&Result{
+			Errors: validationResult.Errors,
+		})
+
+	}
+	return ExecuteSubscription(ExecuteParams{
+		Schema:        p.Schema,
+		Root:          p.RootObject,
+		AST:           AST,
+		OperationName: p.OperationName,
+		Args:          p.VariableValues,
+		Context:       p.Context,
+	})
+}
+
+func sendOneResultandClose(res *Result) chan *Result {
 	resultChannel := make(chan *Result)
+	resultChannel <- res
+	close(resultChannel)
+	return resultChannel
+}
+
+func ExecuteSubscription(p ExecuteParams) chan *Result {
+
+	if p.Context == nil {
+		p.Context = context.Background()
+	}
+
+	// TODO run executionDidStart functions from extensions
 
 	var mapSourceToResponse = func(payload interface{}) *Result {
 		return Execute(ExecuteParams{
 			Schema:        p.Schema,
 			Root:          payload,
-			AST:           p.Document,
+			AST:           p.AST,
 			OperationName: p.OperationName,
-			Args:          p.VariableValues,
-			Context:       p.ContextValue,
+			Args:          p.Args,
+			Context:       p.Context,
 		})
 	}
-
+	var resultChannel = make(chan *Result)
 	go func() {
-		result := &Result{}
 		defer func() {
 			if err := recover(); err != nil {
-				result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
-				resultChannel <- result
+				e, ok := err.(error)
+				if !ok {
+					return
+				}
+				sendOneResultandClose(&Result{
+					Errors: gqlerrors.FormatErrors(e),
+				})
 			}
-			close(resultChannel)
+			// close(resultChannel)
+			return
 		}()
 
 		exeContext, err := buildExecutionContext(buildExecutionCtxParams{
 			Schema:        p.Schema,
-			Root:          p.RootValue,
-			AST:           p.Document,
+			Root:          p.Root,
+			AST:           p.AST,
 			OperationName: p.OperationName,
-			Args:          p.VariableValues,
-			Result:        result,
-			Context:       p.ContextValue,
+			Args:          p.Args,
+			Result:        &Result{}, // TODO what is this?
+			Context:       p.Context,
 		})
 
 		if err != nil {
-			result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
-			resultChannel <- result
+			sendOneResultandClose(&Result{
+				Errors: gqlerrors.FormatErrors(err),
+			})
 			return
 		}
 
 		operationType, err := getOperationRootType(p.Schema, exeContext.Operation)
 		if err != nil {
-			result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
-			resultChannel <- result
+			sendOneResultandClose(&Result{
+				Errors: gqlerrors.FormatErrors(err),
+			})
 			return
 		}
 
@@ -85,18 +162,19 @@ func Subscribe(ctx context.Context, p SubscribeParams) chan *Result {
 		fieldDef := getFieldDef(p.Schema, operationType, fieldName)
 
 		if fieldDef == nil {
-			err := fmt.Errorf("the subscription field %q is not defined", fieldName)
-			result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
-			resultChannel <- result
+			sendOneResultandClose(&Result{
+				Errors: gqlerrors.FormatErrors(fmt.Errorf("the subscription field %q is not defined", fieldName)),
+			})
 			return
 		}
 
-		resolveFn := p.FieldSubscriber
+		resolveFn := fieldDef.Subscribe
+
 		if resolveFn == nil {
-			resolveFn = DefaultResolveFn
-		}
-		if fieldDef.Subscribe != nil {
-			resolveFn = fieldDef.Subscribe
+			sendOneResultandClose(&Result{
+				Errors: gqlerrors.FormatErrors(fmt.Errorf("the subscription function %q is not defined", fieldName)),
+			})
+			return
 		}
 		fieldPath := &ResponsePath{
 			Key: responseName,
@@ -117,38 +195,47 @@ func Subscribe(ctx context.Context, p SubscribeParams) chan *Result {
 		}
 
 		fieldResult, err := resolveFn(ResolveParams{
-			Source:  p.RootValue,
+			Source:  p.Root,
 			Args:    args,
 			Info:    info,
-			Context: p.ContextValue,
+			Context: p.Context,
 		})
 		if err != nil {
-			result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
-			resultChannel <- result
+			sendOneResultandClose(&Result{
+				Errors: gqlerrors.FormatErrors(err),
+			})
 			return
 		}
 
 		if fieldResult == nil {
-			err := fmt.Errorf("no field result")
-			result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
-			resultChannel <- result
+			sendOneResultandClose(&Result{
+				Errors: gqlerrors.FormatErrors(fmt.Errorf("no field result")),
+			})
 			return
 		}
 
 		switch fieldResult.(type) {
 		case chan interface{}:
 			sub := fieldResult.(chan interface{})
+			defer close(resultChannel)
 			for {
 				select {
-				case <-ctx.Done():
+				case <-p.Context.Done():
+					println("context cancelled")
+					// TODO send the context error to the resultchannel
 					return
 
-				case res := <-sub:
+				case res, more := <-sub:
+					if !more {
+						return
+					}
 					resultChannel <- mapSourceToResponse(res)
 				}
 			}
 		default:
+			fmt.Println(fieldResult)
 			resultChannel <- mapSourceToResponse(fieldResult)
+			close(resultChannel)
 			return
 		}
 	}()
