@@ -22,11 +22,13 @@ type SubscribeParams struct {
 }
 
 // SubscriptableSchema implements `graphql-transport-ws` `GraphQLService` interface: https://github.com/graph-gophers/graphql-transport-ws/blob/40c0484322990a129cac2f2d2763c3315230280c/graphqlws/internal/connection/connection.go#L53
+// you can pass `SubscriptableSchema` to `graphql-transport-ws` `NewHandlerFunc`
 type SubscriptableSchema struct {
 	Schema     Schema
 	RootObject map[string]interface{}
 }
 
+// Subscribe method let you use SubscriptableSchema with graphql-transport-ws https://github.com/graph-gophers/graphql-transport-ws
 func (self *SubscriptableSchema) Subscribe(ctx context.Context, queryString string, operationName string, variables map[string]interface{}) (<-chan *Result, error) {
 	c := Subscribe(Params{
 		Schema:         self.Schema,
@@ -39,7 +41,8 @@ func (self *SubscriptableSchema) Subscribe(ctx context.Context, queryString stri
 	return c, nil
 }
 
-// Subscribe performs a subscribe operation
+// Subscribe performs a subscribe operation on the given query and schema
+// currently does not support extensions hooks
 func Subscribe(p Params) chan *Result {
 
 	source := source.NewSource(&source.Source{
@@ -80,12 +83,14 @@ func Subscribe(p Params) chan *Result {
 }
 
 func sendOneResultAndClose(res *Result) chan *Result {
-	resultChannel := make(chan *Result, 1) // TODO unbuffered channel does not pass errors, why?
+	resultChannel := make(chan *Result, 1)
 	resultChannel <- res
 	close(resultChannel)
 	return resultChannel
 }
 
+// ExecuteSubscription is similar to graphql.Execute but returns a channel instead of a Result
+// currently does not support extensions
 func ExecuteSubscription(p ExecuteParams) chan *Result {
 
 	if p.Context == nil {
@@ -175,7 +180,6 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 			resultChannel <- &Result{
 				Errors: gqlerrors.FormatErrors(fmt.Errorf("the subscription function %q is not defined", fieldName)),
 			}
-
 			return
 		}
 		fieldPath := &ResponsePath{
@@ -229,7 +233,6 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 
 				case res, more := <-sub:
 					if !more {
-
 						return
 					}
 					resultChannel <- mapSourceToResponse(res)
