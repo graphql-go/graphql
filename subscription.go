@@ -54,7 +54,7 @@ func Subscribe(p Params) chan *Result {
 	if err != nil {
 
 		// merge the errors from extensions and the original error from parser
-		return sendOneResultandClose(&Result{
+		return sendOneResultAndClose(&Result{
 			Errors: gqlerrors.FormatErrors(err),
 		})
 	}
@@ -64,7 +64,7 @@ func Subscribe(p Params) chan *Result {
 
 	if !validationResult.IsValid {
 		// run validation finish functions for extensions
-		return sendOneResultandClose(&Result{
+		return sendOneResultAndClose(&Result{
 			Errors: validationResult.Errors,
 		})
 
@@ -79,8 +79,8 @@ func Subscribe(p Params) chan *Result {
 	})
 }
 
-func sendOneResultandClose(res *Result) chan *Result {
-	resultChannel := make(chan *Result)
+func sendOneResultAndClose(res *Result) chan *Result {
+	resultChannel := make(chan *Result, 1) // TODO unbuffered channel does not pass errors, why?
 	resultChannel <- res
 	close(resultChannel)
 	return resultChannel
@@ -113,7 +113,7 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 					fmt.Println("strange program path")
 					return
 				}
-				sendOneResultandClose(&Result{
+				sendOneResultAndClose(&Result{
 					Errors: gqlerrors.FormatErrors(e),
 				})
 			}
@@ -132,7 +132,7 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 		})
 
 		if err != nil {
-			sendOneResultandClose(&Result{
+			sendOneResultAndClose(&Result{
 				Errors: gqlerrors.FormatErrors(err),
 			})
 			return
@@ -140,7 +140,7 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 
 		operationType, err := getOperationRootType(p.Schema, exeContext.Operation)
 		if err != nil {
-			sendOneResultandClose(&Result{
+			sendOneResultAndClose(&Result{
 				Errors: gqlerrors.FormatErrors(err),
 			})
 			return
@@ -163,7 +163,7 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 		fieldDef := getFieldDef(p.Schema, operationType, fieldName)
 
 		if fieldDef == nil {
-			sendOneResultandClose(&Result{
+			sendOneResultAndClose(&Result{
 				Errors: gqlerrors.FormatErrors(fmt.Errorf("the subscription field %q is not defined", fieldName)),
 			})
 			return
@@ -172,7 +172,7 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 		resolveFn := fieldDef.Subscribe
 
 		if resolveFn == nil {
-			sendOneResultandClose(&Result{
+			sendOneResultAndClose(&Result{
 				Errors: gqlerrors.FormatErrors(fmt.Errorf("the subscription function %q is not defined", fieldName)),
 			})
 			return
@@ -202,14 +202,14 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 			Context: p.Context,
 		})
 		if err != nil {
-			sendOneResultandClose(&Result{
+			sendOneResultAndClose(&Result{
 				Errors: gqlerrors.FormatErrors(err),
 			})
 			return
 		}
 
 		if fieldResult == nil {
-			sendOneResultandClose(&Result{
+			sendOneResultAndClose(&Result{
 				Errors: gqlerrors.FormatErrors(fmt.Errorf("no field result")),
 			})
 			return

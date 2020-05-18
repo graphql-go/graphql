@@ -9,13 +9,12 @@ import (
 	"testing"
 
 	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
 )
 
 // TestResponse models the expected response
 type TestResponse struct {
 	Data   string
-	Errors []gqlerrors.FormattedError
+	Errors []string
 }
 
 // TestSubscription is a GraphQL test case to be used with RunSubscribe.
@@ -26,7 +25,6 @@ type TestSubscription struct {
 	OperationName   string
 	Variables       map[string]interface{}
 	ExpectedResults []TestResponse
-	ExpectedErr     error
 }
 
 // RunSubscribes runs the given GraphQL subscription test cases as subtests.
@@ -75,15 +73,18 @@ func RunSubscribe(t *testing.T, test *TestSubscription) {
 		}
 		res := results[i]
 
-		checkErrorStrings(t, expected.Errors, res.Errors)
-
-		resData, err := json.MarshalIndent(res.Data, "", "  ")
-		if err != nil {
-			t.Fatal(err)
+		var errs []string
+		for _, err := range res.Errors {
+			errs = append(errs, err.Message)
 		}
+		checkErrorStrings(t, expected.Errors, errs)
+		if expected.Data == "" {
+			continue
+		}
+
 		got, err := json.MarshalIndent(res.Data, "", "  ")
 		if err != nil {
-			t.Fatalf("got: invalid JSON: %s; raw: %s", err, resData)
+			t.Fatalf("got: invalid JSON: %s; raw: %s", err, got)
 		}
 
 		if err != nil {
@@ -102,19 +103,19 @@ func RunSubscribe(t *testing.T, test *TestSubscription) {
 	}
 }
 
-func checkErrorStrings(t *testing.T, expected, actual []gqlerrors.FormattedError) {
+func checkErrorStrings(t *testing.T, expected, actual []string) {
 	expectedCount, actualCount := len(expected), len(actual)
 
 	if expectedCount != actualCount {
-		t.Fatalf("unexpected number of errors: want %d, got %d", expectedCount, actualCount)
+		t.Fatalf("unexpected number of errors: want `%d`, got `%d`", expectedCount, actualCount)
 	}
 
 	if expectedCount > 0 {
 		for i, want := range expected {
 			got := actual[i]
 
-			if got.Error() != want.Error() {
-				t.Fatalf("unexpected error: got %+v, want %+v", got, want)
+			if got != want {
+				t.Fatalf("unexpected error: got `%+v`, want `%+v`", got, want)
 			}
 		}
 

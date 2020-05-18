@@ -84,13 +84,34 @@ func TestSchemaSubscribe(t *testing.T) {
 			},
 		},
 		{
+			Name: "receive parse error",
+			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
+				Name: "Subscription",
+				Fields: graphql.Fields{
+					"sub_without_resolver": &graphql.Field{
+						Type:      graphql.String,
+						Subscribe: makeSubscribeToStringFunction([]string{"a", "b", "c"}),
+					},
+				},
+			}),
+			Query: `
+				subscription onHelloSaid {
+					sub_without_resolver
+					xxx
+				}
+			`,
+			ExpectedResults: []testutil.TestResponse{
+				{Errors: []string{"Cannot query field \"xxx\" on type \"Subscription\"."}},
+			},
+		},
+		{
 			Name: "subscribe with resolver changes output",
 			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
 				Name: "Subscription",
 				Fields: graphql.Fields{
 					"sub_with_resolver": &graphql.Field{
 						Type:      graphql.String,
-						Subscribe: makeSubscribeToStringFunction([]string{"a", "b", "c"}),
+						Subscribe: makeSubscribeToStringFunction([]string{"a", "b", "c", "d"}),
 						Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 							return fmt.Sprintf("result=%v", p.Source), nil
 						},
@@ -106,6 +127,7 @@ func TestSchemaSubscribe(t *testing.T) {
 				{Data: `{ "sub_with_resolver": "result=a" }`},
 				{Data: `{ "sub_with_resolver": "result=b" }`},
 				{Data: `{ "sub_with_resolver": "result=c" }`},
+				{Data: `{ "sub_with_resolver": "result=d" }`},
 			},
 		},
 		{
