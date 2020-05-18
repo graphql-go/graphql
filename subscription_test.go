@@ -155,6 +155,9 @@ func TestSchemaSubscribe(t *testing.T) {
 							{
 								"field": "bye",
 							},
+							{
+								"field": nil,
+							},
 						}),
 					},
 				},
@@ -169,6 +172,7 @@ func TestSchemaSubscribe(t *testing.T) {
 			ExpectedResults: []testutil.TestResponse{
 				{Data: `{ "sub_with_object": { "field": "hello" } }`},
 				{Data: `{ "sub_with_object": { "field": "bye" } }`},
+				{Data: `{ "sub_with_object": { "field": null } }`},
 			},
 		},
 
@@ -196,60 +200,28 @@ func TestSchemaSubscribe(t *testing.T) {
 				},
 			},
 		},
-		// {
-		// 	Name:   "subscription_resolver_can_error_optional_msg",
-		// 	Schema: schema,
-		// 	Query: `
-		// 		subscription onHelloSaid {
-		// 			helloSaidNullable {
-		// 				msg
-		// 			}
-		// 		}
-		// 	`,
-		// 	ExpectedResults: []testutil.TestResponse{
-		// 		{
-		// 			Data: json.RawMessage(`
-		// 				{
-		// 					"helloSaidNullable": {
-		// 						"msg": null
-		// 					}
-		// 				}
-		// 			`),
-		// 			Errors: []gqlerrors.FormattedError{{Message: ""}}},
-		// 	},
-		// },
-		// {
-		// 	Name:   "subscription_resolver_can_error_optional_event",
-		// 	Schema: schema,
-		// 	Query: `
-		// 		subscription onHelloSaid {
-		// 			helloSaidNullable {
-		// 				msg
-		// 			}
-		// 		}
-		// 	`,
-		// 	ExpectedResults: []testutil.TestResponse{
-		// 		{
-		// 			Data: json.RawMessage(`
-		// 				{
-		// 					"helloSaidNullable": null
-		// 				}
-		// 			`),
-		// 			Errors: []gqlerrors.FormattedError{{Message: ""}}},
-		// 	},
-		// },
-		// {
-		// 	Name:   "schema_without_resolver_errors",
-		// 	Schema: schema,
-		// 	Query: `
-		// 		subscription onHelloSaid {
-		// 			helloSaid {
-		// 				msg
-		// 			}
-		// 		}
-		// 	`,
-		// 	ExpectedErr: errors.New("schema created without resolver, can not subscribe"),
-		// },
+
+		{
+			Name: "schema_without_subscribe_errors",
+			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
+				Name: "Subscription",
+				Fields: graphql.Fields{
+					"should_error": &graphql.Field{
+						Type: graphql.String,
+					},
+				},
+			}),
+			Query: `
+				subscription {
+					should_error
+				}
+			`,
+			ExpectedResults: []testutil.TestResponse{
+				{
+					Errors: []string{"the subscription function \"should_error\" is not defined"},
+				},
+			},
+		},
 	})
 }
 

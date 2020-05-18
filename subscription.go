@@ -228,8 +228,7 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 				select {
 				case <-p.Context.Done():
 					println("context cancelled")
-
-					// TODO send the context error to the resultchannel
+					// TODO send the context error to the resultchannel?
 					return
 
 				case res, more := <-sub:
@@ -243,7 +242,6 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 		default:
 			fmt.Println(fieldResult)
 			resultChannel <- mapSourceToResponse(fieldResult)
-
 			return
 		}
 	}()
