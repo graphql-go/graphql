@@ -29,7 +29,7 @@ type SubscriptableSchema struct {
 }
 
 // Subscribe method let you use SubscriptableSchema with graphql-transport-ws https://github.com/graph-gophers/graphql-transport-ws
-func (self *SubscriptableSchema) Subscribe(ctx context.Context, queryString string, operationName string, variables map[string]interface{}) (<-chan *Result, error) {
+func (self *SubscriptableSchema) Subscribe(ctx context.Context, queryString string, operationName string, variables map[string]interface{}) (<-chan interface{}, error) {
 	c := Subscribe(Params{
 		Schema:         self.Schema,
 		Context:        ctx,
@@ -38,7 +38,20 @@ func (self *SubscriptableSchema) Subscribe(ctx context.Context, queryString stri
 		RootObject:     self.RootObject,
 		VariableValues: variables,
 	})
-	return c, nil
+	to := make(chan interface{})
+	go func() {
+		defer close(to)
+		select {
+		case <-ctx.Done():
+			return
+		case res, more := <-c:
+			if !more {
+				return
+			}
+			to <- res
+		}
+	}()
+	return to, nil
 }
 
 // Subscribe performs a subscribe operation on the given query and schema
