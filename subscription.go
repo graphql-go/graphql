@@ -92,8 +92,6 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 		p.Context = context.Background()
 	}
 
-	// TODO run executionDidStart functions from extensions
-
 	var mapSourceToResponse = func(payload interface{}) *Result {
 		return Execute(ExecuteParams{
 			Schema:        p.Schema,
@@ -127,7 +125,6 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 			AST:           p.AST,
 			OperationName: p.OperationName,
 			Args:          p.Args,
-			Result:        &Result{}, // TODO what is this?
 			Context:       p.Context,
 		})
 
