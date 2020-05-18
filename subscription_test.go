@@ -9,53 +9,6 @@ import (
 	"github.com/graphql-go/graphql/testutil"
 )
 
-func makeSubscribeToStringFunction(elements []string) func(p graphql.ResolveParams) (interface{}, error) {
-	return func(p graphql.ResolveParams) (interface{}, error) {
-		c := make(chan interface{})
-		go func() {
-			for _, r := range elements {
-				select {
-				case <-p.Context.Done():
-					close(c)
-					return
-				case c <- r:
-				}
-			}
-			close(c)
-		}()
-		return c, nil
-	}
-}
-
-func makeSubscribeToMapFunction(elements []map[string]interface{}) func(p graphql.ResolveParams) (interface{}, error) {
-	return func(p graphql.ResolveParams) (interface{}, error) {
-		c := make(chan interface{})
-		go func() {
-			for _, r := range elements {
-				select {
-				case <-p.Context.Done():
-					close(c)
-					return
-				case c <- r:
-				}
-			}
-			close(c)
-		}()
-		return c, nil
-	}
-}
-
-func makeSubscriptionSchema(t *testing.T, c graphql.ObjectConfig) graphql.Schema {
-	schema, err := graphql.NewSchema(graphql.SchemaConfig{
-		Query:        dummyQuery,
-		Subscription: graphql.NewObject(c),
-	})
-	if err != nil {
-		t.Errorf("failed to create schema: %v", err)
-	}
-	return schema
-}
-
 func TestSchemaSubscribe(t *testing.T) {
 
 	testutil.RunSubscribes(t, []*testutil.TestSubscription{
@@ -200,7 +153,6 @@ func TestSchemaSubscribe(t *testing.T) {
 				},
 			},
 		},
-
 		{
 			Name: "schema_without_subscribe_errors",
 			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
@@ -225,54 +177,52 @@ func TestSchemaSubscribe(t *testing.T) {
 	})
 }
 
-// func TestRootOperations_invalidSubscriptionSchema(t *testing.T) {
-// 	type args struct {
-// 		Schema string
-// 	}
-// 	type want struct {
-// 		Error string
-// 	}
-// 	testTable := map[string]struct {
-// 		Args args
-// 		Want want
-// 	}{
-// 		"Subscription as incorrect type": {
-// 			Args: args{
-// 				Schema: `
-// 					schema {
-// 						query: Query
-// 						subscription: String
-// 					}
-// 					type Query {
-// 						thing: String
-// 					}
-// 				`,
-// 			},
-// 			Want: want{Error: `root operation "subscription" must be an OBJECT`},
-// 		},
-// 		"Subscription declared by schema, but type not present": {
-// 			Args: args{
-// 				Schema: `
-// 					schema {
-// 						query: Query
-// 						subscription: Subscription
-// 					}
-// 					type Query {
-// 						hello: String!
-// 					}
-// 				`,
-// 			},
-// 			Want: want{Error: `graphql: type "Subscription" not found`},
-// 		},
-// 	}
+func makeSubscribeToStringFunction(elements []string) func(p graphql.ResolveParams) (interface{}, error) {
+	return func(p graphql.ResolveParams) (interface{}, error) {
+		c := make(chan interface{})
+		go func() {
+			for _, r := range elements {
+				select {
+				case <-p.Context.Done():
+					close(c)
+					return
+				case c <- r:
+				}
+			}
+			close(c)
+		}()
+		return c, nil
+	}
+}
 
-// 	for name, tt := range testTable {
-// 		tt := tt
-// 		t.Run(name, func(t *testing.T) {
-// 			t.Log(tt.Args.Schema) // TODO do something
-// 		})
-// 	}
-// }
+func makeSubscribeToMapFunction(elements []map[string]interface{}) func(p graphql.ResolveParams) (interface{}, error) {
+	return func(p graphql.ResolveParams) (interface{}, error) {
+		c := make(chan interface{})
+		go func() {
+			for _, r := range elements {
+				select {
+				case <-p.Context.Done():
+					close(c)
+					return
+				case c <- r:
+				}
+			}
+			close(c)
+		}()
+		return c, nil
+	}
+}
+
+func makeSubscriptionSchema(t *testing.T, c graphql.ObjectConfig) graphql.Schema {
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query:        dummyQuery,
+		Subscription: graphql.NewObject(c),
+	})
+	if err != nil {
+		t.Errorf("failed to create schema: %v", err)
+	}
+	return schema
+}
 
 var dummyQuery = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Query",
