@@ -57,6 +57,7 @@ func (self *SubscriptableSchema) Subscribe(ctx context.Context, queryString stri
 }
 
 // Subscribe performs a subscribe operation on the given query and schema
+// To finish a subscription you can simply close the channel from inside the `Subscribe` function
 // currently does not support extensions hooks
 func Subscribe(p Params) chan *Result {
 
