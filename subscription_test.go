@@ -34,7 +34,7 @@ func TestSchemaSubscribe(t *testing.T) {
 				},
 			}),
 			Query: `
-				subscription onHelloSaid {
+				subscription {
 					sub_without_resolver
 				}
 			`,
@@ -59,7 +59,7 @@ func TestSchemaSubscribe(t *testing.T) {
 				},
 			}),
 			Query: `
-				subscription onHelloSaid {
+				subscription {
 					sub_with_resolver
 				}
 			`,
@@ -81,13 +81,35 @@ func TestSchemaSubscribe(t *testing.T) {
 				},
 			}),
 			Query: `
-				subscription onHelloSaid {
+				subscription {
 					sub_without_resolver
 					xxx
 				}
 			`,
 			ExpectedResults: []testutil.TestResponse{
 				{Errors: []string{"Cannot query field \"xxx\" on type \"Subscription\"."}},
+			},
+		},
+		{
+			Name: "panic inside subscribe is recovered",
+			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
+				Name: "Subscription",
+				Fields: graphql.Fields{
+					"should_error": &graphql.Field{
+						Type: graphql.String,
+						Subscribe: func(p graphql.ResolveParams) (interface{}, error) {
+							panic(errors.New("got a panic error"))
+						},
+					},
+				},
+			}),
+			Query: `
+				subscription {
+					should_error
+				}
+			`,
+			ExpectedResults: []testutil.TestResponse{
+				{Errors: []string{"got a panic error"}},
 			},
 		},
 		{
@@ -105,7 +127,7 @@ func TestSchemaSubscribe(t *testing.T) {
 				},
 			}),
 			Query: `
-				subscription onHelloSaid {
+				subscription {
 					sub_with_resolver
 				}
 			`,
@@ -148,7 +170,7 @@ func TestSchemaSubscribe(t *testing.T) {
 				},
 			}),
 			Query: `
-				subscription onHelloSaid {
+				subscription {
 					sub_with_object {
 						field
 					}
