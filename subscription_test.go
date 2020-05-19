@@ -1,144 +1,287 @@
-package graphql
+package graphql_test
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"testing"
-	"time"
 
-	"github.com/graphql-go/graphql/language/parser"
-	"github.com/graphql-go/graphql/language/source"
+	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/testutil"
 )
 
-func TestSubscription(t *testing.T) {
-	var maxPublish = 5
-	m := make(chan interface{})
+func TestSchemaSubscribe(t *testing.T) {
 
-	source1 := source.NewSource(&source.Source{
-		Body: []byte(`subscription {
-			watch_count
-		}`),
-		Name: "GraphQL request",
-	})
-
-	source2 := source.NewSource(&source.Source{
-		Body: []byte(`subscription {
-			watch_should_fail
-		}`),
-		Name: "GraphQL request",
-	})
-
-	document1, _ := parser.Parse(parser.ParseParams{Source: source1})
-	document2, _ := parser.Parse(parser.ParseParams{Source: source2})
-
-	schema, err := NewSchema(SchemaConfig{
-		Query: NewObject(ObjectConfig{
-			Name: "Query",
-			Fields: Fields{
-				"hello": &Field{
-					Type: String,
-					Resolve: func(p ResolveParams) (interface{}, error) {
-						return "world", nil
+	testutil.RunSubscribes(t, []*testutil.TestSubscription{
+		{
+			Name: "subscribe without resolver",
+			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
+				Name: "Subscription",
+				Fields: graphql.Fields{
+					"sub_without_resolver": &graphql.Field{
+						Type: graphql.String,
+						Subscribe: makeSubscribeToMapFunction([]map[string]interface{}{
+							{
+								"sub_without_resolver": "a",
+							},
+							{
+								"sub_without_resolver": "b",
+							},
+							{
+								"sub_without_resolver": "c",
+							},
+						}),
 					},
+				},
+			}),
+			Query: `
+				subscription {
+					sub_without_resolver
+				}
+			`,
+			ExpectedResults: []testutil.TestResponse{
+				{Data: `{ "sub_without_resolver": "a" }`},
+				{Data: `{ "sub_without_resolver": "b" }`},
+				{Data: `{ "sub_without_resolver": "c" }`},
+			},
+		},
+		{
+			Name: "subscribe with resolver",
+			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
+				Name: "Subscription",
+				Fields: graphql.Fields{
+					"sub_with_resolver": &graphql.Field{
+						Type: graphql.String,
+						Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+							return p.Source, nil
+						},
+						Subscribe: makeSubscribeToStringFunction([]string{"a", "b", "c"}),
+					},
+				},
+			}),
+			Query: `
+				subscription {
+					sub_with_resolver
+				}
+			`,
+			ExpectedResults: []testutil.TestResponse{
+				{Data: `{ "sub_with_resolver": "a" }`},
+				{Data: `{ "sub_with_resolver": "b" }`},
+				{Data: `{ "sub_with_resolver": "c" }`},
+			},
+		},
+		{
+			Name: "receive query validation error",
+			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
+				Name: "Subscription",
+				Fields: graphql.Fields{
+					"sub_without_resolver": &graphql.Field{
+						Type:      graphql.String,
+						Subscribe: makeSubscribeToStringFunction([]string{"a", "b", "c"}),
+					},
+				},
+			}),
+			Query: `
+				subscription {
+					sub_without_resolver
+					xxx
+				}
+			`,
+			ExpectedResults: []testutil.TestResponse{
+				{Errors: []string{"Cannot query field \"xxx\" on type \"Subscription\"."}},
+			},
+		},
+		{
+			Name: "panic inside subscribe is recovered",
+			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
+				Name: "Subscription",
+				Fields: graphql.Fields{
+					"should_error": &graphql.Field{
+						Type: graphql.String,
+						Subscribe: func(p graphql.ResolveParams) (interface{}, error) {
+							panic(errors.New("got a panic error"))
+						},
+					},
+				},
+			}),
+			Query: `
+				subscription {
+					should_error
+				}
+			`,
+			ExpectedResults: []testutil.TestResponse{
+				{Errors: []string{"got a panic error"}},
+			},
+		},
+		{
+			Name: "subscribe with resolver changes output",
+			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
+				Name: "Subscription",
+				Fields: graphql.Fields{
+					"sub_with_resolver": &graphql.Field{
+						Type:      graphql.String,
+						Subscribe: makeSubscribeToStringFunction([]string{"a", "b", "c", "d"}),
+						Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+							return fmt.Sprintf("result=%v", p.Source), nil
+						},
+					},
+				},
+			}),
+			Query: `
+				subscription {
+					sub_with_resolver
+				}
+			`,
+			ExpectedResults: []testutil.TestResponse{
+				{Data: `{ "sub_with_resolver": "result=a" }`},
+				{Data: `{ "sub_with_resolver": "result=b" }`},
+				{Data: `{ "sub_with_resolver": "result=c" }`},
+				{Data: `{ "sub_with_resolver": "result=d" }`},
+			},
+		},
+		{
+			Name: "subscribe to a nested object",
+			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
+				Name: "Subscription",
+				Fields: graphql.Fields{
+					"sub_with_object": &graphql.Field{
+						Type: graphql.NewObject(graphql.ObjectConfig{
+							Name: "Obj",
+							Fields: graphql.Fields{
+								"field": &graphql.Field{
+									Type: graphql.String,
+								},
+							},
+						}),
+						Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+							return p.Source, nil
+						},
+						Subscribe: makeSubscribeToMapFunction([]map[string]interface{}{
+							{
+								"field": "hello",
+							},
+							{
+								"field": "bye",
+							},
+							{
+								"field": nil,
+							},
+						}),
+					},
+				},
+			}),
+			Query: `
+				subscription {
+					sub_with_object {
+						field
+					}
+				}
+			`,
+			ExpectedResults: []testutil.TestResponse{
+				{Data: `{ "sub_with_object": { "field": "hello" } }`},
+				{Data: `{ "sub_with_object": { "field": "bye" } }`},
+				{Data: `{ "sub_with_object": { "field": null } }`},
+			},
+		},
+
+		{
+			Name: "subscription_resolver_can_error",
+			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
+				Name: "Subscription",
+				Fields: graphql.Fields{
+					"should_error": &graphql.Field{
+						Type: graphql.String,
+						Subscribe: func(p graphql.ResolveParams) (interface{}, error) {
+							return nil, errors.New("got a subscribe error")
+						},
+					},
+				},
+			}),
+			Query: `
+				subscription {
+					should_error
+				}
+			`,
+			ExpectedResults: []testutil.TestResponse{
+				{
+					Errors: []string{"got a subscribe error"},
 				},
 			},
-		}),
-		Subscription: NewObject(ObjectConfig{
-			Name: "Subscription",
-			Fields: Fields{
-				"watch_count": &Field{
-					Type: String,
-					Resolve: func(p ResolveParams) (interface{}, error) {
-						return fmt.Sprintf("count=%v", p.Source), nil
-					},
-					Subscribe: func(p ResolveParams) (interface{}, error) {
-						return m, nil
+		},
+		{
+			Name: "schema_without_subscribe_errors",
+			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
+				Name: "Subscription",
+				Fields: graphql.Fields{
+					"should_error": &graphql.Field{
+						Type: graphql.String,
 					},
 				},
-				"watch_should_fail": &Field{
-					Type: String,
-					Resolve: func(p ResolveParams) (interface{}, error) {
-						return fmt.Sprintf("count=%v", p.Source), nil
-					},
-					Subscribe: func(p ResolveParams) (interface{}, error) {
-						return nil, nil
-					},
+			}),
+			Query: `
+				subscription {
+					should_error
+				}
+			`,
+			ExpectedResults: []testutil.TestResponse{
+				{
+					Errors: []string{"the subscription function \"should_error\" is not defined"},
 				},
 			},
-		}),
+		},
 	})
+}
 
+func makeSubscribeToStringFunction(elements []string) func(p graphql.ResolveParams) (interface{}, error) {
+	return func(p graphql.ResolveParams) (interface{}, error) {
+		c := make(chan interface{})
+		go func() {
+			for _, r := range elements {
+				select {
+				case <-p.Context.Done():
+					close(c)
+					return
+				case c <- r:
+				}
+			}
+			close(c)
+		}()
+		return c, nil
+	}
+}
+
+func makeSubscribeToMapFunction(elements []map[string]interface{}) func(p graphql.ResolveParams) (interface{}, error) {
+	return func(p graphql.ResolveParams) (interface{}, error) {
+		c := make(chan interface{})
+		go func() {
+			for _, r := range elements {
+				select {
+				case <-p.Context.Done():
+					close(c)
+					return
+				case c <- r:
+				}
+			}
+			close(c)
+		}()
+		return c, nil
+	}
+}
+
+func makeSubscriptionSchema(t *testing.T, c graphql.ObjectConfig) graphql.Schema {
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query:        dummyQuery,
+		Subscription: graphql.NewObject(c),
+	})
 	if err != nil {
 		t.Errorf("failed to create schema: %v", err)
-		return
 	}
-
-	// test a subscribe that should fail due to no return value
-	fctx, fCancelFunc := context.WithCancel(context.Background())
-	fail := Subscribe(fctx, SubscribeParams{
-		Schema:   schema,
-		Document: document2,
-	})
-
-	go func() {
-		for {
-			result := <-fail
-			if !result.HasErrors() {
-				t.Errorf("subscribe failed to catch nil result from subscribe")
-			}
-			fCancelFunc()
-			return
-		}
-	}()
-
-	// test subscription data
-	resultCount := 0
-	rctx, rCancelFunc := context.WithCancel(context.Background())
-	results := Subscribe(rctx, SubscribeParams{
-		Schema:       schema,
-		Document:     document1,
-		ContextValue: context.Background(),
-	})
-
-	go func() {
-		for {
-			result := <-results
-			if result.HasErrors() {
-				t.Errorf("subscribe error(s): %v", result.Errors)
-				rCancelFunc()
-				return
-			}
-
-			if result.Data != nil {
-				resultCount++
-				data := result.Data.(map[string]interface{})["watch_count"]
-				expected := fmt.Sprintf("count=%d", resultCount)
-				actual := fmt.Sprintf("%v", data)
-				if actual != expected {
-					t.Errorf("subscription result error: expected %q, actual %q", expected, actual)
-					rCancelFunc()
-					return
-				}
-
-				// test the done func by quitting after 3 iterations
-				// the publisher will publish up to 5
-				if resultCount >= maxPublish-2 {
-					rCancelFunc()
-					return
-				}
-			}
-		}
-	}()
-
-	// start publishing
-	go func() {
-		for i := 1; i <= maxPublish; i++ {
-			time.Sleep(200 * time.Millisecond)
-			m <- i
-		}
-		close(m)
-	}()
-
-	// give time for the test to complete
-	time.Sleep(1 * time.Second)
+	return schema
 }
+
+var dummyQuery = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Query",
+	Fields: graphql.Fields{
+
+		"hello": &graphql.Field{Type: graphql.String},
+	},
+})
