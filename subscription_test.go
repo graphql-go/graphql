@@ -18,11 +18,18 @@ func TestSchemaSubscribe(t *testing.T) {
 				Name: "Subscription",
 				Fields: graphql.Fields{
 					"sub_without_resolver": &graphql.Field{
-						Type:      graphql.String,
-						Subscribe: makeSubscribeToStringFunction([]string{"a", "b", "c"}),
-						Resolve: func(p graphql.ResolveParams) (interface{}, error) { // TODO remove dummy resolver
-							return p.Source, nil
-						},
+						Type: graphql.String,
+						Subscribe: makeSubscribeToMapFunction([]map[string]interface{}{
+							{
+								"sub_without_resolver": "a",
+							},
+							{
+								"sub_without_resolver": "b",
+							},
+							{
+								"sub_without_resolver": "c",
+							},
+						}),
 					},
 				},
 			}),
@@ -35,6 +42,31 @@ func TestSchemaSubscribe(t *testing.T) {
 				{Data: `{ "sub_without_resolver": "a" }`},
 				{Data: `{ "sub_without_resolver": "b" }`},
 				{Data: `{ "sub_without_resolver": "c" }`},
+			},
+		},
+		{
+			Name: "subscribe with resolver",
+			Schema: makeSubscriptionSchema(t, graphql.ObjectConfig{
+				Name: "Subscription",
+				Fields: graphql.Fields{
+					"sub_with_resolver": &graphql.Field{
+						Type: graphql.String,
+						Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+							return p.Source, nil
+						},
+						Subscribe: makeSubscribeToStringFunction([]string{"a", "b", "c"}),
+					},
+				},
+			}),
+			Query: `
+				subscription onHelloSaid {
+					sub_with_resolver
+				}
+			`,
+			ExpectedResults: []testutil.TestResponse{
+				{Data: `{ "sub_with_resolver": "a" }`},
+				{Data: `{ "sub_with_resolver": "b" }`},
+				{Data: `{ "sub_with_resolver": "c" }`},
 			},
 		},
 		{
@@ -98,7 +130,7 @@ func TestSchemaSubscribe(t *testing.T) {
 								},
 							},
 						}),
-						Resolve: func(p graphql.ResolveParams) (interface{}, error) { // TODO remove dummy resolver
+						Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 							return p.Source, nil
 						},
 						Subscribe: makeSubscribeToMapFunction([]map[string]interface{}{
