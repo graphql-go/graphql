@@ -95,7 +95,6 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 			if err := recover(); err != nil {
 				e, ok := err.(error)
 				if !ok {
-					fmt.Println("strange program path")
 					return
 				}
 				resultChannel <- &Result{
