@@ -42,8 +42,8 @@ func RunSubscribes(t *testing.T, tests []*TestSubscription) {
 
 // RunSubscribe runs a single GraphQL subscription test case.
 func RunSubscribe(t *testing.T, test *TestSubscription) {
-	ctx, _ := context.WithCancel(context.Background())
-	// defer cancel() // TODO add defer cancel
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	c := graphql.Subscribe(graphql.Params{
 		Context:        ctx,
