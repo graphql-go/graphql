@@ -453,7 +453,6 @@ func (gt *Object) Interfaces() []*Interface {
 	return gt.interfaces
 }
 func (gt *Object) Error() error {
-	gt.build()
 	return gt.err
 }
 func (gt *Object) build() {
@@ -802,7 +801,6 @@ func (it *Interface) String() string {
 	return it.PrivateName
 }
 func (it *Interface) Error() error {
-	it.build()
 	return it.err
 }
 func (it *Interface) build() {
