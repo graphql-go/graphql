@@ -3,7 +3,7 @@ package graphql_test
 import (
 	"testing"
 
-	"github.com/graphql-go/graphql"
+	"github.com/bigdrum/graphql"
 	"github.com/graphql-go/graphql/language/ast"
 )
 
@@ -1063,7 +1063,7 @@ func TestTypeSystem_InputObjectFieldsMustHaveInputTypes_AcceptsAnInputTypeAsInpu
 }
 func TestTypeSystem_InputObjectFieldsMustHaveInputTypes_RejectsAnEmptyInputFieldType(t *testing.T) {
 	_, err := schemaWithInputFieldOfType(nil)
-	expectedError := `BadInputObject.badField field type must be Input Type but got: <nil>.`
+	expectedError := `BadInputObject fields must be an object with field names as keys or a function which return such an object.`
 	if err == nil || err.Error() != expectedError {
 		t.Fatalf("Expected error: %v, got %v", expectedError, err)
 	}

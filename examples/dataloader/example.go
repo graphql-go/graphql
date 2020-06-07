@@ -8,7 +8,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/bigdrum/godataloader"
-	"github.com/graphql-go/graphql"
+	"github.com/bigdrum/graphql"
 )
 
 var postDB = map[string]*post{
