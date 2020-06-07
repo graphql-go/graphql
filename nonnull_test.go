@@ -64,9 +64,7 @@ var dataType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
-var nonNullTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
-	Query: dataType,
-})
+var nonNullTestSchema graphql.Schema
 
 func init() {
 	throwingData["nest"] = func() interface{} {
@@ -106,6 +104,10 @@ func init() {
 	})
 	dataType.AddFieldConfig("nonNullPromiseNest", &graphql.Field{
 		Type: graphql.NewNonNull(dataType),
+	})
+
+	nonNullTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
+		Query: dataType,
 	})
 }
 

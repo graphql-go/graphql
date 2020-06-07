@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"runtime/debug"
 
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
@@ -367,7 +368,9 @@ type Object struct {
 	fields     FieldDefinitionMap
 	interfaces []*Interface
 	// Interim alternative to throwing an error during schema definition at run-time
-	err error
+	err        error
+	built      bool
+	buildStack string
 }
 
 // IsTypeOfParams Params for IsTypeOfFn()
@@ -420,6 +423,9 @@ func NewObject(config ObjectConfig) *Object {
 	return objectType
 }
 func (gt *Object) AddFieldConfig(fieldName string, fieldConfig *Field) {
+	if gt.built {
+		panic("Try to add field after build. Already built at\n" + gt.buildStack)
+	}
 	if fieldName == "" || fieldConfig == nil {
 		return
 	}
@@ -438,38 +444,59 @@ func (gt *Object) String() string {
 	return gt.PrivateName
 }
 func (gt *Object) Fields() FieldDefinitionMap {
-	var configureFields Fields
-	switch gt.typeConfig.Fields.(type) {
-	case Fields:
-		configureFields = gt.typeConfig.Fields.(Fields)
-	case FieldsThunk:
-		configureFields = gt.typeConfig.Fields.(FieldsThunk)()
-	}
-	fields, err := defineFieldMap(gt, configureFields)
-	gt.err = err
-	gt.fields = fields
+	gt.build()
 	return gt.fields
 }
 
 func (gt *Object) Interfaces() []*Interface {
-	var configInterfaces []*Interface
-	switch gt.typeConfig.Interfaces.(type) {
-	case InterfacesThunk:
-		configInterfaces = gt.typeConfig.Interfaces.(InterfacesThunk)()
-	case []*Interface:
-		configInterfaces = gt.typeConfig.Interfaces.([]*Interface)
-	case nil:
-	default:
-		gt.err = fmt.Errorf("Unknown Object.Interfaces type: %v", reflect.TypeOf(gt.typeConfig.Interfaces))
-		return nil
-	}
-	interfaces, err := defineInterfaces(gt, configInterfaces)
-	gt.err = err
-	gt.interfaces = interfaces
+	gt.build()
 	return gt.interfaces
 }
 func (gt *Object) Error() error {
+	gt.build()
 	return gt.err
+}
+func (gt *Object) build() {
+	if gt.built {
+		return
+	}
+	gt.buildStack = string(debug.Stack())
+	gt.built = true
+	{
+		// Build fields.
+		var configureFields Fields
+		switch gt.typeConfig.Fields.(type) {
+		case Fields:
+			configureFields = gt.typeConfig.Fields.(Fields)
+		case FieldsThunk:
+			configureFields = gt.typeConfig.Fields.(FieldsThunk)()
+		}
+		fields, err := defineFieldMap(gt, configureFields)
+		if gt.err == nil {
+			gt.err = err
+		}
+		gt.fields = fields
+	}
+	{
+		var configInterfaces []*Interface
+		switch gt.typeConfig.Interfaces.(type) {
+		case InterfacesThunk:
+			configInterfaces = gt.typeConfig.Interfaces.(InterfacesThunk)()
+		case []*Interface:
+			configInterfaces = gt.typeConfig.Interfaces.([]*Interface)
+		case nil:
+		default:
+			if gt.err == nil {
+				gt.err = fmt.Errorf("Unknown Object.Interfaces type: %v", reflect.TypeOf(gt.typeConfig.Interfaces))
+			}
+			return
+		}
+		interfaces, err := defineInterfaces(gt, configInterfaces)
+		if gt.err == nil {
+			gt.err = err
+		}
+		gt.interfaces = interfaces
+	}
 }
 
 func defineInterfaces(ttype *Object, interfaces []*Interface) ([]*Interface, error) {
@@ -701,6 +728,8 @@ type Interface struct {
 	typeConfig InterfaceConfig
 	fields     FieldDefinitionMap
 	err        error
+	built      bool
+	buildStack string
 }
 type InterfaceConfig struct {
 	Name        string      `json:"name"`
@@ -748,6 +777,9 @@ func NewInterface(config InterfaceConfig) *Interface {
 }
 
 func (it *Interface) AddFieldConfig(fieldName string, fieldConfig *Field) {
+	if it.built {
+		panic("Try to add field after build. Already built at\n" + it.buildStack)
+	}
 	if fieldName == "" || fieldConfig == nil {
 		return
 	}
@@ -763,6 +795,22 @@ func (it *Interface) Description() string {
 	return it.PrivateDescription
 }
 func (it *Interface) Fields() (fields FieldDefinitionMap) {
+	it.build()
+	return it.fields
+}
+func (it *Interface) String() string {
+	return it.PrivateName
+}
+func (it *Interface) Error() error {
+	it.build()
+	return it.err
+}
+func (it *Interface) build() {
+	if it.built {
+		return
+	}
+	it.built = true
+	it.buildStack = string(debug.Stack())
 	var configureFields Fields
 	switch it.typeConfig.Fields.(type) {
 	case Fields:
@@ -773,13 +821,7 @@ func (it *Interface) Fields() (fields FieldDefinitionMap) {
 	fields, err := defineFieldMap(it, configureFields)
 	it.err = err
 	it.fields = fields
-	return it.fields
-}
-func (it *Interface) String() string {
-	return it.PrivateName
-}
-func (it *Interface) Error() error {
-	return it.err
+
 }
 
 // Union Type Definition
@@ -1082,7 +1124,8 @@ type InputObject struct {
 	typeConfig InputObjectConfig
 	fields     InputObjectFieldMap
 
-	err error
+	validated bool
+	err       error
 }
 type InputObjectFieldConfig struct {
 	Type         Input       `json:"type"`
@@ -1174,6 +1217,10 @@ func (gt *InputObject) defineFieldMap() {
 	}
 }
 func (gt *InputObject) Fields() InputObjectFieldMap {
+	if !gt.validated {
+		gt.Validate()
+		gt.validated = true
+	}
 	return gt.fields
 }
 func (gt *InputObject) Name() string {
@@ -1187,6 +1234,16 @@ func (gt *InputObject) String() string {
 }
 func (gt *InputObject) Error() error {
 	return gt.err
+}
+func (gt *InputObject) Validate() error {
+	err := invariant(
+		len(gt.fields) > 0,
+		fmt.Sprintf(`%v fields must be an object with field names as keys or a function which return such an object.`, gt),
+	)
+	if err != nil && gt.err == nil {
+		gt.err = err
+	}
+	return err
 }
 
 // List Modifier
