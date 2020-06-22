@@ -703,7 +703,7 @@ func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Fie
 				FieldASTsToNodeASTs(fieldASTs),
 				path.AsArray(),
 			)
-			panic(gqlerrors.FormatError(err))
+			panic(err)
 		}
 		return completed
 	}
@@ -746,7 +746,7 @@ func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Fie
 		`Cannot complete value of unexpected type "%v."`, returnType)
 
 	if err != nil {
-		panic(gqlerrors.FormatError(err))
+		panic(err)
 	}
 	return nil
 }
@@ -763,11 +763,11 @@ func completeThunkValueCatchingError(eCtx *executionContext, returnType Type, fi
 	propertyFn, ok := result.(func() (interface{}, error))
 	if !ok {
 		err := gqlerrors.NewFormattedError("Error resolving func. Expected `func() (interface{}, error)` signature")
-		panic(gqlerrors.FormatError(err))
+		panic(err)
 	}
 	fnResult, err := propertyFn()
 	if err != nil {
-		panic(gqlerrors.FormatError(err))
+		panic(err)
 	}
 
 	result = fnResult
@@ -892,7 +892,7 @@ func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*as
 			"for field %v.%v.", parentTypeName, info.FieldName)
 
 	if err != nil {
-		panic(gqlerrors.FormatError(err))
+		panic(err)
 	}
 
 	itemType := returnType.OfType
