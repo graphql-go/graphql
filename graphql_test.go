@@ -327,3 +327,66 @@ func TestQueryWithCustomRule(t *testing.T) {
 		}
 	}
 }
+
+// TestCustomRuleWithArgs tests graphql.GetArgumentValues() be able to access
+// field's argument values from custom validation rule.
+func TestCustomRuleWithArgs(t *testing.T) {
+	fieldDef, ok := testutil.StarWarsSchema.QueryType().Fields()["human"]
+	if !ok {
+		t.Fatal("can't retrieve \"human\" field definition")
+	}
+
+	// a custom validation rule to extract argument values of "human" field.
+	var actual map[string]interface{}
+	enter := func(p visitor.VisitFuncParams) (string, interface{}) {
+		// only interested in "human" field.
+		fieldNode, ok := p.Node.(*ast.Field)
+		if !ok || fieldNode.Name == nil || fieldNode.Name.Value != "human" {
+			return visitor.ActionNoChange, nil
+		}
+		// extract argument values by graphql.GetArgumentValues().
+		actual = graphql.GetArgumentValues(fieldDef.Args, fieldNode.Arguments, nil)
+		return visitor.ActionNoChange, nil
+	}
+	checkHumanArgs := func(context *graphql.ValidationContext) *graphql.ValidationRuleInstance {
+		return &graphql.ValidationRuleInstance{
+			VisitorOpts: &visitor.VisitorOptions{
+				KindFuncMap: map[string]visitor.NamedVisitFuncs{
+					kinds.Field: {Enter: enter},
+				},
+			},
+		}
+	}
+
+	for _, tc := range []struct {
+		query      string
+		expected   map[string]interface{}
+	}{
+		{
+			`query { human(id: "1000") { name } }`,
+			map[string]interface{}{"id": "1000"},
+		},
+		{
+			`query { human(id: "1002") { name } }`,
+			map[string]interface{}{"id": "1002"},
+		},
+		{
+			`query { human(id: "9999") { name } }`,
+			map[string]interface{}{"id": "9999"},
+		},
+	} {
+		actual = nil
+		params := graphql.Params{
+			Schema:          testutil.StarWarsSchema,
+			RequestString:   tc.query,
+			ValidationRules: append(graphql.SpecifiedRules, checkHumanArgs),
+		}
+		result := graphql.Do(params)
+		if len(result.Errors) > 0 {
+			t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+		}
+		if !reflect.DeepEqual(actual, tc.expected) {
+			t.Fatalf("unexpected result: want=%+v got=%+v", tc.expected, actual)
+		}
+	}
+}
