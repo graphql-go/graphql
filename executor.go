@@ -943,7 +943,7 @@ func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 	}
 
 	// try to resolve p.Source as a struct
-	if sourceVal.IsValid() && sourceVal.Type().Kind() == reflect.Ptr {
+	if sourceVal.IsValid() && !sourceVal.IsZero() && sourceVal.Type().Kind() == reflect.Ptr {
 		sourceVal = sourceVal.Elem()
 	}
 	if !sourceVal.IsValid() {
