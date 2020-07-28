@@ -4,16 +4,41 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 )
 
 const TAG = "json"
 
-// can't take recursive slice type
-// e.g
-// type Person struct{
-//	Friends []Person
-// }
-// it will throw panic stack-overflow
+var boundTypes = map[string]*Object{}
+var anonTypes = 0
+var timeType = reflect.TypeOf(time.Time{})
+
+func BindType(tipe reflect.Type) *Object {
+	typeName := safeName(tipe)
+	object, ok := boundTypes[typeName]
+	if !ok {
+		// Allows for recursion
+		object = &Object{}
+		boundTypes[typeName] = object
+		*object = *NewObject(ObjectConfig{
+			Name:   typeName,
+			Fields: BindFields(reflect.New(tipe).Interface()),
+		})
+	}
+	return object
+}
+
+func safeName(tipe reflect.Type) string {
+	name := fmt.Sprint(tipe)
+	if strings.HasPrefix(name, "struct ") {
+		anonTypes++
+		name = fmt.Sprintf("Anon%d", anonTypes)
+	} else {
+		name = strings.Replace(fmt.Sprint(tipe), ".", "_", -1)
+	}
+	return name
+}
+
 func BindFields(obj interface{}) Fields {
 	t := reflect.TypeOf(obj)
 	v := reflect.ValueOf(obj)
@@ -39,17 +64,14 @@ func BindFields(obj interface{}) Fields {
 		}
 
 		var graphType Output
-		if fieldType.Kind() == reflect.Struct {
-			structFields := BindFields(v.Field(i).Interface())
-
+		if fieldType == timeType {
+			graphType = DateTime
+		} else if fieldType.Kind() == reflect.Struct {
 			if tag == "" {
-				fields = appendFields(fields, structFields)
+				fields = appendFields(fields, BindFields(v.Field(i).Interface()))
 				continue
 			} else {
-				graphType = NewObject(ObjectConfig{
-					Name:   tag,
-					Fields: structFields,
-				})
+				graphType = BindType(fieldType)
 			}
 		}
 
@@ -102,11 +124,7 @@ func getGraphList(tipe reflect.Type) *List {
 	}
 	// finally bind object
 	t := reflect.New(tipe.Elem())
-	name := strings.Replace(fmt.Sprint(tipe.Elem()), ".", "_", -1)
-	obj := NewObject(ObjectConfig{
-		Name:   name,
-		Fields: BindFields(t.Elem().Interface()),
-	})
+	obj := BindType(t.Elem().Type())
 	return NewList(obj)
 }
 
