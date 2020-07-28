@@ -2,9 +2,10 @@ package graphql_test
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"testing"
 	"time"
 
 	"github.com/graphql-go/graphql"
@@ -30,8 +31,15 @@ type GreetingOutput struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func Greeting(ctx *context.Context, input *GreetingInput) (output *GreetingOutput, err error) {
+func GreetingPtr(ctx *context.Context, input *GreetingInput) (output *GreetingOutput, err error) {
 	return &GreetingOutput{
+		Message:   fmt.Sprintf("Hello %s.", input.Name),
+		Timestamp: time.Now(),
+	}, nil
+}
+
+func Greeting(ctx context.Context, input GreetingInput) (output GreetingOutput, err error) {
+	return GreetingOutput{
 		Message:   fmt.Sprintf("Hello %s.", input.Name),
 		Timestamp: time.Now(),
 	}, nil
@@ -91,19 +99,23 @@ func friends(ctx *context.Context) (output *FriendRecur) {
 	}
 }
 
-func main() {
+func TestBindHappyPath(t *testing.T) {
 	// Schema
 	fields := graphql.Fields{
-		"hello":    graphql.Bind(Hello),
-		"greeting": graphql.Bind(Greeting),
-		"friends":  graphql.Bind(friends),
-		"string":   graphql.Bind("Hello World"),
-		"number":   graphql.Bind(12345),
-		"float":    graphql.Bind(123.45),
+		"hello":       graphql.Bind(Hello),
+		"greeting":    graphql.Bind(Greeting),
+		"greetingPtr": graphql.Bind(GreetingPtr),
+		"friends":     graphql.Bind(friends),
+		"string":      graphql.Bind("Hello World"),
+		"number":      graphql.Bind(12345),
+		"float":       graphql.Bind(123.45),
 		"anonymous": graphql.Bind(struct {
 			SomeField string `json:"someField"`
 		}{
 			SomeField: "Some Value",
+		}),
+		"simpleFunc": graphql.Bind(func() string {
+			return "Hello World"
 		}),
 	}
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
@@ -120,6 +132,10 @@ func main() {
 				message
 			}
 			greeting(name:"Alan") {
+				message
+				timestamp
+			}
+			greetingPtr(name:"Alan") {
 				message
 				timestamp
 			}
@@ -144,13 +160,55 @@ func main() {
 			anonymous {
 				someField
 			}
+			simpleFunc
 		}
 	`
 	params := graphql.Params{Schema: schema, RequestString: query}
 	r := graphql.Do(params)
 	if len(r.Errors) > 0 {
-		log.Fatalf("failed to execute graphql operation, errors: %+v", r.Errors)
+		t.Errorf("failed to execute graphql operation, errors: %+v", r.Errors)
 	}
-	rJSON, _ := json.MarshalIndent(r, "", "  ")
-	fmt.Printf("%s \n", rJSON)
+}
+
+func TestBindPanicImproperInput(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Expected Bind to panic due to improper function signature")
+		}
+	}()
+	graphql.Bind(func(a, b, c string) {})
+}
+
+func TestBindPanicImproperOutput(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Expected Bind to panic due to improper function signature")
+		}
+	}()
+	graphql.Bind(func() (string, string) { return "Hello", "World" })
+}
+
+func TestBindWithRuntimeError(t *testing.T) {
+	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: graphql.Fields{
+		"throwError": graphql.Bind(func() (string, error) {
+			return "", errors.New("Some Error")
+		}),
+	}}
+	schemaConfig := graphql.SchemaConfig{Query: graphql.NewObject(rootQuery)}
+	schema, err := graphql.NewSchema(schemaConfig)
+	if err != nil {
+		log.Fatalf("failed to create new schema, error: %v", err)
+	}
+
+	// Query
+	query := `
+	{
+		throwError
+	}
+	`
+	params := graphql.Params{Schema: schema, RequestString: query}
+	r := graphql.Do(params)
+	if len(r.Errors) == 0 {
+		t.Error("Expected error")
+	}
 }

@@ -13,7 +13,25 @@ var boundTypes = map[string]*Object{}
 var anonTypes = 0
 var timeType = reflect.TypeOf(time.Time{})
 
-func BindType(tipe reflect.Type) *Object {
+func BindType(tipe reflect.Type) Type {
+	if tipe.Kind() == reflect.Ptr {
+		tipe = tipe.Elem()
+	}
+
+	kind := tipe.Kind()
+	switch kind {
+	case reflect.String:
+		return String
+	case reflect.Int, reflect.Int8, reflect.Int32, reflect.Int64:
+		return Int
+	case reflect.Float32, reflect.Float64:
+		return Float
+	case reflect.Bool:
+		return Boolean
+	case reflect.Slice:
+		return getGraphList(tipe)
+	}
+
 	typeName := safeName(tipe)
 	object, ok := boundTypes[typeName]
 	if !ok {
