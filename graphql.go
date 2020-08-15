@@ -75,7 +75,7 @@ func Do(p Params) *Result {
 		}
 	}
 
-	// notify extensions abput the start of the validation
+	// notify extensions about the start of the validation
 	extErrs, validationFinishFn := handleExtensionsValidationDidStart(&p)
 	if len(extErrs) != 0 {
 		return &Result{

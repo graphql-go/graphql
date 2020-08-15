@@ -10,9 +10,10 @@ import (
 )
 
 type T struct {
-	Query    string
-	Schema   graphql.Schema
-	Expected interface{}
+	Query     string
+	Schema    graphql.Schema
+	Expected  interface{}
+	Variables map[string]interface{}
 }
 
 var Tests = []T{}
@@ -69,14 +70,35 @@ func init() {
 				},
 			},
 		},
+		{
+			Query: `
+				query HumanByIdQuery($id: String!) {
+					human(id: $id) {
+						name
+					}
+				}
+			`,
+			Schema: testutil.StarWarsSchema,
+			Expected: &graphql.Result{
+				Data: map[string]interface{}{
+					"human": map[string]interface{}{
+						"name": "Darth Vader",
+					},
+				},
+			},
+			Variables: map[string]interface{}{
+				"id": "1001",
+			},
+		},
 	}
 }
 
 func TestQuery(t *testing.T) {
 	for _, test := range Tests {
 		params := graphql.Params{
-			Schema:        test.Schema,
-			RequestString: test.Query,
+			Schema:         test.Schema,
+			RequestString:  test.Query,
+			VariableValues: test.Variables,
 		}
 		testGraphql(test, params, t)
 	}
