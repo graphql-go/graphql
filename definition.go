@@ -1143,7 +1143,7 @@ func (gt *InputObject) defineFieldMap() InputObjectFieldMap {
 		if gt.err = invariantf(
 			fieldConfig.Type != nil,
 			`%v.%v field type must be Input Type but got: %v.`, gt, fieldName, fieldConfig.Type,
-		); err != nil {
+		); gt.err != nil {
 			return resultFieldMap
 		}
 		field := &InputObjectField{}
