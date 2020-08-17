@@ -5,6 +5,7 @@ import (
 	"log"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/testutil"
@@ -19,9 +20,10 @@ type Person struct {
 }
 
 type Human struct {
-	Alive  bool    `json:"alive,omitempty"`
-	Age    int     `json:"age"`
-	Weight float64 `json:"weight"`
+	Alive  bool      `json:"alive,omitempty"`
+	Age    int       `json:"age"`
+	Weight float64   `json:"weight"`
+	DoB    time.Time `json:"dob"`
 }
 
 type Friend struct {
@@ -40,6 +42,7 @@ var personSource = Person{
 		Age:    24,
 		Weight: 70.1,
 		Alive:  true,
+		DoB:    time.Date(2019, 01, 01, 01, 01, 01, 0, time.UTC),
 	},
 	Name: "John Doe",
 	Home: Address{
@@ -82,6 +85,7 @@ func TestBindFields(t *testing.T) {
 		{
 			person{
 				name,
+				dob,
 				home{street,city},
 				friends{name,address},
 				age,
