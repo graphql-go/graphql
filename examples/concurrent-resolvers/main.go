@@ -86,7 +86,7 @@ func main() {
 	`
 	result := graphql.Do(graphql.Params{
 		RequestString: query,
-		Schema:        schema,
+		Schema:        *schema,
 	})
 	b, err := json.Marshal(result)
 	if err != nil {

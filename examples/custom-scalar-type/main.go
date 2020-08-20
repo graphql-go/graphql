@@ -124,7 +124,7 @@ func main() {
 		`
 	*/
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 		VariableValues: map[string]interface{}{
 			"id": "5b42ba57289",

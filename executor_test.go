@@ -195,7 +195,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 	}
 	operationName := "Example"
 	ep := graphql.ExecuteParams{
-		Schema:        schema,
+		Schema:        *schema,
 		Root:          data,
 		AST:           astDoc,
 		OperationName: operationName,
@@ -285,7 +285,7 @@ func TestMergesParallelFragments(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: schema,
+		Schema: *schema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -335,7 +335,7 @@ func TestCustomMapType(t *testing.T) {
 	}
 
 	result := testutil.TestExecute(t, graphql.ExecuteParams{
-		Schema: schema,
+		Schema: *schema,
 		Root:   data,
 		AST:    testutil.TestParse(t, query),
 	})
@@ -388,7 +388,7 @@ func TestThreadsSourceCorrectly(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: schema,
+		Schema: *schema,
 		Root:   data,
 		AST:    ast,
 	}
@@ -444,7 +444,7 @@ func TestCorrectlyThreadsArguments(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: schema,
+		Schema: *schema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -491,7 +491,7 @@ func TestThreadsRootValueContextCorrectly(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: schema,
+		Schema: *schema,
 		AST:    ast,
 		Root: map[string]interface{}{
 			"stringKey": "stringValue",
@@ -540,7 +540,7 @@ func TestThreadsContextCorrectly(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema:  schema,
+		Schema:  *schema,
 		AST:     ast,
 		Context: context.WithValue(context.Background(), "foo", "bar"),
 	}
@@ -614,7 +614,7 @@ func TestNullsOutErrorSubtrees(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: schema,
+		Schema: *schema,
 		AST:    ast,
 		Root:   data,
 	}
@@ -659,7 +659,7 @@ func TestUsesTheInlineOperationIfNoOperationNameIsProvided(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: schema,
+		Schema: *schema,
 		AST:    ast,
 		Root:   data,
 	}
@@ -704,7 +704,7 @@ func TestUsesTheOnlyOperationIfNoOperationNameIsProvided(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: schema,
+		Schema: *schema,
 		AST:    ast,
 		Root:   data,
 	}
@@ -748,7 +748,7 @@ func TestUsesTheNamedOperationIfOperationNameIsProvided(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema:        schema,
+		Schema:        *schema,
 		AST:           ast,
 		Root:          data,
 		OperationName: "OtherExample",
@@ -795,7 +795,7 @@ func TestThrowsIfNoOperationIsProvided(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: schema,
+		Schema: *schema,
 		AST:    ast,
 		Root:   data,
 	}
@@ -840,7 +840,7 @@ func TestThrowsIfNoOperationNameIsProvidedWithMultipleOperations(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: schema,
+		Schema: *schema,
 		AST:    ast,
 		Root:   data,
 	}
@@ -886,7 +886,7 @@ func TestThrowsIfUnknownOperationNameIsProvided(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema:        schema,
+		Schema:        *schema,
 		AST:           ast,
 		Root:          data,
 		OperationName: "UnknownExample",
@@ -937,7 +937,7 @@ func TestThrowsIfOperationTypeIsUnsupported(t *testing.T) {
 
 		// execute
 		ep := graphql.ExecuteParams{
-			Schema:        schema,
+			Schema:        *schema,
 			AST:           ast,
 			OperationName: operation,
 		}
@@ -999,7 +999,7 @@ func TestUsesTheQuerySchemaForQueries(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema:        schema,
+		Schema:        *schema,
 		AST:           ast,
 		Root:          data,
 		OperationName: "Q",
@@ -1054,7 +1054,7 @@ func TestUsesTheMutationSchemaForMutations(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema:        schema,
+		Schema:        *schema,
 		AST:           ast,
 		Root:          data,
 		OperationName: "M",
@@ -1109,7 +1109,7 @@ func TestUsesTheSubscriptionSchemaForSubscriptions(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema:        schema,
+		Schema:        *schema,
 		AST:           ast,
 		Root:          data,
 		OperationName: "S",
@@ -1183,7 +1183,7 @@ func TestCorrectFieldOrderingDespiteExecutionOrder(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: schema,
+		Schema: *schema,
 		AST:    ast,
 		Root:   data,
 	}
@@ -1249,7 +1249,7 @@ func TestAvoidsRecursion(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema:        schema,
+		Schema:        *schema,
 		AST:           ast,
 		Root:          data,
 		OperationName: "Q",
@@ -1301,7 +1301,7 @@ func TestDoesNotIncludeIllegalFieldsInOutput(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: schema,
+		Schema: *schema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -1363,7 +1363,7 @@ func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: schema,
+		Schema: *schema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -1457,7 +1457,7 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: schema,
+		Schema: *schema,
 		AST:    ast,
 		Root:   data,
 	}
@@ -1503,7 +1503,7 @@ func TestFailsToExecuteQueryContainingATypeDefinition(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: schema,
+		Schema: *schema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -1539,7 +1539,7 @@ func TestQuery_ExecutionAddsErrorsFromFieldResolveFn(t *testing.T) {
 	}
 	query := "{ a }"
 	result := graphql.Do(graphql.Params{
-		Schema:        blogSchema,
+		Schema:        *blogSchema,
 		RequestString: query,
 	})
 	if len(result.Errors) == 0 {
@@ -1577,7 +1577,7 @@ func TestQuery_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 	}
 	query := "{ b }"
 	result := graphql.Do(graphql.Params{
-		Schema:        blogSchema,
+		Schema:        *blogSchema,
 		RequestString: query,
 	})
 	if len(result.Errors) != 0 {
@@ -1627,7 +1627,7 @@ func TestQuery_InputObjectUsesFieldDefaultValueFn(t *testing.T) {
 	}
 	query := `{ a(foo: {}) }`
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if len(result.Errors) != 0 {
@@ -1681,7 +1681,7 @@ func TestMutation_ExecutionAddsErrorsFromFieldResolveFn(t *testing.T) {
 	}
 	query := "mutation _ { newFoo: foo(f:\"title\") }"
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if len(result.Errors) == 0 {
@@ -1738,7 +1738,7 @@ func TestMutation_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 	}
 	query := "mutation _ { newBar: bar(b:\"title\") }"
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if len(result.Errors) != 0 {
@@ -1777,7 +1777,7 @@ func TestGraphqlTag(t *testing.T) {
 	}
 	query := "{ baz { fooBar } }"
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if len(result.Errors) != 0 {
@@ -1829,7 +1829,7 @@ func TestFieldResolver(t *testing.T) {
 	}
 	query := "{ baz { fooBar }, bazPtr { fooBar } }"
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if len(result.Errors) != 0 {
@@ -1893,7 +1893,7 @@ func TestContextDeadline(t *testing.T) {
 
 	startTime := time.Now()
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: "{hello}",
 		Context:       ctx,
 	})
@@ -1969,7 +1969,7 @@ func TestThunkResultsProcessedCorrectly(t *testing.T) {
 
 	query := "{ foo { bar { bazA bazB } } }"
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if len(result.Errors) != 0 {
@@ -2065,7 +2065,7 @@ func TestThunkErrorsAreHandledCorrectly(t *testing.T) {
 
 	query := "{ foo { bar { bazA bazB bazC } } }"
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 
@@ -2213,7 +2213,7 @@ func testErrors(t *testing.T, nameType graphql.Output, extensions map[string]int
 	expectNoError(err)
 
 	return graphql.Do(graphql.Params{
-		Schema: schema,
+		Schema: *schema,
 		RequestString: `{
   hero {
     name

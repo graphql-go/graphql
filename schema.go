@@ -47,22 +47,22 @@ type Schema struct {
 	extensions       []Extension
 }
 
-func NewSchema(config SchemaConfig) (Schema, error) {
+func NewSchema(config SchemaConfig) (*Schema, error) {
 	var err error
 
-	schema := Schema{}
-
 	if err = invariant(config.Query != nil, "Schema query must be Object Type but got: nil."); err != nil {
-		return schema, err
+		return nil, err
 	}
 
 	// if schema config contains error at creation time, return those errors
 	if config.Query != nil && config.Query.err != nil {
-		return schema, config.Query.err
+		return nil, config.Query.err
 	}
 	if config.Mutation != nil && config.Mutation.err != nil {
-		return schema, config.Mutation.err
+		return nil, config.Mutation.err
 	}
+
+	schema := Schema{}
 
 	schema.queryType = config.Query
 	schema.mutationType = config.Mutation
@@ -76,7 +76,7 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 	// Ensure directive definitions are error-free
 	for _, dir := range schema.directives {
 		if dir.err != nil {
-			return schema, dir.err
+			return nil, dir.err
 		}
 	}
 
@@ -103,10 +103,10 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 
 	for _, ttype := range initialTypes {
 		if ttype.Error() != nil {
-			return schema, ttype.Error()
+			return nil, ttype.Error()
 		}
 		if typeMap, err = typeMapReducer(&schema, typeMap, ttype); err != nil {
-			return schema, err
+			return nil, err
 		}
 	}
 
@@ -135,7 +135,7 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 			for _, iface := range ttype.Interfaces() {
 				err := assertObjectImplementsInterface(&schema, ttype, iface)
 				if err != nil {
-					return schema, err
+					return nil, err
 				}
 			}
 		}
@@ -146,7 +146,7 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 		schema.extensions = config.Extensions
 	}
 
-	return schema, nil
+	return &schema, nil
 }
 
 //Added Check implementation of interfaces at runtime..

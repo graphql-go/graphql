@@ -201,7 +201,7 @@ func TestUnionIntersectionTypes_CanIntrospectOnUnionAndIntersectionTypes(t *test
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: unionInterfaceTestSchema,
+		Schema: *unionInterfaceTestSchema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -249,7 +249,7 @@ func TestUnionIntersectionTypes_ExecutesUsingUnionTypes(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: unionInterfaceTestSchema,
+		Schema: *unionInterfaceTestSchema,
 		AST:    ast,
 		Root:   john,
 	}
@@ -303,7 +303,7 @@ func TestUnionIntersectionTypes_ExecutesUnionTypesWithInlineFragments(t *testing
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: unionInterfaceTestSchema,
+		Schema: *unionInterfaceTestSchema,
 		AST:    ast,
 		Root:   john,
 	}
@@ -352,7 +352,7 @@ func TestUnionIntersectionTypes_ExecutesUsingInterfaceTypes(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: unionInterfaceTestSchema,
+		Schema: *unionInterfaceTestSchema,
 		AST:    ast,
 		Root:   john,
 	}
@@ -405,7 +405,7 @@ func TestUnionIntersectionTypes_ExecutesInterfaceTypesWithInlineFragments(t *tes
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: unionInterfaceTestSchema,
+		Schema: *unionInterfaceTestSchema,
 		AST:    ast,
 		Root:   john,
 	}
@@ -485,7 +485,7 @@ func TestUnionIntersectionTypes_AllowsFragmentConditionsToBeAbstractTypes(t *tes
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: unionInterfaceTestSchema,
+		Schema: *unionInterfaceTestSchema,
 		AST:    ast,
 		Root:   john,
 	}
@@ -565,7 +565,7 @@ func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema:  schema2,
+		Schema:  *schema2,
 		AST:     ast,
 		Root:    john2,
 		Context: ctx,
@@ -581,7 +581,7 @@ func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 	if !reflect.DeepEqual("John", encounteredRootValue) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff("John", encounteredRootValue))
 	}
-	if !reflect.DeepEqual(schema2, encounteredSchema) {
+	if !reflect.DeepEqual(*schema2, encounteredSchema) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(schema2, encounteredSchema))
 	}
 }
@@ -632,7 +632,7 @@ func TestUnionIntersectionTypes_ValueMayBeNilPointer(t *testing.T) {
 			}},
 	}
 	result := g(t, graphql.Params{
-		Schema:        unionInterfaceTestSchema,
+		Schema:        *unionInterfaceTestSchema,
 		RequestString: query,
 	})
 	if !reflect.DeepEqual(expected, result) {

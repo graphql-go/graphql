@@ -226,7 +226,7 @@ func executeQuery(query string, schema graphql.Schema) *graphql.Result {
 
 func main() {
 	http.HandleFunc("/product", func(w http.ResponseWriter, r *http.Request) {
-		result := executeQuery(r.URL.Query().Get("query"), schema)
+		result := executeQuery(r.URL.Query().Get("query"), *schema)
 		json.NewEncoder(w).Encode(result)
 	})
 

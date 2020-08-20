@@ -44,7 +44,7 @@ func checkList(t *testing.T, testType graphql.Type, testData interface{}, expect
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: schema,
+		Schema: *schema,
 		AST:    ast,
 		Root:   data,
 	}
@@ -902,7 +902,7 @@ func TestLists_ValueMayBeNilPointer(t *testing.T) {
 		},
 	}
 	result := g(t, graphql.Params{
-		Schema:        listTestSchema,
+		Schema:        *listTestSchema,
 		RequestString: query,
 	})
 	if !reflect.DeepEqual(expected, result) {

@@ -143,7 +143,7 @@ func TestBasicGraphQLExample(t *testing.T) {
 	}
 
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if len(result.Errors) > 0 {
@@ -180,7 +180,7 @@ func TestThreadsContextFromParamsThrough(t *testing.T) {
 	query := `{ value(key:"a") }`
 
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 		Context:       context.WithValue(context.TODO(), "a", "xyz"),
 	})
@@ -213,7 +213,7 @@ func TestNewErrorChecksNilNodes(t *testing.T) {
 	}
 	query := `{graphql_is:great(sort:ByPopularity)}{stars}`
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if len(result.Errors) == 0 {
@@ -257,7 +257,7 @@ func TestEmptyStringIsNotNull(t *testing.T) {
 	query := `{ checkEmptyArg(arg:"") checkEmptyResult }`
 
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if len(result.Errors) > 0 {

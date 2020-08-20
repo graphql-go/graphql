@@ -123,14 +123,14 @@ var enumTypeTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 
 func executeEnumTypeTest(t *testing.T, query string) *graphql.Result {
 	result := g(t, graphql.Params{
-		Schema:        enumTypeTestSchema,
+		Schema:        *enumTypeTestSchema,
 		RequestString: query,
 	})
 	return result
 }
 func executeEnumTypeTestWithParams(t *testing.T, query string, params map[string]interface{}) *graphql.Result {
 	result := g(t, graphql.Params{
-		Schema:         enumTypeTestSchema,
+		Schema:         *enumTypeTestSchema,
 		RequestString:  query,
 		VariableValues: params,
 	})
@@ -414,7 +414,7 @@ func TestTypeSystem_EnumValues_EnumValueMayBePointer(t *testing.T) {
 				"color": "GREEN",
 				"foo":   1}}}
 	result := g(t, graphql.Params{
-		Schema:        enumTypeTestSchema,
+		Schema:        *enumTypeTestSchema,
 		RequestString: query,
 	})
 	if !reflect.DeepEqual(expected, result) {
@@ -453,7 +453,7 @@ func TestTypeSystem_EnumValues_EnumValueMayBeNilPointer(t *testing.T) {
 			}},
 	}
 	result := g(t, graphql.Params{
-		Schema:        enumTypeTestSchema,
+		Schema:        *enumTypeTestSchema,
 		RequestString: query,
 	})
 	if !reflect.DeepEqual(expected, result) {

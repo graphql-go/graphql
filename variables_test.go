@@ -186,7 +186,7 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_ExecutesWithComplexI
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -213,7 +213,7 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_ProperlyParsesSingle
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -240,7 +240,7 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_DoesNotUseIncorrectV
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -267,7 +267,7 @@ func TestVariables_ObjectsAndNullability_UsingInlineStructs_ProperlyRunsParseLit
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -306,7 +306,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexInput
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -336,7 +336,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_UsesDefaultValueWhenNotP
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    withDefaultsAST,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -365,7 +365,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ProperlyParsesSingleValu
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -394,7 +394,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ExecutesWithComplexScala
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -433,7 +433,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnNullForNestedNon
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -464,7 +464,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnIncorrectType(t 
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -499,7 +499,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnOmissionOfNested
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -541,7 +541,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnDeepNestedErrors
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    nestedAST,
 		Args:   params,
 	}
@@ -578,7 +578,7 @@ func TestVariables_ObjectsAndNullability_UsingVariables_ErrorsOnAdditionOfUnknow
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -604,7 +604,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmitted(t *testing.T)
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -631,7 +631,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmittedInAVariable(t 
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -658,7 +658,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeOmittedInAnUnlistedVa
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -688,7 +688,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToNullInAVariable(
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -719,7 +719,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueInAVariabl
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -747,7 +747,7 @@ func TestVariables_NullableScalars_AllowsNullableInputsToBeSetToAValueDirectly(t
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -785,7 +785,7 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeOmittedIn
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -821,7 +821,7 @@ func TestVariables_NonNullableScalars_DoesNotAllowNonNullableInputsToBeSetToNull
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -850,7 +850,7 @@ func TestVariables_NonNullableScalars_AllowsNonNullableInputsToBeSetToAValueInAV
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -883,7 +883,7 @@ func TestVariables_NonNullableScalars_AllowsNonNullableInputsToBeSetToAValueDire
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -916,7 +916,7 @@ func TestVariables_NonNullableScalars_PassesAlongNullForNonNullableInputsIfExpli
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -948,7 +948,7 @@ func TestVariables_ListsAndNullability_AllowsListsToBeNull(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -979,7 +979,7 @@ func TestVariables_ListsAndNullability_AllowsListsToContainValues(t *testing.T) 
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -1010,7 +1010,7 @@ func TestVariables_ListsAndNullability_AllowsListsToContainNull(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -1045,7 +1045,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListsToBeNull(t *testi
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -1071,7 +1071,7 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsToContainValues(t *test
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -1101,7 +1101,7 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsToContainNull(t *testin
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -1131,7 +1131,7 @@ func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToBeNull(t *testing.
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -1161,7 +1161,7 @@ func TestVariables_ListsAndNullability_AllowsListsOfNonNullsToContainValues(t *t
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -1201,7 +1201,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -1236,7 +1236,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToBeNull
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -1263,7 +1263,7 @@ func TestVariables_ListsAndNullability_AllowsNonNullListsOfNonNulsToContainValue
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -1303,7 +1303,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContai
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -1340,7 +1340,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowInvalidTypesToBeUsedAsValues(
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -1378,7 +1378,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowUnknownTypesToBeUsedAsValues(
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 		Args:   params,
 	}
@@ -1403,7 +1403,7 @@ func TestVariables_UsesArgumentDefaultValues_WhenNoArgumentProvided(t *testing.T
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -1429,7 +1429,7 @@ func TestVariables_UsesArgumentDefaultValues_WhenNullableVariableProvided(t *tes
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)
@@ -1455,7 +1455,7 @@ func TestVariables_UsesArgumentDefaultValues_WhenArgumentProvidedCannotBeParsed(
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: variablesTestSchema,
+		Schema: *variablesTestSchema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)

@@ -65,7 +65,7 @@ func main() {
 		Context:       ctx,
 		RequestString: "{ users { id } }",
 		RootObject:    rootObject,
-		Schema:        schema,
+		Schema:        *schema,
 	})
 	b, err := json.Marshal(result)
 	if err != nil {

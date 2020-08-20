@@ -542,9 +542,9 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	TestSchema = &schema
-
+	TestSchema = schema
 }
+
 func expectValidRule(t *testing.T, schema *graphql.Schema, rules []graphql.ValidationRuleFn, queryString string) {
 	source := source.NewSource(&source.Source{
 		Body: []byte(queryString),

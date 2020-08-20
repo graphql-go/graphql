@@ -164,7 +164,7 @@ func TestMutations_ExecutionOrdering_EvaluatesMutationsSerially(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: mutationsTestSchema,
+		Schema: *mutationsTestSchema,
 		AST:    ast,
 		Root:   root,
 	}
@@ -237,7 +237,7 @@ func TestMutations_EvaluatesMutationsCorrectlyInThePresenceOfAFailedMutation(t *
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: mutationsTestSchema,
+		Schema: *mutationsTestSchema,
 		AST:    ast,
 		Root:   root,
 	}

@@ -31,7 +31,7 @@ var directivesTestData map[string]interface{} = map[string]interface{}{
 func executeDirectivesTestQuery(t *testing.T, doc string) *graphql.Result {
 	ast := testutil.TestParse(t, doc)
 	ep := graphql.ExecuteParams{
-		Schema: directivesTestSchema,
+		Schema: *directivesTestSchema,
 		AST:    ast,
 		Root:   directivesTestData,
 	}

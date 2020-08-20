@@ -825,7 +825,7 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 		},
 	}
 	result := g(t, graphql.Params{
-		Schema:        emptySchema,
+		Schema:        *emptySchema,
 		RequestString: testutil.IntrospectionQuery,
 	})
 	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expectedDataSubSet) {
@@ -937,7 +937,7 @@ func TestIntrospection_ExecutesAnInputObject(t *testing.T) {
 	}
 
 	result := g(t, graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expectedDataSubSet) {
@@ -976,7 +976,7 @@ func TestIntrospection_SupportsThe__TypeRootField(t *testing.T) {
 		},
 	}
 	result := g(t, graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if !testutil.EqualResults(expected, result) {
@@ -1035,7 +1035,7 @@ func TestIntrospection_IdentifiesDeprecatedFields(t *testing.T) {
 		},
 	}
 	result := g(t, graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
@@ -1104,7 +1104,7 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForFields(t *testing
 		},
 	}
 	result := g(t, graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
@@ -1179,7 +1179,7 @@ func TestIntrospection_IdentifiesDeprecatedEnumValues(t *testing.T) {
 		},
 	}
 	result := g(t, graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
@@ -1268,7 +1268,7 @@ func TestIntrospection_RespectsTheIncludeDeprecatedParameterForEnumValues(t *tes
 		},
 	}
 	result := g(t, graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
@@ -1310,7 +1310,7 @@ func TestIntrospection_FailsAsExpectedOnThe__TypeRootFieldWithoutAnArg(t *testin
 		},
 	}
 	result := g(t, graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if !testutil.EqualResults(expected, result) {
@@ -1383,7 +1383,7 @@ func TestIntrospection_ExposesDescriptionsOnTypesAndFields(t *testing.T) {
 		},
 	}
 	result := g(t, graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {
@@ -1461,7 +1461,7 @@ func TestIntrospection_ExposesDescriptionsOnEnums(t *testing.T) {
 		},
 	}
 	result := g(t, graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expected.Data.(map[string]interface{})) {

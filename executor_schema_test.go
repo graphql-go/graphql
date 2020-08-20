@@ -302,7 +302,7 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: blogSchema,
+		Schema: *blogSchema,
 		AST:    ast,
 	}
 	result := testutil.TestExecute(t, ep)

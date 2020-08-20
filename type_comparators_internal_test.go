@@ -49,7 +49,7 @@ func testSchemaForIsTypeSubTypeOfTest(t *testing.T, fields Fields) *Schema {
 	if err != nil {
 		t.Fatalf("Invalid schema: %v", err)
 	}
-	return &schema
+	return schema
 }
 
 func TestIsTypeSubTypeOf_SameReferenceIsSubtype(t *testing.T) {

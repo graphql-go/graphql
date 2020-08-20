@@ -138,7 +138,7 @@ func TestNonNull_NullsANullableFieldThatThrowsSynchronously(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
@@ -176,7 +176,7 @@ func TestNonNull_NullsANullableFieldThatThrowsInAPromise(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
@@ -217,7 +217,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANullableFieldThat
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
@@ -258,7 +258,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
@@ -299,7 +299,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
@@ -340,7 +340,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
@@ -522,7 +522,7 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatThrow(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
@@ -637,7 +637,7 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldThrowsInALongChainOfField
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
@@ -665,7 +665,7 @@ func TestNonNull_NullsANullableFieldThatSynchronouslyReturnsNull(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
@@ -690,7 +690,7 @@ func TestNonNull_NullsANullableFieldThatSynchronouslyReturnsNullInAPromise(t *te
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
@@ -729,7 +729,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
@@ -768,7 +768,7 @@ func TestNonNull_NullsASynchronouslyReturnedObjectThatContainsANonNullableFieldT
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
@@ -808,7 +808,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
@@ -847,7 +847,7 @@ func TestNonNull_NullsAnObjectReturnedInAPromiseThatContainsANonNullableFieldTha
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
@@ -918,7 +918,7 @@ func TestNonNull_NullsAComplexTreeOfNullableFieldsThatReturnNull(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
@@ -1031,7 +1031,7 @@ func TestNonNull_NullsTheFirstNullableObjectAfterAFieldReturnsNullInALongChainOf
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
@@ -1066,7 +1066,7 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldThrows(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
@@ -1098,7 +1098,7 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldErrors(t *testing.T) {
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   throwingData,
 	}
@@ -1130,7 +1130,7 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldReturnsNull(t *testing.T)
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}
@@ -1162,7 +1162,7 @@ func TestNonNull_NullsTheTopLevelIfSyncNonNullableFieldResolvesNull(t *testing.T
 
 	// execute
 	ep := graphql.ExecuteParams{
-		Schema: nonNullTestSchema,
+		Schema: *nonNullTestSchema,
 		AST:    ast,
 		Root:   nullingData,
 	}

@@ -147,7 +147,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 	}
 
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if len(result.Errors) != 0 {
@@ -284,7 +284,7 @@ func TestAppendTypeUsedToAddRuntimeCustomScalarTypeForInterface(t *testing.T) {
 	}
 
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if len(result.Errors) != 0 {
@@ -384,7 +384,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 	}
 
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if len(result.Errors) != 0 {
@@ -523,7 +523,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 	}
 
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if !testutil.EqualResults(expected, result) {
@@ -647,7 +647,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 	}
 
 	result := graphql.Do(graphql.Params{
-		Schema:        schema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 	if !testutil.EqualResults(expected, result) {

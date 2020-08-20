@@ -17,7 +17,7 @@ import (
 /* Shared data variables to allow dynamic reloads
 /*****************************************************************************/
 
-var schema graphql.Schema
+var schema *graphql.Schema
 
 const jsonDataFile = "data.json"
 
@@ -127,7 +127,7 @@ func main() {
 	}
 
 	http.HandleFunc("/graphql", func(w http.ResponseWriter, r *http.Request) {
-		result := executeQuery(r.URL.Query().Get("query"), schema)
+		result := executeQuery(r.URL.Query().Get("query"), *schema)
 		json.NewEncoder(w).Encode(result)
 	})
 
