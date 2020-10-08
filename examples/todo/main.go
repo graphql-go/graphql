@@ -205,21 +205,39 @@ func executeQuery(query string, schema graphql.Schema) *graphql.Result {
 	return result
 }
 
+
+type postData struct {
+	Query     string                 `json:"query"`
+	Operation string                 `json:"operation"`
+	Variables map[string]interface{} `json:"variables"`
+}
+
 func main() {
-	http.HandleFunc("/graphql", func(w http.ResponseWriter, r *http.Request) {
-		result := executeQuery(r.URL.Query().Get("query"), schema)
-		json.NewEncoder(w).Encode(result)
+	http.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
+		var p postData
+		if err := json.NewDecoder(req.Body).Decode(&p); err != nil {
+		  w.WriteHeader(400)
+		  return
+		}
+		result := graphql.Do(graphql.Params{
+			  Context:        req.Context(),
+			  Schema:         schema,
+			  RequestString:  p.Query,
+			  VariableValues: p.Variables,
+			  OperationName:  p.Operation,
+		  })
+		  if err := json.NewEncoder(w).Encode(result); err != nil {
+			fmt.Printf("could not write result to response: %s", err)
+		  }
 	})
+
 	// Serve static files
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/", fs)
+
 	// Display some basic instructions
 	fmt.Println("Now server is running on port 8080")
-	fmt.Println("Get single todo: curl -g 'http://localhost:8080/graphql?query={todo(id:\"b\"){id,text,done}}'")
-	fmt.Println("Create new todo: curl -g 'http://localhost:8080/graphql?query=mutation+_{createTodo(text:\"My+new+todo\"){id,text,done}}'")
-	fmt.Println("Update todo: curl -g 'http://localhost:8080/graphql?query=mutation+_{updateTodo(id:\"a\",done:true){id,text,done}}'")
-	fmt.Println("Load todo list: curl -g 'http://localhost:8080/graphql?query={todoList{id,text,done}}'")
-	fmt.Println("Access the web app via browser at 'http://localhost:8080'")
+	fmt.Println("Access the playground at 'http://localhost:8080' with autocomplete on queries and mutations")
 
 	http.ListenAndServe(":8080", nil)
 }
