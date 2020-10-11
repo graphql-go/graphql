@@ -34,31 +34,36 @@ func main() {
 		}
 	})
 
-	fmt.Println("Now server is running on port 8080\n")
+	fmt.Println("Now server is running on port 8080")
+
+	fmt.Println("")
 
 	fmt.Println(`Get single todo:
 curl \
 -X POST \
 -H "Content-Type: application/json" \
 --data '{ "query": "{ todo(id:\"b\") { id text done } }" }' \
-http://localhost:8080/graphql
-`)
+http://localhost:8080/graphql`)
+
+	fmt.Println("")
 
 	fmt.Println(`Create new todo:
 curl \
 -X POST \
 -H "Content-Type: application/json" \
 --data '{ "query": "mutation { createTodo(text:\"My New todo\") { id text done } }" }' \
-http://localhost:8080/graphql
-`)
+http://localhost:8080/graphql`)
+
+	fmt.Println("")
 
 	fmt.Println(`Update todo:
 curl \
 -X POST \
 -H "Content-Type: application/json" \
 --data '{ "query": "mutation { updateTodo(id:\"a\", done: true) { id text done } }" }' \
-http://localhost:8080/graphql
-`)
+http://localhost:8080/graphql`)
+
+	fmt.Println("")
 
 	fmt.Println(`Load todo list:
 curl \
