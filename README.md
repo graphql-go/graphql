@@ -69,6 +69,8 @@ For more complex examples, refer to the [examples/](https://github.com/graphql-g
 | [graphql-relay-go](https://github.com/graphql-go/graphql-relay-go) | [Hafiz Ismail](https://github.com/sogko) | Lib to construct a graphql-go server supporting react-relay. |
 | [golang-relay-starter-kit](https://github.com/sogko/golang-relay-starter-kit) | [Hafiz Ismail](https://github.com/sogko) | Barebones starting point for a Relay application with Golang GraphQL server. |
 | [dataloader](https://github.com/nicksrandall/dataloader) | [Nick Randall](https://github.com/nicksrandall) | [DataLoader](https://github.com/facebook/dataloader) implementation in Go. |
+| [graphql-upload](https://github.com/jpascal/graphql-upload) | [Evgeniy Shurmin](https://github.com/jpascal) | This middleware add ability to to handle POST/GET single and batch requests and add handle file uploads. |
+
 
 ### Blog Posts
 - [Golang + GraphQL + Relay](https://wehavefaces.net/learn-golang-graphql-relay-1-e59ea174a902)
