@@ -372,9 +372,22 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 	"StringValue": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case *ast.StringValue:
-			return visitor.ActionUpdate, `"` + fmt.Sprintf("%v", node.Value) + `"`
+			str := node.Value
+			// Handle block-strings
+			// Section 2.9.4 graphql spec block string is
+			// identical to standard quoted string with
+			// newlines escaped.
+			if strings.Contains(str, "\n") {
+				str = strings.ReplaceAll(str, "\n", "\\n")
+			}
+			return visitor.ActionUpdate, `"` + fmt.Sprintf("%v", str) + `"`
 		case map[string]interface{}:
-			return visitor.ActionUpdate, `"` + getMapValueString(node, "Value") + `"`
+			str := getMapValueString(node, "Value")
+			// Handle block-strings
+			if strings.Contains(str, "\n") {
+				str = strings.ReplaceAll(str, "\n", "\\n")
+			}
+			return visitor.ActionUpdate, `"` + str + `"`
 		}
 		return visitor.ActionNoChange, nil
 	},
