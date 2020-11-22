@@ -28,7 +28,7 @@ func BindFields(obj interface{}) Fields {
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 
-		tag := extractTag(field.Tag)
+		tag := extractTag(field)
 		if tag == "-" {
 			continue
 		}
@@ -130,7 +130,7 @@ func extractValue(originTag string, obj interface{}) interface{} {
 
 	for j := 0; j < val.NumField(); j++ {
 		field := val.Type().Field(j)
-		found := originTag == extractTag(field.Tag)
+		found := originTag == extractTag(field)
 		if field.Type.Kind() == reflect.Struct {
 			itf := val.Field(j).Interface()
 
@@ -152,10 +152,14 @@ func extractValue(originTag string, obj interface{}) interface{} {
 	return nil
 }
 
-func extractTag(tag reflect.StructTag) string {
-	t := tag.Get(TAG)
-	if t != "" {
+func extractTag(strct reflect.StructField) string {
+	t := strct.Tag.Get(TAG)
+	switch {
+	case t != "": //work as tags specified
 		t = strings.Split(t, ",")[0]
+	case strct.Anonymous: //embedding
+	default:
+		t = strings.ToLower(strct.Name)
 	}
 	return t
 }
@@ -167,7 +171,7 @@ func BindArg(obj interface{}, tags ...string) FieldConfigArgument {
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Type().Field(i)
 
-		mytag := extractTag(field.Tag)
+		mytag := extractTag(field)
 		if inArray(tags, mytag) {
 			config[mytag] = &ArgumentConfig{
 				Type: getGraphType(field.Type),
