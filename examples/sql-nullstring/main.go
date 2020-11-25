@@ -192,6 +192,9 @@ query {
 		log.Fatal(r1)
 	}
 	b1, err := json.MarshalIndent(r1, "", "  ")
+	if err != nil {
+		log.Fatal(err)
+	}
 	b2, err := json.MarshalIndent(r2, "", "  ")
 	if err != nil {
 		log.Fatal(err)
