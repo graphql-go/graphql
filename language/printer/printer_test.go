@@ -186,3 +186,17 @@ fragment frag on Follower {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, results))
 	}
 }
+
+func TestPrinter_CorrectlyPrintsStringArgumentsWithProperQuoting(t *testing.T) {
+	queryAst := `query { foo(jsonStr: "{\"foo\": \"bar\"}") }`
+	expected := `{
+  foo(jsonStr: "{\"foo\": \"bar\"}")
+}
+`
+	astDoc := parse(t, queryAst)
+	results := printer.Print(astDoc)
+
+	if !reflect.DeepEqual(expected, results) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, results))
+	}
+}

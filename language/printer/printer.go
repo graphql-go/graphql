@@ -2,6 +2,7 @@ package printer
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"reflect"
@@ -372,7 +373,7 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 	"StringValue": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case *ast.StringValue:
-			return visitor.ActionUpdate, `"` + fmt.Sprintf("%v", node.Value) + `"`
+			return visitor.ActionUpdate, strconv.Quote(node.Value)
 		case map[string]interface{}:
 			return visitor.ActionUpdate, `"` + getMapValueString(node, "Value") + `"`
 		}
