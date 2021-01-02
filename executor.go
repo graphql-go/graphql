@@ -800,10 +800,8 @@ func completeAbstractValue(eCtx *executionContext, returnType Abstract, fieldAST
 		runtimeType = defaultResolveTypeFn(resolveTypeParams, returnType)
 	}
 
-	err := invariant(runtimeType != nil,
-		fmt.Sprintf(`Abstract type %v must resolve to an Object type at runtime `+
-			`for field %v.%v with value "%v", received "%v".`,
-			returnType, info.ParentType, info.FieldName, result, runtimeType),
+	err := invariantf(runtimeType != nil, `Abstract type %v must resolve to an Object type at runtime `+
+		`for field %v.%v with value "%v", received "%v".`, returnType, info.ParentType, info.FieldName, result, runtimeType,
 	)
 	if err != nil {
 		panic(err)
