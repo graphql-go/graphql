@@ -6,7 +6,7 @@ Supports: queries, mutations & subscriptions.
 
 ### Documentation
 
-godoc: https://godoc.org/github.com/graphql-go/graphql
+godoc: https://pkg.go.dev/github.com/graphql-go/graphql
 
 ### Getting Started
 
