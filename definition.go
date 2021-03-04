@@ -656,6 +656,13 @@ func (st *Argument) Error() error {
 	return nil
 }
 
+// IsRequired returns if an argument is required,
+// i.e. cannot be omitted.
+func (st *Argument) IsRequired() bool {
+	_, isOfTypeNonNull := st.Type.(*NonNull)
+	return isOfTypeNonNull && st.DefaultValue == nil
+}
+
 // Interface Type Definition
 //
 // When a field can return one of a heterogeneous set of types, a Interface type
