@@ -283,6 +283,9 @@ func readString(s *source.Source, start int) (Token, error) {
 							fmt.Sprintf("Invalid character escape sequence: "+
 								"\\u%v", string(body[position+1:position+5])))
 					}
+					if charCode < 0x0020 && charCode != 0x0009 {
+						return Token{}, gqlerrors.NewSyntaxError(s, runePosition, fmt.Sprintf(`Invalid character within String: %v.`, printCharCode(charCode)))
+					}
 					valueBuffer.WriteRune(charCode)
 					position += 4
 					runePosition += 4

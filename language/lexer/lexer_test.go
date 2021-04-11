@@ -343,6 +343,14 @@ func TestLexer_ReportsUsefulStringErrors(t *testing.T) {
 `,
 		},
 		{
+			Body: `"string with null \u0000 byte"`,
+			Expected: `Syntax Error GraphQL (1:20) Invalid character within String: "\\u0000".
+
+1: "string with null \u0000 byte"
+                      ^
+`,
+		},
+		{
 			Body: "\"multi\nline\"",
 			Expected: `Syntax Error GraphQL (1:7) Unterminated string.
 
