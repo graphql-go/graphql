@@ -88,7 +88,7 @@ func ParseLiteralNullString(valueAST ast.Value) interface{} {
 // NullableString graphql *Scalar type based of NullString
 var NullableString = graphql.NewScalar(graphql.ScalarConfig{
 	Name:         "NullableString",
-	Description:  "The `NullableString` type repesents a nullable SQL string.",
+	Description:  "The `NullableString` type represents a nullable SQL string.",
 	Serialize:    SerializeNullString,
 	ParseValue:   ParseNullString,
 	ParseLiteral: ParseLiteralNullString,
