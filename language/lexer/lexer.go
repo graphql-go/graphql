@@ -129,7 +129,7 @@ func readName(source *source.Source, position, runePosition int) Token {
 			break
 		}
 	}
-	return makeToken(NAME, runePosition, endRune, string(body[position:endByte]))
+	return makeToken(NAME, position, endByte, string(body[position:endByte]))
 }
 
 // Reads a number token from the source file, either a float
