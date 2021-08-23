@@ -47,7 +47,8 @@ var blogAuthor = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 var blogArticle = graphql.NewObject(graphql.ObjectConfig{
-	Name: "Article",
+	Name:        "Article",
+	Description: "Blog article description",
 	Fields: graphql.Fields{
 		"id": &graphql.Field{
 			Type: graphql.String,
@@ -664,5 +665,17 @@ func TestTypeSystem_DefinitionExample_CanAddInputObjectField(t *testing.T) {
 	}
 	if _, ok := fieldMap["newValue"]; !ok {
 		t.Fatal("Unexpected result, inputObject should have a field named 'newValue'")
+	}
+}
+
+func TestTypeSystem_DefinitionExample_GetsObjectProperties(t *testing.T) {
+	if blogArticle.Name() != "Article" {
+		t.Fatalf("blogArticle.Name() expected to equal `Article`, got: %v", blogArticle.Name())
+	}
+	if blogArticle.String() != "Article" {
+		t.Fatalf("blogArticle.String() expected to equal `Article`, got: %v", blogArticle.String())
+	}
+	if blogArticle.Description() != "Blog article description" {
+		t.Fatalf("blogArticle.Description() expected to equal `Article`, got: %v", blogArticle.Description())
 	}
 }
