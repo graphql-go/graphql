@@ -3,12 +3,13 @@ package testutil
 import (
 	"testing"
 
-	"github.com/bigdrum/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/location"
-	"github.com/graphql-go/graphql/language/parser"
-	"github.com/graphql-go/graphql/language/source"
 	"reflect"
+
+	"github.com/bigdrum/graphql"
+	"github.com/bigdrum/graphql/gqlerrors"
+	"github.com/bigdrum/graphql/language/location"
+	"github.com/bigdrum/graphql/language/parser"
+	"github.com/bigdrum/graphql/language/source"
 )
 
 var TestSchema *graphql.Schema

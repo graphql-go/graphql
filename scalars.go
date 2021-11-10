@@ -5,7 +5,7 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/graphql-go/graphql/language/ast"
+	"github.com/bigdrum/graphql/language/ast"
 )
 
 // As per the GraphQL Spec, Integers are only treated as valid when a valid

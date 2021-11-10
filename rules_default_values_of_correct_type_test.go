@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/bigdrum/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
+	"github.com/bigdrum/graphql/gqlerrors"
 	"github.com/bigdrum/graphql/testutil"
 )
 

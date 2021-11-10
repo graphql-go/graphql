@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/graphql-go/graphql/language/ast"
-	"github.com/graphql-go/graphql/language/visitor"
 	"reflect"
+
+	"github.com/bigdrum/graphql/language/ast"
+	"github.com/bigdrum/graphql/language/visitor"
 )
 
 func getMapValue(m map[string]interface{}, key string) interface{} {

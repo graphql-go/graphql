@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	"fmt"
+
 	"github.com/bigdrum/graphql"
-	"github.com/graphql-go/graphql/language/ast"
-	"github.com/graphql-go/graphql/language/kinds"
-	"github.com/graphql-go/graphql/language/parser"
-	"github.com/graphql-go/graphql/language/printer"
-	"github.com/graphql-go/graphql/language/visitor"
+	"github.com/bigdrum/graphql/language/ast"
+	"github.com/bigdrum/graphql/language/kinds"
+	"github.com/bigdrum/graphql/language/parser"
+	"github.com/bigdrum/graphql/language/printer"
+	"github.com/bigdrum/graphql/language/visitor"
 	"github.com/bigdrum/graphql/testutil"
 )
 

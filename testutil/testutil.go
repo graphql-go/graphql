@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/bigdrum/graphql"
-	"github.com/graphql-go/graphql/language/ast"
-	"github.com/graphql-go/graphql/language/parser"
+	"github.com/bigdrum/graphql/language/ast"
+	"github.com/bigdrum/graphql/language/parser"
 	"github.com/kr/pretty"
 )
 

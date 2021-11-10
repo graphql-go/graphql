@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/bigdrum/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/location"
+	"github.com/bigdrum/graphql/gqlerrors"
+	"github.com/bigdrum/graphql/language/location"
 	"github.com/bigdrum/graphql/testutil"
 )
 

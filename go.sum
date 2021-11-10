@@ -1,8 +1,6 @@
 github.com/bigdrum/godataloader v0.0.0-20181115170913-12476bd19234 h1:qu0nz2dRWNanuTDWPbzA2pjdCfLI4h6lGWnpYPj3b5A=
 github.com/bigdrum/godataloader v0.0.0-20181115170913-12476bd19234/go.mod h1:PtZFnZdZC6j7xPJkHOz3ICMiUZ5+DEaVD/HtPUTl01Y=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
-github.com/graphql-go/graphql v0.8.0 h1:JHRQMeQjofwqVvGwYnr8JnPTY0AxgVy1HpHSGPLdH0I=
-github.com/graphql-go/graphql v0.8.0/go.mod h1:nKiHzRM0qopJEwCITUuIsxk9PlVlwIiiI8pnJEhordQ=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.3.0 h1:WgNl7dwNpEZ6jJ9k1snq4pZsg7DOEN8hP9Xw0Tsjwk0=
 github.com/kr/pretty v0.3.0/go.mod h1:640gp4NfQd8pI5XOwp5fnNeVWj67G7CFk/SaSQn7NBk=
