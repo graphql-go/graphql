@@ -3,7 +3,7 @@ package dataloaderexample_test
 import (
 	"testing"
 
-	"github.com/graphql-go/graphql/examples/dataloader"
+	dataloaderexample "github.com/bigdrum/graphql/examples/dataloader"
 )
 
 func TestQuery(t *testing.T) {
