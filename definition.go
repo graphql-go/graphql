@@ -589,6 +589,7 @@ type FieldResolveFn func(p ResolveParams) (interface{}, error)
 
 type ResolveInfo struct {
 	FieldName      string
+	FieldNameAlias string
 	FieldASTs      []*ast.Field
 	Path           *ResponsePath
 	ReturnType     Output
