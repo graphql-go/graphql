@@ -268,3 +268,300 @@ func TestEmptyStringIsNotNull(t *testing.T) {
 		t.Errorf("wrong result, query: %v, graphql result diff: %v", query, testutil.Diff(expected, result))
 	}
 }
+
+func TestNullLiteralArguments(t *testing.T) {
+	checkForNull := func(p graphql.ResolveParams) (interface{}, error) {
+		arg, ok := p.Args["arg"]
+		if !ok || arg != nil {
+			t.Errorf("expected null for input arg, got %#v", arg)
+		}
+		return "yay", nil
+	}
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"checkNullStringArg": &graphql.Field{
+					Type: graphql.String,
+					Args: graphql.FieldConfigArgument{
+						"arg": &graphql.ArgumentConfig{Type: graphql.String},
+					},
+					Resolve: checkForNull,
+				},
+				"checkNullIntArg": &graphql.Field{
+					Type: graphql.String,
+					Args: graphql.FieldConfigArgument{
+						"arg": &graphql.ArgumentConfig{Type: graphql.Int},
+					},
+					Resolve: checkForNull,
+				},
+				"checkNullBooleanArg": &graphql.Field{
+					Type: graphql.String,
+					Args: graphql.FieldConfigArgument{
+						"arg": &graphql.ArgumentConfig{Type: graphql.Boolean},
+					},
+					Resolve: checkForNull,
+				},
+				"checkNullListArg": &graphql.Field{
+					Type: graphql.String,
+					Args: graphql.FieldConfigArgument{
+						"arg": &graphql.ArgumentConfig{Type: graphql.NewList(graphql.String)},
+					},
+					Resolve: checkForNull,
+				},
+				"checkNullInputObjectArg": &graphql.Field{
+					Type: graphql.String,
+					Args: graphql.FieldConfigArgument{
+						"arg": &graphql.ArgumentConfig{Type: graphql.NewInputObject(
+							graphql.InputObjectConfig{
+								Name: "InputType",
+								Fields: graphql.InputObjectConfigFieldMap{
+									"field1": {Type: graphql.String},
+									"field2": {Type: graphql.Int},
+								},
+							})},
+					},
+					Resolve: checkForNull,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("wrong result, unexpected errors: %v", err.Error())
+	}
+	query := `{ checkNullStringArg(arg:null) checkNullIntArg(arg:null) checkNullBooleanArg(arg:null) checkNullListArg(arg:null) checkNullInputObjectArg(arg:null) }`
+
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+	})
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	expected := map[string]interface{}{
+		"checkNullStringArg": "yay", "checkNullIntArg": "yay",
+		"checkNullBooleanArg": "yay", "checkNullListArg": "yay",
+		"checkNullInputObjectArg": "yay"}
+	if !reflect.DeepEqual(result.Data, expected) {
+		t.Errorf("wrong result, query: %v, graphql result diff: %v", query, testutil.Diff(expected, result))
+	}
+}
+
+func TestNullLiteralDefaultVariableValue(t *testing.T) {
+	checkForNull := func(p graphql.ResolveParams) (interface{}, error) {
+		arg, ok := p.Args["arg"]
+		if !ok || arg != nil {
+			t.Errorf("expected null for input arg, got %#v", arg)
+		}
+		return "yay", nil
+	}
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"checkNullStringArg": &graphql.Field{
+					Type: graphql.String,
+					Args: graphql.FieldConfigArgument{
+						"arg": &graphql.ArgumentConfig{Type: graphql.String},
+					},
+					Resolve: checkForNull,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("wrong result, unexpected errors: %v", err.Error())
+	}
+	query := `query Test($value: String = null) { checkNullStringArg(arg: $value) }`
+
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+		VariableValues: map[string]interface{}{"value2": nil},
+	})
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	expected := map[string]interface{}{ "checkNullStringArg": "yay", }
+	if !reflect.DeepEqual(result.Data, expected) {
+		t.Errorf("wrong result, query: %v, graphql result diff: %v", query, testutil.Diff(expected, result))
+	}
+}
+
+func TestNullLiteralVariables(t *testing.T) {
+	checkForNull := func(p graphql.ResolveParams) (interface{}, error) {
+		arg, ok := p.Args["arg"]
+		if !ok || arg != nil {
+			t.Errorf("expected null for input arg, got %#v", arg)
+		}
+		return "yay", nil
+	}
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"checkNullStringArg": &graphql.Field{
+					Type: graphql.String,
+					Args: graphql.FieldConfigArgument{
+						"arg": &graphql.ArgumentConfig{Type: graphql.String},
+					},
+					Resolve: checkForNull,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("wrong result, unexpected errors: %v", err.Error())
+	}
+	query := `query Test($value: String) { checkNullStringArg(arg: $value) }`
+
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+		VariableValues: map[string]interface{}{"value": nil},
+	})
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	expected := map[string]interface{}{ "checkNullStringArg": "yay", }
+	if !reflect.DeepEqual(result.Data, expected) {
+		t.Errorf("wrong result, query: %v, graphql result diff: %v", query, testutil.Diff(expected, result))
+	}
+}
+
+func TestErrorNullLiteralForNotNullArgument(t *testing.T) {
+	checkNotCalled := func(p graphql.ResolveParams) (interface{}, error) {
+		t.Error("shouldn't have been called")
+		return nil, nil
+	}
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"checkNotNullArg": &graphql.Field{
+					Type: graphql.String,
+					Args: graphql.FieldConfigArgument{
+						"arg": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String) },
+					},
+					Resolve: checkNotCalled,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("wrong result, unexpected errors: %v", err.Error())
+	}
+	query := `{ checkNotNullArg(arg:null) }`
+
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+	})
+
+	if len(result.Errors) == 0 {
+		t.Fatalf("expected errors, got: %v", result)
+	}
+
+	expectedMessage := `Argument "arg" has invalid value <nil>.
+Expected "String!", found null.`;
+
+	if result.Errors[0].Message != expectedMessage {
+		t.Fatalf("unexpected error.\nexpected:\n%s\ngot:\n%s\n", expectedMessage, result.Errors[0].Message)
+	}
+}
+
+func TestNullInputObjectFields(t *testing.T) {
+	checkForNull := func(p graphql.ResolveParams) (interface{}, error) {
+		arg := p.Args["arg"]
+		expectedValue := map[string]interface{}{ "field1": nil, "field2": nil, "field3": nil, "field4" : "abc", "field5": 42, "field6": true}
+		if value, ok := arg.(map[string]interface{}); !ok  {
+			t.Errorf("expected map[string]interface{} for input arg, got %#v", arg)
+		} else if !reflect.DeepEqual(expectedValue, value) {
+			t.Errorf("unexpected input object, diff: %v", testutil.Diff(expectedValue, value))
+		}
+		return "yay", nil
+	}
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"checkNullInputObjectFields": &graphql.Field{
+					Type: graphql.String,
+					Args: graphql.FieldConfigArgument{
+						"arg": &graphql.ArgumentConfig{Type: graphql.NewInputObject(
+							graphql.InputObjectConfig{
+								Name: "InputType",
+								Fields: graphql.InputObjectConfigFieldMap{
+									"field1": {Type: graphql.String},
+									"field2": {Type: graphql.Int},
+									"field3": {Type: graphql.Boolean},
+									"field4": {Type: graphql.String},
+									"field5": {Type: graphql.Int},
+									"field6": {Type: graphql.Boolean},
+								},
+							})},
+					},
+					Resolve: checkForNull,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("wrong result, unexpected errors: %v", err.Error())
+	}
+	query := `{ checkNullInputObjectFields(arg: {field1: null, field2: null, field3: null, field4: "abc", field5: 42, field6: true }) }`
+
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+	})
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	expected := map[string]interface{}{ "checkNullInputObjectFields": "yay" }
+	if !reflect.DeepEqual(result.Data, expected) {
+		t.Errorf("wrong result, query: %v, graphql result diff: %v", query, testutil.Diff(expected, result))
+	}
+}
+
+func TestErrorNullInList(t *testing.T) {
+	checkNotCalled := func(p graphql.ResolveParams) (interface{}, error) {
+		t.Error("shouldn't have been called")
+		return nil, nil
+	}
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"checkNotNullInListArg": &graphql.Field{
+					Type: graphql.String,
+					Args: graphql.FieldConfigArgument{
+						"arg": &graphql.ArgumentConfig{Type: graphql.NewList(graphql.String) },
+					},
+					Resolve: checkNotCalled,
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("wrong result, unexpected errors: %v", err.Error())
+	}
+	query := `{ checkNotNullInListArg(arg: [null, null]) }`
+
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: query,
+	})
+
+	if len(result.Errors) == 0 {
+		t.Fatalf("expected errors, got: %v", result)
+	}
+
+	expectedMessage := `Argument "arg" has invalid value [<nil>, <nil>].
+In element #1: Unexpected null literal.
+In element #2: Unexpected null literal.`
+
+	if result.Errors[0].Message != expectedMessage {
+		t.Fatalf("unexpected error.\nexpected:\n%s\ngot:\n%s\n", expectedMessage, result.Errors[0].Message)
+	}
+}

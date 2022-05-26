@@ -388,6 +388,15 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		}
 		return visitor.ActionNoChange, nil
 	},
+	"NullValue": func(p visitor.VisitFuncParams) (string, interface{}) {
+		switch node := p.Node.(type) {
+		case *ast.NullValue:
+			return visitor.ActionUpdate, fmt.Sprintf("%v", node.Value)
+		case map[string]interface{}:
+			return visitor.ActionUpdate, getMapValueString(node, "Value")
+		}
+		return visitor.ActionNoChange, nil
+	},
 	"EnumValue": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {
 		case *ast.EnumValue:

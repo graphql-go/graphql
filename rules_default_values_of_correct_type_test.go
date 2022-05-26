@@ -97,7 +97,7 @@ func TestValidate_VariableDefaultValuesOfCorrectType_ListVariablesWithInvalidIte
 		[]gqlerrors.FormattedError{
 			testutil.RuleError(
 				`Variable "$a" has invalid default value: ["one", 2].`+
-					"\nIn element #1: Expected type \"String\", found 2.",
+					"\nIn element #2: Expected type \"String\", found 2.",
 				2, 40),
 		})
 }
