@@ -706,3 +706,25 @@ func TestTypeSystem_DefinitionExample_IncludesUnionTypesThunk(t *testing.T) {
 		t.Fatalf("Unexpected result, someUnion should have two unionTypes, has %d", len(unionTypes))
 	}
 }
+
+func TestTypeSystem_DefinitionExample_HandlesInvalidUnionTypes(t *testing.T) {
+	someUnion := graphql.NewUnion(graphql.UnionConfig{
+		Name: "SomeUnion",
+		Types: (graphql.InterfacesThunk)(func() []*graphql.Interface {
+			return []*graphql.Interface{}
+		}),
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
+			return nil
+		},
+	})
+
+	unionTypes := someUnion.Types()
+	expected := "Unknown Union.Types type: graphql.InterfacesThunk"
+
+	if someUnion.Error().Error() != expected {
+		t.Fatalf("Unexpected error, got: %v, want: %v", someUnion.Error().Error(), expected)
+	}
+	if unionTypes != nil {
+		t.Fatalf("Unexpected result, got: %v, want: nil", unionTypes)
+	}
+}
