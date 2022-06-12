@@ -796,15 +796,19 @@ type Union struct {
 	PrivateDescription string `json:"description"`
 	ResolveType        ResolveTypeFn
 
-	typeConfig    UnionConfig
-	types         []*Object
-	possibleTypes map[string]bool
+	typeConfig      UnionConfig
+	initalizedTypes bool
+	types           []*Object
+	possibleTypes   map[string]bool
 
 	err error
 }
+
+type UnionTypesThunk func() []*Object
+
 type UnionConfig struct {
-	Name        string    `json:"name"`
-	Types       []*Object `json:"types"`
+	Name        string      `json:"name"`
+	Types       interface{} `json:"types"`
 	ResolveType ResolveTypeFn
 	Description string `json:"description"`
 }
@@ -822,48 +826,80 @@ func NewUnion(config UnionConfig) *Union {
 	objectType.PrivateDescription = config.Description
 	objectType.ResolveType = config.ResolveType
 
-	if objectType.err = invariantf(
-		len(config.Types) > 0,
-		`Must provide Array of types for Union %v.`, config.Name,
-	); objectType.err != nil {
-		return objectType
+	objectType.typeConfig = config
+
+	return objectType
+}
+
+func (ut *Union) Types() []*Object {
+	if ut.initalizedTypes {
+		return ut.types
 	}
-	for _, ttype := range config.Types {
-		if objectType.err = invariantf(
+
+	var unionTypes []*Object
+	switch utype := ut.typeConfig.Types.(type) {
+	case UnionTypesThunk:
+		unionTypes = utype()
+	case []*Object:
+		unionTypes = utype
+	case nil:
+	default:
+		ut.err = fmt.Errorf("Unknown Union.Types type: %T", ut.typeConfig.Types)
+		ut.initalizedTypes = true
+		return nil
+	}
+
+	ut.types, ut.err = defineUnionTypes(ut, unionTypes)
+	ut.initalizedTypes = true
+	return ut.types
+}
+
+func defineUnionTypes(objectType *Union, unionTypes []*Object) ([]*Object, error) {
+	definedUnionTypes := []*Object{}
+
+	if err := invariantf(
+		len(unionTypes) > 0,
+		`Must provide Array of types for Union %v.`, objectType.Name(),
+	); err != nil {
+		return definedUnionTypes, err
+	}
+
+	for _, ttype := range unionTypes {
+		if err := invariantf(
 			ttype != nil,
 			`%v may only contain Object types, it cannot contain: %v.`, objectType, ttype,
-		); objectType.err != nil {
-			return objectType
+		); err != nil {
+			return definedUnionTypes, err
 		}
 		if objectType.ResolveType == nil {
-			if objectType.err = invariantf(
+			if err := invariantf(
 				ttype.IsTypeOf != nil,
 				`Union Type %v does not provide a "resolveType" function `+
 					`and possible Type %v does not provide a "isTypeOf" `+
 					`function. There is no way to resolve this possible type `+
 					`during execution.`, objectType, ttype,
-			); objectType.err != nil {
-				return objectType
+			); err != nil {
+				return definedUnionTypes, err
 			}
 		}
+		definedUnionTypes = append(definedUnionTypes, ttype)
 	}
-	objectType.types = config.Types
-	objectType.typeConfig = config
 
-	return objectType
+	return definedUnionTypes, nil
 }
-func (ut *Union) Types() []*Object {
-	return ut.types
-}
+
 func (ut *Union) String() string {
 	return ut.PrivateName
 }
+
 func (ut *Union) Name() string {
 	return ut.PrivateName
 }
+
 func (ut *Union) Description() string {
 	return ut.PrivateDescription
 }
+
 func (ut *Union) Error() error {
 	return ut.err
 }
