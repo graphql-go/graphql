@@ -248,6 +248,10 @@ func (def *FieldDefinition) GetDescription() *StringValue {
 	return def.Description
 }
 
+func (def *FieldDefinition) GetName() *Name {
+	return def.Name
+}
+
 // InputValueDefinition implements Node
 type InputValueDefinition struct {
 	Kind         string
@@ -284,6 +288,10 @@ func (def *InputValueDefinition) GetLoc() *Location {
 
 func (def *InputValueDefinition) GetDescription() *StringValue {
 	return def.Description
+}
+
+func (def *InputValueDefinition) GetName() *Name {
+	return def.Name
 }
 
 // InterfaceDefinition implements Node, Definition
@@ -474,6 +482,10 @@ func (def *EnumValueDefinition) GetLoc() *Location {
 
 func (def *EnumValueDefinition) GetDescription() *StringValue {
 	return def.Description
+}
+
+func (def *EnumValueDefinition) GetName() *Name {
+	return def.Name
 }
 
 // InputObjectDefinition implements Node, Definition

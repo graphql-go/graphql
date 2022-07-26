@@ -44,6 +44,10 @@ func (f *Field) GetSelectionSet() *SelectionSet {
 	return f.SelectionSet
 }
 
+func (f *Field) GetName() *Name {
+	return f.Name
+}
+
 // FragmentSpread implements Node, Selection
 type FragmentSpread struct {
 	Kind       string
@@ -74,6 +78,10 @@ func (fs *FragmentSpread) GetLoc() *Location {
 
 func (fs *FragmentSpread) GetSelectionSet() *SelectionSet {
 	return nil
+}
+
+func (fs *FragmentSpread) GetName() *Name {
+	return fs.Name
 }
 
 // InlineFragment implements Node, Selection
