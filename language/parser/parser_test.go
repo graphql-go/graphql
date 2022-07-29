@@ -736,6 +736,15 @@ func TestParseCreatesAst(t *testing.T) {
 
 }
 
+func TestDoesNotAcceptStringAsDefinition(t *testing.T) {
+	test := errorMessageTest{
+		`String`,
+		`Syntax Error GraphQL (1:1) Unexpected Name "String"`,
+		false,
+	}
+	testErrorMessage(t, test)
+}
+
 type errorMessageTest struct {
 	source          interface{}
 	expectedMessage string
