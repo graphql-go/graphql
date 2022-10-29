@@ -72,15 +72,16 @@ func importJSONDataFromFile(fileName string) error {
 	}
 
 	fields := make(graphql.Fields)
-	args := make(graphql.FieldConfigArgument)
+	args := graphql.FieldConfigArgument{}
 	for _, item := range data {
 		for k := range item {
 			fields[k] = &graphql.Field{
 				Type: graphql.String,
 			}
-			args[k] = &graphql.ArgumentConfig{
+			args = append(args, &graphql.ArgumentConfig{
+				Name: k,
 				Type: graphql.String,
-			}
+			})
 		}
 	}
 

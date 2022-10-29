@@ -853,7 +853,8 @@ func TestIntrospection_ExecutesAnInputObject(t *testing.T) {
 			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"complex": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "complex",
 						Type: testInputObject,
 					},
 				},

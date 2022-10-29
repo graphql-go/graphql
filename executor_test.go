@@ -142,7 +142,8 @@ func TestExecutesArbitraryCode(t *testing.T) {
 			},
 			"pic": &graphql.Field{
 				Args: graphql.FieldConfigArgument{
-					"size": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "size",
 						Type: graphql.Int,
 					},
 				},
@@ -419,10 +420,12 @@ func TestCorrectlyThreadsArguments(t *testing.T) {
 			Fields: graphql.Fields{
 				"b": &graphql.Field{
 					Args: graphql.FieldConfigArgument{
-						"numArg": &graphql.ArgumentConfig{
+						&graphql.ArgumentConfig{
+							Name: "numArg",
 							Type: graphql.Int,
 						},
-						"stringArg": &graphql.ArgumentConfig{
+						&graphql.ArgumentConfig{
+							Name: "stringArg",
 							Type: graphql.String,
 						},
 					},
@@ -1330,19 +1333,24 @@ func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
 				"field": &graphql.Field{
 					Type: graphql.String,
 					Args: graphql.FieldConfigArgument{
-						"a": &graphql.ArgumentConfig{
+						&graphql.ArgumentConfig{
+							Name: "a",
 							Type: graphql.Boolean,
 						},
-						"b": &graphql.ArgumentConfig{
+						&graphql.ArgumentConfig{
+							Name: "b",
 							Type: graphql.Boolean,
 						},
-						"c": &graphql.ArgumentConfig{
+						&graphql.ArgumentConfig{
+							Name: "c",
 							Type: graphql.Boolean,
 						},
-						"d": &graphql.ArgumentConfig{
+						&graphql.ArgumentConfig{
+							Name: "d",
 							Type: graphql.Int,
 						},
-						"e": &graphql.ArgumentConfig{
+						&graphql.ArgumentConfig{
+							Name: "e",
 							Type: graphql.Int,
 						},
 					},
@@ -1601,7 +1609,8 @@ func TestQuery_InputObjectUsesFieldDefaultValueFn(t *testing.T) {
 			"a": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"foo": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "foo",
 						Type: graphql.NewNonNull(inputType),
 					},
 				},
@@ -1651,7 +1660,8 @@ func TestMutation_ExecutionAddsErrorsFromFieldResolveFn(t *testing.T) {
 			"foo": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"f": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "f",
 						Type: graphql.String,
 					},
 				},
@@ -1662,7 +1672,8 @@ func TestMutation_ExecutionAddsErrorsFromFieldResolveFn(t *testing.T) {
 			"bar": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"b": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "b",
 						Type: graphql.String,
 					},
 				},
@@ -1708,7 +1719,8 @@ func TestMutation_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 			"foo": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"f": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "f",
 						Type: graphql.String,
 					},
 				},
@@ -1719,7 +1731,8 @@ func TestMutation_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 			"bar": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"b": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "b",
 						Type: graphql.String,
 					},
 				},

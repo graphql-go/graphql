@@ -20,7 +20,8 @@ func init() {
 			"name": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"surname": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "surname",
 						Type: graphql.Boolean,
 					},
 				},
@@ -33,7 +34,8 @@ func init() {
 			"name": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"surname": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "surname",
 						Type: graphql.Boolean,
 					},
 				},
@@ -46,7 +48,8 @@ func init() {
 			"name": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"surname": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "surname",
 						Type: graphql.Boolean,
 					},
 				},
@@ -76,7 +79,8 @@ func init() {
 			"name": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"surname": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "surname",
 						Type: graphql.Boolean,
 					},
 				},
@@ -93,10 +97,12 @@ func init() {
 			"doesKnowCommand": &graphql.Field{
 				Type: graphql.Boolean,
 				Args: graphql.FieldConfigArgument{
-					"dogCommand": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "dogCommand",
 						Type: dogCommandEnum,
 					},
-					"nextDogCommand": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "nextDogCommand",
 						Type: dogCommandEnum,
 					},
 				},
@@ -104,7 +110,8 @@ func init() {
 			"isHousetrained": &graphql.Field{
 				Type: graphql.Boolean,
 				Args: graphql.FieldConfigArgument{
-					"atOtherHomes": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name:         "atOtherHomes",
 						Type:         graphql.Boolean,
 						DefaultValue: true,
 					},
@@ -113,10 +120,12 @@ func init() {
 			"isAtLocation": &graphql.Field{
 				Type: graphql.Boolean,
 				Args: graphql.FieldConfigArgument{
-					"x": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "x",
 						Type: graphql.Int,
 					},
-					"y": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "y",
 						Type: graphql.Int,
 					},
 				},
@@ -155,7 +164,8 @@ func init() {
 			"name": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"surname": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "surname",
 						Type: graphql.Boolean,
 					},
 				},
@@ -207,7 +217,8 @@ func init() {
 			"name": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"surname": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "surname",
 						Type: graphql.Boolean,
 					},
 				},
@@ -238,7 +249,8 @@ func init() {
 			"name": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"surname": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "surname",
 						Type: graphql.Boolean,
 					},
 				},
@@ -303,7 +315,8 @@ func init() {
 			"intArgField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"intArg": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "intArg",
 						Type: graphql.Int,
 					},
 				},
@@ -311,7 +324,8 @@ func init() {
 			"nonNullIntArgField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"nonNullIntArg": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "nonNullIntArg",
 						Type: graphql.NewNonNull(graphql.Int),
 					},
 				},
@@ -319,7 +333,8 @@ func init() {
 			"stringArgField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"stringArg": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "stringArg",
 						Type: graphql.String,
 					},
 				},
@@ -327,7 +342,8 @@ func init() {
 			"booleanArgField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"booleanArg": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "booleanArg",
 						Type: graphql.Boolean,
 					},
 				},
@@ -335,7 +351,8 @@ func init() {
 			"enumArgField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"enumArg": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "enumArg",
 						Type: furColorEnum,
 					},
 				},
@@ -343,7 +360,8 @@ func init() {
 			"floatArgField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"floatArg": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "floatArg",
 						Type: graphql.Float,
 					},
 				},
@@ -351,7 +369,8 @@ func init() {
 			"idArgField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"idArg": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "idArg",
 						Type: graphql.ID,
 					},
 				},
@@ -359,7 +378,8 @@ func init() {
 			"stringListArgField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"stringListArg": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "stringListArg",
 						Type: graphql.NewList(graphql.String),
 					},
 				},
@@ -367,7 +387,8 @@ func init() {
 			"complexArgField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"complexArg": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "complexArg",
 						Type: complexInputObject,
 					},
 				},
@@ -375,10 +396,12 @@ func init() {
 			"multipleReqs": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"req1": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "req1",
 						Type: graphql.NewNonNull(graphql.Int),
 					},
-					"req2": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "req2",
 						Type: graphql.NewNonNull(graphql.Int),
 					},
 				},
@@ -386,11 +409,13 @@ func init() {
 			"multipleOpts": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"opt1": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name:         "opt1",
 						Type:         graphql.Int,
 						DefaultValue: 0,
 					},
-					"opt2": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name:         "opt2",
 						Type:         graphql.Int,
 						DefaultValue: 0,
 					},
@@ -399,17 +424,21 @@ func init() {
 			"multipleOptAndReq": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"req1": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "req1",
 						Type: graphql.NewNonNull(graphql.Int),
 					},
-					"req2": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "req2",
 						Type: graphql.NewNonNull(graphql.Int),
 					},
-					"opt1": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name:         "opt1",
 						Type:         graphql.Int,
 						DefaultValue: 0,
 					},
-					"opt2": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name:         "opt2",
 						Type:         graphql.Int,
 						DefaultValue: 0,
 					},
@@ -422,7 +451,8 @@ func init() {
 		Fields: graphql.Fields{
 			"human": &graphql.Field{
 				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "id",
 						Type: graphql.ID,
 					},
 				},

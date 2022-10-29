@@ -124,7 +124,8 @@ func schemaWithInputObject(ttype graphql.Input) (graphql.Schema, error) {
 				"f": &graphql.Field{
 					Type: graphql.String,
 					Args: graphql.FieldConfigArgument{
-						"args": &graphql.ArgumentConfig{
+						&graphql.ArgumentConfig{
+							Name: "args",
 							Type: ttype,
 						},
 					},
@@ -226,7 +227,8 @@ func schemaWithArgOfType(ttype graphql.Type) (graphql.Schema, error) {
 			"badField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"badArg": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "badArg",
 						Type: ttype,
 					},
 				},
@@ -261,7 +263,8 @@ func schemaWithInputFieldOfType(ttype graphql.Type) (graphql.Schema, error) {
 				"f": &graphql.Field{
 					Type: graphql.String,
 					Args: graphql.FieldConfigArgument{
-						"badArg": &graphql.ArgumentConfig{
+						&graphql.ArgumentConfig{
+							Name: "badArg",
 							Type: badInputObject,
 						},
 					},
@@ -495,7 +498,8 @@ func TestTypeSystem_FieldsArgsMustBeProperlyNamed_AcceptsFieldArgsWithValidNames
 			"goodField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"goodArgs": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "goodArgs",
 						Type: graphql.String,
 					},
 				},
@@ -513,7 +517,8 @@ func TestTypeSystem_FieldsArgsMustBeProperlyNamed_RejectsFieldArgWithInvalidName
 			"badField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"bad-name-with-dashes": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "bad-name-with-dashes",
 						Type: graphql.String,
 					},
 				},
@@ -533,7 +538,8 @@ func TestTypeSystem_FieldsArgsMustBeObjects_AcceptsAnObjectTypeWithFieldArgs(t *
 			"goodField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"goodArgs": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "goodArgs",
 						Type: graphql.String,
 					},
 				},
@@ -1130,7 +1136,8 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"input": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "input",
 						Type: graphql.String,
 					},
 				},
@@ -1144,7 +1151,8 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"input": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "input",
 						Type: graphql.String,
 					},
 				},
@@ -1166,7 +1174,8 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"input": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "input",
 						Type: graphql.String,
 					},
 				},
@@ -1180,7 +1189,8 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"input": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "input",
 						Type: graphql.String,
 					},
 				},
@@ -1205,7 +1215,8 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"input": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "input",
 						Type: graphql.String,
 					},
 				},
@@ -1219,10 +1230,12 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"input": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "input",
 						Type: graphql.String,
 					},
-					"anotherInput": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "anotherInput",
 						Type: graphql.String,
 					},
 				},
@@ -1244,7 +1257,8 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWhi
 			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"input": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "input",
 						Type: graphql.String,
 					},
 				},
@@ -1258,10 +1272,12 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWhi
 			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"input": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "input",
 						Type: graphql.String,
 					},
-					"anotherInput": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "anotherInput",
 						Type: graphql.NewNonNull(graphql.String),
 					},
 				},
@@ -1284,7 +1300,8 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMis
 			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"input": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "input",
 						Type: graphql.String,
 					},
 				},
@@ -1449,7 +1466,8 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMis
 			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"input": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "input",
 						Type: graphql.String,
 					},
 				},
@@ -1481,7 +1499,8 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"input": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "input",
 						Type: graphql.String,
 					},
 				},
@@ -1495,7 +1514,8 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 			"field": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
-					"input": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "input",
 						Type: someScalarType,
 					},
 				},

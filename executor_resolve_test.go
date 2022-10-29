@@ -2,10 +2,11 @@ package graphql_test
 
 import (
 	"encoding/json"
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/testutil"
 	"reflect"
 	"testing"
+
+	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/testutil"
 )
 
 func testSchema(t *testing.T, testField *graphql.Field) graphql.Schema {
@@ -71,8 +72,8 @@ func TestExecutesResolveFunction_UsesProvidedResolveFunction(t *testing.T) {
 	schema := testSchema(t, &graphql.Field{
 		Type: graphql.String,
 		Args: graphql.FieldConfigArgument{
-			"aStr": &graphql.ArgumentConfig{Type: graphql.String},
-			"aInt": &graphql.ArgumentConfig{Type: graphql.Int},
+			&graphql.ArgumentConfig{Name: "aStr", Type: graphql.String},
+			&graphql.ArgumentConfig{Name: "aInt", Type: graphql.Int},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			b, err := json.Marshal(p.Args)
@@ -132,8 +133,8 @@ func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_With
 			},
 		}),
 		Args: graphql.FieldConfigArgument{
-			"aStr": &graphql.ArgumentConfig{Type: graphql.String},
-			"aInt": &graphql.ArgumentConfig{Type: graphql.Int},
+			&graphql.ArgumentConfig{Name: "aStr", Type: graphql.String},
+			&graphql.ArgumentConfig{Name: "aInt", Type: graphql.Int},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			aStr, _ := p.Args["aStr"].(string)
@@ -208,8 +209,8 @@ func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_With
 			},
 		}),
 		Args: graphql.FieldConfigArgument{
-			"aStr": &graphql.ArgumentConfig{Type: graphql.String},
-			"aInt": &graphql.ArgumentConfig{Type: graphql.Int},
+			&graphql.ArgumentConfig{Name: "aStr", Type: graphql.String},
+			&graphql.ArgumentConfig{Name: "aInt", Type: graphql.Int},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			aStr, _ := p.Args["aStr"].(string)

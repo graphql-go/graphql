@@ -99,10 +99,12 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 			"pic": &graphql.Field{
 				Type: blogImage,
 				Args: graphql.FieldConfigArgument{
-					"width": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "width",
 						Type: graphql.Int,
 					},
-					"height": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "height",
 						Type: graphql.Int,
 					},
 				},
@@ -152,7 +154,8 @@ func TestExecutesUsingAComplexSchema(t *testing.T) {
 			"article": &graphql.Field{
 				Type: blogArticle,
 				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "id",
 						Type: graphql.ID,
 					},
 				},

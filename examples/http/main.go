@@ -52,7 +52,8 @@ var queryType = graphql.NewObject(
 			"user": &graphql.Field{
 				Type: userType,
 				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "id",
 						Type: graphql.String,
 					},
 				},

@@ -70,7 +70,8 @@ var queryType = graphql.NewObject(
 				Type:        productType,
 				Description: "Get product by id",
 				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "id",
 						Type: graphql.Int,
 					},
 				},
@@ -110,13 +111,16 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        productType,
 			Description: "Create new product",
 			Args: graphql.FieldConfigArgument{
-				"name": &graphql.ArgumentConfig{
+				&graphql.ArgumentConfig{
+					Name: "name",
 					Type: graphql.NewNonNull(graphql.String),
 				},
-				"info": &graphql.ArgumentConfig{
+				&graphql.ArgumentConfig{
+					Name: "info",
 					Type: graphql.String,
 				},
-				"price": &graphql.ArgumentConfig{
+				&graphql.ArgumentConfig{
+					Name: "price",
 					Type: graphql.NewNonNull(graphql.Float),
 				},
 			},
@@ -140,16 +144,20 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        productType,
 			Description: "Update product by id",
 			Args: graphql.FieldConfigArgument{
-				"id": &graphql.ArgumentConfig{
+				&graphql.ArgumentConfig{
+					Name: "id",
 					Type: graphql.NewNonNull(graphql.Int),
 				},
-				"name": &graphql.ArgumentConfig{
+				&graphql.ArgumentConfig{
+					Name: "name",
 					Type: graphql.String,
 				},
-				"info": &graphql.ArgumentConfig{
+				&graphql.ArgumentConfig{
+					Name: "info",
 					Type: graphql.String,
 				},
-				"price": &graphql.ArgumentConfig{
+				&graphql.ArgumentConfig{
+					Name: "price",
 					Type: graphql.Float,
 				},
 			},
@@ -185,7 +193,8 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        productType,
 			Description: "Delete product by id",
 			Args: graphql.FieldConfigArgument{
-				"id": &graphql.ArgumentConfig{
+				&graphql.ArgumentConfig{
+					Name: "id",
 					Type: graphql.NewNonNull(graphql.Int),
 				},
 			},

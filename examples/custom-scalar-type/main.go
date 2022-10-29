@@ -79,7 +79,8 @@ func main() {
 				"customers": &graphql.Field{
 					Type: graphql.NewList(CustomerType),
 					Args: graphql.FieldConfigArgument{
-						"id": &graphql.ArgumentConfig{
+						&graphql.ArgumentConfig{
+							Name: "id",
 							Type: CustomScalarType,
 						},
 					},

@@ -73,15 +73,15 @@ func NewDirective(config DirectiveConfig) *Directive {
 
 	args := []*Argument{}
 
-	for argName, argConfig := range config.Args {
-		if dir.err = assertValidName(argName); dir.err != nil {
+	for _, arg := range config.Args {
+		if dir.err = assertValidName(arg.Name); dir.err != nil {
 			return dir
 		}
 		args = append(args, &Argument{
-			PrivateName:        argName,
-			PrivateDescription: argConfig.Description,
-			Type:               argConfig.Type,
-			DefaultValue:       argConfig.DefaultValue,
+			PrivateName:        arg.Name,
+			PrivateDescription: arg.Description,
+			Type:               arg.Type,
+			DefaultValue:       arg.DefaultValue,
 		})
 	}
 
@@ -103,7 +103,8 @@ var IncludeDirective = NewDirective(DirectiveConfig{
 		DirectiveLocationInlineFragment,
 	},
 	Args: FieldConfigArgument{
-		"if": &ArgumentConfig{
+		&ArgumentConfig{
+			Name:        "if",
 			Type:        NewNonNull(Boolean),
 			Description: "Included when true.",
 		},
@@ -116,7 +117,8 @@ var SkipDirective = NewDirective(DirectiveConfig{
 	Description: "Directs the executor to skip this field or fragment when the `if` " +
 		"argument is true.",
 	Args: FieldConfigArgument{
-		"if": &ArgumentConfig{
+		&ArgumentConfig{
+			Name:        "if",
 			Type:        NewNonNull(Boolean),
 			Description: "Skipped when true.",
 		},
@@ -133,7 +135,8 @@ var DeprecatedDirective = NewDirective(DirectiveConfig{
 	Name:        "deprecated",
 	Description: "Marks an element of a GraphQL schema as no longer supported.",
 	Args: FieldConfigArgument{
-		"reason": &ArgumentConfig{
+		&ArgumentConfig{
+			Name: "reason",
 			Type: String,
 			Description: "Explains why this element was deprecated, usually also including a " +
 				"suggestion for how to access supported similar data. Formatted" +

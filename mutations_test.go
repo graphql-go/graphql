@@ -62,7 +62,8 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 			"immediatelyChangeTheNumber": &graphql.Field{
 				Type: numberHolderType,
 				Args: graphql.FieldConfigArgument{
-					"newNumber": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "newNumber",
 						Type: graphql.Int,
 					},
 				},
@@ -76,7 +77,8 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 			"promiseToChangeTheNumber": &graphql.Field{
 				Type: numberHolderType,
 				Args: graphql.FieldConfigArgument{
-					"newNumber": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "newNumber",
 						Type: graphql.Int,
 					},
 				},
@@ -90,7 +92,8 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 			"failToChangeTheNumber": &graphql.Field{
 				Type: numberHolderType,
 				Args: graphql.FieldConfigArgument{
-					"newNumber": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "newNumber",
 						Type: graphql.Int,
 					},
 				},
@@ -104,7 +107,8 @@ var mutationsTestSchema, _ = graphql.NewSchema(graphql.SchemaConfig{
 			"promiseAndFailToChangeTheNumber": &graphql.Field{
 				Type: numberHolderType,
 				Args: graphql.FieldConfigArgument{
-					"newNumber": &graphql.ArgumentConfig{
+					&graphql.ArgumentConfig{
+						Name: "newNumber",
 						Type: graphql.Int,
 					},
 				},
