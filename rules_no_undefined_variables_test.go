@@ -3,9 +3,9 @@ package graphql_test
 import (
 	"testing"
 
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/testutil"
+	"github.com/dagger/graphql"
+	"github.com/dagger/graphql/gqlerrors"
+	"github.com/dagger/graphql/testutil"
 )
 
 func TestValidate_NoUndefinedVariables_AllVariablesDefined(t *testing.T) {

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/examples/todo/schema"
+	"github.com/dagger/graphql"
+	"github.com/dagger/graphql/examples/todo/schema"
 )
 
 func init() {

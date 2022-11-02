@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"regexp"
 
-	"github.com/graphql-go/graphql/language/ast"
+	"github.com/dagger/graphql/language/ast"
 )
 
 // Type interface for all of the possible kinds of GraphQL types
@@ -193,13 +193,12 @@ func GetNamed(ttype Type) Named {
 //
 // Example:
 //
-//    var OddType = new Scalar({
-//      name: 'Odd',
-//      serialize(value) {
-//        return value % 2 === 1 ? value : null;
-//      }
-//    });
-//
+//	var OddType = new Scalar({
+//	  name: 'Odd',
+//	  serialize(value) {
+//	    return value % 2 === 1 ? value : null;
+//	  }
+//	});
 type Scalar struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
@@ -306,19 +305,19 @@ func (st *Scalar) Error() error {
 // have a name, but most importantly describe their fields.
 // Example:
 //
-//    var AddressType = new Object({
-//      name: 'Address',
-//      fields: {
-//        street: { type: String },
-//        number: { type: Int },
-//        formatted: {
-//          type: String,
-//          resolve(obj) {
-//            return obj.number + ' ' + obj.street
-//          }
-//        }
-//      }
-//    });
+//	var AddressType = new Object({
+//	  name: 'Address',
+//	  fields: {
+//	    street: { type: String },
+//	    number: { type: Int },
+//	    formatted: {
+//	      type: String,
+//	      resolve(obj) {
+//	        return obj.number + ' ' + obj.street
+//	      }
+//	    }
+//	  }
+//	});
 //
 // When two types need to refer to each other, or a type needs to refer to
 // itself in a field, you can use a function expression (aka a closure or a
@@ -326,13 +325,13 @@ func (st *Scalar) Error() error {
 //
 // Example:
 //
-//    var PersonType = new Object({
-//      name: 'Person',
-//      fields: () => ({
-//        name: { type: String },
-//        bestFriend: { type: PersonType },
-//      })
-//    });
+//	var PersonType = new Object({
+//	  name: 'Person',
+//	  fields: () => ({
+//	    name: { type: String },
+//	    bestFriend: { type: PersonType },
+//	  })
+//	});
 //
 // /
 type Object struct {
@@ -669,14 +668,12 @@ func (st *Argument) Error() error {
 //
 // Example:
 //
-//     var EntityType = new Interface({
-//       name: 'Entity',
-//       fields: {
-//         name: { type: String }
-//       }
-//     });
-//
-//
+//	var EntityType = new Interface({
+//	  name: 'Entity',
+//	  fields: {
+//	    name: { type: String }
+//	  }
+//	});
 type Interface struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
@@ -780,18 +777,18 @@ func (it *Interface) Error() error {
 //
 // Example:
 //
-//     var PetType = new Union({
-//       name: 'Pet',
-//       types: [ DogType, CatType ],
-//       resolveType(value) {
-//         if (value instanceof Dog) {
-//           return DogType;
-//         }
-//         if (value instanceof Cat) {
-//           return CatType;
-//         }
-//       }
-//     });
+//	var PetType = new Union({
+//	  name: 'Pet',
+//	  types: [ DogType, CatType ],
+//	  resolveType(value) {
+//	    if (value instanceof Dog) {
+//	      return DogType;
+//	    }
+//	    if (value instanceof Cat) {
+//	      return CatType;
+//	    }
+//	  }
+//	});
 type Union struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
@@ -1086,18 +1083,18 @@ func (gt *Enum) getNameLookup() map[string]*EnumValueDefinition {
 // An input object defines a structured collection of fields which may be
 // supplied to a field argument.
 //
-// Using `NonNull` will ensure that a value must be provided by the query
+// # Using `NonNull` will ensure that a value must be provided by the query
 //
 // Example:
 //
-//     var GeoPoint = new InputObject({
-//       name: 'GeoPoint',
-//       fields: {
-//         lat: { type: new NonNull(Float) },
-//         lon: { type: new NonNull(Float) },
-//         alt: { type: Float, defaultValue: 0 },
-//       }
-//     });
+//	var GeoPoint = new InputObject({
+//	  name: 'GeoPoint',
+//	  fields: {
+//	    lat: { type: new NonNull(Float) },
+//	    lon: { type: new NonNull(Float) },
+//	    alt: { type: Float, defaultValue: 0 },
+//	  }
+//	});
 type InputObject struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
@@ -1236,14 +1233,13 @@ func (gt *InputObject) Error() error {
 //
 // Example:
 //
-//     var PersonType = new Object({
-//       name: 'Person',
-//       fields: () => ({
-//         parents: { type: new List(Person) },
-//         children: { type: new List(Person) },
-//       })
-//     })
-//
+//	var PersonType = new Object({
+//	  name: 'Person',
+//	  fields: () => ({
+//	    parents: { type: new List(Person) },
+//	    children: { type: new List(Person) },
+//	  })
+//	})
 type List struct {
 	OfType Type `json:"ofType"`
 
@@ -1287,12 +1283,12 @@ func (gl *List) Error() error {
 //
 // Example:
 //
-//     var RowType = new Object({
-//       name: 'Row',
-//       fields: () => ({
-//         id: { type: new NonNull(String) },
-//       })
-//     })
+//	var RowType = new Object({
+//	  name: 'Row',
+//	  fields: () => ({
+//	    id: { type: new NonNull(String) },
+//	  })
+//	})
 //
 // Note: the enforcement of non-nullability occurs within the executor.
 type NonNull struct {

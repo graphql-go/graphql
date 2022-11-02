@@ -1,3 +1,3 @@
-module github.com/graphql-go/graphql
+module github.com/dagger/graphql
 
 go 1.13
