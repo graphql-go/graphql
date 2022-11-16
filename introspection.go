@@ -312,6 +312,14 @@ func init() {
 			},
 			"deprecationReason": &Field{
 				Type: String,
+				Resolve: func(p ResolveParams) (interface{}, error) {
+					if field, ok := p.Source.(*FieldDefinition); ok {
+						if field.DeprecationReason != "" {
+							return field.DeprecationReason, nil
+						}
+					}
+					return nil, nil
+				},
 			},
 		},
 	})
@@ -497,6 +505,14 @@ func init() {
 			},
 			"deprecationReason": &Field{
 				Type: String,
+				Resolve: func(p ResolveParams) (interface{}, error) {
+					if field, ok := p.Source.(*EnumValueDefinition); ok {
+						if field.DeprecationReason != "" {
+							return field.DeprecationReason, nil
+						}
+					}
+					return nil, nil
+				},
 			},
 		},
 	})
@@ -610,6 +626,13 @@ func init() {
 	TypeType.AddFieldConfig("ofType", &Field{
 		Type: TypeType,
 	})
+
+	SchemaType.ensureCache()
+	DirectiveType.ensureCache()
+	TypeType.ensureCache()
+	FieldType.ensureCache()
+	InputValueType.ensureCache()
+	EnumValueType.ensureCache()
 
 	// Note that these are FieldDefinition and not FieldConfig,
 	// so the format for args is different.
