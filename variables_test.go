@@ -347,6 +347,42 @@ func TestVariables_ObjectsAndNullability_UsingVariables_UsesDefaultValueWhenNotP
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
 }
+func TestVariables_ObjectsAndNullability_UsingVariables_PassesNullWhenNoDefaultIsProvided(t *testing.T) {
+
+	doc := `
+	  query q($input: TestInputObject) {
+		fieldWithObjectInput(input: $input)
+	  }
+	`
+	params := map[string]interface{}{
+		"input": map[string]interface{}{
+			"a": nil,
+			"b": []string{"bar"},
+			"c": "baz",
+		},
+	}
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"fieldWithObjectInput": `{"a":null,"b":["bar"],"c":"baz"}`,
+		},
+	}
+
+	withDefaultsAST := testutil.TestParse(t, doc)
+
+	// execute
+	ep := graphql.ExecuteParams{
+		Schema: variablesTestSchema,
+		AST:    withDefaultsAST,
+		Args:   params,
+	}
+	result := testutil.TestExecute(t, ep)
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
 func TestVariables_ObjectsAndNullability_UsingVariables_ProperlyParsesSingleValueToList(t *testing.T) {
 	params := map[string]interface{}{
 		"input": map[string]interface{}{
