@@ -71,7 +71,8 @@ func Do(p Params) *Result {
 	extErrs = parseFinishFn(err)
 	if len(extErrs) != 0 {
 		return &Result{
-			Errors: extErrs,
+			Request: AST,
+			Errors:  extErrs,
 		}
 	}
 
@@ -79,7 +80,8 @@ func Do(p Params) *Result {
 	extErrs, validationFinishFn := handleExtensionsValidationDidStart(&p)
 	if len(extErrs) != 0 {
 		return &Result{
-			Errors: extErrs,
+			Request: AST,
+			Errors:  extErrs,
 		}
 	}
 
@@ -93,7 +95,8 @@ func Do(p Params) *Result {
 		// merge the errors from extensions and the original error from parser
 		extErrs = append(extErrs, validationResult.Errors...)
 		return &Result{
-			Errors: extErrs,
+			Request: AST,
+			Errors:  extErrs,
 		}
 	}
 
@@ -101,11 +104,12 @@ func Do(p Params) *Result {
 	extErrs = validationFinishFn(validationResult.Errors)
 	if len(extErrs) != 0 {
 		return &Result{
-			Errors: extErrs,
+			Request: AST,
+			Errors:  extErrs,
 		}
 	}
 
-	return Execute(ExecuteParams{
+	result := Execute(ExecuteParams{
 		Schema:        p.Schema,
 		Root:          p.RootObject,
 		AST:           AST,
@@ -113,4 +117,6 @@ func Do(p Params) *Result {
 		Args:          p.VariableValues,
 		Context:       p.Context,
 	})
+	result.Request = AST
+	return result
 }
