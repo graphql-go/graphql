@@ -79,8 +79,8 @@ func Parse(p ParseParams) (*ast.Document, error) {
 	return doc, nil
 }
 
-// TODO: test and expose parseValue as a public
-func parseValue(p ParseParams) (ast.Value, error) {
+// ParseValue parses params and returns ast value
+func ParseValue(p ParseParams) (ast.Value, error) {
 	var value ast.Value
 	var sourceObj *source.Source
 	switch src := p.Source.(type) {
