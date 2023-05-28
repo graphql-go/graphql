@@ -17,7 +17,7 @@ go get github.com/graphql-go/graphql
 
 The following is a simple example which defines a schema with a single `hello` string-type field and a `Resolve` method which returns the string `world`. A GraphQL query is performed against this schema with the resulting output printed in JSON format.
 
-```go
+```go 
 package main
 
 import (
@@ -59,6 +59,7 @@ func main() {
 	rJSON, _ := json.Marshal(r)
 	fmt.Printf("%s \n", rJSON) // {"data":{"hello":"world"}}
 }
+
 ```
 For more complex examples, refer to the [examples/](https://github.com/graphql-go/graphql/tree/master/examples/) directory and [graphql_test.go](https://github.com/graphql-go/graphql/blob/master/graphql_test.go).
 
