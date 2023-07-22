@@ -1,12 +1,13 @@
 package graphql
 
 type SchemaConfig struct {
-	Query        *Object
-	Mutation     *Object
-	Subscription *Object
-	Types        []Type
-	Directives   []*Directive
-	Extensions   []Extension
+	Query             *Object
+	Mutation          *Object
+	Subscription      *Object
+	Types             []Type
+	Directives        []*Directive
+	AppliedDirectives []*AppliedDirective
+	Extensions        []Extension
 }
 
 type TypeMap map[string]Type
@@ -16,24 +17,27 @@ type TypeMap map[string]Type
 // query, mutation (optional) and subscription (optional). A schema definition is then supplied to the
 // validator and executor.
 // Example:
-//     myAppSchema, err := NewSchema(SchemaConfig({
-//       Query: MyAppQueryRootType,
-//       Mutation: MyAppMutationRootType,
-//       Subscription: MyAppSubscriptionRootType,
-//     });
+//
+//	myAppSchema, err := NewSchema(SchemaConfig({
+//	  Query: MyAppQueryRootType,
+//	  Mutation: MyAppMutationRootType,
+//	  Subscription: MyAppSubscriptionRootType,
+//	});
+//
 // Note: If an array of `directives` are provided to GraphQLSchema, that will be
 // the exact list of directives represented and allowed. If `directives` is not
 // provided then a default set of the specified directives (e.g. @include and
 // @skip) will be used. If you wish to provide *additional* directives to these
 // specified directives, you must explicitly declare them. Example:
 //
-//     const MyAppSchema = new GraphQLSchema({
-//       ...
-//       directives: specifiedDirectives.concat([ myCustomDirective ]),
-//     })
+//	const MyAppSchema = new GraphQLSchema({
+//	  ...
+//	  directives: specifiedDirectives.concat([ myCustomDirective ]),
+//	})
 type Schema struct {
-	typeMap    TypeMap
-	directives []*Directive
+	typeMap           TypeMap
+	directives        []*Directive
+	appliedDirectives []*AppliedDirective
 
 	queryType        *Object
 	mutationType     *Object
@@ -75,6 +79,8 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 			return schema, dir.err
 		}
 	}
+
+	schema.appliedDirectives = config.AppliedDirectives
 
 	// Build type map now to detect any errors within this schema.
 	typeMap := TypeMap{}
@@ -145,8 +151,8 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 	return schema, nil
 }
 
-//Added Check implementation of interfaces at runtime..
-//Add Implementations at Runtime..
+// Added Check implementation of interfaces at runtime..
+// Add Implementations at Runtime..
 func (gq *Schema) AddImplementation() error {
 
 	// Keep track of all implementations by interface name.
@@ -181,8 +187,8 @@ func (gq *Schema) AddImplementation() error {
 	return nil
 }
 
-//Edited. To check add Types at RunTime..
-//Append Runtime schema to typeMap
+// Edited. To check add Types at RunTime..
+// Append Runtime schema to typeMap
 func (gq *Schema) AppendType(objectType Type) error {
 	if objectType.Error() != nil {
 		return objectType.Error()
@@ -542,4 +548,13 @@ func isTypeSubTypeOf(schema *Schema, maybeSubType Type, superType Type) bool {
 
 	// Otherwise, the child type is not a valid subtype of the parent type.
 	return false
+}
+
+func (gq *Schema) AppendAppliedDirective(appliedDirectiveType AppliedDirective) error {
+	gq.appliedDirectives = append(gq.appliedDirectives, &appliedDirectiveType)
+	return nil
+}
+
+func (gq *Schema) AppliedDirectives() []*AppliedDirective {
+	return gq.appliedDirectives
 }
