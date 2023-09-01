@@ -13,7 +13,7 @@ import (
 
 type Person struct {
 	Human
-	Name    string   `json:"name"`
+	Name    string   //`json:"name"` - no tag, test default field name
 	Home    Address  `json:"home"`
 	Hobbies []string `json:"hobbies"`
 	Friends []Friend `json:"friends"`
