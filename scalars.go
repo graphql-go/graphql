@@ -3,6 +3,7 @@ package graphql
 import (
 	"fmt"
 	"math"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -305,13 +306,17 @@ var Float = NewScalar(ScalarConfig{
 })
 
 func coerceString(value interface{}) interface{} {
-	if v, ok := value.(*string); ok {
-		if v == nil {
+	valueOf := reflect.ValueOf(value)
+	for valueOf.Kind() == reflect.Pointer || valueOf.Kind() == reflect.Interface {
+		if valueOf.IsNil() {
 			return nil
 		}
-		return *v
+		valueOf = valueOf.Elem()
 	}
-	return fmt.Sprintf("%v", value)
+	if valueOf.Kind() == reflect.String {
+		return valueOf.String()
+	}
+	return fmt.Sprint(valueOf.Interface())
 }
 
 // String is the GraphQL string type definition
