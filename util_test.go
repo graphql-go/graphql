@@ -180,3 +180,61 @@ func TestBindArg(t *testing.T) {
 		t.Fatalf("Unexpected result, expected address to be %s but got %s", expectedAddress, newFriend.Address)
 	}
 }
+
+func TestRename(t *testing.T) {
+	type RenamedFriend struct {
+		FullName string `json:"json_name" graphql:"name"`
+		Address  string `json:"address"`
+	}
+
+	renamedFriendType := graphql.NewObject(graphql.ObjectConfig{
+		Name:   "RenamedFriend",
+		Fields: graphql.BindFields(RenamedFriend{}),
+	})
+
+	friendSource := RenamedFriend{"John Doe", "123 MainSt"}
+
+	fields := graphql.Fields{
+		"friend": &graphql.Field{
+			Type: renamedFriendType,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				return friendSource, nil
+			},
+		},
+	}
+
+	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
+	schemaConfig := graphql.SchemaConfig{Query: graphql.NewObject(rootQuery)}
+	schema, err := graphql.NewSchema(schemaConfig)
+	if err != nil {
+		log.Fatalf("failed to create new schema, error: %v", err)
+	}
+
+	query1 := `
+        {
+            friend {
+                full_name,
+            }
+        }
+	`
+
+	params := graphql.Params{Schema: schema, RequestString: query1}
+	r := graphql.Do(params)
+	if len(r.Errors) == 0 {
+		log.Fatalf("found json field name, not renamed field")
+	}
+
+	query2 := `
+        {
+            friend {
+                name,
+            }
+        }
+	`
+
+	params = graphql.Params{Schema: schema, RequestString: query2}
+	r = graphql.Do(params)
+	if len(r.Errors) > 0 {
+		log.Fatalf("failed to execute graphql operation, errors: %+v", r.Errors)
+	}
+}
