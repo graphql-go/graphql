@@ -3,6 +3,7 @@ package graphql
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/parser"
@@ -202,9 +203,21 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 			return
 		}
 
-		switch fieldResult.(type) {
+		switch sub := fieldResult.(type) {
 		case chan interface{}:
-			sub := fieldResult.(chan interface{})
+			for {
+				select {
+				case <-p.Context.Done():
+					return
+
+				case res, more := <-sub:
+					if !more {
+						return
+					}
+					resultChannel <- mapSourceToResponse(res)
+				}
+			}
+		case <-chan interface{}:
 			for {
 				select {
 				case <-p.Context.Done():
@@ -218,8 +231,29 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 				}
 			}
 		default:
-			resultChannel <- mapSourceToResponse(fieldResult)
-			return
+			channel := reflect.ValueOf(sub)
+			if channel.Kind() != reflect.Chan || (channel.Type().ChanDir()&reflect.RecvDir) == 0 {
+				resultChannel <- mapSourceToResponse(fieldResult)
+				return
+			}
+			cases := []reflect.SelectCase{{
+				Dir:  reflect.SelectRecv,
+				Chan: reflect.ValueOf(p.Context.Done()),
+			}, {
+				Dir:  reflect.SelectRecv,
+				Chan: channel,
+			}}
+			for {
+				chosen, value, ok := reflect.Select(cases)
+				if chosen == 0 || !ok {
+					return
+				}
+				if value.CanInterface() {
+					resultChannel <- mapSourceToResponse(value.Interface())
+				} else {
+					resultChannel <- mapSourceToResponse(nil)
+				}
+			}
 		}
 	}()
 
