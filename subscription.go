@@ -163,15 +163,11 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 			}
 			return
 		}
-		fieldPath := &ResponsePath{
-			Key: responseName,
-		}
 
 		args := getArgumentValues(fieldDef.Args, fieldNode.Arguments, exeContext.VariableValues)
 		info := ResolveInfo{
 			FieldName:      fieldName,
 			FieldASTs:      fieldNodes,
-			Path:           fieldPath,
 			ReturnType:     fieldDef.Type,
 			ParentType:     operationType,
 			Schema:         p.Schema,

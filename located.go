@@ -11,10 +11,6 @@ func NewLocatedError(err interface{}, nodes []ast.Node) *gqlerrors.Error {
 	return newLocatedError(err, nodes, nil)
 }
 
-func NewLocatedErrorWithPath(err interface{}, nodes []ast.Node, path []interface{}) *gqlerrors.Error {
-	return newLocatedError(err, nodes, path)
-}
-
 func newLocatedError(err interface{}, nodes []ast.Node, path []interface{}) *gqlerrors.Error {
 	if err, ok := err.(*gqlerrors.Error); ok {
 		return err
