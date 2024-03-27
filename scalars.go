@@ -15,6 +15,9 @@ import (
 // n.b. JavaScript's integers are safe between -(2^53 - 1) and 2^53 - 1 because
 // they are internally represented as IEEE 754 doubles.
 func coerceInt(value interface{}) interface{} {
+	if value == nil {
+		return nil
+	}
 	switch value := value.(type) {
 	case bool:
 		if value == true {
@@ -162,12 +165,17 @@ var Int = NewScalar(ScalarConfig{
 			if intValue, err := strconv.Atoi(valueAST.Value); err == nil {
 				return intValue
 			}
+		case *ast.NullValue:
+			return nil
 		}
 		return nil
 	},
 })
 
 func coerceFloat(value interface{}) interface{} {
+	if value == nil {
+		return nil
+	}
 	switch value := value.(type) {
 	case bool:
 		if value == true {
@@ -299,12 +307,17 @@ var Float = NewScalar(ScalarConfig{
 			if floatValue, err := strconv.ParseFloat(valueAST.Value, 64); err == nil {
 				return floatValue
 			}
+		case *ast.NullValue:
+			return nil
 		}
 		return nil
 	},
 })
 
 func coerceString(value interface{}) interface{} {
+	if value == nil {
+		return nil
+	}
 	if v, ok := value.(*string); ok {
 		if v == nil {
 			return nil
@@ -326,12 +339,17 @@ var String = NewScalar(ScalarConfig{
 		switch valueAST := valueAST.(type) {
 		case *ast.StringValue:
 			return valueAST.Value
+		case *ast.NullValue:
+			return nil
 		}
 		return nil
 	},
 })
 
 func coerceBool(value interface{}) interface{} {
+	if value == nil {
+		return nil
+	}
 	switch value := value.(type) {
 	case bool:
 		return value
@@ -485,6 +503,8 @@ var Boolean = NewScalar(ScalarConfig{
 		switch valueAST := valueAST.(type) {
 		case *ast.BooleanValue:
 			return valueAST.Value
+		case *ast.NullValue:
+			return nil
 		}
 		return nil
 	},
@@ -506,12 +526,17 @@ var ID = NewScalar(ScalarConfig{
 			return valueAST.Value
 		case *ast.StringValue:
 			return valueAST.Value
+		case *ast.NullValue:
+			return nil
 		}
 		return nil
 	},
 })
 
 func serializeDateTime(value interface{}) interface{} {
+	if value == nil {
+		return nil
+	}
 	switch value := value.(type) {
 	case time.Time:
 		buff, err := value.MarshalText()
@@ -531,6 +556,9 @@ func serializeDateTime(value interface{}) interface{} {
 }
 
 func unserializeDateTime(value interface{}) interface{} {
+	if value == nil {
+		return nil
+	}
 	switch value := value.(type) {
 	case []byte:
 		t := time.Time{}
@@ -564,6 +592,8 @@ var DateTime = NewScalar(ScalarConfig{
 		switch valueAST := valueAST.(type) {
 		case *ast.StringValue:
 			return unserializeDateTime(valueAST.Value)
+		case *ast.NullValue:
+			return nil
 		}
 		return nil
 	},

@@ -183,15 +183,6 @@ func TestDoesNotAcceptFragmentsSpreadOfOn(t *testing.T) {
 	testErrorMessage(t, test)
 }
 
-func TestDoesNotAllowNullAsValue(t *testing.T) {
-	test := errorMessageTest{
-		`{ fieldWithNullableStringInput(input: null) }'`,
-		`Syntax Error GraphQL (1:39) Unexpected Name "null"`,
-		false,
-	}
-	testErrorMessage(t, test)
-}
-
 func TestParsesMultiByteCharacters_Unicode(t *testing.T) {
 
 	doc := `
@@ -492,6 +483,14 @@ func TestParsesEnumValueDefinitionWithDescription(t *testing.T) {
 			MOBILE
 		}
 	`
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestNullIsAllowedAsValue(t *testing.T) {
+	source := `{ fieldWithNullableStringInput(input: null) }`
 	_, err := Parse(ParseParams{Source: source})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
