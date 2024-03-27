@@ -16,6 +16,7 @@ var _ Value = (*IntValue)(nil)
 var _ Value = (*FloatValue)(nil)
 var _ Value = (*StringValue)(nil)
 var _ Value = (*BooleanValue)(nil)
+var _ Value = (*NullValue)(nil)
 var _ Value = (*EnumValue)(nil)
 var _ Value = (*ListValue)(nil)
 var _ Value = (*ObjectValue)(nil)
@@ -170,6 +171,34 @@ func (v *BooleanValue) GetLoc() *Location {
 
 func (v *BooleanValue) GetValue() interface{} {
 	return v.Value
+}
+
+// NullValue implements Node, Value
+type NullValue struct {
+	Kind  string
+	Loc   *Location
+	Value interface{}
+}
+
+func NewNullValue(v *NullValue) *NullValue {
+
+	return &NullValue{
+		Kind:  kinds.NullValue,
+		Loc:   v.Loc,
+		Value: v.Value,
+	}
+}
+
+func (v *NullValue) GetKind() string {
+	return v.Kind
+}
+
+func (v *NullValue) GetLoc() *Location {
+	return v.Loc
+}
+
+func (v *NullValue) GetValue() interface{} {
+	return nil
 }
 
 // EnumValue implements Node, Value
