@@ -41,6 +41,7 @@ type Directive struct {
 	Description string      `json:"description"`
 	Locations   []string    `json:"locations"`
 	Args        []*Argument `json:"args"`
+	Repeatable  bool        `json:"repeatable"`
 
 	err error
 }
@@ -51,6 +52,7 @@ type DirectiveConfig struct {
 	Description string              `json:"description"`
 	Locations   []string            `json:"locations"`
 	Args        FieldConfigArgument `json:"args"`
+	Repeatable  bool                `json:"repeatable"`
 }
 
 func NewDirective(config DirectiveConfig) *Directive {
@@ -88,6 +90,51 @@ func NewDirective(config DirectiveConfig) *Directive {
 	dir.Name = config.Name
 	dir.Description = config.Description
 	dir.Locations = config.Locations
+	dir.Args = args
+	dir.Repeatable = config.Repeatable
+	return dir
+}
+
+// Directive instance that is applied to a target location (e.g. field) within a schema.
+type AppliedDirective struct {
+	Name string                      `json:"name"`
+	Args []*AppliedDirectiveArgument `json:"args"`
+
+	err error
+}
+
+// AppliedDirectiveConfig options for creating new AppliedDirective
+type AppliedDirectiveConfig struct {
+	Name string                         `json:"name"`
+	Args AppliedDirectiveConfigArgument `json:"args"`
+}
+
+func NewAppliedDirective(config AppliedDirectiveConfig) *AppliedDirective {
+	dir := &AppliedDirective{}
+
+	// Ensure directive is named
+	if dir.err = invariant(config.Name != "", "Directive must be named."); dir.err != nil {
+		return dir
+	}
+
+	// Ensure directive name is valid
+	if dir.err = assertValidName(config.Name); dir.err != nil {
+		return dir
+	}
+
+	args := []*AppliedDirectiveArgument{}
+
+	for argName, argConfig := range config.Args {
+		if dir.err = assertValidName(argName); dir.err != nil {
+			return dir
+		}
+		args = append(args, &AppliedDirectiveArgument{
+			Name:  argName,
+			Value: argConfig.Value,
+		})
+	}
+
+	dir.Name = config.Name
 	dir.Args = args
 	return dir
 }
