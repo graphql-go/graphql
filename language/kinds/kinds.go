@@ -23,6 +23,7 @@ const (
 	FloatValue   = "FloatValue"
 	StringValue  = "StringValue"
 	BooleanValue = "BooleanValue"
+	NullValue    = "NullValue"
 	EnumValue    = "EnumValue"
 	ListValue    = "ListValue"
 	ObjectValue  = "ObjectValue"

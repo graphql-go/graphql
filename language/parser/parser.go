@@ -606,7 +606,15 @@ func parseValueLiteral(parser *Parser, isConst bool) (ast.Value, error) {
 				Value: value,
 				Loc:   loc(parser, token.Start),
 			}), nil
-		} else if token.Value != "null" {
+		} else if token.Value == "null" {
+			if err := advance(parser); err != nil {
+				return nil, err
+			}
+			return ast.NewNullValue(&ast.NullValue{
+				Value: nil,
+				Loc:   loc(parser, token.Start),
+			}), nil
+		} else {
 			if err := advance(parser); err != nil {
 				return nil, err
 			}

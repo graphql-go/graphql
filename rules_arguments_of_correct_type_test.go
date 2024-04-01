@@ -500,7 +500,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidListValue_IncorrectItemType(t *t
         `,
 		[]gqlerrors.FormattedError{
 			testutil.RuleError(
-				"Argument \"stringListArg\" has invalid value [\"one\", 2].\nIn element #1: Expected type \"String\", found 2.",
+				"Argument \"stringListArg\" has invalid value [\"one\", 2].\nIn element #2: Expected type \"String\", found 2.",
 				4, 47,
 			),
 		})
@@ -742,7 +742,7 @@ func TestValidate_ArgValuesOfCorrectType_InvalidInputObjectValue_PartialObject_I
         `,
 		[]gqlerrors.FormattedError{
 			testutil.RuleError(
-				"Argument \"complexArg\" has invalid value {stringListField: [\"one\", 2], requiredField: true}.\nIn field \"stringListField\": In element #1: Expected type \"String\", found 2.",
+				"Argument \"complexArg\" has invalid value {stringListField: [\"one\", 2], requiredField: true}.\nIn field \"stringListField\": In element #2: Expected type \"String\", found 2.",
 				4, 41,
 			),
 		})

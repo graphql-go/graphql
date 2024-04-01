@@ -14,6 +14,9 @@ import (
 	"github.com/graphql-go/graphql/language/printer"
 )
 
+// Used to detect the difference between a "null" literal and not present
+type nullValue struct {}
+
 // Prepares an object map of variableValues of the correct type based on the
 // provided variable definitions and arbitrary input. If the input cannot be
 // parsed to match the variable definitions, a GraphQLError will be returned.
@@ -27,13 +30,32 @@ func getVariableValues(
 			continue
 		}
 		varName := defAST.Variable.Name.Value
-		if varValue, err := getVariableValue(schema, defAST, inputs[varName]); err != nil {
+		if varValue, err := getVariableValue(schema, defAST, getValueOrNull(inputs, varName)); err != nil {
 			return values, err
 		} else {
 			values[varName] = varValue
 		}
 	}
 	return values, nil
+}
+
+func getValueOrNull(values map[string]interface{}, name string) interface{} {
+	if tmp, ok := values[name]; ok { // Is present
+		if tmp == nil {
+			return nullValue{} // Null value
+		} else {
+			return tmp
+		}
+	}
+	return nil // Not present
+}
+
+func addValueOrNull(values map[string]interface{}, name string, value interface{}) {
+	if _, ok := value.(nullValue); ok { // Null value
+		values[name] = nil
+	} else if !isNullish(value) { // Not present
+		values[name] = value
+	}
 }
 
 // Prepares an object map of argument values given a list of argument
@@ -60,9 +82,7 @@ func getArgumentValues(
 		if tmp = valueFromAST(value, argDef.Type, variableValues); isNullish(tmp) {
 			tmp = argDef.DefaultValue
 		}
-		if !isNullish(tmp) {
-			results[argDef.PrivateName] = tmp
-		}
+		addValueOrNull(results, argDef.PrivateName, tmp)
 	}
 	return results
 }
@@ -97,7 +117,7 @@ func getVariableValue(schema Schema, definitionAST *ast.VariableDefinition, inpu
 		}
 		return coerceValue(ttype, input), nil
 	}
-	if isNullish(input) {
+	if _, ok := input.(nullValue); ok ||  isNullish(input) {
 		return "", gqlerrors.NewError(
 			fmt.Sprintf(`Variable "$%v" of required type `+
 				`"%v" was not provided.`, variable.Name.Value, printer.Print(definitionAST.Type)),
@@ -134,6 +154,9 @@ func coerceValue(ttype Input, value interface{}) interface{} {
 	if isNullish(value) {
 		return nil
 	}
+	if _, ok := value.(nullValue); ok {
+		return nullValue{}
+	}
 	switch ttype := ttype.(type) {
 	case *NonNull:
 		return coerceValue(ttype.OfType, value)
@@ -156,13 +179,11 @@ func coerceValue(ttype Input, value interface{}) interface{} {
 		}
 
 		for name, field := range ttype.Fields() {
-			fieldValue := coerceValue(field.Type, valueMap[name])
+			fieldValue := coerceValue(field.Type, getValueOrNull(valueMap, name))
 			if isNullish(fieldValue) {
 				fieldValue = field.DefaultValue
 			}
-			if !isNullish(fieldValue) {
-				obj[name] = fieldValue
-			}
+			addValueOrNull(obj, name, fieldValue)
 		}
 		return obj
 	case *Scalar:
@@ -212,7 +233,7 @@ func typeFromAST(schema Schema, inputTypeAST ast.Type) (Type, error) {
 // accepted for that type. This is primarily useful for validating the
 // runtime values of query variables.
 func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
-	if isNullish(value) {
+	if _, ok := value.(nullValue); ok || isNullish(value)  {
 		if ttype, ok := ttype.(*NonNull); ok {
 			if ttype.OfType.Name() != "" {
 				return false, []string{fmt.Sprintf(`Expected "%v!", found null.`, ttype.OfType.Name())}
@@ -233,9 +254,14 @@ func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
 			messagesReduce := []string{}
 			for i := 0; i < valType.Len(); i++ {
 				val := valType.Index(i).Interface()
-				_, messages := isValidInputValue(val, ttype.OfType)
-				for idx, message := range messages {
-					messagesReduce = append(messagesReduce, fmt.Sprintf(`In element #%v: %v`, idx+1, message))
+				var messages []string
+				if _, ok := val.(nullValue); ok {
+					messages = []string{"Unexpected null value."}
+				} else {
+					_, messages = isValidInputValue(val, ttype.OfType)
+				}
+				for _, message := range messages {
+					messagesReduce = append(messagesReduce, fmt.Sprintf(`In element #%v: %v`, i+1, message))
 				}
 			}
 			return (len(messagesReduce) == 0), messagesReduce
@@ -352,6 +378,9 @@ func valueFromAST(valueAST ast.Value, ttype Input, variables map[string]interfac
 	if valueAST == nil {
 		return nil
 	}
+	if valueAST.GetKind() == kinds.NullValue {
+		return nullValue{}
+	}
 	// precedence: value > type
 	if valueAST, ok := valueAST.(*ast.Variable); ok {
 		if valueAST.Name == nil || variables == nil {
@@ -398,9 +427,7 @@ func valueFromAST(valueAST ast.Value, ttype Input, variables map[string]interfac
 			} else {
 				value = field.DefaultValue
 			}
-			if !isNullish(value) {
-				obj[name] = value
-			}
+			addValueOrNull(obj, name, value)
 		}
 		return obj
 	case *Scalar:
