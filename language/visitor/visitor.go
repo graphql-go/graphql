@@ -1,11 +1,10 @@
 package visitor
 
 import (
-	"encoding/json"
-	"reflect"
-
+	"fmt"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/typeInfo"
+	"reflect"
 )
 
 const (
@@ -446,14 +445,63 @@ func convertMap(src interface{}) (dest map[string]interface{}, err error) {
 	if src == nil {
 		return
 	}
-	var bts []byte
-	if bts, err = json.Marshal(src); err != nil {
+
+	// return if src is already a map
+	dest, ok := src.(map[string]interface{})
+	if ok {
 		return
 	}
-	if err = json.Unmarshal(bts, &dest); err != nil {
-		return
+
+	outputMap := make(map[string]interface{})
+	val := reflect.ValueOf(src)
+
+	// Dereference pointer if necessary
+	if val.Kind() == reflect.Ptr {
+		if val.IsNil() {
+			return nil, fmt.Errorf("input is a nil pointer")
+		}
+		val = val.Elem()
 	}
-	return
+
+	if val.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("input is not a struct or pointer to struct")
+	}
+
+	typ := val.Type()
+	for i := 0; i < val.NumField(); i++ {
+		field := val.Field(i)
+		fieldName := typ.Field(i).Name
+
+		switch field.Kind() {
+		case reflect.Ptr:
+			if field.IsNil() {
+				outputMap[fieldName] = nil
+			} else {
+				nestedMap, err := convertMap(field.Interface())
+				if err != nil {
+					return nil, err
+				}
+				outputMap[fieldName] = nestedMap
+			}
+		case reflect.Struct:
+			nestedMap, err := convertMap(field.Interface())
+			if err != nil {
+				return nil, err
+			}
+			outputMap[fieldName] = nestedMap
+		case reflect.Interface:
+			if field.IsNil() {
+				outputMap[fieldName] = nil
+			} else {
+				concreteValue := field.Elem()
+				outputMap[fieldName], _ = convertMap(concreteValue.Interface())
+			}
+		default:
+			outputMap[fieldName] = field.Interface()
+		}
+	}
+
+	return outputMap, nil
 }
 
 // get value by key from struct | slice | map | wrap(prev)
