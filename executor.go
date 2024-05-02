@@ -883,7 +883,7 @@ func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*as
 	err := invariantf(
 		resultVal.IsValid() && isIterable(result),
 		"User Error: expected iterable, but did not find one "+
-			"for field %v.%v.", parentTypeName, info.FieldName)
+			`for field %v.%v, received "%v".`, parentTypeName, info.FieldName, resultVal)
 
 	if err != nil {
 		panic(gqlerrors.FormatError(err))
