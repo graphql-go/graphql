@@ -64,7 +64,7 @@ func main() {
 	result := graphql.Do(graphql.Params{
 		Context:       ctx,
 		RequestString: "{ users { id } }",
-		RootObject:    rootObject,
+		Root:          rootObject,
 		Schema:        schema,
 	})
 	b, err := json.Marshal(result)
