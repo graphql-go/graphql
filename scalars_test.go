@@ -5,6 +5,50 @@ import (
 	"testing"
 )
 
+type (
+	myInt     int
+	myString  string
+	myBool    bool
+	myFloat32 float32
+)
+
+func TestCoerceString(t *testing.T) {
+	tests := []struct {
+		in   interface{}
+		want interface{}
+	}{
+		{
+			in:   "hello",
+			want: "hello",
+		},
+		{
+			in:   func() interface{} { s := "hello"; return &s }(),
+			want: "hello",
+		},
+		// Typedef
+		{
+			in:   myString("hello"),
+			want: "hello",
+		},
+		// Typedef with pointer
+		{
+			in:   func() interface{} { v := myString("hello"); return &v }(),
+			want: "hello",
+		},
+		// Typedef with nil pointer
+		{
+			in:   (*myString)(nil),
+			want: nil,
+		},
+	}
+
+	for i, tt := range tests {
+		if got, want := coerceString(tt.in), tt.want; got != want {
+			t.Errorf("%d: in=%#v, got=%#v, want=%#v", i, tt.in, got, want)
+		}
+	}
+}
+
 func TestCoerceInt(t *testing.T) {
 	tests := []struct {
 		in   interface{}
@@ -240,11 +284,26 @@ func TestCoerceInt(t *testing.T) {
 			in:   make(map[string]interface{}),
 			want: nil,
 		},
+		// Typedef
+		{
+			in:   myInt(42),
+			want: int(42),
+		},
+		// Typedef with pointer
+		{
+			in:   func() interface{} { v := myInt(42); return &v }(),
+			want: int(42),
+		},
+		// Typedef with nil pointer
+		{
+			in:   (*myInt)(nil),
+			want: nil,
+		},
 	}
 
 	for i, tt := range tests {
 		if got, want := coerceInt(tt.in), tt.want; got != want {
-			t.Errorf("%d: in=%v, got=%v, want=%v", i, tt.in, got, want)
+			t.Errorf("%d: in=%#v, got=%#v, want=%#v", i, tt.in, got, want)
 		}
 	}
 }
@@ -438,11 +497,26 @@ func TestCoerceFloat(t *testing.T) {
 			in:   make(map[string]interface{}),
 			want: nil,
 		},
+		// Typedef
+		{
+			in:   myFloat32(3.14),
+			want: float32(3.14),
+		},
+		// Typedef with pointer
+		{
+			in:   func() interface{} { v := myFloat32(3.14); return &v }(),
+			want: float32(3.14),
+		},
+		// Typedef with nil pointer
+		{
+			in:   (*myFloat32)(nil),
+			want: nil,
+		},
 	}
 
 	for i, tt := range tests {
 		if got, want := coerceFloat(tt.in), tt.want; got != want {
-			t.Errorf("%d: in=%v, got=%v, want=%v", i, tt.in, got, want)
+			t.Errorf("%d: in=%#v, got=%#v, want=%#v", i, tt.in, got, want)
 		}
 	}
 }
@@ -740,11 +814,26 @@ func TestCoerceBool(t *testing.T) {
 			in:   make(map[string]interface{}),
 			want: false,
 		},
+		// Typedef
+		{
+			in:   myBool(true),
+			want: true,
+		},
+		// Typedef with pointer
+		{
+			in:   func() interface{} { v := myBool(true); return &v }(),
+			want: true,
+		},
+		// Typedef with nil pointer
+		{
+			in:   (*myBool)(nil),
+			want: nil,
+		},
 	}
 
 	for i, tt := range tests {
 		if got, want := coerceBool(tt.in), tt.want; got != want {
-			t.Errorf("%d: in=%v, got=%v, want=%v", i, tt.in, got, want)
+			t.Errorf("%d: in=%#v, got=%#v, want=%#v", i, tt.in, got, want)
 		}
 	}
 }
