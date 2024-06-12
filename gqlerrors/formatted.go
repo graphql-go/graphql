@@ -13,7 +13,7 @@ type ExtendedError interface {
 
 type FormattedError struct {
 	Message       string                    `json:"message"`
-	Locations     []location.SourceLocation `json:"locations"`
+	Locations     []location.SourceLocation `json:"locations,omitempty"`
 	Path          []interface{}             `json:"path,omitempty"`
 	Extensions    map[string]interface{}    `json:"extensions,omitempty"`
 	originalError error
