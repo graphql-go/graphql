@@ -1735,6 +1735,11 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 		if valueAST.GetKind() == kinds.Variable {
 			return true, nil
 		}
+		// Supplying a nullable variable type to a non-null input type is considered invalid.
+		// nullValue is only valid for nullable input types.
+		if valueAST.GetKind() == kinds.NullValue {
+			return true, nil
+		}
 	}
 	switch ttype := ttype.(type) {
 	case *NonNull:
@@ -1742,7 +1747,7 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 		if e := ttype.Error(); e != nil {
 			return false, []string{e.Error()}
 		}
-		if valueAST == nil {
+		if valueAST == nil || valueAST.GetKind() == kinds.NullValue {
 			if ttype.OfType.Name() != "" {
 				return false, []string{fmt.Sprintf(`Expected "%v!", found null.`, ttype.OfType.Name())}
 			}

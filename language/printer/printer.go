@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	"github.com/graphql-go/graphql/language/ast"
+	"github.com/graphql-go/graphql/language/lexer"
 	"github.com/graphql-go/graphql/language/visitor"
 )
 
@@ -472,7 +473,13 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		}
 		return visitor.ActionNoChange, nil
 	},
-
+	"NullValue": func(p visitor.VisitFuncParams) (string, interface{}) {
+		switch p.Node.(type) {
+		case *ast.NullValue:
+			return visitor.ActionUpdate, lexer.NULL.String()
+		}
+		return visitor.ActionNoChange, nil
+	},
 	// Type System Definitions
 	"SchemaDefinition": func(p visitor.VisitFuncParams) (string, interface{}) {
 		switch node := p.Node.(type) {

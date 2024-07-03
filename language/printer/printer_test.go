@@ -200,3 +200,17 @@ func TestPrinter_CorrectlyPrintsStringArgumentsWithProperQuoting(t *testing.T) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, results))
 	}
 }
+
+func TestPrinter_CorrectlyPrintsNullArgumentsWithProperQuoting(t *testing.T) {
+	queryAst := `query { foo(nullArg: null) }`
+	expected := `{
+  foo(nullArg: null)
+}
+`
+	astDoc := parse(t, queryAst)
+	results := printer.Print(astDoc)
+
+	if !reflect.DeepEqual(expected, results) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, results))
+	}
+}

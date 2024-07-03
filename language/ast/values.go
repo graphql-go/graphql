@@ -19,6 +19,7 @@ var _ Value = (*BooleanValue)(nil)
 var _ Value = (*EnumValue)(nil)
 var _ Value = (*ListValue)(nil)
 var _ Value = (*ObjectValue)(nil)
+var _ Value = (*NullValue)(nil)
 
 // Variable implements Node, Value
 type Variable struct {
@@ -200,6 +201,39 @@ func (v *EnumValue) GetLoc() *Location {
 
 func (v *EnumValue) GetValue() interface{} {
 	return v.Value
+}
+
+// NullValue represents the GraphQL null value.
+//
+// It is used to support passing null as an input value.
+//
+// Reference: https://spec.graphql.org/October2021/#sec-Null-Value
+type NullValue struct {
+	Kind  string
+	Loc   *Location
+	Value interface{}
+}
+
+func NewNullValue(v *NullValue) *NullValue {
+	if v == nil {
+		v = &NullValue{}
+	}
+	return &NullValue{
+		Kind:  kinds.NullValue,
+		Loc:   v.Loc,
+		Value: nil,
+	}
+}
+func (n *NullValue) GetKind() string {
+	return n.Kind
+}
+
+func (n *NullValue) GetLoc() *Location {
+	return n.Loc
+}
+
+func (n *NullValue) GetValue() interface{} {
+	return n.Value
 }
 
 // ListValue implements Node, Value

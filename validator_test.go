@@ -45,6 +45,7 @@ func TestValidator_SupportsFullValidation_ValidatesQueries(t *testing.T) {
     `)
 }
 
+
 // NOTE: experimental
 func TestValidator_SupportsFullValidation_ValidatesUsingACustomTypeInfo(t *testing.T) {
 
