@@ -201,7 +201,7 @@ func TestPrinter_CorrectlyPrintsStringArgumentsWithProperQuoting(t *testing.T) {
 	}
 }
 
-func TestPrinter_CorrectlyPrintsNullArgumentsWithProperQuoting(t *testing.T) {
+func TestPrinter_CorrectlyPrintsNullArguments(t *testing.T) {
 	queryAst := `query { foo(nullArg: null) }`
 	expected := `{
   foo(nullArg: null)
