@@ -57,14 +57,32 @@ func getArgumentValues(
 		if tmpValue, ok := argASTMap[argDef.PrivateName]; ok {
 			value = tmpValue.Value
 		}
-		if tmp = valueFromAST(value, argDef.Type, variableValues); isNullish(tmp) {
-			tmp = argDef.DefaultValue
-		}
-		if !isNullish(tmp) {
-			results[argDef.PrivateName] = tmp
+		// if ast value is NullValue, and keep args's key
+		if value != nil && value.GetKind() == kinds.NullValue {
+			results[argDef.PrivateName] = nil
+		} else {
+			if tmp = valueFromAST(value, argDef.Type, variableValues); isNullish(tmp) {
+				tmp = argDef.DefaultValue
+			}
+			if !isNullish(tmp) {
+				results[argDef.PrivateName] = tmp
+			} else {
+				if nullValueWithVairableProvided(value, argDef.PrivateName, variableValues) {
+					results[argDef.PrivateName] = nil
+				}
+			}
 		}
 	}
 	return results
+}
+
+func nullValueWithVairableProvided(valueAST ast.Value, key string, variables map[string]interface{}) bool {
+	if valueAST != nil && valueAST.GetKind() == kinds.Variable {
+		if _, ok := variables[key]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 // Given a variable definition, and any value of input, return a value which
@@ -349,7 +367,7 @@ func isIterable(src interface{}) bool {
  *
  */
 func valueFromAST(valueAST ast.Value, ttype Input, variables map[string]interface{}) interface{} {
-	if valueAST == nil {
+	if valueAST == nil || valueAST.GetKind() == kinds.NullValue {
 		return nil
 	}
 	// precedence: value > type
