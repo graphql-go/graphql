@@ -70,6 +70,9 @@ func inputResolved(p graphql.ResolveParams) (interface{}, error) {
 	if !ok {
 		return nil, nil
 	}
+	if input == nil {
+		return nil, nil
+	}
 	b, err := json.Marshal(input)
 	if err != nil {
 		return nil, nil
@@ -947,6 +950,36 @@ func TestVariables_ListsAndNullability_AllowsListsToBeNull(t *testing.T) {
 	ast := testutil.TestParse(t, doc)
 
 	// execute
+	ep := graphql.ExecuteParams{
+		Schema: variablesTestSchema,
+		AST:    ast,
+		Args:   params,
+	}
+	result := testutil.TestExecute(t, ep)
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
+func TestVariables_ListsAndNullability_AllowsListsToBeNullWithMoreListValues(t *testing.T) {
+	doc := `
+        query q($input: [String]) {
+          list(input: $input)
+        }
+	`
+	params := map[string]interface{}{
+		"input": []interface{}{nil, "ok", nil},
+	}
+
+	expected := &graphql.Result{
+		Data: map[string]interface{}{
+			"list": `[null,"ok",null]`,
+		},
+	}
+	ast := testutil.TestParse(t, doc)
 	ep := graphql.ExecuteParams{
 		Schema: variablesTestSchema,
 		AST:    ast,

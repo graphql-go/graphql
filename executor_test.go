@@ -403,6 +403,82 @@ func TestThreadsSourceCorrectly(t *testing.T) {
 	}
 }
 
+func TestCorrectlyListArgumentsWithNull(t *testing.T) {
+	query := `
+      query Example {
+        b(listStringArg: null, listBoolArg: [true,false,null],listIntArg:[123,null,12],listStringNonNullArg:[null])
+      }
+    `
+	var resolvedArgs map[string]interface{}
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Type",
+			Fields: graphql.Fields{
+				"b": &graphql.Field{
+					Args: graphql.FieldConfigArgument{
+						"listStringArg": &graphql.ArgumentConfig{
+							Type: graphql.NewList(graphql.String),
+						},
+						"listStringNonNullArg": &graphql.ArgumentConfig{
+							Type: graphql.NewNonNull(graphql.NewList(graphql.String)),
+						},
+						"listBoolArg": &graphql.ArgumentConfig{
+							Type: graphql.NewList(graphql.Boolean),
+						},
+						"listIntArg": &graphql.ArgumentConfig{
+							Type: graphql.NewList(graphql.Int),
+						},
+					},
+					Type: graphql.String,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						resolvedArgs = p.Args
+						return resolvedArgs, nil
+					},
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Error in schema %v", err.Error())
+	}
+	ast := testutil.TestParse(t, query)
+
+	ep := graphql.ExecuteParams{
+		Schema: schema,
+		AST:    ast,
+	}
+	result := testutil.TestExecute(t, ep)
+	if len(result.Errors) > 0 {
+		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+	}
+	tests := []struct {
+		key      string
+		expected interface{}
+	}{
+		{
+			"listStringArg", nil,
+		},
+
+		{
+			"listStringNonNullArg", []interface{}{nil},
+		},
+
+		{
+			"listBoolArg", []interface{}{true, false, nil},
+		},
+
+		{
+			"listIntArg", []interface{}{123, nil, 12},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("TestCorrectlyListArgumentsWithNull_%s", tt.key), func(t *testing.T) {
+			if !reflect.DeepEqual(resolvedArgs[tt.key], tt.expected) {
+				t.Fatalf("Expected args.%s to equal `%v`, got `%v`", tt.key, tt.expected, resolvedArgs[tt.key])
+			}
+		})
+	}
+}
 func TestCorrectlyThreadsArguments(t *testing.T) {
 
 	query := `

@@ -8,6 +8,41 @@ import (
 	"github.com/graphql-go/graphql/testutil"
 )
 
+func TestValidate_ArgValuesOfCorrectType_ValidValue_GoodNullValue(t *testing.T) {
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+        {
+          complicatedArgs {
+            intArgField(intArg: null)
+          }
+        }
+    `)
+}
+
+func TestValidator_NonNullArgsUsingNullValue(t *testing.T) {
+	testutil.ExpectFailsRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+     {      
+          complicatedArgs {
+            nonNullIntArgField(nonNullIntArg: null)
+          }
+        }
+    `, []gqlerrors.FormattedError{
+		testutil.RuleError(
+			"Argument \"nonNullIntArg\" has invalid value null.\nExpected \"Int!\", found null.",
+			4, 47,
+		),
+	})
+}
+
+func TestValidator_NullArgsUsingNullValue(t *testing.T) {
+	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
+     {
+          complicatedArgs {
+            stringArgField(stringArg: null)
+          }
+        }
+    `)
+}
+
 func TestValidate_ArgValuesOfCorrectType_ValidValue_GoodIntValue(t *testing.T) {
 	testutil.ExpectPassesRule(t, graphql.ArgumentsOfCorrectTypeRule, `
         {

@@ -34,6 +34,7 @@ const (
 	STRING
 	BLOCK_STRING
 	AMP
+	NULL
 )
 
 var tokenDescription = map[TokenKind]string{
@@ -57,6 +58,7 @@ var tokenDescription = map[TokenKind]string{
 	STRING:       "String",
 	BLOCK_STRING: "BlockString",
 	AMP:          "&",
+	NULL:         "null",
 }
 
 func (kind TokenKind) String() string {

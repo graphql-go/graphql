@@ -240,6 +240,10 @@ func TestCoerceInt(t *testing.T) {
 			in:   make(map[string]interface{}),
 			want: nil,
 		},
+		{
+			in:   nil,
+			want: nil,
+		},
 	}
 
 	for i, tt := range tests {
@@ -436,6 +440,10 @@ func TestCoerceFloat(t *testing.T) {
 		},
 		{
 			in:   make(map[string]interface{}),
+			want: nil,
+		},
+		{
+			in:   nil,
 			want: nil,
 		},
 	}
@@ -739,6 +747,10 @@ func TestCoerceBool(t *testing.T) {
 		{
 			in:   make(map[string]interface{}),
 			want: false,
+		},
+		{
+			in:   nil,
+			want: nil,
 		},
 	}
 
