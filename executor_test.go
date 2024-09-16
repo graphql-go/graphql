@@ -297,59 +297,93 @@ func TestMergesParallelFragments(t *testing.T) {
 	}
 }
 
-type CustomMap map[string]interface{}
+type (
+	CustomMap map[string]interface{}
+
+	CustomKey  string
+	CustomMap2 map[CustomKey]interface{}
+)
 
 func TestCustomMapType(t *testing.T) {
 	query := `
 		query Example { data { a } }
 	`
-	data := CustomMap{
-		"a": "1",
-		"b": "2",
-	}
-	schema, err := graphql.NewSchema(graphql.SchemaConfig{
-		Query: graphql.NewObject(graphql.ObjectConfig{
-			Name: "RootQuery",
-			Fields: graphql.Fields{
-				"data": &graphql.Field{
-					Type: graphql.NewObject(graphql.ObjectConfig{
-						Name: "Data",
-						Fields: graphql.Fields{
-							"a": &graphql.Field{
-								Type: graphql.String,
-							},
-							"b": &graphql.Field{
-								Type: graphql.String,
-							},
-						},
-					}),
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-						return data, nil
-					},
+
+	scenarios := []struct {
+		query    string
+		data     interface{}
+		expected interface{}
+	}{
+		{
+			query: query,
+			data: CustomMap{
+				"a": "1",
+				"b": "2",
+			},
+			expected: map[string]interface{}{
+				"data": map[string]interface{}{
+					"a": "1",
 				},
 			},
-		}),
-	})
-	if err != nil {
-		t.Fatalf("Error in schema %v", err.Error())
-	}
-
-	result := testutil.TestExecute(t, graphql.ExecuteParams{
-		Schema: schema,
-		Root:   data,
-		AST:    testutil.TestParse(t, query),
-	})
-	if len(result.Errors) > 0 {
-		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
-	}
-
-	expected := map[string]interface{}{
-		"data": map[string]interface{}{
-			"a": "1",
+		},
+		{
+			query: query,
+			data: CustomMap2{
+				"a": "1",
+				"b": "2",
+			},
+			expected: map[string]interface{}{
+				"data": map[string]interface{}{
+					"a": "1",
+				},
+			},
 		},
 	}
-	if !reflect.DeepEqual(result.Data, expected) {
-		t.Fatalf("Expected context.key to equal %v, got %v", expected, result.Data)
+
+	for i, s := range scenarios {
+		s := s
+
+		t.Run(fmt.Sprintf("Scenario #%d", i), func(t *testing.T) {
+			schema, err := graphql.NewSchema(graphql.SchemaConfig{
+				Query: graphql.NewObject(graphql.ObjectConfig{
+					Name: "RootQuery",
+					Fields: graphql.Fields{
+						"data": &graphql.Field{
+							Type: graphql.NewObject(graphql.ObjectConfig{
+								Name: "Data",
+								Fields: graphql.Fields{
+									"a": &graphql.Field{
+										Type: graphql.String,
+									},
+									"b": &graphql.Field{
+										Type: graphql.String,
+									},
+								},
+							}),
+							Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+								return s.data, nil
+							},
+						},
+					},
+				}),
+			})
+			if err != nil {
+				t.Fatalf("Error in schema %v", err.Error())
+			}
+
+			result := testutil.TestExecute(t, graphql.ExecuteParams{
+				Schema: schema,
+				Root:   s.data,
+				AST:    testutil.TestParse(t, s.query),
+			})
+			if len(result.Errors) > 0 {
+				t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+			}
+
+			if !reflect.DeepEqual(result.Data, s.expected) {
+				t.Fatalf("Expected context.key to equal %v, got %v", s.expected, result.Data)
+			}
+		})
 	}
 }
 
