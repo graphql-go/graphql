@@ -995,7 +995,7 @@ func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 
 	// Try accessing as map via reflection
 	if r := reflect.ValueOf(p.Source); r.Kind() == reflect.Map && r.Type().Key().Kind() == reflect.String {
-		val := r.MapIndex(reflect.ValueOf(p.Info.FieldName).Convert(r.Type().Key()))
+		val := r.MapIndex(reflect.ValueOf(p.Info.FieldName))
 		if val.IsValid() {
 			property := val.Interface()
 			if val.Type().Kind() == reflect.Func {
