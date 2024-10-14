@@ -606,7 +606,14 @@ func parseValueLiteral(parser *Parser, isConst bool) (ast.Value, error) {
 				Value: value,
 				Loc:   loc(parser, token.Start),
 			}), nil
-		} else if token.Value != "null" {
+		} else if token.Value == "null" {
+			if err := advance(parser); err != nil {
+				return nil, err
+			}
+			return ast.NewNullValue(&ast.NullValue{
+				Loc: loc(parser, token.Start),
+			}), nil
+		} else {
 			if err := advance(parser); err != nil {
 				return nil, err
 			}
@@ -1562,7 +1569,8 @@ func unexpectedEmpty(parser *Parser, beginLoc int, openKind, closeKind lexer.Tok
 	return gqlerrors.NewSyntaxError(parser.Source, beginLoc, description)
 }
 
-//  Returns list of parse nodes, determined by
+//	Returns list of parse nodes, determined by
+//
 // the parseFn. This list begins with a lex token of openKind
 // and ends with a lex token of closeKind. Advances the parser
 // to the next lex token after the closing token.

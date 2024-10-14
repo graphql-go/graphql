@@ -428,6 +428,16 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		}
 		return visitor.ActionNoChange, nil
 	},
+	"NullValue": func(p visitor.VisitFuncParams) (string, interface{}) {
+		const nullStr = "null"
+		switch p.Node.(type) {
+		case *ast.NullValue:
+			return visitor.ActionUpdate, nullStr
+		case map[string]interface{}: //TODO: not sure if this is necessary
+			return visitor.ActionUpdate, nullStr
+		}
+		return visitor.ActionNoChange, nil
+	},
 
 	// Directive
 	"Directive": func(p visitor.VisitFuncParams) (string, interface{}) {
