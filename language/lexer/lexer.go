@@ -625,7 +625,7 @@ func positionAfterWhitespace(body []byte, startPosition int) (position int, rune
 						// SourceCharacter but not LineTerminator
 						(code > 0x001F || code == 0x0009) && code != 0x000A && code != 0x000D {
 						position += n
-						runePosition++
+						runePosition += n
 						continue
 					} else {
 						break

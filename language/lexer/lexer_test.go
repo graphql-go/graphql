@@ -1069,3 +1069,25 @@ func TestLexer_ReportsUsefulInformationForDashesInNames(t *testing.T) {
 		t.Fatalf("unexpected error, token:%v\nexpected:\n%v\n\ngot:\n%v", token, errExpected, err.Error())
 	}
 }
+
+func TestLexer_CommentUnicodeSuccessful(t *testing.T) {
+
+	q := `
+		# Some german Letters: ÄÖÜ
+		enum UserType {
+			USER
+			ADMIN
+		}
+	`
+	lexer := Lex(createSource(q))
+	for {
+		token, err := lexer(0)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if token.Kind == EOF {
+			break
+		}
+	}
+}
