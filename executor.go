@@ -610,6 +610,11 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		fieldName = fieldAST.Name.Value
 	}
 
+	fieldNameAlias := ""
+	if fieldAST.Alias != nil {
+		fieldNameAlias = fieldAST.Alias.Value
+	}
+
 	fieldDef := getFieldDef(eCtx.Schema, parentType, fieldName)
 	if fieldDef == nil {
 		resultState.hasNoFieldDefs = true
@@ -628,6 +633,7 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 
 	info := ResolveInfo{
 		FieldName:      fieldName,
+		FieldNameAlias: fieldNameAlias,
 		FieldASTs:      fieldASTs,
 		Path:           path,
 		ReturnType:     returnType,
@@ -982,6 +988,13 @@ func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 	// try p.Source as a map[string]interface
 	if sourceMap, ok := p.Source.(map[string]interface{}); ok {
 		property := sourceMap[p.Info.FieldName]
+		if p.Info.FieldNameAlias != "" {
+			propertyAlias, pok := sourceMap[p.Info.FieldNameAlias]
+			if pok {
+				property = propertyAlias
+			}
+		}
+
 		val := reflect.ValueOf(property)
 		if val.IsValid() && val.Type().Kind() == reflect.Func {
 			// try type casting the func to the most basic func signature
