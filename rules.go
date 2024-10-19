@@ -1730,6 +1730,10 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 			return true, nil
 		}
 
+		if valueAST.GetKind() == kinds.NullValue {
+			return true, nil
+		}
+
 		// This function only tests literals, and assumes variables will provide
 		// values of the correct type.
 		if valueAST.GetKind() == kinds.Variable {
@@ -1742,7 +1746,7 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 		if e := ttype.Error(); e != nil {
 			return false, []string{e.Error()}
 		}
-		if valueAST == nil {
+		if valueAST == nil || valueAST.GetKind() == kinds.NullValue {
 			if ttype.OfType.Name() != "" {
 				return false, []string{fmt.Sprintf(`Expected "%v!", found null.`, ttype.OfType.Name())}
 			}
@@ -1755,9 +1759,14 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 		itemType, _ := ttype.OfType.(Input)
 		if valueAST, ok := valueAST.(*ast.ListValue); ok {
 			messagesReduce := []string{}
-			for _, value := range valueAST.Values {
-				_, messages := isValidLiteralValue(itemType, value)
-				for idx, message := range messages {
+			for idx, value := range valueAST.Values {
+				var messages []string
+				if value.GetKind() == kinds.NullValue {
+					messages = []string{"Unexpected null literal."}
+				} else {
+					_, messages = isValidLiteralValue(itemType, value)
+				}
+				for _, message := range messages {
 					messagesReduce = append(messagesReduce, fmt.Sprintf(`In element #%v: %v`, idx+1, message))
 				}
 			}

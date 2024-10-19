@@ -67,7 +67,7 @@ var testNestedInputObject *graphql.InputObject = graphql.NewInputObject(graphql.
 
 func inputResolved(p graphql.ResolveParams) (interface{}, error) {
 	input, ok := p.Args["input"]
-	if !ok {
+	if !ok || input == nil {
 		return nil, nil
 	}
 	b, err := json.Marshal(input)
@@ -1188,7 +1188,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowListOfNonNullsToContainNull(t
 			{
 				Message: `Variable "$input" got invalid value ` +
 					`["A",null,"B"].` +
-					"\nIn element #1: Expected \"String!\", found null.",
+					"\nIn element #2: Expected \"String!\", found null.",
 				Locations: []location.SourceLocation{
 					{
 						Line: 2, Column: 17,
@@ -1290,7 +1290,7 @@ func TestVariables_ListsAndNullability_DoesNotAllowNonNullListOfNonNullsToContai
 			{
 				Message: `Variable "$input" got invalid value ` +
 					`["A",null,"B"].` +
-					"\nIn element #1: Expected \"String!\", found null.",
+					"\nIn element #2: Expected \"String!\", found null.",
 				Locations: []location.SourceLocation{
 					{
 						Line: 2, Column: 17,
