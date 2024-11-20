@@ -498,6 +498,19 @@ func TestParsesEnumValueDefinitionWithDescription(t *testing.T) {
 	}
 }
 
+func TestParsesTypeDefinitionWithMultiByteCharactersComment_UnicodeText(t *testing.T) {
+	source := `
+	    # This comment has a фы世界 character.
+	    type Foo implements Bar {
+	        foo: String!
+	    }
+	`
+	_, err := Parse(ParseParams{Source: source})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestDefinitionsWithDescriptions(t *testing.T) {
 	testCases := []struct {
 		name            string

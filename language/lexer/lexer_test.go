@@ -91,8 +91,8 @@ func TestLexer_AcceptsBOMHeader(t *testing.T) {
 			Body: "\uFEFF foo",
 			Expected: Token{
 				Kind:  NAME,
-				Start: 2,
-				End:   5,
+				Start: 4,
+				End:   7,
 				Value: "foo",
 			},
 		},
