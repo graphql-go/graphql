@@ -1,6 +1,7 @@
 package graphql
 
 import (
+	"encoding"
 	"fmt"
 	"math"
 	"strconv"
@@ -15,6 +16,12 @@ import (
 // n.b. JavaScript's integers are safe between -(2^53 - 1) and 2^53 - 1 because
 // they are internally represented as IEEE 754 doubles.
 func coerceInt(value interface{}) interface{} {
+	if v, ok := value.(encoding.TextMarshaler); ok {
+		bs, err := v.MarshalText()
+		if err == nil {
+			value = string(bs)
+		}
+	}
 	switch value := value.(type) {
 	case bool:
 		if value == true {
@@ -168,6 +175,12 @@ var Int = NewScalar(ScalarConfig{
 })
 
 func coerceFloat(value interface{}) interface{} {
+	if v, ok := value.(encoding.TextMarshaler); ok {
+		bs, err := v.MarshalText()
+		if err == nil {
+			value = string(bs)
+		}
+	}
 	switch value := value.(type) {
 	case bool:
 		if value == true {
@@ -305,7 +318,12 @@ var Float = NewScalar(ScalarConfig{
 })
 
 func coerceString(value interface{}) interface{} {
-	if v, ok := value.(*string); ok {
+	if v, ok := value.(encoding.TextMarshaler); ok {
+		bs, err := v.MarshalText()
+		if err == nil {
+			return string(bs)
+		}
+	} else if v, ok := value.(*string); ok {
 		if v == nil {
 			return nil
 		}
@@ -332,6 +350,12 @@ var String = NewScalar(ScalarConfig{
 })
 
 func coerceBool(value interface{}) interface{} {
+	if v, ok := value.(encoding.TextMarshaler); ok {
+		bs, err := v.MarshalText()
+		if err == nil {
+			value = string(bs)
+		}
+	}
 	switch value := value.(type) {
 	case bool:
 		return value
@@ -512,6 +536,12 @@ var ID = NewScalar(ScalarConfig{
 })
 
 func serializeDateTime(value interface{}) interface{} {
+	if v, ok := value.(encoding.TextMarshaler); ok {
+		bs, err := v.MarshalText()
+		if err == nil {
+			return string(bs)
+		}
+	}
 	switch value := value.(type) {
 	case time.Time:
 		buff, err := value.MarshalText()
