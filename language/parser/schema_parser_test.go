@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/go-test/deep"
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/location"
@@ -74,7 +75,7 @@ type Hello {
 	}
 }
 
-func TestSchemaParser_SimpleExtension(t *testing.T) {
+func TestSchemaParser_SimpleTypeExtension(t *testing.T) {
 
 	body := `
 extend type Hello {
@@ -116,8 +117,170 @@ extend type Hello {
 			}),
 		},
 	})
-	if !reflect.DeepEqual(astDoc, expected) {
-		t.Fatalf("unexpected document, expected: %v, got: %v", expected, astDoc)
+	if diff := deep.Equal(astDoc, expected); diff != nil {
+		t.Fatal(diff)
+	}
+}
+
+func TestSchemaParser_SimpleInputExtension(t *testing.T) {
+
+	body := `
+extend input Hello {
+	world: String
+}
+`
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
+		Loc: testLoc(1, 39),
+		Definitions: []ast.Node{
+			ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
+				Loc: testLoc(1, 38),
+				Definition: ast.NewInputObjectDefinition(&ast.InputObjectDefinition{
+					Loc: testLoc(8, 38),
+					Name: ast.NewName(&ast.Name{
+						Value: "Hello",
+						Loc:   testLoc(14, 19),
+					}),
+					Directives: []*ast.Directive{},
+					Fields: []*ast.InputValueDefinition{
+						ast.NewInputValueDefinition(&ast.InputValueDefinition{
+							Loc: testLoc(23, 36),
+							Name: ast.NewName(&ast.Name{
+								Value: "world",
+								Loc:   testLoc(23, 28),
+							}),
+							Directives: []*ast.Directive{},
+							Type: ast.NewNamed(&ast.Named{
+								Loc: testLoc(30, 36),
+								Name: ast.NewName(&ast.Name{
+									Value: "String",
+									Loc:   testLoc(30, 36),
+								}),
+							}),
+						}),
+					},
+				}),
+			}),
+		},
+	})
+	if diff := deep.Equal(astDoc, expected); diff != nil {
+		t.Fatal(diff)
+	}
+}
+
+func TestSchemaParser_SimpleInterfaceExtension(t *testing.T) {
+
+	body := `
+extend interface Hello {
+	world: String
+}
+`
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
+		Loc: testLoc(1, 43),
+		Definitions: []ast.Node{
+			ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
+				Loc: testLoc(1, 42),
+				Definition: ast.NewInterfaceDefinition(&ast.InterfaceDefinition{
+					Loc: testLoc(8, 42),
+					Name: ast.NewName(&ast.Name{
+						Value: "Hello",
+						Loc:   testLoc(18, 23),
+					}),
+					Directives: []*ast.Directive{},
+					Fields: []*ast.FieldDefinition{
+						ast.NewFieldDefinition(&ast.FieldDefinition{
+							Loc: testLoc(27, 40),
+							Name: ast.NewName(&ast.Name{
+								Value: "world",
+								Loc:   testLoc(27, 32),
+							}),
+							Directives: []*ast.Directive{},
+							Arguments:  []*ast.InputValueDefinition{},
+							Type: ast.NewNamed(&ast.Named{
+								Loc: testLoc(34, 40),
+								Name: ast.NewName(&ast.Name{
+									Value: "String",
+									Loc:   testLoc(34, 40),
+								}),
+							}),
+						}),
+					},
+				}),
+			}),
+		},
+	})
+	if diff := deep.Equal(astDoc, expected); diff != nil {
+		t.Fatal(diff)
+	}
+}
+
+func TestSchemaParser_SimpleScalarExtension(t *testing.T) {
+
+	body := `extend scalar string @example`
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
+		Loc: testLoc(0, 29),
+		Definitions: []ast.Node{
+			ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
+				Loc: testLoc(0, 29),
+				Definition: ast.NewScalarDefinition(&ast.ScalarDefinition{
+					Loc: testLoc(7, 29),
+					Name: ast.NewName(&ast.Name{
+						Value: "string",
+						Loc:   testLoc(14, 20),
+					}),
+					Directives: []*ast.Directive{
+						ast.NewDirective(&ast.Directive{
+							Loc: testLoc(21, 29),
+							Name: ast.NewName(&ast.Name{
+								Value: "example",
+								Loc:   testLoc(22, 29),
+							}),
+							Arguments: []*ast.Argument{},
+						}),
+					},
+				}),
+			}),
+		},
+	})
+	if diff := deep.Equal(astDoc, expected); diff != nil {
+		t.Fatal(diff)
+	}
+}
+
+func TestSchemaParser_SimpleUnionExtension(t *testing.T) {
+
+	body := `extend union Hello @example`
+	astDoc := parse(t, body)
+	expected := ast.NewDocument(&ast.Document{
+		Loc: testLoc(0, 27),
+		Definitions: []ast.Node{
+			ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
+				Loc: testLoc(0, 27),
+				Definition: ast.NewUnionDefinition(&ast.UnionDefinition{
+					Loc: testLoc(7, 27),
+					Name: ast.NewName(&ast.Name{
+						Value: "Hello",
+						Loc:   testLoc(13, 18),
+					}),
+					Directives: []*ast.Directive{
+						ast.NewDirective(&ast.Directive{
+							Loc: testLoc(19, 27),
+							Name: ast.NewName(&ast.Name{
+								Loc:   testLoc(20, 27),
+								Value: "example",
+							}),
+							Arguments: []*ast.Argument{},
+						}),
+					},
+					Types: []*ast.Named{},
+				}),
+			}),
+		},
+	})
+	if diff := deep.Equal(astDoc, expected); diff != nil {
+		t.Fatal(diff)
 	}
 }
 
