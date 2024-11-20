@@ -48,7 +48,7 @@ func (v *Variable) GetValue() interface{} {
 	return v.GetName()
 }
 
-func (v *Variable) GetName() interface{} {
+func (v *Variable) GetName() *Name {
 	return v.Name
 }
 
@@ -295,6 +295,10 @@ func (f *ObjectField) GetKind() string {
 
 func (f *ObjectField) GetLoc() *Location {
 	return f.Loc
+}
+
+func (f *ObjectField) GetName() *Name {
+	return f.Name
 }
 
 func (f *ObjectField) GetValue() interface{} {
