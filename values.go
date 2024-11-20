@@ -67,6 +67,17 @@ func getArgumentValues(
 	return results
 }
 
+// GetArgumentValues prepares an object map of argument values given a list of
+// argument definitions and list of argument AST nodes.
+//
+// This is an exported version of getArgumentValues(), to ease writing custom
+// validation rules.
+func GetArgumentValues(
+	argDefs []*Argument, argASTs []*ast.Argument,
+	variableValues map[string]interface{}) map[string]interface{} {
+	return getArgumentValues(argDefs, argASTs, variableValues)
+}
+
 // Given a variable definition, and any value of input, return a value which
 // adheres to the variable definition, or throw an error.
 func getVariableValue(schema Schema, definitionAST *ast.VariableDefinition, input interface{}) (interface{}, error) {
