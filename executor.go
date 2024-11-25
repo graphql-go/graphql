@@ -995,7 +995,20 @@ func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 
 	// Try accessing as map via reflection
 	if r := reflect.ValueOf(p.Source); r.Kind() == reflect.Map && r.Type().Key().Kind() == reflect.String {
-		val := r.MapIndex(reflect.ValueOf(p.Info.FieldName))
+		fieldNameValue := reflect.ValueOf(p.Info.FieldName)
+		mapKeyType := r.Type().Key()
+		// The map key type might be a string type alias and its underlying type is string,
+		// but it will be panic if we try to use it as a string value in `MapIndex`.
+		// So we need to convert the value of the field name to the map key type before
+		// using it as a map key.
+		//
+		// Related issue: https://github.com/graphql-go/graphql/issues/700
+		if !fieldNameValue.CanConvert(mapKeyType) {
+			return nil, nil
+		}
+		fieldNameValue = fieldNameValue.Convert(mapKeyType)
+
+		val := r.MapIndex(fieldNameValue)
 		if val.IsValid() {
 			property := val.Interface()
 			if val.Type().Kind() == reflect.Func {
