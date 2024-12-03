@@ -47,6 +47,9 @@ func FormatError(err error) FormattedError {
 			if extended, ok := err.(ExtendedError); ok {
 				ret.Extensions = extended.Extensions()
 			}
+			if extended, ok := err.(FormattedError); ok {
+				ret.Extensions = extended.Extensions
+			}
 		}
 		return ret
 	case Error:
