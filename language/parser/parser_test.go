@@ -346,6 +346,84 @@ func TestParsesMultiByteCharacters_UnicodeText(t *testing.T) {
 	}
 }
 
+func TestMultiByteCharactersAmongstOtherTokens(t *testing.T) {
+	doc := `
+        { 
+        	# This comment has a фы世界 multi-byte character.
+        	field(arg: "Has a фы世界 multi-byte character.")
+        }
+	`
+	astDoc := parse(t, doc)
+
+	expectedASTDoc := ast.NewDocument(&ast.Document{
+		Loc: ast.NewLocation(&ast.Location{
+			Start: 67,
+			End:   121,
+		}),
+		Definitions: []ast.Node{
+			ast.NewOperationDefinition(&ast.OperationDefinition{
+				Loc: ast.NewLocation(&ast.Location{
+					Start: 67,
+					End:   119,
+				}),
+				Operation: "query",
+				SelectionSet: ast.NewSelectionSet(&ast.SelectionSet{
+					Loc: ast.NewLocation(&ast.Location{
+						Start: 67,
+						End:   119,
+					}),
+					Selections: []ast.Selection{
+						ast.NewField(&ast.Field{
+							Loc: ast.NewLocation(&ast.Location{
+								Start: 67,
+								End:   117,
+							}),
+							Name: ast.NewName(&ast.Name{
+								Loc: ast.NewLocation(&ast.Location{
+									Start: 69,
+									End:   74,
+								}),
+								Value: "field",
+							}),
+							Arguments: []*ast.Argument{
+								ast.NewArgument(&ast.Argument{
+									Loc: ast.NewLocation(&ast.Location{
+										Start: 75,
+										End:   116,
+									}),
+									Name: ast.NewName(&ast.Name{
+
+										Loc: ast.NewLocation(&ast.Location{
+											Start: 75,
+											End:   78,
+										}),
+										Value: "arg",
+									}),
+									Value: ast.NewStringValue(&ast.StringValue{
+
+										Loc: ast.NewLocation(&ast.Location{
+											Start: 80,
+											End:   116,
+										}),
+										Value: "Has a фы世界 multi-byte character.",
+									}),
+								}),
+							},
+						}),
+					},
+				}),
+			}),
+		},
+	})
+
+	astDocQuery := printer.Print(astDoc)
+	expectedASTDocQuery := printer.Print(expectedASTDoc)
+
+	if !reflect.DeepEqual(astDocQuery, expectedASTDocQuery) {
+		t.Fatalf("unexpected document, expected: %v, got: %v", expectedASTDocQuery, astDocQuery)
+	}
+}
+
 func TestParsesKitchenSink(t *testing.T) {
 	b, err := ioutil.ReadFile("../../kitchen-sink.graphql")
 	if err != nil {

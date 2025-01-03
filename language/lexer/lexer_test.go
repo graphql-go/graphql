@@ -153,6 +153,18 @@ func TestLexer_SkipsWhiteSpace(t *testing.T) {
 				Value: "",
 			},
 		},
+		{
+			Body: `
+    #comment фы世界 
+    foo#comment
+`,
+			Expected: Token{
+				Kind:  NAME,
+				Start: 30,
+				End:   33,
+				Value: "foo",
+			},
+		},
 	}
 	for _, test := range tests {
 		token, err := Lex(&source.Source{Body: []byte(test.Body)})(0)
