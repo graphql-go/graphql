@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/graphql-go/graphql/gqlerrors"
+	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
 	"github.com/graphql-go/graphql/language/source"
 )
@@ -39,9 +40,9 @@ func Subscribe(p Params) chan *Result {
 	if err != nil {
 
 		// merge the errors from extensions and the original error from parser
-		return sendOneResultAndClose(&Result{
+		return sendOneResultAndClose(injectRequest(AST, &Result{
 			Errors: gqlerrors.FormatErrors(err),
-		})
+		}))
 	}
 
 	// validate document
@@ -49,9 +50,9 @@ func Subscribe(p Params) chan *Result {
 
 	if !validationResult.IsValid {
 		// run validation finish functions for extensions
-		return sendOneResultAndClose(&Result{
+		return sendOneResultAndClose(injectRequest(AST, &Result{
 			Errors: validationResult.Errors,
-		})
+		}))
 
 	}
 	return ExecuteSubscription(ExecuteParams{
@@ -71,6 +72,13 @@ func sendOneResultAndClose(res *Result) chan *Result {
 	return resultChannel
 }
 
+func injectRequest(request *ast.Document, result *Result) *Result {
+	if result != nil {
+		result.Request = request
+	}
+	return result
+}
+
 // ExecuteSubscription is similar to graphql.Execute but returns a channel instead of a Result
 // currently does not support extensions
 func ExecuteSubscription(p ExecuteParams) chan *Result {
@@ -80,14 +88,14 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 	}
 
 	var mapSourceToResponse = func(payload interface{}) *Result {
-		return Execute(ExecuteParams{
+		return injectRequest(p.AST, Execute(ExecuteParams{
 			Schema:        p.Schema,
 			Root:          payload,
 			AST:           p.AST,
 			OperationName: p.OperationName,
 			Args:          p.Args,
 			Context:       p.Context,
-		})
+		}))
 	}
 	var resultChannel = make(chan *Result)
 	go func() {
@@ -98,9 +106,9 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 				if !ok {
 					return
 				}
-				resultChannel <- &Result{
+				resultChannel <- injectRequest(p.AST, &Result{
 					Errors: gqlerrors.FormatErrors(e),
-				}
+				})
 			}
 			return
 		}()
@@ -115,18 +123,18 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 		})
 
 		if err != nil {
-			resultChannel <- &Result{
+			resultChannel <- injectRequest(p.AST, &Result{
 				Errors: gqlerrors.FormatErrors(err),
-			}
+			})
 
 			return
 		}
 
 		operationType, err := getOperationRootType(p.Schema, exeContext.Operation)
 		if err != nil {
-			resultChannel <- &Result{
+			resultChannel <- injectRequest(p.AST, &Result{
 				Errors: gqlerrors.FormatErrors(err),
-			}
+			})
 
 			return
 		}
@@ -148,9 +156,9 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 		fieldDef := getFieldDef(p.Schema, operationType, fieldName)
 
 		if fieldDef == nil {
-			resultChannel <- &Result{
+			resultChannel <- injectRequest(p.AST, &Result{
 				Errors: gqlerrors.FormatErrors(fmt.Errorf("the subscription field %q is not defined", fieldName)),
-			}
+			})
 
 			return
 		}
@@ -158,9 +166,9 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 		resolveFn := fieldDef.Subscribe
 
 		if resolveFn == nil {
-			resultChannel <- &Result{
+			resultChannel <- injectRequest(p.AST, &Result{
 				Errors: gqlerrors.FormatErrors(fmt.Errorf("the subscription function %q is not defined", fieldName)),
-			}
+			})
 			return
 		}
 
@@ -184,17 +192,17 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 			Context: p.Context,
 		})
 		if err != nil {
-			resultChannel <- &Result{
+			resultChannel <- injectRequest(p.AST, &Result{
 				Errors: gqlerrors.FormatErrors(err),
-			}
+			})
 
 			return
 		}
 
 		if fieldResult == nil {
-			resultChannel <- &Result{
+			resultChannel <- injectRequest(p.AST, &Result{
 				Errors: gqlerrors.FormatErrors(fmt.Errorf("no field result")),
-			}
+			})
 
 			return
 		}
