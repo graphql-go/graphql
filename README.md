@@ -12,7 +12,7 @@ godoc: https://pkg.go.dev/github.com/graphql-go/graphql
 
 Friendly reminder links are available in case you would like to contribute back into our commitment with Go and open-source.
 
-| Author          |  PayPal Link        |
+| Author        |  PayPal Link  |
 |:-------------:|:-------------:|
 | [Hafiz Ismail](https://github.com/sogko) | Not available yet. |
 | [Chris Ramón](https://github.com/chris-ramon) | https://www.paypal.com/donate/?hosted_button_id=WHUQQYEMTRQBJ |
