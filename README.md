@@ -8,6 +8,15 @@ Supports: queries, mutations & subscriptions.
 
 godoc: https://pkg.go.dev/github.com/graphql-go/graphql
 
+### Contribute Back
+
+Friendly reminder links are available in case you would like to contribute back into our commitment with Go and open-source.
+
+| Author          |  PayPal Link        |
+|:-------------:|:-------------:|
+| [Hafiz Ismail](https://github.com/sogko) | Not available yet. |
+| [Chris Ramón](https://github.com/chris-ramon) | https://www.paypal.com/donate/?hosted_button_id=WHUQQYEMTRQBJ |
+
 ### Getting Started
 
 To install the library, run:
