@@ -2,10 +2,12 @@ package graphql_test
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 
 	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/testutil"
 )
 
@@ -267,4 +269,33 @@ func TestEmptyStringIsNotNull(t *testing.T) {
 	if !reflect.DeepEqual(result.Data, expected) {
 		t.Errorf("wrong result, query: %v, graphql result diff: %v", query, testutil.Diff(expected, result))
 	}
+}
+
+func TestResultErrorsJoinedFailure(t *testing.T) {
+	r := graphql.Result{}
+
+	if err := r.ErrorsJoined(); err != nil {
+		t.Fatalf("wrong result, want: nil, got: %v", err)
+	}
+}
+
+func TestResultErrorsJoinedSuccess(t *testing.T) {
+	r := graphql.Result{
+		Errors: []gqlerrors.FormattedError{
+			{Message: "first error"},
+			{Message: "second error"},
+		},
+	}
+
+	expected := errors.New("second error: first error")
+
+	if err := r.ErrorsJoined(); err != nil {
+		if !reflect.DeepEqual(err.Error(), expected.Error()) {
+			t.Fatalf("wrong result, want: %v, got: %v", expected, err)
+		}
+
+		return
+	}
+
+	t.Fatalf("wrong result, got: nil, want: %v", expected)
 }
