@@ -290,7 +290,7 @@ func TestResultErrorsJoinedSuccess(t *testing.T) {
 	expected := errors.New("second error: first error")
 
 	if err := r.ErrorsJoined(); err != nil {
-		if !reflect.DeepEqual(err.Error(), expected.Error()) {
+		if errors.Is(err, expected) {
 			t.Fatalf("wrong result, want: %v, got: %v", expected, err)
 		}
 
