@@ -27,6 +27,7 @@ const (
 	ListValue    = "ListValue"
 	ObjectValue  = "ObjectValue"
 	ObjectField  = "ObjectField"
+	NullValue    = "NullValue"
 
 	// Directives
 	Directive = "Directive"
