@@ -233,3 +233,7 @@ func (def *DirectiveDefinition) GetOperation() string {
 func (def *DirectiveDefinition) GetDescription() *StringValue {
 	return def.Description
 }
+
+func (def *DirectiveDefinition) GetName() *Name {
+	return def.Name
+}
