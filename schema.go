@@ -283,9 +283,7 @@ func typeMapReducer(schema *Schema, typeMap TypeMap, objectType Type) (TypeMap, 
 			return typeMapReducer(schema, typeMap, objectType.OfType)
 		}
 	case *Object:
-		if objectType.err != nil {
-			return typeMap, objectType.err
-		}
+		return typeMap, objectType.err
 	}
 
 	if mappedObjectType, ok := typeMap[objectType.Name()]; ok {
