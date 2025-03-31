@@ -15,6 +15,17 @@ import (
 	"github.com/graphql-go/graphql/testutil"
 )
 
+func TestDefaultResolveFn(t *testing.T) {
+	type Key string
+	type Source map[Key]interface{}
+	source := Source{
+		"foo": "bar",
+	}
+	graphql.DefaultResolveFn(graphql.ResolveParams{
+		Source: source,
+	})
+}
+
 func TestExecutesArbitraryCode(t *testing.T) {
 
 	deepData := map[string]interface{}{}
