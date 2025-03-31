@@ -20,7 +20,7 @@ func (r *Result) HasErrors() bool {
 	return len(r.Errors) > 0
 }
 
-// ErrorsJoined joins and returns the result errors with `:` as character separator.
+// ErrorsJoined joins and returns the errors of the result with `:` as character separator.
 func (r *Result) ErrorsJoined() error {
 	if r.Errors == nil {
 		return nil
