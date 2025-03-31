@@ -27,7 +27,7 @@ jobs:
       - image: cimg/go:1.24.1
   coveralls:
     docker:
-      - image: cimg/go:1.24.1
+      - image: circleci/golang:1.23
     steps:
       - checkout
       - run: go get github.com/mattn/goveralls
