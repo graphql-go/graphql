@@ -17,25 +17,17 @@ defaults: &defaults
 
 version: 2
 jobs:
-  golang:1.21:
-    <<: *test_without_go_modules
-    docker:
-      - image: cimg/go:1.21
-  golang:1.22:
-    <<: *test_without_go_modules
-    docker:
-      - image: cimg/go:1.22
   golang:1.23:
     <<: *defaults
     docker:
       - image: cimg/go:1.23
-  golang:latest:
+  golang:1.24.1:
     <<: *defaults
     docker:
-      - image: circleci/golang:latest
+      - image: cimg/go:1.24.1
   coveralls:
     docker:
-      - image: circleci/golang:latest
+      - image: cimg/go:1.24.1
     steps:
       - checkout
       - run: go get github.com/mattn/goveralls
@@ -46,8 +38,6 @@ workflows:
   version: 2
   build:
     jobs:
-      - golang:1.21
-      - golang:1.22
       - golang:1.23
-      - golang:latest
+      - golang:1.24.1
       - coveralls
