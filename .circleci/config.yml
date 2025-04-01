@@ -8,10 +8,10 @@ test_without_go_modules: &test_without_go_modules
 
 version: 2
 jobs:
-  golang:1.24.0:
+  golang:1.24.2:
     <<: *test_without_go_modules
     docker:
-      - image: cimg/go:1.24.0
+      - image: cimg/go:1.24.2
   coveralls:
     docker:
       - image: circleci/golang:latest
@@ -25,5 +25,5 @@ workflows:
   version: 2
   build:
     jobs:
-      - golang:1.24.0
+      - golang:1.24.2
       - coveralls
