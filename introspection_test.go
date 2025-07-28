@@ -1371,7 +1371,7 @@ func TestIntrospection_ExposesDescriptionsOnTypesAndFields(t *testing.T) {
 					},
 					map[string]interface{}{
 						"name": "subscriptionType",
-						"description": "If this server supports subscription, the type that " +
+						"description": "If this server support subscription, the type that " +
 							"subscription operations will be rooted at.",
 					},
 					map[string]interface{}{
@@ -1422,7 +1422,7 @@ func TestIntrospection_ExposesDescriptionsOnEnums(t *testing.T) {
 		Data: map[string]interface{}{
 			"typeKindType": map[string]interface{}{
 				"name":        "__TypeKind",
-				"description": "An enum describing what kind of type a given `__Type` is",
+				"description": "An enum describing what kind of type a given `__Type` is.",
 				"enumValues": []interface{}{
 					map[string]interface{}{
 						"name":        "SCALAR",
