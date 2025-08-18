@@ -1271,7 +1271,7 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 						for _, argDef := range fieldDef.Args {
 							argAST, _ := argASTMap[argDef.Name()]
 							if argAST == nil {
-								if argDefType, ok := argDef.Type.(*NonNull); ok {
+								if argDef.IsRequired() {
 									fieldName := ""
 									if fieldAST.Name != nil {
 										fieldName = fieldAST.Name.Value
@@ -1279,7 +1279,7 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 									reportError(
 										context,
 										fmt.Sprintf(`Field "%v" argument "%v" of type "%v" `+
-											`is required but not provided.`, fieldName, argDef.Name(), argDefType),
+											`is required but not provided.`, fieldName, argDef.Name(), argDef.Type),
 										[]ast.Node{fieldAST},
 									)
 								}
@@ -1312,7 +1312,7 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 						for _, argDef := range directiveDef.Args {
 							argAST, _ := argASTMap[argDef.Name()]
 							if argAST == nil {
-								if argDefType, ok := argDef.Type.(*NonNull); ok {
+								if argDef.IsRequired() {
 									directiveName := ""
 									if directiveAST.Name != nil {
 										directiveName = directiveAST.Name.Value
@@ -1320,7 +1320,7 @@ func ProvidedNonNullArgumentsRule(context *ValidationContext) *ValidationRuleIns
 									reportError(
 										context,
 										fmt.Sprintf(`Directive "@%v" argument "%v" of type `+
-											`"%v" is required but not provided.`, directiveName, argDef.Name(), argDefType),
+											`"%v" is required but not provided.`, directiveName, argDef.Name(), argDef.Type),
 										[]ast.Node{directiveAST},
 									)
 								}

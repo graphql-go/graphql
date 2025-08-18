@@ -36,6 +36,24 @@ func TestValidate_ProvidedNonNullArguments_ValidNonNullableValue_NoArgOnOptional
         }
     `)
 }
+func TestValidate_ProvidedNonNullArguments_ValidNonNullableValue_WithDefault(t *testing.T) {
+	testutil.ExpectPassesRule(t, graphql.ProvidedNonNullArgumentsRule, `
+        {
+          complicatedArgs {
+            nonNullFieldWithDefault
+          }
+        }
+    `)
+}
+func TestValidate_ProvidedNonNullArguments_ValidNonNullableValue_WithDefaultAndValue(t *testing.T) {
+	testutil.ExpectPassesRule(t, graphql.ProvidedNonNullArgumentsRule, `
+        {
+          complicatedArgs {
+            nonNullFieldWithDefault(arg:1)
+          }
+        }
+    `)
+}
 func TestValidate_ProvidedNonNullArguments_ValidNonNullableValue_MultipleArgs(t *testing.T) {
 	testutil.ExpectPassesRule(t, graphql.ProvidedNonNullArgumentsRule, `
         {
