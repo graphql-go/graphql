@@ -17,7 +17,13 @@ type Params struct {
 
 	// The value provided as the first argument to resolver functions on the top
 	// level type (e.g. the query object type).
+	//
+	// Deprecated: use the Root field instead.
 	RootObject map[string]interface{}
+
+	// The value provided as the first argument to resolver functions on the top
+	// level type (e.g. the query object type).
+	Root interface{}
 
 	// A mapping of variable name to runtime value to use for all variables
 	// defined in the requestString.
@@ -105,9 +111,14 @@ func Do(p Params) *Result {
 		}
 	}
 
+	root := p.Root
+	if root == nil {
+		root = p.RootObject
+	}
+
 	return Execute(ExecuteParams{
 		Schema:        p.Schema,
-		Root:          p.RootObject,
+		Root:          root,
 		AST:           AST,
 		OperationName: p.OperationName,
 		Args:          p.VariableValues,
