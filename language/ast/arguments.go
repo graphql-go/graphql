@@ -27,3 +27,7 @@ func (arg *Argument) GetKind() string {
 func (arg *Argument) GetLoc() *Location {
 	return arg.Loc
 }
+
+func (arg *Argument) GetName() *Name {
+	return arg.Name
+}
