@@ -1187,7 +1187,7 @@ func parseInterfaceTypeDefinition(parser *Parser) (ast.Node, error) {
 }
 
 /**
- * UnionTypeDefinition : Description? union Name Directives? = UnionMembers
+ * UnionTypeDefinition : Description? union Name Directives? UnionMembers?
  */
 func parseUnionTypeDefinition(parser *Parser) (ast.Node, error) {
 	start := parser.Token.Start
@@ -1207,13 +1207,16 @@ func parseUnionTypeDefinition(parser *Parser) (ast.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = expect(parser, lexer.EQUALS)
-	if err != nil {
-		return nil, err
-	}
-	types, err := parseUnionMembers(parser)
-	if err != nil {
-		return nil, err
+	var types []*ast.Named
+	if parser.Token.Kind == lexer.EQUALS {
+		err = advance(parser)
+		if err != nil {
+			return nil, err
+		}
+		types, err = parseUnionMembers(parser)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return ast.NewUnionDefinition(&ast.UnionDefinition{
 		Name:        name,
@@ -1225,9 +1228,11 @@ func parseUnionTypeDefinition(parser *Parser) (ast.Node, error) {
 }
 
 /**
- * UnionMembers :
+ * UnionMembers : = UnionMemberTypes
+ *
+ * UnionMemberTypes
  *   - NamedType
- *   - UnionMembers | NamedType
+ *   - UnionMemberTypes | NamedType
  */
 func parseUnionMembers(parser *Parser) ([]*ast.Named, error) {
 	members := []*ast.Named{}
