@@ -92,10 +92,8 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 		initialTypes = append(initialTypes, SchemaType)
 	}
 
-	for _, ttype := range config.Types {
-		// assume that user will never add a nil object to config
-		initialTypes = append(initialTypes, ttype)
-	}
+	// assume that user will never add a nil object to config
+	initialTypes = append(initialTypes, config.Types...)
 
 	for _, ttype := range initialTypes {
 		if ttype.Error() != nil {

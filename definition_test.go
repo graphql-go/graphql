@@ -519,6 +519,7 @@ func TestTypeSystem_DefinitionExample_ProhibitsNilTypeInUnions(t *testing.T) {
 		Name:  "BadUnion",
 		Types: []*graphql.Object{nil},
 	})
+	ttype.Types()
 	expected := `BadUnion may only contain Object types, it cannot contain: <nil>.`
 	if ttype.Error().Error() != expected {
 		t.Fatalf(`expected %v , got: %v`, expected, ttype.Error())
@@ -664,5 +665,66 @@ func TestTypeSystem_DefinitionExample_CanAddInputObjectField(t *testing.T) {
 	}
 	if _, ok := fieldMap["newValue"]; !ok {
 		t.Fatal("Unexpected result, inputObject should have a field named 'newValue'")
+	}
+}
+
+func TestTypeSystem_DefinitionExample_IncludesUnionTypesThunk(t *testing.T) {
+	someObject := graphql.NewObject(graphql.ObjectConfig{
+		Name: "SomeObject",
+		Fields: graphql.Fields{
+			"f": &graphql.Field{
+				Type: graphql.Int,
+			},
+		},
+	})
+
+	someOtherObject := graphql.NewObject(graphql.ObjectConfig{
+		Name: "SomeOtherObject",
+		Fields: graphql.Fields{
+			"g": &graphql.Field{
+				Type: graphql.Int,
+			},
+		},
+	})
+
+	someUnion := graphql.NewUnion(graphql.UnionConfig{
+		Name: "SomeUnion",
+		Types: (graphql.UnionTypesThunk)(func() []*graphql.Object {
+			return []*graphql.Object{someObject, someOtherObject}
+		}),
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
+			return nil
+		},
+	})
+
+	unionTypes := someUnion.Types()
+
+	if someUnion.Error() != nil {
+		t.Fatalf("unexpected error, got: %v", someUnion.Error().Error())
+	}
+	if len(unionTypes) != 2 {
+		t.Fatalf("Unexpected result, someUnion should have two unionTypes, has %d", len(unionTypes))
+	}
+}
+
+func TestTypeSystem_DefinitionExample_HandlesInvalidUnionTypes(t *testing.T) {
+	someUnion := graphql.NewUnion(graphql.UnionConfig{
+		Name: "SomeUnion",
+		Types: (graphql.InterfacesThunk)(func() []*graphql.Interface {
+			return []*graphql.Interface{}
+		}),
+		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
+			return nil
+		},
+	})
+
+	unionTypes := someUnion.Types()
+	expected := "Unknown Union.Types type: graphql.InterfacesThunk"
+
+	if someUnion.Error().Error() != expected {
+		t.Fatalf("Unexpected error, got: %v, want: %v", someUnion.Error().Error(), expected)
+	}
+	if unionTypes != nil {
+		t.Fatalf("Unexpected result, got: %v, want: nil", unionTypes)
 	}
 }

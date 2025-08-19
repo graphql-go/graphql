@@ -193,13 +193,12 @@ func GetNamed(ttype Type) Named {
 //
 // Example:
 //
-//    var OddType = new Scalar({
-//      name: 'Odd',
-//      serialize(value) {
-//        return value % 2 === 1 ? value : null;
-//      }
-//    });
-//
+//	var OddType = new Scalar({
+//	  name: 'Odd',
+//	  serialize(value) {
+//	    return value % 2 === 1 ? value : null;
+//	  }
+//	});
 type Scalar struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
@@ -306,19 +305,19 @@ func (st *Scalar) Error() error {
 // have a name, but most importantly describe their fields.
 // Example:
 //
-//    var AddressType = new Object({
-//      name: 'Address',
-//      fields: {
-//        street: { type: String },
-//        number: { type: Int },
-//        formatted: {
-//          type: String,
-//          resolve(obj) {
-//            return obj.number + ' ' + obj.street
-//          }
-//        }
-//      }
-//    });
+//	var AddressType = new Object({
+//	  name: 'Address',
+//	  fields: {
+//	    street: { type: String },
+//	    number: { type: Int },
+//	    formatted: {
+//	      type: String,
+//	      resolve(obj) {
+//	        return obj.number + ' ' + obj.street
+//	      }
+//	    }
+//	  }
+//	});
 //
 // When two types need to refer to each other, or a type needs to refer to
 // itself in a field, you can use a function expression (aka a closure or a
@@ -326,13 +325,13 @@ func (st *Scalar) Error() error {
 //
 // Example:
 //
-//    var PersonType = new Object({
-//      name: 'Person',
-//      fields: () => ({
-//        name: { type: String },
-//        bestFriend: { type: PersonType },
-//      })
-//    });
+//	var PersonType = new Object({
+//	  name: 'Person',
+//	  fields: () => ({
+//	    name: { type: String },
+//	    bestFriend: { type: PersonType },
+//	  })
+//	});
 //
 // /
 type Object struct {
@@ -419,7 +418,7 @@ func (gt *Object) Name() string {
 	return gt.PrivateName
 }
 func (gt *Object) Description() string {
-	return ""
+	return gt.PrivateDescription
 }
 func (gt *Object) String() string {
 	return gt.PrivateName
@@ -667,14 +666,12 @@ func (st *Argument) Error() error {
 //
 // Example:
 //
-//     var EntityType = new Interface({
-//       name: 'Entity',
-//       fields: {
-//         name: { type: String }
-//       }
-//     });
-//
-//
+//	var EntityType = new Interface({
+//	  name: 'Entity',
+//	  fields: {
+//	    name: { type: String }
+//	  }
+//	});
 type Interface struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
@@ -778,32 +775,36 @@ func (it *Interface) Error() error {
 //
 // Example:
 //
-//     var PetType = new Union({
-//       name: 'Pet',
-//       types: [ DogType, CatType ],
-//       resolveType(value) {
-//         if (value instanceof Dog) {
-//           return DogType;
-//         }
-//         if (value instanceof Cat) {
-//           return CatType;
-//         }
-//       }
-//     });
+//	var PetType = new Union({
+//	  name: 'Pet',
+//	  types: [ DogType, CatType ],
+//	  resolveType(value) {
+//	    if (value instanceof Dog) {
+//	      return DogType;
+//	    }
+//	    if (value instanceof Cat) {
+//	      return CatType;
+//	    }
+//	  }
+//	});
 type Union struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
 	ResolveType        ResolveTypeFn
 
-	typeConfig    UnionConfig
-	types         []*Object
-	possibleTypes map[string]bool
+	typeConfig      UnionConfig
+	initalizedTypes bool
+	types           []*Object
+	possibleTypes   map[string]bool
 
 	err error
 }
+
+type UnionTypesThunk func() []*Object
+
 type UnionConfig struct {
-	Name        string    `json:"name"`
-	Types       []*Object `json:"types"`
+	Name        string      `json:"name"`
+	Types       interface{} `json:"types"`
 	ResolveType ResolveTypeFn
 	Description string `json:"description"`
 }
@@ -821,48 +822,80 @@ func NewUnion(config UnionConfig) *Union {
 	objectType.PrivateDescription = config.Description
 	objectType.ResolveType = config.ResolveType
 
-	if objectType.err = invariantf(
-		len(config.Types) > 0,
-		`Must provide Array of types for Union %v.`, config.Name,
-	); objectType.err != nil {
-		return objectType
+	objectType.typeConfig = config
+
+	return objectType
+}
+
+func (ut *Union) Types() []*Object {
+	if ut.initalizedTypes {
+		return ut.types
 	}
-	for _, ttype := range config.Types {
-		if objectType.err = invariantf(
+
+	var unionTypes []*Object
+	switch utype := ut.typeConfig.Types.(type) {
+	case UnionTypesThunk:
+		unionTypes = utype()
+	case []*Object:
+		unionTypes = utype
+	case nil:
+	default:
+		ut.err = fmt.Errorf("Unknown Union.Types type: %T", ut.typeConfig.Types)
+		ut.initalizedTypes = true
+		return nil
+	}
+
+	ut.types, ut.err = defineUnionTypes(ut, unionTypes)
+	ut.initalizedTypes = true
+	return ut.types
+}
+
+func defineUnionTypes(objectType *Union, unionTypes []*Object) ([]*Object, error) {
+	definedUnionTypes := []*Object{}
+
+	if err := invariantf(
+		len(unionTypes) > 0,
+		`Must provide Array of types for Union %v.`, objectType.Name(),
+	); err != nil {
+		return definedUnionTypes, err
+	}
+
+	for _, ttype := range unionTypes {
+		if err := invariantf(
 			ttype != nil,
 			`%v may only contain Object types, it cannot contain: %v.`, objectType, ttype,
-		); objectType.err != nil {
-			return objectType
+		); err != nil {
+			return definedUnionTypes, err
 		}
 		if objectType.ResolveType == nil {
-			if objectType.err = invariantf(
+			if err := invariantf(
 				ttype.IsTypeOf != nil,
 				`Union Type %v does not provide a "resolveType" function `+
 					`and possible Type %v does not provide a "isTypeOf" `+
 					`function. There is no way to resolve this possible type `+
 					`during execution.`, objectType, ttype,
-			); objectType.err != nil {
-				return objectType
+			); err != nil {
+				return definedUnionTypes, err
 			}
 		}
+		definedUnionTypes = append(definedUnionTypes, ttype)
 	}
-	objectType.types = config.Types
-	objectType.typeConfig = config
 
-	return objectType
+	return definedUnionTypes, nil
 }
-func (ut *Union) Types() []*Object {
-	return ut.types
-}
+
 func (ut *Union) String() string {
 	return ut.PrivateName
 }
+
 func (ut *Union) Name() string {
 	return ut.PrivateName
 }
+
 func (ut *Union) Description() string {
 	return ut.PrivateDescription
 }
+
 func (ut *Union) Error() error {
 	return ut.err
 }
@@ -1048,18 +1081,18 @@ func (gt *Enum) getNameLookup() map[string]*EnumValueDefinition {
 // An input object defines a structured collection of fields which may be
 // supplied to a field argument.
 //
-// Using `NonNull` will ensure that a value must be provided by the query
+// # Using `NonNull` will ensure that a value must be provided by the query
 //
 // Example:
 //
-//     var GeoPoint = new InputObject({
-//       name: 'GeoPoint',
-//       fields: {
-//         lat: { type: new NonNull(Float) },
-//         lon: { type: new NonNull(Float) },
-//         alt: { type: Float, defaultValue: 0 },
-//       }
-//     });
+//	var GeoPoint = new InputObject({
+//	  name: 'GeoPoint',
+//	  fields: {
+//	    lat: { type: new NonNull(Float) },
+//	    lon: { type: new NonNull(Float) },
+//	    alt: { type: Float, defaultValue: 0 },
+//	  }
+//	});
 type InputObject struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
@@ -1198,14 +1231,13 @@ func (gt *InputObject) Error() error {
 //
 // Example:
 //
-//     var PersonType = new Object({
-//       name: 'Person',
-//       fields: () => ({
-//         parents: { type: new List(Person) },
-//         children: { type: new List(Person) },
-//       })
-//     })
-//
+//	var PersonType = new Object({
+//	  name: 'Person',
+//	  fields: () => ({
+//	    parents: { type: new List(Person) },
+//	    children: { type: new List(Person) },
+//	  })
+//	})
 type List struct {
 	OfType Type `json:"ofType"`
 
@@ -1224,14 +1256,14 @@ func NewList(ofType Type) *List {
 	return gl
 }
 func (gl *List) Name() string {
-	return fmt.Sprintf("%v", gl.OfType)
+	return fmt.Sprintf("[%v]", gl.OfType)
 }
 func (gl *List) Description() string {
 	return ""
 }
 func (gl *List) String() string {
 	if gl.OfType != nil {
-		return fmt.Sprintf("[%v]", gl.OfType)
+		return gl.Name()
 	}
 	return ""
 }
@@ -1249,12 +1281,12 @@ func (gl *List) Error() error {
 //
 // Example:
 //
-//     var RowType = new Object({
-//       name: 'Row',
-//       fields: () => ({
-//         id: { type: new NonNull(String) },
-//       })
-//     })
+//	var RowType = new Object({
+//	  name: 'Row',
+//	  fields: () => ({
+//	    id: { type: new NonNull(String) },
+//	  })
+//	})
 //
 // Note: the enforcement of non-nullability occurs within the executor.
 type NonNull struct {

@@ -14,7 +14,7 @@ import (
 	"github.com/graphql-go/graphql/language/source"
 )
 
-func TestBadToken(t *testing.T) {
+func TestParser_BadToken(t *testing.T) {
 	_, err := Parse(ParseParams{
 		Source: &source.Source{
 			Body: []byte("query _ {\n  me {\n    id`\n  }\n}"),
@@ -26,7 +26,7 @@ func TestBadToken(t *testing.T) {
 	}
 }
 
-func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
+func TestParser_AcceptsOptionToNotIncludeSource(t *testing.T) {
 	opts := ParseOptions{
 		NoSource: true,
 	}
@@ -80,7 +80,7 @@ func TestAcceptsOptionToNotIncludeSource(t *testing.T) {
 	}
 }
 
-func TestParseProvidesUsefulErrors(t *testing.T) {
+func TestParser_ParseProvidesUsefulErrors(t *testing.T) {
 	opts := ParseOptions{
 		NoSource: true,
 	}
@@ -135,7 +135,7 @@ fragment MissingOn Type
 
 }
 
-func TestParseProvidesUsefulErrorsWhenUsingSource(t *testing.T) {
+func TestParser_ParseProvidesUsefulErrorsWhenUsingSource(t *testing.T) {
 	test := errorMessageTest{
 		source.NewSource(&source.Source{
 			Body: []byte("query"),
@@ -147,7 +147,7 @@ func TestParseProvidesUsefulErrorsWhenUsingSource(t *testing.T) {
 	testErrorMessage(t, test)
 }
 
-func TestParsesVariableInlineValues(t *testing.T) {
+func TestParser_ParsesVariableInlineValues(t *testing.T) {
 	source := `{ field(complex: { a: { b: [ $var ] } }) }`
 	// should not return error
 	_, err := Parse(ParseParams{Source: source})
@@ -156,7 +156,7 @@ func TestParsesVariableInlineValues(t *testing.T) {
 	}
 }
 
-func TestParsesConstantDefaultValues(t *testing.T) {
+func TestParser_ParsesConstantDefaultValues(t *testing.T) {
 	test := errorMessageTest{
 		`query Foo($x: Complex = { a: { b: [ $var ] } }) { field }`,
 		`Syntax Error GraphQL (1:37) Unexpected $`,
@@ -165,7 +165,7 @@ func TestParsesConstantDefaultValues(t *testing.T) {
 	testErrorMessage(t, test)
 }
 
-func TestDoesNotAcceptFragmentsNameOn(t *testing.T) {
+func TestParser_DoesNotAcceptFragmentsNameOn(t *testing.T) {
 	test := errorMessageTest{
 		`fragment on on on { on }`,
 		`Syntax Error GraphQL (1:10) Unexpected Name "on"`,
@@ -174,7 +174,7 @@ func TestDoesNotAcceptFragmentsNameOn(t *testing.T) {
 	testErrorMessage(t, test)
 }
 
-func TestDoesNotAcceptFragmentsSpreadOfOn(t *testing.T) {
+func TestParser_DoesNotAcceptFragmentsSpreadOfOn(t *testing.T) {
 	test := errorMessageTest{
 		`{ ...on }'`,
 		`Syntax Error GraphQL (1:9) Expected Name, found }`,
@@ -183,7 +183,16 @@ func TestDoesNotAcceptFragmentsSpreadOfOn(t *testing.T) {
 	testErrorMessage(t, test)
 }
 
-func TestParsesMultiByteCharacters_Unicode(t *testing.T) {
+func TestParser_DoesNotAllowNullAsValue(t *testing.T) {
+	test := errorMessageTest{
+		`{ fieldWithNullableStringInput(input: null) }'`,
+		`Syntax Error GraphQL (1:39) Unexpected Name "null"`,
+		false,
+	}
+	testErrorMessage(t, test)
+}
+
+func TestParser_ParsesMultiByteCharacters_Unicode(t *testing.T) {
 
 	doc := `
         # This comment has a \u0A0A multi-byte character.
@@ -260,7 +269,7 @@ func TestParsesMultiByteCharacters_Unicode(t *testing.T) {
 	}
 }
 
-func TestParsesMultiByteCharacters_UnicodeText(t *testing.T) {
+func TestParser_ParsesMultiByteCharacters_UnicodeText(t *testing.T) {
 
 	doc := `
         # This comment has a фы世界 multi-byte character.
@@ -337,7 +346,7 @@ func TestParsesMultiByteCharacters_UnicodeText(t *testing.T) {
 	}
 }
 
-func TestParsesKitchenSink(t *testing.T) {
+func TestParser_ParsesKitchenSink(t *testing.T) {
 	b, err := ioutil.ReadFile("../../kitchen-sink.graphql")
 	if err != nil {
 		t.Fatalf("unable to load kitchen-sink.graphql")
@@ -349,7 +358,7 @@ func TestParsesKitchenSink(t *testing.T) {
 	}
 }
 
-func TestAllowsNonKeywordsAnywhereNameIsAllowed(t *testing.T) {
+func TestParser_AllowsNonKeywordsAnywhereNameIsAllowed(t *testing.T) {
 	nonKeywords := []string{
 		"on",
 		"fragment",
@@ -381,7 +390,7 @@ func TestAllowsNonKeywordsAnywhereNameIsAllowed(t *testing.T) {
 	}
 }
 
-func TestParsesExperimentalSubscriptionFeature(t *testing.T) {
+func TestParser_ParsesExperimentalSubscriptionFeature(t *testing.T) {
 	source := `
       subscription Foo {
         subscriptionField
@@ -393,7 +402,7 @@ func TestParsesExperimentalSubscriptionFeature(t *testing.T) {
 	}
 }
 
-func TestParsesAnonymousMutationOperations(t *testing.T) {
+func TestParser_ParsesAnonymousMutationOperations(t *testing.T) {
 	source := `
       mutation {
         mutationField
@@ -405,7 +414,7 @@ func TestParsesAnonymousMutationOperations(t *testing.T) {
 	}
 }
 
-func TestParsesAnonymousSubscriptionOperations(t *testing.T) {
+func TestParser_ParsesAnonymousSubscriptionOperations(t *testing.T) {
 	source := `
       subscription {
         subscriptionField
@@ -417,7 +426,7 @@ func TestParsesAnonymousSubscriptionOperations(t *testing.T) {
 	}
 }
 
-func TestParsesNamedMutationOperations(t *testing.T) {
+func TestParser_ParsesNamedMutationOperations(t *testing.T) {
 	source := `
       mutation Foo {
         mutationField
@@ -429,7 +438,7 @@ func TestParsesNamedMutationOperations(t *testing.T) {
 	}
 }
 
-func TestParsesNamedSubscriptionOperations(t *testing.T) {
+func TestParser_ParsesNamedSubscriptionOperations(t *testing.T) {
 	source := `
       subscription Foo {
         subscriptionField
@@ -441,7 +450,7 @@ func TestParsesNamedSubscriptionOperations(t *testing.T) {
 	}
 }
 
-func TestParsesFieldDefinitionWithDescription(t *testing.T) {
+func TestParser_ParsesFieldDefinitionWithDescription(t *testing.T) {
 	source := `
 		type Foo implements Bar {
 			"""
@@ -456,7 +465,7 @@ func TestParsesFieldDefinitionWithDescription(t *testing.T) {
 	}
 }
 
-func TestParsesInputValueDefinitionWithDescription(t *testing.T) {
+func TestParser_ParsesInputValueDefinitionWithDescription(t *testing.T) {
 	source := `
 		type Foo implements Bar {
 			foo(
@@ -473,7 +482,7 @@ func TestParsesInputValueDefinitionWithDescription(t *testing.T) {
 	}
 }
 
-func TestParsesEnumValueDefinitionWithDescription(t *testing.T) {
+func TestParser_ParsesEnumValueDefinitionWithDescription(t *testing.T) {
 	source := `
 		enum Site {
 			"description 1"
@@ -490,7 +499,7 @@ func TestParsesEnumValueDefinitionWithDescription(t *testing.T) {
 	}
 }
 
-func TestDefinitionsWithDescriptions(t *testing.T) {
+func TestParser_DefinitionsWithDescriptions(t *testing.T) {
 	testCases := []struct {
 		name            string
 		source          string
@@ -601,7 +610,7 @@ func TestDefinitionsWithDescriptions(t *testing.T) {
 	}
 }
 
-func TestParseCreatesAst(t *testing.T) {
+func TestParser_ParseCreatesAst(t *testing.T) {
 	body := `{
   node(id: 4) {
     id,
@@ -726,6 +735,15 @@ func TestParseCreatesAst(t *testing.T) {
 		t.Fatalf("unexpected document, expected: %v, got: %v", expectedDocument, document.Definitions)
 	}
 
+}
+
+func TestParser_DoesNotAcceptStringAsDefinition(t *testing.T) {
+	test := errorMessageTest{
+		`String`,
+		`Syntax Error GraphQL (1:1) Unexpected Name "String"`,
+		false,
+	}
+	testErrorMessage(t, test)
 }
 
 type errorMessageTest struct {

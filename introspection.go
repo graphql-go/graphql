@@ -59,7 +59,7 @@ func init() {
 
 	TypeKindEnumType = NewEnum(EnumConfig{
 		Name:        "__TypeKind",
-		Description: "An enum describing what kind of type a given `__Type` is",
+		Description: "An enum describing what kind of type a given `__Type` is.",
 		Values: EnumValueConfigMap{
 			"SCALAR": &EnumValueConfig{
 				Value:       TypeKindScalar,
@@ -146,7 +146,7 @@ func init() {
 			},
 			"OBJECT": &EnumValueConfig{
 				Value:       DirectiveLocationObject,
-				Description: "Location adjacent to a object definition.",
+				Description: "Location adjacent to an object type definition.",
 			},
 			"FIELD_DEFINITION": &EnumValueConfig{
 				Value:       DirectiveLocationFieldDefinition,
@@ -327,7 +327,7 @@ func init() {
 	DirectiveType = NewObject(ObjectConfig{
 		Name: "__Directive",
 		Description: "A Directive provides a way to describe alternate runtime execution and " +
-			"type validation behavior in a GraphQL document. " +
+			"type validation behavior in a GraphQL document." +
 			"\n\nIn some cases, you need to provide options to alter GraphQL's " +
 			"execution behavior in ways field arguments will not suffice, such as " +
 			"conditionally including or skipping a field. Directives provide this by " +
@@ -455,7 +455,7 @@ func init() {
 				},
 			},
 			"subscriptionType": &Field{
-				Description: `If this server supports subscription, the type that ` +
+				Description: `If this server support subscription, the type that ` +
 					`subscription operations will be rooted at.`,
 				Type: TypeType,
 				Resolve: func(p ResolveParams) (interface{}, error) {
