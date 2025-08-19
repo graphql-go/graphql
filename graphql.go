@@ -28,6 +28,12 @@ type Params struct {
 	// one operation.
 	OperationName string
 
+	// ValidationRules is for overriding rules of document validation.  Default
+	// SpecifiedRules are ignored when specified this option other than nil.
+	// So it would be better that combining your rules with SpecifiedRules to
+	// fill this.
+	ValidationRules []ValidationRuleFn
+
 	// Context may be provided to pass application-specific per-request
 	// information to resolve functions.
 	Context context.Context
@@ -84,7 +90,7 @@ func Do(p Params) *Result {
 	}
 
 	// validate document
-	validationResult := ValidateDocument(&p.Schema, AST, nil)
+	validationResult := ValidateDocument(&p.Schema, AST, p.ValidationRules)
 
 	if !validationResult.IsValid {
 		// run validation finish functions for extensions
