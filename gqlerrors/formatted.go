@@ -52,11 +52,16 @@ func FormatError(err error) FormattedError {
 	case Error:
 		return FormatError(&err)
 	default:
-		return FormattedError{
+		ret := FormattedError{
 			Message:       err.Error(),
 			Locations:     []location.SourceLocation{},
 			originalError: err,
 		}
+
+		if extended, ok := err.(ExtendedError); ok {
+			ret.Extensions = extended.Extensions()
+		}
+		return ret
 	}
 }
 
