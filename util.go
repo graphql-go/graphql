@@ -7,7 +7,8 @@ import (
 	"strings"
 )
 
-const TAG = "json"
+const TAG_JSON = "json"
+const TAG_GRAPHQL = "graphql"
 
 // can't take recursive slice type
 // e.g
@@ -153,11 +154,13 @@ func extractValue(originTag string, obj interface{}) interface{} {
 }
 
 func extractTag(tag reflect.StructTag) string {
-	t := tag.Get(TAG)
-	if t != "" {
-		t = strings.Split(t, ",")[0]
+	if t := tag.Get(TAG_GRAPHQL); t != "" {
+		return strings.Split(t, ",")[0]
 	}
-	return t
+	if t := tag.Get(TAG_JSON); t != "" {
+		return strings.Split(t, ",")[0]
+	}
+	return ""
 }
 
 // lazy way of binding args
