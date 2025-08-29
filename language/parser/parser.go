@@ -19,12 +19,6 @@ var tokenDefinitionFn map[string]parseDefinitionFn
 func init() {
 	tokenDefinitionFn = make(map[string]parseDefinitionFn)
 	{
-		// for sign
-		tokenDefinitionFn[lexer.BRACE_L.String()] = parseOperationDefinition
-		tokenDefinitionFn[lexer.STRING.String()] = parseTypeSystemDefinition
-		tokenDefinitionFn[lexer.BLOCK_STRING.String()] = parseTypeSystemDefinition
-		tokenDefinitionFn[lexer.NAME.String()] = parseTypeSystemDefinition
-		// for NAME
 		tokenDefinitionFn[lexer.FRAGMENT] = parseFragmentDefinition
 		tokenDefinitionFn[lexer.QUERY] = parseOperationDefinition
 		tokenDefinitionFn[lexer.MUTATION] = parseOperationDefinition
@@ -79,8 +73,8 @@ func Parse(p ParseParams) (*ast.Document, error) {
 	return doc, nil
 }
 
-// TODO: test and expose parseValue as a public
-func parseValue(p ParseParams) (ast.Value, error) {
+// ParseValue parses params and returns ast value
+func ParseValue(p ParseParams) (ast.Value, error) {
 	var value ast.Value
 	var sourceObj *source.Source
 	switch src := p.Source.(type) {
@@ -145,8 +139,10 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
 			break
 		}
 		switch kind := parser.Token.Kind; kind {
-		case lexer.BRACE_L, lexer.NAME, lexer.STRING, lexer.BLOCK_STRING:
-			item = tokenDefinitionFn[kind.String()]
+		case lexer.BRACE_L:
+			item = parseOperationDefinition
+		case lexer.NAME, lexer.STRING, lexer.BLOCK_STRING:
+			item = parseTypeSystemDefinition
 		default:
 			return nil, unexpected(parser, lexer.Token{})
 		}
