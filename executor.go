@@ -710,42 +710,38 @@ func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Fie
 		return nil
 	}
 
-	// If field type is List, complete each item in the list with the inner type
-	if returnType, ok := returnType.(*List); ok {
+	switch returnType := returnType.(type) {
+	case *List:
+		// If field type is List, complete each item in the list with the inner type
 		return completeListValue(eCtx, returnType, fieldASTs, info, result)
-	}
-
-	// If field type is a leaf type, Scalar or Enum, serialize to a valid value,
-	// returning null if serialization is not possible.
-	if returnType, ok := returnType.(*Scalar); ok {
-		return completeLeafValue(returnType, result)
-	}
-	if returnType, ok := returnType.(*Enum); ok {
-		return completeLeafValue(returnType, result)
-	}
-
-	// If field type is an abstract type, Interface or Union, determine the
-	// runtime Object type and complete for that type.
-	if returnType, ok := returnType.(*Union); ok {
-		return completeAbstractValue(eCtx, returnType, fieldASTs, info, result)
-	}
-	if returnType, ok := returnType.(*Interface); ok {
-		return completeAbstractValue(eCtx, returnType, fieldASTs, info, result)
-	}
-
-	// If field type is Object, execute and complete all sub-selections.
-	if returnType, ok := returnType.(*Object); ok {
+	case *Object:
+		// If field type is Object, execute and complete all sub-selections.
 		return completeObjectValue(eCtx, returnType, fieldASTs, info, result)
-	}
 
-	// Not reachable. All possible output types have been considered.
-	err := invariantf(false,
-		`Cannot complete value of unexpected type "%v."`, returnType)
+		// If field type is a leaf type, Scalar or Enum, serialize to a valid value,
+		// returning null if serialization is not possible.
+	case *Scalar:
+		return completeLeafValue(returnType, result)
+	case *Enum:
+		return completeLeafValue(returnType, result)
 
-	if err != nil {
-		panic(gqlerrors.FormatError(err))
+		// If field type is an abstract type, Interface or Union, determine the
+		// runtime Object type and complete for that type.
+	case *Union:
+		return completeAbstractValue(eCtx, returnType, fieldASTs, info, result)
+	case *Interface:
+		return completeAbstractValue(eCtx, returnType, fieldASTs, info, result)
+
+	default:
+		// Not reachable. All possible output types have been considered.
+		err := invariantf(false,
+			`Cannot complete value of unexpected type "%v."`, returnType)
+
+		if err != nil {
+			panic(gqlerrors.FormatError(err))
+		}
+		return nil
 	}
-	return nil
 }
 
 func completeThunkValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) (completed interface{}) {
