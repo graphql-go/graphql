@@ -9,10 +9,10 @@ import (
 
 // Result has the response, errors and extensions from the resolved schema
 type Result struct {
-	Request    *ast.Document              `json:"-"`
-	Data       interface{}                `json:"data"`
-	Errors     []gqlerrors.FormattedError `json:"errors,omitempty"`
-	Extensions map[string]interface{}     `json:"extensions,omitempty"`
+	Request    *ast.Document              `json:"-" yaml:"-" msgpack:"-"`
+	Data       interface{}                `json:"data" yaml:"data" msgpack:"data"`
+	Errors     []gqlerrors.FormattedError `json:"errors,omitempty" yaml:"errors,omitempty" msgpack:"errors,omitempty"`
+	Extensions map[string]interface{}     `json:"extensions,omitempty" yaml:"extensions,omitempty" msgpack:"extensions,omitempty"`
 }
 
 // HasErrors just a simple function to help you decide if the result has errors or not
