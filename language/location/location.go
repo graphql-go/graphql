@@ -7,8 +7,8 @@ import (
 )
 
 type SourceLocation struct {
-	Line   int `json:"line"`
-	Column int `json:"column"`
+	Line   int `json:"line" yaml:"line" msgpack:"line"`
+	Column int `json:"column" yaml:"column" msgpack:"column"`
 }
 
 func GetLocation(s *source.Source, position int) SourceLocation {

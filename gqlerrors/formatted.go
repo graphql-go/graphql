@@ -12,10 +12,10 @@ type ExtendedError interface {
 }
 
 type FormattedError struct {
-	Message       string                    `json:"message"`
-	Locations     []location.SourceLocation `json:"locations"`
-	Path          []interface{}             `json:"path,omitempty"`
-	Extensions    map[string]interface{}    `json:"extensions,omitempty"`
+	Message       string                    `json:"message" yaml:"message" msgpack:"message"`
+	Locations     []location.SourceLocation `json:"locations" yaml:"locations" msgpack:"locations"`
+	Path          []interface{}             `json:"path,omitempty" yaml:"path,omitempty" msgpack:"path,omitempty"`
+	Extensions    map[string]interface{}    `json:"extensions,omitempty" yaml:"extensions,omitempty" msgpack:"extensions,omitempty"`
 	originalError error
 }
 
