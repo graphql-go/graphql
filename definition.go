@@ -355,7 +355,7 @@ type IsTypeOfParams struct {
 	Value interface{}
 
 	// Info is a collection of information about the current execution state.
-	Info ResolveInfo
+	Info *ResolveInfo
 
 	// Context argument is a context value that is provided to every resolve function within an execution.
 	// It is commonly
@@ -696,7 +696,7 @@ type ResolveTypeParams struct {
 	Value interface{}
 
 	// Info is a collection of information about the current execution state.
-	Info ResolveInfo
+	Info *ResolveInfo
 
 	// Context argument is a context value that is provided to every resolve function within an execution.
 	// It is commonly

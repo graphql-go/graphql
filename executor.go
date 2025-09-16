@@ -661,11 +661,11 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		panic(resolveFnError)
 	}
 
-	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
+	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, &info, result)
 	return completed, resultState
 }
 
-func completeValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) (completed interface{}) {
+func completeValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info *ResolveInfo, result interface{}) (completed interface{}) {
 	// catch panic
 	defer func() interface{} {
 		if r := recover(); r != nil {
@@ -683,8 +683,7 @@ func completeValueCatchingError(eCtx *executionContext, returnType Type, fieldAS
 	return completed
 }
 
-func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
-
+func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info *ResolveInfo, result interface{}) interface{} {
 	if result != nil && reflect.TypeOf(result).Kind() == reflect.Func {
 		return func() interface{} {
 			return completeThunkValueCatchingError(eCtx, returnType, fieldASTs, info, result)
@@ -744,8 +743,7 @@ func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Fie
 	}
 }
 
-func completeThunkValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) (completed interface{}) {
-
+func completeThunkValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info *ResolveInfo, result interface{}) (completed interface{}) {
 	// catch any panic invoked from the propertyFn (thunk)
 	defer func() {
 		if r := recover(); r != nil {
@@ -776,8 +774,7 @@ func completeThunkValueCatchingError(eCtx *executionContext, returnType Type, fi
 
 // completeAbstractValue completes value of an Abstract type (Union / Interface) by determining the runtime type
 // of that value, then completing based on that type.
-func completeAbstractValue(eCtx *executionContext, returnType Abstract, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
-
+func completeAbstractValue(eCtx *executionContext, returnType Abstract, fieldASTs []*ast.Field, info *ResolveInfo, result interface{}) interface{} {
 	var runtimeType *Object
 
 	resolveTypeParams := ResolveTypeParams{
@@ -811,8 +808,7 @@ func completeAbstractValue(eCtx *executionContext, returnType Abstract, fieldAST
 }
 
 // completeObjectValue complete an Object value by executing all sub-selections.
-func completeObjectValue(eCtx *executionContext, returnType *Object, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
-
+func completeObjectValue(eCtx *executionContext, returnType *Object, fieldASTs []*ast.Field, info *ResolveInfo, result interface{}) interface{} {
 	// If there is an isTypeOf predicate function, call it with the
 	// current result. If isTypeOf returns false, then raise an error rather
 	// than continuing execution.
@@ -867,7 +863,7 @@ func completeLeafValue(returnType Leaf, result interface{}) interface{} {
 }
 
 // completeListValue complete a list value by completing each item in the list with the inner type
-func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
+func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*ast.Field, info *ResolveInfo, result interface{}) interface{} {
 	resultVal := reflect.ValueOf(result)
 	if resultVal.Kind() == reflect.Ptr {
 		resultVal = resultVal.Elem()
