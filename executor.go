@@ -7,10 +7,37 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 )
+
+type ResolveInfoPool struct {
+	pool sync.Pool
+}
+
+func NewResolveInfoPool() *ResolveInfoPool {
+	return &ResolveInfoPool{
+		pool: sync.Pool{
+			New: func() interface{} {
+				return new(ResolveInfo)
+			},
+		},
+	}
+}
+
+func (self *ResolveInfoPool) Get() *ResolveInfo {
+	return self.pool.Get().(*ResolveInfo)
+}
+
+func (self *ResolveInfoPool) Put(info *ResolveInfo) {
+	// reset to nil value
+	*info = ResolveInfo{}
+	self.pool.Put(info)
+}
+
+var resolveInfoPool = NewResolveInfoPool()
 
 type ExecuteParams struct {
 	Schema        Schema
@@ -626,7 +653,8 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 	// TODO: find a way to memoize, in case this field is within a List type.
 	args := getArgumentValues(fieldDef.Args, fieldAST.Arguments, eCtx.VariableValues)
 
-	info := ResolveInfo{
+	info := resolveInfoPool.Get()
+	*info = ResolveInfo{
 		FieldName:      fieldName,
 		FieldASTs:      fieldASTs,
 		ReturnType:     returnType,
@@ -637,10 +665,11 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		Operation:      eCtx.Operation,
 		VariableValues: eCtx.VariableValues,
 	}
+	defer resolveInfoPool.Put(info)
 
 	var resolveFnError error
 
-	extErrs, resolveFieldFinishFn := handleExtensionsResolveFieldDidStart(eCtx.Schema.extensions, eCtx, &info)
+	extErrs, resolveFieldFinishFn := handleExtensionsResolveFieldDidStart(eCtx.Schema.extensions, eCtx, info)
 	if len(extErrs) != 0 {
 		eCtx.Errors = append(eCtx.Errors, extErrs...)
 	}
@@ -648,7 +677,7 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 	result, resolveFnError = resolveFn(ResolveParams{
 		Source:  source,
 		Args:    args,
-		Info:    info,
+		Info:    *info,
 		Context: eCtx.Context,
 	})
 
@@ -661,7 +690,7 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		panic(resolveFnError)
 	}
 
-	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, &info, result)
+	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, result)
 	return completed, resultState
 }
 
@@ -779,7 +808,7 @@ func completeAbstractValue(eCtx *executionContext, returnType Abstract, fieldAST
 
 	resolveTypeParams := ResolveTypeParams{
 		Value:   result,
-		Info:    info,
+		Info:    *info,
 		Context: eCtx.Context,
 	}
 	if unionReturnType, ok := returnType.(*Union); ok && unionReturnType.ResolveType != nil {
@@ -815,7 +844,7 @@ func completeObjectValue(eCtx *executionContext, returnType *Object, fieldASTs [
 	if returnType.IsTypeOf != nil {
 		p := IsTypeOfParams{
 			Value:   result,
-			Info:    info,
+			Info:    *info,
 			Context: eCtx.Context,
 		}
 		if !returnType.IsTypeOf(p) {
