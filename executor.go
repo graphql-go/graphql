@@ -7,10 +7,37 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 )
+
+type ResolveInfoPool struct {
+	pool sync.Pool
+}
+
+func NewResolveInfoPool() *ResolveInfoPool {
+	return &ResolveInfoPool{
+		pool: sync.Pool{
+			New: func() interface{} {
+				return new(ResolveInfo)
+			},
+		},
+	}
+}
+
+func (self *ResolveInfoPool) Get() *ResolveInfo {
+	return self.pool.Get().(*ResolveInfo)
+}
+
+func (self *ResolveInfoPool) Put(info *ResolveInfo) {
+	// reset to nil value
+	*info = ResolveInfo{}
+	self.pool.Put(info)
+}
+
+var resolveInfoPool = NewResolveInfoPool()
 
 type ExecuteParams struct {
 	Schema        Schema
@@ -626,7 +653,8 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 	// TODO: find a way to memoize, in case this field is within a List type.
 	args := getArgumentValues(fieldDef.Args, fieldAST.Arguments, eCtx.VariableValues)
 
-	info := ResolveInfo{
+	info := resolveInfoPool.Get()
+	*info = ResolveInfo{
 		FieldName:      fieldName,
 		FieldASTs:      fieldASTs,
 		ReturnType:     returnType,
@@ -637,10 +665,11 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		Operation:      eCtx.Operation,
 		VariableValues: eCtx.VariableValues,
 	}
+	defer resolveInfoPool.Put(info)
 
 	var resolveFnError error
 
-	extErrs, resolveFieldFinishFn := handleExtensionsResolveFieldDidStart(eCtx.Schema.extensions, eCtx, &info)
+	extErrs, resolveFieldFinishFn := handleExtensionsResolveFieldDidStart(eCtx.Schema.extensions, eCtx, info)
 	if len(extErrs) != 0 {
 		eCtx.Errors = append(eCtx.Errors, extErrs...)
 	}
@@ -648,7 +677,7 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 	result, resolveFnError = resolveFn(ResolveParams{
 		Source:  source,
 		Args:    args,
-		Info:    info,
+		Info:    *info,
 		Context: eCtx.Context,
 	})
 
@@ -665,7 +694,7 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 	return completed, resultState
 }
 
-func completeValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) (completed interface{}) {
+func completeValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info *ResolveInfo, result interface{}) (completed interface{}) {
 	// catch panic
 	defer func() interface{} {
 		if r := recover(); r != nil {
@@ -683,8 +712,7 @@ func completeValueCatchingError(eCtx *executionContext, returnType Type, fieldAS
 	return completed
 }
 
-func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
-
+func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info *ResolveInfo, result interface{}) interface{} {
 	if result != nil && reflect.TypeOf(result).Kind() == reflect.Func {
 		return func() interface{} {
 			return completeThunkValueCatchingError(eCtx, returnType, fieldASTs, info, result)
@@ -744,8 +772,7 @@ func completeValue(eCtx *executionContext, returnType Type, fieldASTs []*ast.Fie
 	}
 }
 
-func completeThunkValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) (completed interface{}) {
-
+func completeThunkValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info *ResolveInfo, result interface{}) (completed interface{}) {
 	// catch any panic invoked from the propertyFn (thunk)
 	defer func() {
 		if r := recover(); r != nil {
@@ -776,13 +803,12 @@ func completeThunkValueCatchingError(eCtx *executionContext, returnType Type, fi
 
 // completeAbstractValue completes value of an Abstract type (Union / Interface) by determining the runtime type
 // of that value, then completing based on that type.
-func completeAbstractValue(eCtx *executionContext, returnType Abstract, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
-
+func completeAbstractValue(eCtx *executionContext, returnType Abstract, fieldASTs []*ast.Field, info *ResolveInfo, result interface{}) interface{} {
 	var runtimeType *Object
 
 	resolveTypeParams := ResolveTypeParams{
 		Value:   result,
-		Info:    info,
+		Info:    *info,
 		Context: eCtx.Context,
 	}
 	if unionReturnType, ok := returnType.(*Union); ok && unionReturnType.ResolveType != nil {
@@ -811,15 +837,14 @@ func completeAbstractValue(eCtx *executionContext, returnType Abstract, fieldAST
 }
 
 // completeObjectValue complete an Object value by executing all sub-selections.
-func completeObjectValue(eCtx *executionContext, returnType *Object, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
-
+func completeObjectValue(eCtx *executionContext, returnType *Object, fieldASTs []*ast.Field, info *ResolveInfo, result interface{}) interface{} {
 	// If there is an isTypeOf predicate function, call it with the
 	// current result. If isTypeOf returns false, then raise an error rather
 	// than continuing execution.
 	if returnType.IsTypeOf != nil {
 		p := IsTypeOfParams{
 			Value:   result,
-			Info:    info,
+			Info:    *info,
 			Context: eCtx.Context,
 		}
 		if !returnType.IsTypeOf(p) {
@@ -867,7 +892,7 @@ func completeLeafValue(returnType Leaf, result interface{}) interface{} {
 }
 
 // completeListValue complete a list value by completing each item in the list with the inner type
-func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*ast.Field, info ResolveInfo, result interface{}) interface{} {
+func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*ast.Field, info *ResolveInfo, result interface{}) interface{} {
 	resultVal := reflect.ValueOf(result)
 	if resultVal.Kind() == reflect.Ptr {
 		resultVal = resultVal.Elem()
