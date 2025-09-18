@@ -13,6 +13,9 @@ type Result struct {
 	Data       interface{}                `json:"data" yaml:"data" msgpack:"data"`
 	Errors     []gqlerrors.FormattedError `json:"errors,omitempty" yaml:"errors,omitempty" msgpack:"errors,omitempty"`
 	Extensions map[string]interface{}     `json:"extensions,omitempty" yaml:"extensions,omitempty" msgpack:"extensions,omitempty"`
+
+	dataObjects []map[string]interface{} // used by ResultPool: objects in Data
+	dataLists   [][]interface{}          // used by ResultPool: lists in Data
 }
 
 // HasErrors just a simple function to help you decide if the result has errors or not
