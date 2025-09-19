@@ -323,7 +323,7 @@ func executeSubFields(p executeFieldsParams, result *Result, resultPool ResultPo
 		p.Fields = map[string][]*ast.Field{}
 	}
 
-	object := resultPool.GetObjectFor(result, 0)
+	object := resultPool.GetObjectFor(result, len(p.Fields))
 	for responseName, fieldASTs := range p.Fields {
 		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs, result, resultPool)
 		if state.hasNoFieldDefs {
