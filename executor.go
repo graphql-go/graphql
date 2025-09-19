@@ -286,7 +286,7 @@ func executeFieldsSerially(p executeFieldsParams, resultPool ResultPool) *Result
 	}
 
 	result := resultPool.Get()
-	object := resultPool.getObjectFor(result, len(p.Fields))
+	object := resultPool.GetObjectFor(result, len(p.Fields))
 	for _, orderedField := range orderedFields(p.Fields) {
 		responseName := orderedField.responseName
 		fieldASTs := orderedField.fieldASTs
@@ -323,7 +323,7 @@ func executeSubFields(p executeFieldsParams, result *Result, resultPool ResultPo
 		p.Fields = map[string][]*ast.Field{}
 	}
 
-	object := resultPool.getObjectFor(result, 0)
+	object := resultPool.GetObjectFor(result, 0)
 	for responseName, fieldASTs := range p.Fields {
 		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs, result, resultPool)
 		if state.hasNoFieldDefs {
@@ -915,7 +915,7 @@ func completeListValue(eCtx *executionContext, returnType *List, fieldASTs []*as
 	}
 
 	itemType := returnType.OfType
-	completedResults := resultPool.getListFor(finalResult, resultVal.Len())
+	completedResults := resultPool.GetListFor(finalResult, resultVal.Len())
 	for i := 0; i < resultVal.Len(); i++ {
 		val := resultVal.Index(i).Interface()
 		completedItem := completeValueCatchingError(eCtx, itemType, fieldASTs, info, val, finalResult, resultPool)
