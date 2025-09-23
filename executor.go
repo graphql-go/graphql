@@ -286,7 +286,7 @@ func executeFieldsSerially(p executeFieldsParams, resultPool ResultPool) *Result
 	}
 
 	result := resultPool.Get()
-	object := resultPool.GetObjectFor(result, len(p.Fields))
+	finalResults := resultPool.GetObjectFor(result, len(p.Fields))
 	for _, orderedField := range orderedFields(p.Fields) {
 		responseName := orderedField.responseName
 		fieldASTs := orderedField.fieldASTs
@@ -294,11 +294,11 @@ func executeFieldsSerially(p executeFieldsParams, resultPool ResultPool) *Result
 		if state.hasNoFieldDefs {
 			continue
 		}
-		object[responseName] = resolved
+		finalResults[responseName] = resolved
 	}
-	dethunkMapDepthFirst(object)
+	dethunkMapDepthFirst(finalResults)
 
-	result.Data = object
+	result.Data = finalResults
 	result.Errors = p.ExecutionContext.Errors
 	return result
 }
@@ -306,11 +306,11 @@ func executeFieldsSerially(p executeFieldsParams, resultPool ResultPool) *Result
 // Implements the "Evaluating selection sets" section of the spec for "read" mode.
 func executeFields(p executeFieldsParams, resultPool ResultPool) *Result {
 	result := resultPool.Get()
-	object := executeSubFields(p, result, resultPool)
+	finalResults := executeSubFields(p, result, resultPool)
 
-	dethunkMapWithBreadthFirstTraversal(object)
+	dethunkMapWithBreadthFirstTraversal(finalResults)
 
-	result.Data = object
+	result.Data = finalResults
 	result.Errors = p.ExecutionContext.Errors
 	return result
 }
@@ -323,19 +323,19 @@ func executeSubFields(p executeFieldsParams, result *Result, resultPool ResultPo
 		p.Fields = map[string][]*ast.Field{}
 	}
 
-	object := resultPool.GetObjectFor(result, len(p.Fields))
+	finalResults := resultPool.GetObjectFor(result, len(p.Fields))
 	for responseName, fieldASTs := range p.Fields {
 		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs, result, resultPool)
 		if state.hasNoFieldDefs {
 			continue
 		}
-		if object == nil {
-			object = map[string]interface{}{}
+		if finalResults == nil {
+			finalResults = map[string]interface{}{}
 		}
-		object[responseName] = resolved
+		finalResults[responseName] = resolved
 	}
 
-	return object
+	return finalResults
 }
 
 // dethunkQueue is a structure that allows us to execute a classic breadth-first traversal.
