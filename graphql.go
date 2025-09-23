@@ -41,6 +41,7 @@ type ResultPool interface {
 	GetObjectFor(result *Result, capacity int) map[string]interface{}
 }
 
+// SimpleResultPool does nothing but let the GC take over
 type SimpleResultPool struct{}
 
 func (pool *SimpleResultPool) Get() *Result {
@@ -48,6 +49,7 @@ func (pool *SimpleResultPool) Get() *Result {
 }
 
 func (pool *SimpleResultPool) Put(*Result) {
+	// does nothing, let the GC release it
 }
 
 func (pool *SimpleResultPool) GetListFor(result *Result, capacity int) []interface{} {
@@ -59,6 +61,8 @@ func (pool *SimpleResultPool) GetObjectFor(result *Result, capacity int) map[str
 }
 
 func Do(p Params) *Result {
+	// by using SimpleResultPool here preserves the original interface and behavior
+	// uses do not need to call Put on the returned result
 	return DoWithPool(p, &SimpleResultPool{})
 }
 

@@ -52,6 +52,8 @@ type ExecuteParams struct {
 }
 
 func Execute(p ExecuteParams) (result *Result) {
+	// by using SimpleResultPool here preserves the original interface and behavior
+	// uses do not need to call Put on the returned result
 	return ExecuteWithPool(p, &SimpleResultPool{})
 }
 
