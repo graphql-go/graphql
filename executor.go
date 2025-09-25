@@ -332,7 +332,7 @@ func executeSubFields(p executeFieldsParams, result *Result, resultPool ResultPo
 			continue
 		}
 		if finalResults == nil {
-			finalResults = resultPool.GetObjectFor(result, 0)
+			finalResults = resultPool.GetObjectFor(result, len(p.Fields))
 		}
 		finalResults[responseName] = resolved
 	}
