@@ -27,7 +27,10 @@ type SubscribeParams struct {
 // To finish a subscription you can simply close the channel from inside the `Subscribe` function
 // currently does not support extensions hooks
 func Subscribe(p Params) chan *Result {
+	return SubscribeWithPool(p, &SimpleResultPool{})
+}
 
+func SubscribeWithPool(p Params, resultPool ResultPool) chan *Result {
 	source := source.NewSource(&source.Source{
 		Body: []byte(p.RequestString),
 		Name: "GraphQL request",
@@ -55,14 +58,14 @@ func Subscribe(p Params) chan *Result {
 		}))
 
 	}
-	return ExecuteSubscription(ExecuteParams{
+	return ExecuteSubscriptionWithPool(ExecuteParams{
 		Schema:        p.Schema,
 		Root:          p.RootObject,
 		AST:           AST,
 		OperationName: p.OperationName,
 		Args:          p.VariableValues,
 		Context:       p.Context,
-	})
+	}, resultPool)
 }
 
 func sendOneResultAndClose(res *Result) chan *Result {
@@ -82,20 +85,23 @@ func injectRequest(request *ast.Document, result *Result) *Result {
 // ExecuteSubscription is similar to graphql.Execute but returns a channel instead of a Result
 // currently does not support extensions
 func ExecuteSubscription(p ExecuteParams) chan *Result {
+	return ExecuteSubscriptionWithPool(p, &SimpleResultPool{})
+}
 
+func ExecuteSubscriptionWithPool(p ExecuteParams, resultPool ResultPool) chan *Result {
 	if p.Context == nil {
 		p.Context = context.Background()
 	}
 
 	var mapSourceToResponse = func(payload interface{}) *Result {
-		return injectRequest(p.AST, Execute(ExecuteParams{
+		return injectRequest(p.AST, ExecuteWithPool(ExecuteParams{
 			Schema:        p.Schema,
 			Root:          payload,
 			AST:           p.AST,
 			OperationName: p.OperationName,
 			Args:          p.Args,
 			Context:       p.Context,
-		}))
+		}, resultPool))
 	}
 	var resultChannel = make(chan *Result)
 	go func() {
@@ -106,9 +112,9 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 				if !ok {
 					return
 				}
-				resultChannel <- injectRequest(p.AST, &Result{
-					Errors: gqlerrors.FormatErrors(e),
-				})
+				result := resultPool.Get()
+				result.Errors = gqlerrors.FormatErrors(e)
+				resultChannel <- injectRequest(p.AST, result)
 			}
 			return
 		}()
@@ -123,18 +129,18 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 		})
 
 		if err != nil {
-			resultChannel <- injectRequest(p.AST, &Result{
-				Errors: gqlerrors.FormatErrors(err),
-			})
+			result := resultPool.Get()
+			result.Errors = gqlerrors.FormatErrors(err)
+			resultChannel <- injectRequest(p.AST, result)
 
 			return
 		}
 
 		operationType, err := getOperationRootType(p.Schema, exeContext.Operation)
 		if err != nil {
-			resultChannel <- injectRequest(p.AST, &Result{
-				Errors: gqlerrors.FormatErrors(err),
-			})
+			result := resultPool.Get()
+			result.Errors = gqlerrors.FormatErrors(err)
+			resultChannel <- injectRequest(p.AST, result)
 
 			return
 		}
@@ -156,9 +162,9 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 		fieldDef := getFieldDef(p.Schema, operationType, fieldName)
 
 		if fieldDef == nil {
-			resultChannel <- injectRequest(p.AST, &Result{
-				Errors: gqlerrors.FormatErrors(fmt.Errorf("the subscription field %q is not defined", fieldName)),
-			})
+			result := resultPool.Get()
+			result.Errors = gqlerrors.FormatErrors(fmt.Errorf("the subscription field %q is not defined", fieldName))
+			resultChannel <- injectRequest(p.AST, result)
 
 			return
 		}
@@ -166,9 +172,9 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 		resolveFn := fieldDef.Subscribe
 
 		if resolveFn == nil {
-			resultChannel <- injectRequest(p.AST, &Result{
-				Errors: gqlerrors.FormatErrors(fmt.Errorf("the subscription function %q is not defined", fieldName)),
-			})
+			result := resultPool.Get()
+			result.Errors = gqlerrors.FormatErrors(fmt.Errorf("the subscription function %q is not defined", fieldName))
+			resultChannel <- injectRequest(p.AST, result)
 			return
 		}
 
@@ -192,17 +198,17 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 			Context: p.Context,
 		})
 		if err != nil {
-			resultChannel <- injectRequest(p.AST, &Result{
-				Errors: gqlerrors.FormatErrors(err),
-			})
+			result := resultPool.Get()
+			result.Errors = gqlerrors.FormatErrors(err)
+			resultChannel <- injectRequest(p.AST, result)
 
 			return
 		}
 
 		if fieldResult == nil {
-			resultChannel <- injectRequest(p.AST, &Result{
-				Errors: gqlerrors.FormatErrors(fmt.Errorf("no field result")),
-			})
+			result := resultPool.Get()
+			result.Errors = gqlerrors.FormatErrors(fmt.Errorf("no field result"))
+			resultChannel <- injectRequest(p.AST, result)
 
 			return
 		}
