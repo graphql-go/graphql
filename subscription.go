@@ -27,6 +27,8 @@ type SubscribeParams struct {
 // To finish a subscription you can simply close the channel from inside the `Subscribe` function
 // currently does not support extensions hooks
 func Subscribe(p Params) chan *Result {
+	// by using SimpleResultPool here preserves the original interface and behavior
+	// uses do not need to call Put on the returned result
 	return SubscribeWithPool(p, &SimpleResultPool{})
 }
 
@@ -85,6 +87,8 @@ func injectRequest(request *ast.Document, result *Result) *Result {
 // ExecuteSubscription is similar to graphql.Execute but returns a channel instead of a Result
 // currently does not support extensions
 func ExecuteSubscription(p ExecuteParams) chan *Result {
+	// by using SimpleResultPool here preserves the original interface and behavior
+	// uses do not need to call Put on the returned result
 	return ExecuteSubscriptionWithPool(p, &SimpleResultPool{})
 }
 
