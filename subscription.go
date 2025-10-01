@@ -45,9 +45,9 @@ func SubscribeWithPool(p Params, resultPool ResultPool) chan *Result {
 	if err != nil {
 
 		// merge the errors from extensions and the original error from parser
-		return sendOneResultAndClose(injectRequest(AST, &Result{
-			Errors: gqlerrors.FormatErrors(err),
-		}))
+		result := resultPool.Get()
+		result.Errors = gqlerrors.FormatErrors(err)
+		return sendOneResultAndClose(injectRequest(AST, result))
 	}
 
 	// validate document
@@ -55,9 +55,9 @@ func SubscribeWithPool(p Params, resultPool ResultPool) chan *Result {
 
 	if !validationResult.IsValid {
 		// run validation finish functions for extensions
-		return sendOneResultAndClose(injectRequest(AST, &Result{
-			Errors: validationResult.Errors,
-		}))
+		result := resultPool.Get()
+		result.Errors = validationResult.Errors
+		return sendOneResultAndClose(injectRequest(AST, result))
 
 	}
 	return ExecuteSubscriptionWithPool(ExecuteParams{

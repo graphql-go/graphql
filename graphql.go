@@ -75,16 +75,16 @@ func DoWithPool(p Params, resultPool ResultPool) *Result {
 	// run init on the extensions
 	extErrs := handleExtensionsInits(&p)
 	if len(extErrs) != 0 {
-		return &Result{
-			Errors: extErrs,
-		}
+		result := resultPool.Get()
+		result.Errors = extErrs
+		return result
 	}
 
 	extErrs, parseFinishFn := handleExtensionsParseDidStart(&p)
 	if len(extErrs) != 0 {
-		return &Result{
-			Errors: extErrs,
-		}
+		result := resultPool.Get()
+		result.Errors = extErrs
+		return result
 	}
 
 	// parse the source
@@ -95,27 +95,27 @@ func DoWithPool(p Params, resultPool ResultPool) *Result {
 
 		// merge the errors from extensions and the original error from parser
 		extErrs = append(extErrs, gqlerrors.FormatErrors(err)...)
-		return &Result{
-			Errors: extErrs,
-		}
+		result := resultPool.Get()
+		result.Errors = extErrs
+		return result
 	}
 
 	// run parseFinish functions for extensions
 	extErrs = parseFinishFn(err)
 	if len(extErrs) != 0 {
-		return &Result{
-			Request: AST,
-			Errors:  extErrs,
-		}
+		result := resultPool.Get()
+		result.Request = AST
+		result.Errors = extErrs
+		return result
 	}
 
 	// notify extensions about the start of the validation
 	extErrs, validationFinishFn := handleExtensionsValidationDidStart(&p)
 	if len(extErrs) != 0 {
-		return &Result{
-			Request: AST,
-			Errors:  extErrs,
-		}
+		result := resultPool.Get()
+		result.Request = AST
+		result.Errors = extErrs
+		return result
 	}
 
 	// validate document
@@ -127,19 +127,19 @@ func DoWithPool(p Params, resultPool ResultPool) *Result {
 
 		// merge the errors from extensions and the original error from parser
 		extErrs = append(extErrs, validationResult.Errors...)
-		return &Result{
-			Request: AST,
-			Errors:  extErrs,
-		}
+		result := resultPool.Get()
+		result.Request = AST
+		result.Errors = extErrs
+		return result
 	}
 
 	// run the validationFinishFuncs for extensions
 	extErrs = validationFinishFn(validationResult.Errors)
 	if len(extErrs) != 0 {
-		return &Result{
-			Request: AST,
-			Errors:  extErrs,
-		}
+		result := resultPool.Get()
+		result.Request = AST
+		result.Errors = extErrs
+		return result
 	}
 
 	result := ExecuteWithPool(ExecuteParams{
