@@ -33,7 +33,40 @@ type Params struct {
 	Context context.Context
 }
 
+type ResultPool interface {
+	Get() *Result
+	Put(result *Result)
+
+	GetListFor(result *Result, capacity int) []interface{}
+	GetObjectFor(result *Result, capacity int) map[string]interface{}
+}
+
+// SimpleResultPool does nothing but let the GC take over
+type SimpleResultPool struct{}
+
+func (pool *SimpleResultPool) Get() *Result {
+	return &Result{}
+}
+
+func (pool *SimpleResultPool) Put(*Result) {
+	// does nothing, let the GC release it
+}
+
+func (pool *SimpleResultPool) GetListFor(result *Result, capacity int) []interface{} {
+	return make([]interface{}, 0, capacity)
+}
+
+func (pool *SimpleResultPool) GetObjectFor(result *Result, capacity int) map[string]interface{} {
+	return make(map[string]interface{}, capacity)
+}
+
 func Do(p Params) *Result {
+	// by using SimpleResultPool here preserves the original interface and behavior
+	// uses do not need to call Put on the returned result
+	return DoWithPool(p, &SimpleResultPool{})
+}
+
+func DoWithPool(p Params, resultPool ResultPool) *Result {
 	source := source.NewSource(&source.Source{
 		Body: []byte(p.RequestString),
 		Name: "GraphQL request",
@@ -42,16 +75,16 @@ func Do(p Params) *Result {
 	// run init on the extensions
 	extErrs := handleExtensionsInits(&p)
 	if len(extErrs) != 0 {
-		return &Result{
-			Errors: extErrs,
-		}
+		result := resultPool.Get()
+		result.Errors = extErrs
+		return result
 	}
 
 	extErrs, parseFinishFn := handleExtensionsParseDidStart(&p)
 	if len(extErrs) != 0 {
-		return &Result{
-			Errors: extErrs,
-		}
+		result := resultPool.Get()
+		result.Errors = extErrs
+		return result
 	}
 
 	// parse the source
@@ -62,27 +95,27 @@ func Do(p Params) *Result {
 
 		// merge the errors from extensions and the original error from parser
 		extErrs = append(extErrs, gqlerrors.FormatErrors(err)...)
-		return &Result{
-			Errors: extErrs,
-		}
+		result := resultPool.Get()
+		result.Errors = extErrs
+		return result
 	}
 
 	// run parseFinish functions for extensions
 	extErrs = parseFinishFn(err)
 	if len(extErrs) != 0 {
-		return &Result{
-			Request: AST,
-			Errors:  extErrs,
-		}
+		result := resultPool.Get()
+		result.Request = AST
+		result.Errors = extErrs
+		return result
 	}
 
 	// notify extensions about the start of the validation
 	extErrs, validationFinishFn := handleExtensionsValidationDidStart(&p)
 	if len(extErrs) != 0 {
-		return &Result{
-			Request: AST,
-			Errors:  extErrs,
-		}
+		result := resultPool.Get()
+		result.Request = AST
+		result.Errors = extErrs
+		return result
 	}
 
 	// validate document
@@ -94,29 +127,29 @@ func Do(p Params) *Result {
 
 		// merge the errors from extensions and the original error from parser
 		extErrs = append(extErrs, validationResult.Errors...)
-		return &Result{
-			Request: AST,
-			Errors:  extErrs,
-		}
+		result := resultPool.Get()
+		result.Request = AST
+		result.Errors = extErrs
+		return result
 	}
 
 	// run the validationFinishFuncs for extensions
 	extErrs = validationFinishFn(validationResult.Errors)
 	if len(extErrs) != 0 {
-		return &Result{
-			Request: AST,
-			Errors:  extErrs,
-		}
+		result := resultPool.Get()
+		result.Request = AST
+		result.Errors = extErrs
+		return result
 	}
 
-	result := Execute(ExecuteParams{
+	result := ExecuteWithPool(ExecuteParams{
 		Schema:        p.Schema,
 		Root:          p.RootObject,
 		AST:           AST,
 		OperationName: p.OperationName,
 		Args:          p.VariableValues,
 		Context:       p.Context,
-	})
+	}, resultPool)
 	result.Request = AST
 	return result
 }
