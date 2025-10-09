@@ -228,7 +228,11 @@ func ExecuteSubscriptionWithPool(p ExecuteParams, resultPool ResultPool) chan *R
 					if !more {
 						return
 					}
-					resultChannel <- mapSourceToResponse(res)
+					select {
+					case <-p.Context.Done():
+						return
+					case resultChannel <- mapSourceToResponse(res):
+					}
 				}
 			}
 		case <-chan interface{}:
@@ -241,13 +245,21 @@ func ExecuteSubscriptionWithPool(p ExecuteParams, resultPool ResultPool) chan *R
 					if !more {
 						return
 					}
-					resultChannel <- mapSourceToResponse(res)
+					select {
+					case <-p.Context.Done():
+						return
+					case resultChannel <- mapSourceToResponse(res):
+					}
 				}
 			}
 		default:
 			channel := reflect.ValueOf(sub)
 			if channel.Kind() != reflect.Chan || (channel.Type().ChanDir()&reflect.RecvDir) == 0 {
-				resultChannel <- mapSourceToResponse(fieldResult)
+				select {
+				case <-p.Context.Done():
+					return
+				case resultChannel <- mapSourceToResponse(fieldResult):
+				}
 				return
 			}
 			cases := []reflect.SelectCase{{
@@ -262,10 +274,16 @@ func ExecuteSubscriptionWithPool(p ExecuteParams, resultPool ResultPool) chan *R
 				if chosen == 0 || !ok {
 					return
 				}
+				var result *Result
 				if value.CanInterface() {
-					resultChannel <- mapSourceToResponse(value.Interface())
+					result = mapSourceToResponse(value.Interface())
 				} else {
-					resultChannel <- mapSourceToResponse(nil)
+					result = mapSourceToResponse(nil)
+				}
+				select {
+				case <-p.Context.Done():
+					return
+				case resultChannel <- result:
 				}
 			}
 		}
