@@ -118,7 +118,10 @@ func ExecuteSubscriptionWithPool(p ExecuteParams, resultPool ResultPool) chan *R
 				}
 				result := resultPool.Get()
 				result.Errors = gqlerrors.FormatErrors(e)
-				resultChannel <- injectRequest(p.AST, result)
+				select {
+				case <-p.Context.Done():
+				case resultChannel <- injectRequest(p.AST, result):
+				}
 			}
 			return
 		}()
@@ -135,8 +138,10 @@ func ExecuteSubscriptionWithPool(p ExecuteParams, resultPool ResultPool) chan *R
 		if err != nil {
 			result := resultPool.Get()
 			result.Errors = gqlerrors.FormatErrors(err)
-			resultChannel <- injectRequest(p.AST, result)
-
+			select {
+			case <-p.Context.Done():
+			case resultChannel <- injectRequest(p.AST, result):
+			}
 			return
 		}
 
@@ -144,8 +149,10 @@ func ExecuteSubscriptionWithPool(p ExecuteParams, resultPool ResultPool) chan *R
 		if err != nil {
 			result := resultPool.Get()
 			result.Errors = gqlerrors.FormatErrors(err)
-			resultChannel <- injectRequest(p.AST, result)
-
+			select {
+			case <-p.Context.Done():
+			case resultChannel <- injectRequest(p.AST, result):
+			}
 			return
 		}
 
@@ -168,8 +175,10 @@ func ExecuteSubscriptionWithPool(p ExecuteParams, resultPool ResultPool) chan *R
 		if fieldDef == nil {
 			result := resultPool.Get()
 			result.Errors = gqlerrors.FormatErrors(fmt.Errorf("the subscription field %q is not defined", fieldName))
-			resultChannel <- injectRequest(p.AST, result)
-
+			select {
+			case <-p.Context.Done():
+			case resultChannel <- injectRequest(p.AST, result):
+			}
 			return
 		}
 
@@ -178,7 +187,10 @@ func ExecuteSubscriptionWithPool(p ExecuteParams, resultPool ResultPool) chan *R
 		if resolveFn == nil {
 			result := resultPool.Get()
 			result.Errors = gqlerrors.FormatErrors(fmt.Errorf("the subscription function %q is not defined", fieldName))
-			resultChannel <- injectRequest(p.AST, result)
+			select {
+			case <-p.Context.Done():
+			case resultChannel <- injectRequest(p.AST, result):
+			}
 			return
 		}
 
@@ -204,16 +216,20 @@ func ExecuteSubscriptionWithPool(p ExecuteParams, resultPool ResultPool) chan *R
 		if err != nil {
 			result := resultPool.Get()
 			result.Errors = gqlerrors.FormatErrors(err)
-			resultChannel <- injectRequest(p.AST, result)
-
+			select {
+			case <-p.Context.Done():
+			case resultChannel <- injectRequest(p.AST, result):
+			}
 			return
 		}
 
 		if fieldResult == nil {
 			result := resultPool.Get()
 			result.Errors = gqlerrors.FormatErrors(fmt.Errorf("no field result"))
-			resultChannel <- injectRequest(p.AST, result)
-
+			select {
+			case <-p.Context.Done():
+			case resultChannel <- injectRequest(p.AST, result):
+			}
 			return
 		}
 
