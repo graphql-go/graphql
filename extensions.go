@@ -152,7 +152,7 @@ func handleExtensionsValidationDidStart(p *Params) ([]gqlerrors.FormattedError, 
 	}
 }
 
-// handleExecutionDidStart handles the ExecutionDidStart functions
+// handleExtensionsExecutionDidStart handles the ExecutionDidStart functions
 func handleExtensionsExecutionDidStart(p *ExecuteParams) ([]gqlerrors.FormattedError, executionFinishFuncHandler) {
 	fs := map[string]ExecutionFinishFunc{}
 	errs := gqlerrors.FormattedErrors{}
@@ -191,7 +191,7 @@ func handleExtensionsExecutionDidStart(p *ExecuteParams) ([]gqlerrors.FormattedE
 	}
 }
 
-// handleResolveFieldDidStart handles the notification of the extensions about the start of a resolve function
+// handleExtensionsResolveFieldDidStart handles the notification of the extensions about the start of a resolve function
 func handleExtensionsResolveFieldDidStart(exts []Extension, p *executionContext, i *ResolveInfo) ([]gqlerrors.FormattedError, resolveFieldFinishFuncHandler) {
 	fs := map[string]ResolveFieldFinishFunc{}
 	errs := gqlerrors.FormattedErrors{}
