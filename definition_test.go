@@ -728,3 +728,71 @@ func TestTypeSystem_DefinitionExample_HandlesInvalidUnionTypes(t *testing.T) {
 		t.Fatalf("Unexpected result, got: %v, want: nil", unionTypes)
 	}
 }
+
+func TestIsAbstractType(t *testing.T) {
+	tests := []struct {
+		name     string
+		ttype    interface{}
+		expected bool
+	}{
+		{
+			name:     "Interface type should return true",
+			ttype:    graphql.NewInterface(graphql.InterfaceConfig{Name: "TestInterface"}),
+			expected: true,
+		},
+		{
+			name:     "Union type should return true",
+			ttype:    graphql.NewUnion(graphql.UnionConfig{Name: "TestUnion"}),
+			expected: true,
+		},
+		{
+			name:     "Scalar type should return false",
+			ttype:    graphql.NewScalar(graphql.ScalarConfig{Name: "TestScalar", Serialize: func(v interface{}) interface{} { return v }}),
+			expected: false,
+		},
+		{
+			name:     "Object type should return false",
+			ttype:    graphql.NewObject(graphql.ObjectConfig{Name: "TestObject"}),
+			expected: false,
+		},
+		{
+			name:     "Enum type should return false",
+			ttype:    graphql.NewEnum(graphql.EnumConfig{Name: "TestEnum", Values: graphql.EnumValueConfigMap{"A": &graphql.EnumValueConfig{}}}),
+			expected: false,
+		},
+		{
+			name:     "InputObject type should return false",
+			ttype:    graphql.NewInputObject(graphql.InputObjectConfig{Name: "TestInputObject"}),
+			expected: false,
+		},
+		{
+			name:     "List type should return false",
+			ttype:    graphql.NewList(graphql.NewScalar(graphql.ScalarConfig{Name: "TestScalar", Serialize: func(v interface{}) interface{} { return v }})),
+			expected: false,
+		},
+		{
+			name:     "NonNull type should return false",
+			ttype:    graphql.NewNonNull(graphql.NewScalar(graphql.ScalarConfig{Name: "TestScalar", Serialize: func(v interface{}) interface{} { return v }})),
+			expected: false,
+		},
+		{
+			name:     "nil type should return false",
+			ttype:    nil,
+			expected: false,
+		},
+		{
+			name:     "string type should return false",
+			ttype:    "not a type",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := graphql.IsAbstractType(tt.ttype)
+			if result != tt.expected {
+				t.Errorf("IsAbstractType(%v) = %v; want %v", tt.ttype, result, tt.expected)
+			}
+		})
+	}
+}
