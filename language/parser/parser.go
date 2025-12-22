@@ -1562,7 +1562,8 @@ func unexpectedEmpty(parser *Parser, beginLoc int, openKind, closeKind lexer.Tok
 	return gqlerrors.NewSyntaxError(parser.Source, beginLoc, description)
 }
 
-//  Returns list of parse nodes, determined by
+//	Returns list of parse nodes, determined by
+//
 // the parseFn. This list begins with a lex token of openKind
 // and ends with a lex token of closeKind. Advances the parser
 // to the next lex token after the closing token.
