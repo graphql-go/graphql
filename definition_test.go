@@ -796,3 +796,55 @@ func TestIsAbstractType(t *testing.T) {
 		})
 	}
 }
+
+func TestGetNullable(t *testing.T) {
+	scalarType := graphql.NewScalar(graphql.ScalarConfig{Name: "TestScalar", Serialize: func(v interface{}) interface{} { return v }})
+	objectType := graphql.NewObject(graphql.ObjectConfig{Name: "TestObject"})
+	listType := graphql.NewList(scalarType)
+
+	tests := []struct {
+		name     string
+		ttype    graphql.Type
+		expected graphql.Type
+	}{
+		{
+			name:     "NonNull Scalar should return Scalar",
+			ttype:    graphql.NewNonNull(scalarType),
+			expected: scalarType,
+		},
+		{
+			name:     "NonNull Object should return Object",
+			ttype:    graphql.NewNonNull(objectType),
+			expected: objectType,
+		},
+		{
+			name:     "NonNull List should return List",
+			ttype:    graphql.NewNonNull(listType),
+			expected: listType,
+		},
+		{
+			name:     "Scalar should return Scalar",
+			ttype:    scalarType,
+			expected: scalarType,
+		},
+		{
+			name:     "Object should return Object",
+			ttype:    objectType,
+			expected: objectType,
+		},
+		{
+			name:     "List should return List",
+			ttype:    listType,
+			expected: listType,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := graphql.GetNullable(tt.ttype)
+			if result != tt.expected {
+				t.Errorf("GetNullable(%v) = %v; want %v", tt.ttype, result, tt.expected)
+			}
+		})
+	}
+}
