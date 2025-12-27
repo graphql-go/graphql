@@ -848,3 +848,64 @@ func TestGetNullable(t *testing.T) {
 		})
 	}
 }
+
+func TestNewScalar(t *testing.T) {
+	tests := []struct {
+		name          string
+		config        graphql.ScalarConfig
+		expectedError bool
+	}{
+		{
+			name: "empty name should error",
+			config: graphql.ScalarConfig{
+				Name:      "",
+				Serialize: func(v interface{}) interface{} { return v },
+			},
+			expectedError: true,
+		},
+		{
+			name: "invalid name starting with number should error",
+			config: graphql.ScalarConfig{
+				Name:      "123Invalid",
+				Serialize: func(v interface{}) interface{} { return v },
+			},
+			expectedError: true,
+		},
+		{
+			name: "invalid name with special characters should error",
+			config: graphql.ScalarConfig{
+				Name:      "Invalid-Name",
+				Serialize: func(v interface{}) interface{} { return v },
+			},
+			expectedError: true,
+		},
+		{
+			name: "valid scalar with underscore should succeed",
+			config: graphql.ScalarConfig{
+				Name:      "_ValidScalar",
+				Serialize: func(v interface{}) interface{} { return v },
+			},
+			expectedError: false,
+		},
+		{
+			name: "valid scalar with alphanumeric should succeed",
+			config: graphql.ScalarConfig{
+				Name:      "ValidScalar123",
+				Serialize: func(v interface{}) interface{} { return v },
+			},
+			expectedError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scalar := graphql.NewScalar(tt.config)
+			if tt.expectedError && scalar.Error() == nil {
+				t.Errorf("NewScalar(%v) expected error but got none", tt.config.Name)
+			}
+			if !tt.expectedError && scalar.Error() != nil {
+				t.Errorf("NewScalar(%v) unexpected error: %v", tt.config.Name, scalar.Error())
+			}
+		})
+	}
+}
