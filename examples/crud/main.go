@@ -218,7 +218,7 @@ func executeQuery(query string, schema graphql.Schema) *graphql.Result {
 		Schema:        schema,
 		RequestString: query,
 	})
-	if len(result.Errors) > 0 {
+	if result.HasErrors() {
 		fmt.Printf("errors: %v", result.Errors)
 	}
 	return result
