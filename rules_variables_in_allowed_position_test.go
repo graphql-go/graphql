@@ -244,3 +244,13 @@ func TestValidate_VariablesInAllowedPosition_StringToNonNullableBooleanInDirecti
 			`expecting type "Boolean!".`, 2, 19, 3, 26),
 	})
 }
+func TestValidate_VariablesInAllowedPosition_IntToNonNullableIntArgDefaulted(t *testing.T) {
+	testutil.ExpectPassesRule(t, graphql.VariablesInAllowedPositionRule, `
+      query Query($intArg: Int)
+      {
+        complicatedArgs {
+          nonNullIntArgFieldWithDefault(nonNullIntArgWithDefault: $intArg)
+        }
+      }
+    `)
+}
