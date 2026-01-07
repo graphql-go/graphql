@@ -1011,7 +1011,7 @@ func (gt *Enum) Serialize(value interface{}) interface{} {
 	} else if kind == reflect.Ptr {
 		v = reflect.Indirect(reflect.ValueOf(v)).Interface()
 	}
-	if enumValue, ok := gt.getValueLookup()[v]; ok {
+	if enumValue, ok := gt.getNameLookup()[fmt.Sprintf("%v", v)]; ok {
 		return enumValue.Name
 	}
 	return nil
