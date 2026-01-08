@@ -961,16 +961,9 @@ func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 			tag := typeField.Tag
 			checkTag := func(tagName string) bool {
 				t := tag.Get(tagName)
-				tOptions := strings.Split(t, ",")
-				if len(tOptions) == 0 {
-					return false
-				}
-				if tOptions[0] != p.Info.FieldName {
-					return false
-				}
-				return true
+				return strings.Split(t, ",")[0] == p.Info.FieldName
 			}
-			if checkTag("json") || checkTag("graphql") {
+			if checkTag(TAG_JSON) || checkTag(TAG_GRAPHQL) {
 				return valueField.Interface(), nil
 			} else {
 				continue
