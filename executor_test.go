@@ -2414,3 +2414,58 @@ func TestQuery_OriginalErrorPanic(t *testing.T) {
 		t.Fatalf("unexpected error: %v", reflect.TypeOf(err))
 	}
 }
+
+// Regression test for https://github.com/graphql-go/graphql/issues/700
+// DefaultResolveFn should work with maps that have custom string-based key types.
+func TestDefaultResolveFn_MapWithCustomStringKeyType(t *testing.T) {
+	type TranslationKey string
+	type Translation map[TranslationKey]string
+
+	fields := graphql.Fields{
+		"hello": &graphql.Field{
+			Type: graphql.NewObject(graphql.ObjectConfig{
+				Name: "Translation",
+				Fields: graphql.Fields{
+					"en": &graphql.Field{Type: graphql.String},
+					"fr": &graphql.Field{Type: graphql.String},
+				},
+			}),
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				return Translation{
+					"en": "hello",
+					"fr": "bonjour",
+				}, nil
+			},
+		},
+	}
+	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(rootQuery),
+	})
+	if err != nil {
+		t.Fatalf("failed to create schema: %v", err)
+	}
+
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: `{ hello { en fr } }`,
+	})
+	if len(result.Errors) > 0 {
+		t.Fatalf("unexpected errors: %v", result.Errors)
+	}
+
+	data, ok := result.Data.(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected map result, got %T", result.Data)
+	}
+	hello, ok := data["hello"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected hello to be map, got %T", data["hello"])
+	}
+	if hello["en"] != "hello" {
+		t.Errorf("expected en=hello, got %v", hello["en"])
+	}
+	if hello["fr"] != "bonjour" {
+		t.Errorf("expected fr=bonjour, got %v", hello["fr"])
+	}
+}
