@@ -322,7 +322,7 @@ func (d *dethunkQueue) shift() func() {
 	return f
 }
 
-// dethunkWithBreadthFirstTraversal performs a breadth-first descent of the map, calling any thunks
+// dethunkMapWithBreadthFirstTraversal performs a breadth-first descent of the map, calling any thunks
 // in the map values and replacing each thunk with that thunk's return value. This parallels
 // the reference graphql-js implementation, which calls Promise.all on thunks at each depth (which
 // is an implicit parallel descent).
