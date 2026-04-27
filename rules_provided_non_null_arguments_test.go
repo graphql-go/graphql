@@ -175,3 +175,65 @@ func TestValidate_ProvidedNonNullArguments_DirectiveArguments_WithDirectiveWithM
 		testutil.RuleError(`Directive "@skip" argument "if" of type "Boolean!" is required but not provided.`, 4, 18),
 	})
 }
+
+func TestValidate_ProvidedNonNullArguments_FieldArguments_NoErrorOnNonNullArgumentWithDefaultValue(t *testing.T) {
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"fieldWithDefault": &graphql.Field{
+					Type: graphql.String,
+					Args: graphql.FieldConfigArgument{
+						"arg": &graphql.ArgumentConfig{
+							Type:         graphql.NewNonNull(graphql.Boolean),
+							DefaultValue: true,
+						},
+					},
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("Unexpected error, got: %v", err)
+	}
+	testutil.ExpectPassesRuleWithSchema(t, &schema, graphql.ProvidedNonNullArgumentsRule, `
+        {
+          fieldWithDefault
+        }
+    `)
+}
+
+func TestValidate_ProvidedNonNullArguments_DirectiveArguments_NoErrorOnNonNullArgumentWithDefaultValue(t *testing.T) {
+	deferDirective := graphql.NewDirective(graphql.DirectiveConfig{
+		Name: "defer",
+		Locations: []string{
+			graphql.DirectiveLocationFragmentSpread,
+			graphql.DirectiveLocationInlineFragment,
+		},
+		Args: graphql.FieldConfigArgument{
+			"if": &graphql.ArgumentConfig{
+				Type:         graphql.NewNonNull(graphql.Boolean),
+				DefaultValue: true,
+			},
+		},
+	})
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"a": &graphql.Field{Type: graphql.String},
+			},
+		}),
+		Directives: []*graphql.Directive{deferDirective},
+	})
+	if err != nil {
+		t.Fatalf("Unexpected error, got: %v", err)
+	}
+	testutil.ExpectPassesRuleWithSchema(t, &schema, graphql.ProvidedNonNullArgumentsRule, `
+        {
+          ... on Query @defer {
+            a
+          }
+        }
+    `)
+}
