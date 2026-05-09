@@ -2,6 +2,7 @@ package graphql_test
 
 import (
 	"reflect"
+	"sync"
 	"testing"
 
 	"github.com/graphql-go/graphql"
@@ -133,6 +134,76 @@ func TestPlanCacheNormalizeUnnormalizableNoCollision(t *testing.T) {
 	hits, misses = cache.HitsMisses()
 	if hits != 2 || misses != 2 {
 		t.Fatalf("re-fetch didn't hit own slots: hits=%d misses=%d (want 2/2)", hits, misses)
+	}
+}
+
+// TestPlanCacheSchemaRebuildInvalidation confirms the schema-pointer
+// guard: an entry planned against one *Schema falls out of the cache
+// when looked up against a freshly built one, even when the schemas
+// are structurally identical.
+func TestPlanCacheSchemaRebuildInvalidation(t *testing.T) {
+	s1 := benchutil.WideArgedSchemaWithXFieldsAndYItems(2, 1)
+	cache := graphql.NewPlanCache(graphql.PlanCacheOptions{})
+
+	q := `{ wide { a(value: "x") } }`
+	r1 := cache.Get(&s1, q, "")
+	if len(r1.Errors) > 0 || r1.Plan == nil {
+		t.Fatalf("first call against s1: %v", r1.Errors)
+	}
+
+	s2 := benchutil.WideArgedSchemaWithXFieldsAndYItems(2, 1)
+	r2 := cache.Get(&s2, q, "")
+	if len(r2.Errors) > 0 || r2.Plan == nil {
+		t.Fatalf("first call against s2: %v", r2.Errors)
+	}
+	if r1.Plan == r2.Plan {
+		t.Fatalf("rebuilt schema reused stale *Plan pointer")
+	}
+
+	// s1 is now invalidated for the same key (cache replaced its slot
+	// with the s2-bound plan), so a re-lookup against s1 must miss
+	// and re-plan.
+	r1b := cache.Get(&s1, q, "")
+	if r1b.Plan == r2.Plan {
+		t.Fatalf("post-rebuild lookup against s1 returned the s2-bound plan")
+	}
+}
+
+// TestPlanCacheConcurrentGets exercises the LRU/mutex behavior under
+// concurrent access. Many goroutines hammer the same key; we don't
+// guarantee they share a single planning pass (that would need
+// singleflight) but we do guarantee no panics, no data races (use
+// `go test -race`), and consistent results.
+func TestPlanCacheConcurrentGets(t *testing.T) {
+	schema := benchutil.WideArgedSchemaWithXFieldsAndYItems(2, 1)
+	cache := graphql.NewPlanCache(graphql.PlanCacheOptions{})
+	q := `{ wide { a(value: "x") } }`
+
+	const goroutines = 16
+	const perG = 32
+
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			defer wg.Done()
+			for j := 0; j < perG; j++ {
+				r := cache.Get(&schema, q, "")
+				if len(r.Errors) > 0 || r.Plan == nil {
+					t.Errorf("concurrent Get: %v", r.Errors)
+					return
+				}
+			}
+		}()
+	}
+	wg.Wait()
+
+	hits, misses := cache.HitsMisses()
+	if hits+misses != goroutines*perG {
+		t.Fatalf("hits+misses=%d, want %d", hits+misses, goroutines*perG)
+	}
+	if misses == 0 {
+		t.Fatalf("expected at least one miss")
 	}
 }
 
