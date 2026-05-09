@@ -577,14 +577,21 @@ func ExecutePlan(plan *Plan, p ExecuteParams) (result *Result) {
 			resultChannel <- out
 		}()
 
-		variableValues, err := getVariableValues(p.Schema, plan.operation.GetVariableDefinitions(), p.Args)
+		// Plan is bound to plan.schema (sub-plans, abstractAlternatives,
+		// and field defs were resolved against it). Use that same schema
+		// here so variable coercion and abstract-type resolution stay
+		// consistent with what the plan was built against — p.Schema is
+		// ignored to avoid silent drift if the caller passes a rebuilt
+		// schema with the same shape but different *Object pointers.
+		execSchema := *plan.schema
+		variableValues, err := getVariableValues(execSchema, plan.operation.GetVariableDefinitions(), p.Args)
 		if err != nil {
 			out.Errors = append(out.Errors, gqlerrors.FormatError(err))
 			return
 		}
 
 		eCtx := &executionContext{
-			Schema:         p.Schema,
+			Schema:         execSchema,
 			Fragments:      plan.fragments,
 			Root:           p.Root,
 			Operation:      plan.operation,
