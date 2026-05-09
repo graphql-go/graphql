@@ -178,7 +178,7 @@ func (p *Plan) planSelectionSet(parentType *Object, selectionSet *ast.SelectionS
 	}
 	sp := &selectionPlan{parentType: parentType}
 	keyed := map[string]int{}
-	p.collectInto(parentType, selectionSet, visitedFragmentNames, sp, keyed)
+	p.collectInto(parentType, selectionSet, visitedFragmentNames, sp, keyed, nil)
 	if len(sp.fields) == 0 {
 		return nil
 	}
@@ -229,7 +229,7 @@ func (p *Plan) planMergedSelectionsForType(parentType *Object, fieldASTs []*ast.
 		if f == nil || f.SelectionSet == nil {
 			continue
 		}
-		p.collectInto(parentType, f.SelectionSet, visited, sp, keyed)
+		p.collectInto(parentType, f.SelectionSet, visited, sp, keyed, nil)
 	}
 	if len(sp.fields) == 0 {
 		return nil
@@ -248,10 +248,15 @@ func (p *Plan) planMergedSelectionsForType(parentType *Object, fieldASTs []*ast.
 // @skip directives at plan time when constant. Per-field
 // skipPredicates carry the dynamic part forward to ExecutePlan.
 //
+// parentPred carries variable-driven @skip / @include from any
+// enclosing inline fragment or fragment spread. It is AND-composed
+// with each field's own predicate when a new fieldPlan is created so
+// that fragment-level gates are honored at execute time.
+//
 // keyed maps responseKey → index in sp.fields so repeat selections
 // of the same response key merge their fieldASTs (matches
 // collectFields's `fields[name] = append(fields[name], selection)`).
-func (p *Plan) collectInto(parentType *Object, selectionSet *ast.SelectionSet, visitedFragmentNames map[string]bool, sp *selectionPlan, keyed map[string]int) {
+func (p *Plan) collectInto(parentType *Object, selectionSet *ast.SelectionSet, visitedFragmentNames map[string]bool, sp *selectionPlan, keyed map[string]int, parentPred func(map[string]interface{}) bool) {
 	for _, iSelection := range selectionSet.Selections {
 		switch sel := iSelection.(type) {
 		case *ast.Field:
@@ -287,7 +292,7 @@ func (p *Plan) collectInto(parentType *Object, selectionSet *ast.SelectionSet, v
 				fieldName:     fieldName,
 				fieldDef:      fieldDef,
 				fieldASTs:     []*ast.Field{sel},
-				skipPredicate: pred,
+				skipPredicate: andPredicates(parentPred, pred),
 			}
 			if fieldDef != nil {
 				fp.returnType = fieldDef.Type
@@ -301,24 +306,11 @@ func (p *Plan) collectInto(parentType *Object, selectionSet *ast.SelectionSet, v
 			if alwaysSkip {
 				continue
 			}
-			if pred != nil {
-				// Inline fragment with a variable-driven directive;
-				// fall back to runtime per-request handling for this
-				// branch by emitting individual fields without a
-				// fragment-level guard (the sub-fields' own
-				// shouldIncludeNode will catch their own directives;
-				// we approximate by walking the inline fragment as if
-				// always-included). This mirrors most real usage —
-				// inline fragments rarely carry @include/@skip — and
-				// stays spec-correct as long as we keep the fragment
-				// type-condition check.
-				_ = pred
-			}
 			if !planFragmentMatches(*p.schema, sel.TypeCondition, parentType) {
 				continue
 			}
 			if sel.SelectionSet != nil {
-				p.collectInto(parentType, sel.SelectionSet, visitedFragmentNames, sp, keyed)
+				p.collectInto(parentType, sel.SelectionSet, visitedFragmentNames, sp, keyed, andPredicates(parentPred, pred))
 			}
 
 		case *ast.FragmentSpread:
@@ -326,7 +318,6 @@ func (p *Plan) collectInto(parentType *Object, selectionSet *ast.SelectionSet, v
 			if alwaysSkip {
 				continue
 			}
-			_ = pred
 			fragName := ""
 			if sel.Name != nil {
 				fragName = sel.Name.Value
@@ -347,9 +338,28 @@ func (p *Plan) collectInto(parentType *Object, selectionSet *ast.SelectionSet, v
 				continue
 			}
 			if fragDef.GetSelectionSet() != nil {
-				p.collectInto(parentType, fragDef.GetSelectionSet(), visitedFragmentNames, sp, keyed)
+				p.collectInto(parentType, fragDef.GetSelectionSet(), visitedFragmentNames, sp, keyed, andPredicates(parentPred, pred))
 			}
 		}
+	}
+}
+
+// andPredicates returns a predicate that is true only when both inputs
+// are true. nil is treated as the constant-true predicate, so the
+// common "no enclosing gate" / "no field-level directive" cases avoid
+// allocating a closure.
+func andPredicates(a, b func(map[string]interface{}) bool) func(map[string]interface{}) bool {
+	if a == nil {
+		return b
+	}
+	if b == nil {
+		return a
+	}
+	return func(vars map[string]interface{}) bool {
+		if !a(vars) {
+			return false
+		}
+		return b(vars)
 	}
 }
 
