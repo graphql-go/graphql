@@ -102,6 +102,40 @@ func TestPlanCacheExecutesNormalizedPlan(t *testing.T) {
 	}
 }
 
+// TestPlanCacheNormalizeUnnormalizableNoCollision exercises the
+// fallback for documents that normalizeDocument can't analyse
+// (ambiguous multi-op without operationName, named op not found in
+// the document). Two such queries must not collide on the cache key
+// — without the raw-doc fingerprint fallback, both would land in the
+// same "" slot and the second Get would incorrectly hit the first's
+// cached errors.
+func TestPlanCacheNormalizeUnnormalizableNoCollision(t *testing.T) {
+	schema := benchutil.WideArgedSchemaWithXFieldsAndYItems(2, 1)
+	cache := graphql.NewPlanCache(graphql.PlanCacheOptions{Normalize: true})
+
+	q1 := `query A { wide { a(value: "x") } } query B { wide { a(value: "y") } }`
+	q2 := `query A { wide { a(value: "x") } } query C { wide { a(value: "z") } }`
+
+	if r := cache.Get(&schema, q1, ""); len(r.Errors) == 0 {
+		t.Fatalf("expected errors on ambiguous multi-op q1")
+	}
+	if r := cache.Get(&schema, q2, ""); len(r.Errors) == 0 {
+		t.Fatalf("expected errors on ambiguous multi-op q2")
+	}
+	hits, misses := cache.HitsMisses()
+	if hits != 0 || misses != 2 {
+		t.Fatalf("distinct unnormalizable queries collided: hits=%d misses=%d (want 0/2)", hits, misses)
+	}
+
+	// Re-fetch both: each should hit its own slot.
+	_ = cache.Get(&schema, q1, "")
+	_ = cache.Get(&schema, q2, "")
+	hits, misses = cache.HitsMisses()
+	if hits != 2 || misses != 2 {
+		t.Fatalf("re-fetch didn't hit own slots: hits=%d misses=%d (want 2/2)", hits, misses)
+	}
+}
+
 // TestPlanCacheReset clears the cache so subsequent lookups miss.
 func TestPlanCacheReset(t *testing.T) {
 	schema := benchutil.WideArgedSchemaWithXFieldsAndYItems(2, 1)

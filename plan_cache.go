@@ -2,6 +2,8 @@ package graphql
 
 import (
 	"container/list"
+	"hash/fnv"
+	"strconv"
 	"sync"
 	"sync/atomic"
 
@@ -150,6 +152,17 @@ func (c *PlanCache) Get(schema *Schema, query, operationName string) PlanResult 
 	normDoc, synthArgs, normKey, normErr := normalizeDocument(schema, doc, operationName)
 	if normErr != nil {
 		return PlanResult{Errors: gqlerrors.FormatErrors(normErr)}
+	}
+	if normKey == "" {
+		// Normalization isn't applicable (op-not-found, ambiguous
+		// multi-op without operationName). Fingerprint the raw query
+		// so unrelated docs don't collide on the empty key — otherwise
+		// any cached parse/validate/plan error from the first such
+		// query would be returned for every subsequent malformed
+		// query under the same operationName.
+		h := fnv.New64a()
+		_, _ = h.Write([]byte(query))
+		normKey = "raw:" + strconv.FormatUint(h.Sum64(), 16)
 	}
 	cacheKey := operationName + "\x00" + normKey
 	if pr, ok := c.lookup(schema, cacheKey); ok {
