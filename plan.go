@@ -599,11 +599,10 @@ func ExecutePlan(plan *Plan, p ExecuteParams) (result *Result) {
 			Context:        ctx,
 		}
 
-		data := executePlannedSelection(eCtx, plan.root, p.Root, plan.rootType, nil, plan.isMutation)
+		data := executePlannedSelection(eCtx, plan.root, p.Root, plan.rootType, nil)
 		// Mutations run serially with each field's result
 		// dethunked depth-first; queries run all then dethunk
-		// breadth-first. executePlannedSelection threads serial vs
-		// concurrent through; here we just run the appropriate
+		// breadth-first. The traversal here just runs the appropriate
 		// dethunker on the assembled map.
 		if plan.isMutation {
 			dethunkMapDepthFirst(data)
@@ -628,10 +627,10 @@ func ExecutePlan(plan *Plan, p ExecuteParams) (result *Result) {
 // source value, returning the assembled response map. Walks fields
 // in source order (sp.fields is built that way at plan time).
 //
-// serialFields is a passthrough — only the top level honours it
-// (mutations); nested selections are always concurrent-eligible per
-// the spec.
-func executePlannedSelection(eCtx *executionContext, sp *selectionPlan, source interface{}, parentType *Object, path *ResponsePath, serialFields bool) map[string]interface{} {
+// Mutation vs. query traversal is handled at the top level in
+// ExecutePlan via dethunkMapDepthFirst / dethunkMapWithBreadthFirstTraversal,
+// so this walker is the same for both.
+func executePlannedSelection(eCtx *executionContext, sp *selectionPlan, source interface{}, parentType *Object, path *ResponsePath) map[string]interface{} {
 	if sp == nil {
 		return map[string]interface{}{}
 	}
@@ -656,7 +655,6 @@ func executePlannedSelection(eCtx *executionContext, sp *selectionPlan, source i
 		}
 		finalResults[fp.responseKey] = resolved
 	}
-	_ = serialFields
 	return finalResults
 }
 
@@ -854,7 +852,7 @@ func completePlannedObjectValue(eCtx *executionContext, returnType *Object, fp *
 		}
 	}
 	if fp.sub != nil {
-		return executePlannedSelection(eCtx, fp.sub, result, returnType, path, false)
+		return executePlannedSelection(eCtx, fp.sub, result, returnType, path)
 	}
 	// Fallback: planner didn't precompute (e.g. selection set was
 	// empty per validation, which shouldn't reach here for object
@@ -885,7 +883,7 @@ func completePlannedAbstractValue(eCtx *executionContext, returnType Abstract, f
 		))
 	}
 	if sub, ok := fp.abstractAlternatives[runtimeType]; ok && sub != nil {
-		return executePlannedSelection(eCtx, sub, result, runtimeType, path, false)
+		return executePlannedSelection(eCtx, sub, result, runtimeType, path)
 	}
 	// Defensive fallback: unplanned concrete type (e.g. interface
 	// gained a new implementer between plan time and execute time —
