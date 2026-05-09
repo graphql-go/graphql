@@ -160,6 +160,87 @@ func BenchmarkUncachedExecute_WideQuery_100_10_Varied(b *testing.B) {
 	}
 }
 
+// BenchmarkPlanCache_HotLoop_NativeVars: the canonical fast path —
+// the client sends the query once with `$v` variables; the cache
+// stores one plan; every iteration is `cache.Get + ExecutePlan` with
+// varying Args. This is what real clients should look like.
+func BenchmarkPlanCache_HotLoop_NativeVars(b *testing.B) {
+	schema := benchutil.WideArgedSchemaWithXFieldsAndYItems(100, 10)
+	query := benchutil.WideArgedSchemaQueryWithVariable(100)
+	cache := graphql.NewPlanCache(graphql.PlanCacheOptions{})
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pr := cache.Get(&schema, query, "")
+		if len(pr.Errors) > 0 {
+			b.Fatalf("get: %v", pr.Errors)
+		}
+		result := graphql.ExecutePlan(pr.Plan, graphql.ExecuteParams{
+			Schema: schema,
+			Args:   map[string]interface{}{"v": fmt.Sprintf("v-%d", i)},
+		})
+		if len(result.Errors) > 0 {
+			b.Fatalf("execute: %v", result.Errors)
+		}
+	}
+}
+
+// BenchmarkPlanCache_HotLoop_Normalized: the salvage path — the
+// client sends literal-baked queries that vary per call. With
+// Normalize=true, every iteration parses + normalizes (cheap) and
+// hits the same cached plan. Demonstrates the full effect of cache
+// + normalization on the worst client behavior.
+func BenchmarkPlanCache_HotLoop_Normalized(b *testing.B) {
+	schema := benchutil.WideArgedSchemaWithXFieldsAndYItems(100, 10)
+	cache := graphql.NewPlanCache(graphql.PlanCacheOptions{Normalize: true})
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		query := benchutil.WideArgedSchemaQueryWithLiteral(100, fmt.Sprintf("v-%d", i))
+		pr := cache.Get(&schema, query, "")
+		if len(pr.Errors) > 0 {
+			b.Fatalf("get: %v", pr.Errors)
+		}
+		result := graphql.ExecutePlan(pr.Plan, graphql.ExecuteParams{
+			Schema: schema,
+			Args:   pr.SynthArgs,
+		})
+		if len(result.Errors) > 0 {
+			b.Fatalf("execute: %v", result.Errors)
+		}
+	}
+}
+
+// BenchmarkPlanCache_HotLoop_NoNorm: the worst case — literal-baked
+// queries vary per call, but normalization is OFF. Every iteration
+// is a fresh parse + validate + plan. The cache only hits when an
+// LRU-replayed literal happens to match (vanishingly rare for real
+// workloads). This measures what users get if they neither use
+// variables nor turn on normalization.
+func BenchmarkPlanCache_HotLoop_NoNorm(b *testing.B) {
+	schema := benchutil.WideArgedSchemaWithXFieldsAndYItems(100, 10)
+	cache := graphql.NewPlanCache(graphql.PlanCacheOptions{})
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		query := benchutil.WideArgedSchemaQueryWithLiteral(100, fmt.Sprintf("v-%d", i))
+		pr := cache.Get(&schema, query, "")
+		if len(pr.Errors) > 0 {
+			b.Fatalf("get: %v", pr.Errors)
+		}
+		result := graphql.ExecutePlan(pr.Plan, graphql.ExecuteParams{
+			Schema: schema,
+			Args:   pr.SynthArgs,
+		})
+		if len(result.Errors) > 0 {
+			b.Fatalf("execute: %v", result.Errors)
+		}
+	}
+}
+
 // BenchmarkPlannedExecute_WideQuery_100_10_StaticArg is the static
 // counterpart: same plan, same Args every call. Lets us see how
 // close the Varied case (per-call arg coercion) gets to the
