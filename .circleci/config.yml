@@ -23,7 +23,7 @@ jobs:
     steps:
       - checkout
       - run: go install github.com/mattn/goveralls@latest
-      - run: go test -v -cover -race -coverprofile=coverage.out
+      - run: go test -v -cover -race -coverprofile=coverage.out ./...
       - run: goveralls -coverprofile=coverage.out -service=circle-ci -repotoken $COVERALLS_TOKEN
 
 workflows:
