@@ -24,72 +24,18 @@ type ExecuteParams struct {
 	Context context.Context
 }
 
+// Execute runs an operation against a schema. Behavior is unchanged
+// from prior releases: it now plans + executes via PlanQuery /
+// ExecutePlan internally, but builds a fresh plan per call. Callers
+// that issue the same query repeatedly should hold onto the *Plan
+// returned by PlanQuery and pass it to ExecutePlan to skip the
+// per-call planning work.
 func Execute(p ExecuteParams) (result *Result) {
-	// Use background context if no context was provided
-	ctx := p.Context
-	if ctx == nil {
-		ctx = context.Background()
+	plan, err := PlanQuery(&p.Schema, p.AST, p.OperationName)
+	if err != nil {
+		return &Result{Errors: gqlerrors.FormatErrors(err)}
 	}
-	// run executionDidStart functions from extensions
-	extErrs, executionFinishFn := handleExtensionsExecutionDidStart(&p)
-	if len(extErrs) != 0 {
-		return &Result{
-			Errors: extErrs,
-		}
-	}
-
-	defer func() {
-		extErrs = executionFinishFn(result)
-		if len(extErrs) != 0 {
-			result.Errors = append(result.Errors, extErrs...)
-		}
-
-		addExtensionResults(&p, result)
-	}()
-
-	resultChannel := make(chan *Result, 2)
-
-	go func() {
-		result := &Result{}
-
-		defer func() {
-			if err := recover(); err != nil {
-				result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
-			}
-			resultChannel <- result
-		}()
-
-		exeContext, err := buildExecutionContext(buildExecutionCtxParams{
-			Schema:        p.Schema,
-			Root:          p.Root,
-			AST:           p.AST,
-			OperationName: p.OperationName,
-			Args:          p.Args,
-			Result:        result,
-			Context:       p.Context,
-		})
-
-		if err != nil {
-			result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
-			resultChannel <- result
-			return
-		}
-
-		resultChannel <- executeOperation(executeOperationParams{
-			ExecutionContext: exeContext,
-			Root:             p.Root,
-			Operation:        exeContext.Operation,
-		})
-	}()
-
-	select {
-	case <-ctx.Done():
-		result := &Result{}
-		result.Errors = append(result.Errors, gqlerrors.FormatError(ctx.Err()))
-		return result
-	case r := <-resultChannel:
-		return r
-	}
+	return ExecutePlan(plan, p)
 }
 
 type buildExecutionCtxParams struct {
