@@ -380,6 +380,76 @@ func TestDirectivesWorksOnInlineFragmentUnlessTrueIncludesInlineFragment(t *test
 	}
 }
 
+// Variable-driven directives on inline fragments must gate the entire
+// fragment's selection at runtime (regression: planner used to drop
+// the predicate and emit children unconditionally).
+func TestDirectivesWorksOnInlineFragmentSkipVariableTrueOmits(t *testing.T) {
+	query := `
+        query Q($s: Boolean!) {
+          a
+          ... on TestType @skip(if: $s) {
+            b
+          }
+        }
+	`
+	ast := testutil.TestParse(t, query)
+	result := testutil.TestExecute(t, graphql.ExecuteParams{
+		Schema: directivesTestSchema,
+		AST:    ast,
+		Root:   directivesTestData,
+		Args:   map[string]interface{}{"s": true},
+	})
+	expected := &graphql.Result{Data: map[string]interface{}{"a": "a"}}
+	if !testutil.EqualResults(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
+func TestDirectivesWorksOnInlineFragmentSkipVariableFalseIncludes(t *testing.T) {
+	query := `
+        query Q($s: Boolean!) {
+          a
+          ... on TestType @skip(if: $s) {
+            b
+          }
+        }
+	`
+	ast := testutil.TestParse(t, query)
+	result := testutil.TestExecute(t, graphql.ExecuteParams{
+		Schema: directivesTestSchema,
+		AST:    ast,
+		Root:   directivesTestData,
+		Args:   map[string]interface{}{"s": false},
+	})
+	expected := &graphql.Result{Data: map[string]interface{}{"a": "a", "b": "b"}}
+	if !testutil.EqualResults(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
+func TestDirectivesWorksOnFragmentSpreadSkipVariableTrueOmits(t *testing.T) {
+	query := `
+        query Q($s: Boolean!) {
+          a
+          ...Frag @skip(if: $s)
+        }
+        fragment Frag on TestType {
+          b
+        }
+	`
+	ast := testutil.TestParse(t, query)
+	result := testutil.TestExecute(t, graphql.ExecuteParams{
+		Schema: directivesTestSchema,
+		AST:    ast,
+		Root:   directivesTestData,
+		Args:   map[string]interface{}{"s": true},
+	})
+	expected := &graphql.Result{Data: map[string]interface{}{"a": "a"}}
+	if !testutil.EqualResults(expected, result) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
+	}
+}
+
 func TestDirectivesWorksOnAnonymousInlineFragmentIfFalseOmitsAnonymousInlineFragment(t *testing.T) {
 	query := `
         query Q {
