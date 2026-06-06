@@ -365,7 +365,7 @@ func doesFragmentConditionMatch(eCtx *executionContext, fragment ast.Node, ttype
 			return true
 		}
 		conditionalType, err := typeFromAST(eCtx.Schema, typeConditionAST)
-		if err != nil {
+		if err != nil || conditionalType == nil {
 			return false
 		}
 		if conditionalType == ttype {
@@ -386,7 +386,7 @@ func doesFragmentConditionMatch(eCtx *executionContext, fragment ast.Node, ttype
 			return true
 		}
 		conditionalType, err := typeFromAST(eCtx.Schema, typeConditionAST)
-		if err != nil {
+		if err != nil || conditionalType == nil {
 			return false
 		}
 		if conditionalType == ttype {
@@ -494,9 +494,6 @@ func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 			checkTag := func(tagName string) bool {
 				t := tag.Get(tagName)
 				tOptions := strings.Split(t, ",")
-				if len(tOptions) == 0 {
-					return false
-				}
 				if tOptions[0] != p.Info.FieldName {
 					return false
 				}
