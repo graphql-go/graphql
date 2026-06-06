@@ -1052,3 +1052,151 @@ func TestScalarMissingBothParseFn(t *testing.T) {
 		t.Fatal("expected error when only ParseValue is provided without ParseLiteral")
 	}
 }
+
+func TestScalarSerialize(t *testing.T) {
+	serializeFn := func(value interface{}) interface{} {
+		if intVal, ok := value.(int); ok && intVal%2 == 1 {
+			return intVal
+		}
+		return nil
+	}
+
+	tests := []struct {
+		name     string
+		config   graphql.ScalarConfig
+		input    interface{}
+		expected interface{}
+	}{
+		{
+			name: "Serialize with custom function should call function",
+			config: graphql.ScalarConfig{
+				Name:      "OddInt",
+				Serialize: serializeFn,
+			},
+			input:    3,
+			expected: 3,
+		},
+		{
+			name: "Serialize with custom function returns nil for even number",
+			config: graphql.ScalarConfig{
+				Name:      "OddInt",
+				Serialize: serializeFn,
+			},
+			input:    4,
+			expected: nil,
+		},
+		{
+			name: "Serialize with nil function should return input value",
+			config: graphql.ScalarConfig{
+				Name:      "TestScalar",
+				Serialize: nil,
+			},
+			input:    "test",
+			expected: "test",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scalar := graphql.NewScalar(tt.config)
+			result := scalar.Serialize(tt.input)
+			if result != tt.expected {
+				t.Errorf("Serialize(%v) = %v; want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestScalarParseValue(t *testing.T) {
+	parseValueFn := func(value interface{}) interface{} {
+		if strVal, ok := value.(string); ok {
+			return strVal
+		}
+		return nil
+	}
+
+	tests := []struct {
+		name     string
+		config   graphql.ScalarConfig
+		input    interface{}
+		expected interface{}
+	}{
+		{
+			name: "ParseValue with custom function should parse string",
+			config: graphql.ScalarConfig{
+				Name:       "StringScalar",
+				Serialize:  func(v interface{}) interface{} { return v },
+				ParseValue: parseValueFn,
+			},
+			input:    "hello",
+			expected: "hello",
+		},
+		{
+			name: "ParseValue with custom function returns given value",
+			config: graphql.ScalarConfig{
+				Name:       "StringScalar",
+				Serialize:  func(v interface{}) interface{} { return v },
+				ParseValue: parseValueFn,
+			},
+			input:    123,
+			expected: 123,
+		},
+		{
+			name: "ParseValue with nil function should return input value as-is",
+			config: graphql.ScalarConfig{
+				Name:      "TestScalar",
+				Serialize: func(v interface{}) interface{} { return v },
+			},
+			input:    "test",
+			expected: "test",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scalar := graphql.NewScalar(tt.config)
+			result := scalar.ParseValue(tt.input)
+			if result != tt.expected {
+				t.Errorf("ParseValue(%v) = %v; want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestScalarDescription(t *testing.T) {
+	tests := []struct {
+		name        string
+		description string
+		expected    string
+	}{
+		{
+			name:        "Description should return provided description",
+			description: "A custom scalar type",
+			expected:    "A custom scalar type",
+		},
+		{
+			name:        "Description should return empty string when not provided",
+			description: "",
+			expected:    "",
+		},
+		{
+			name:        "Description should return long description",
+			description: "This is a longer description for a scalar type that can span multiple lines",
+			expected:    "This is a longer description for a scalar type that can span multiple lines",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scalar := graphql.NewScalar(graphql.ScalarConfig{
+				Name:        "TestScalar",
+				Description: tt.description,
+				Serialize:   func(v interface{}) interface{} { return v },
+			})
+			result := scalar.Description()
+			if result != tt.expected {
+				t.Errorf("Description() = %q; want %q", result, tt.expected)
+			}
+		})
+	}
+}
