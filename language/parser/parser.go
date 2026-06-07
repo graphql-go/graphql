@@ -133,9 +133,7 @@ func parseDocument(parser *Parser) (*ast.Document, error) {
 	)
 	start := parser.Token.Start
 	for {
-		if skp, err := skip(parser, lexer.EOF); err != nil {
-			return nil, err
-		} else if skp {
+		if skp, _ := skip(parser, lexer.EOF); skp {
 			break
 		}
 		switch kind := parser.Token.Kind; kind {
@@ -186,9 +184,7 @@ func parseOperationDefinition(parser *Parser) (ast.Node, error) {
 			Loc:          loc(parser, start),
 		}), nil
 	}
-	if operation, err = parseOperationType(parser); err != nil {
-		return nil, err
-	}
+	operation, err = parseOperationType(parser)
 
 	if peek(parser, lexer.NAME) {
 		if name, err = parseName(parser); err != nil {
