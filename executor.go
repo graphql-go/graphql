@@ -55,6 +55,10 @@ type executionContext struct {
 	VariableValues map[string]interface{}
 	Errors         []gqlerrors.FormattedError
 	Context        context.Context
+
+	// plan is set on the ExecutePlan path; it lets abstract fields plan
+	// their concrete-type sub-selections lazily at execute time.
+	plan *Plan
 }
 
 func buildExecutionContext(p buildExecutionCtxParams) (*executionContext, error) {
