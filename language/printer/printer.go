@@ -42,9 +42,8 @@ func getMapSliceValue(m map[string]interface{}, key string) []interface{} {
 		switch v := v.(type) {
 		case []interface{}:
 			return v
-		default:
-			return []interface{}{}
 		}
+		break
 	}
 	return []interface{}{}
 }
@@ -188,7 +187,10 @@ var printDocASTReducer = map[string]visitor.VisitFunc{
 		switch node := p.Node.(type) {
 		case *ast.OperationDefinition:
 			op := string(node.Operation)
-			name := fmt.Sprintf("%v", node.Name)
+			var name string
+			if node.Name != nil {
+				name = node.Name.Value
+			}
 
 			varDefs := wrap("(", join(toSliceString(node.VariableDefinitions), ", "), ")")
 			directives := join(toSliceString(node.Directives), " ")
