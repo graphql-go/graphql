@@ -729,8 +729,6 @@ func TestDefaultResolveFn_TagOptionsEmpty(t *testing.T) {
 // DefaultResolveFn – reflect.Map with func() interface{} value
 // ---------------------------------------------------------------------------
 
-type customMap map[string]interface{}
-
 func TestDefaultResolveFn_ReflectMapFunc(t *testing.T) {
 	// Source is a typed map whose value type is exactly func() interface{},
 	// so it does NOT match map[string]interface{} and instead enters the
