@@ -1,8 +1,10 @@
 package parser
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/graphql-go/graphql/language/lexer"
 	"github.com/graphql-go/graphql/language/source"
 )
 
@@ -1631,5 +1633,26 @@ func TestParseOperationTypeDefinitionParseTypeAdvanceError(t *testing.T) {
 	_, err := parseOperationTypeDefinition(parser)
 	if err == nil {
 		t.Fatal("expected error from parseNamed advance")
+	}
+}
+
+func TestParseDocumentErrorSkipEOF(t *testing.T) {
+	parser := makeTestParser(t, ``)
+	originalLex := parser.LexToken
+	parser.LexToken = func(pos int) (lexer.Token, error) {
+		return lexer.Token{}, fmt.Errorf("synthetic lex error")
+	}
+	defer func() { parser.LexToken = originalLex }()
+	_, err := parseDocument(parser)
+	if err == nil {
+		t.Fatal("expected error from skip(EOF) advance")
+	}
+}
+
+func TestParseOperationDefinitionParseNameAdvanceAfterNameError(t *testing.T) {
+	parser := makeTestParser(t, `query Foo "`)
+	_, err := parseOperationDefinition(parser)
+	if err == nil {
+		t.Fatal("expected error from parseName advance after operation type")
 	}
 }
