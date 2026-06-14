@@ -55,6 +55,10 @@ type executionContext struct {
 	VariableValues map[string]interface{}
 	Errors         []gqlerrors.FormattedError
 	Context        context.Context
+
+	// plan is set on the ExecutePlan path; it lets abstract fields plan
+	// their concrete-type sub-selections lazily at execute time.
+	plan *Plan
 }
 
 func buildExecutionContext(p buildExecutionCtxParams) (*executionContext, error) {
@@ -365,7 +369,7 @@ func doesFragmentConditionMatch(eCtx *executionContext, fragment ast.Node, ttype
 			return true
 		}
 		conditionalType, err := typeFromAST(eCtx.Schema, typeConditionAST)
-		if err != nil {
+		if err != nil || conditionalType == nil {
 			return false
 		}
 		if conditionalType == ttype {
@@ -386,7 +390,7 @@ func doesFragmentConditionMatch(eCtx *executionContext, fragment ast.Node, ttype
 			return true
 		}
 		conditionalType, err := typeFromAST(eCtx.Schema, typeConditionAST)
-		if err != nil {
+		if err != nil || conditionalType == nil {
 			return false
 		}
 		if conditionalType == ttype {
@@ -494,9 +498,6 @@ func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 			checkTag := func(tagName string) bool {
 				t := tag.Get(tagName)
 				tOptions := strings.Split(t, ",")
-				if len(tOptions) == 0 {
-					return false
-				}
 				if tOptions[0] != p.Info.FieldName {
 					return false
 				}
