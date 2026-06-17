@@ -701,14 +701,8 @@ func astFromValue(value interface{}, ttype Type) ast.Value {
 		return nil
 	}
 	valueVal := reflect.ValueOf(value)
-	if !valueVal.IsValid() {
-		return nil
-	}
 	if valueVal.Type().Kind() == reflect.Ptr {
 		valueVal = valueVal.Elem()
-	}
-	if !valueVal.IsValid() {
-		return nil
 	}
 
 	// Convert Golang slice to GraphQL list. If the Type is a list, but
