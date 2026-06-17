@@ -262,14 +262,14 @@ func init() {
 						if isNullish(inputVal.DefaultValue) {
 							return nil, nil
 						}
-						astVal := astFromValue(inputVal.DefaultValue, inputVal)
+						astVal := astFromValue(inputVal.DefaultValue, inputVal.Type)
 						return printer.Print(astVal), nil
 					}
 					if inputVal, ok := p.Source.(*InputObjectField); ok {
 						if inputVal.DefaultValue == nil {
 							return nil, nil
 						}
-						astVal := astFromValue(inputVal.DefaultValue, inputVal)
+						astVal := astFromValue(inputVal.DefaultValue, inputVal.Type)
 						return printer.Print(astVal), nil
 					}
 					return nil, nil
@@ -676,30 +676,78 @@ func init() {
 
 }
 
-// Produces a GraphQL Value AST given a Golang value.
-//
-// Optionally, a GraphQL type may be provided, which will be used to
-// disambiguate between value primitives.
-//
-// | JSON Value    | GraphQL Value        |
-// | ------------- | -------------------- |
-// | Object        | Input Object         |
-// | Array         | List                 |
-// | Boolean       | Boolean              |
-// | String        | String / Enum Value  |
-// | Number        | Int / Float          |
-
-func astFromValue(value interface{}, ttype Type) ast.Value {
-
-	if ttype, ok := ttype.(*NonNull); ok {
-		// Note: we're not checking that the result is non-null.
-		// This function is not responsible for validating the input value.
-		val := astFromValue(value, ttype.OfType)
-		return val
+func astFromScalar(value interface{}, ttype *Scalar) ast.Value {
+	switch ttype {
+	case Int:
+		switch v := value.(type) {
+		case int:
+			return ast.NewIntValue(&ast.IntValue{
+				Value: fmt.Sprintf("%v", v),
+			})
+		case float32:
+			return ast.NewIntValue(&ast.IntValue{
+				Value: fmt.Sprintf("%v", int(v)),
+			})
+		case float64:
+			return ast.NewIntValue(&ast.IntValue{
+				Value: fmt.Sprintf("%v", int(v)),
+			})
+		}
+	case Float:
+		switch v := value.(type) {
+		case int:
+			return ast.NewFloatValue(&ast.FloatValue{
+				Value: fmt.Sprintf("%d.0", v),
+			})
+		case float64:
+			return ast.NewFloatValue(&ast.FloatValue{
+				Value: fmt.Sprintf("%v", v),
+			})
+		case float32:
+			return ast.NewFloatValue(&ast.FloatValue{
+				Value: fmt.Sprintf("%v", v),
+			})
+		}
+	case String:
+		if value != nil {
+			return ast.NewStringValue(&ast.StringValue{
+				Value: fmt.Sprintf("%v", value),
+			})
+		}
+	case Boolean:
+		switch v := value.(type) {
+		case bool:
+			return ast.NewBooleanValue(&ast.BooleanValue{
+				Value: v,
+			})
+		}
 	}
-	if isNullish(value) {
-		return nil
+	return nil
+}
+
+func astFromInputObject(value interface{}, ttype *InputObject) ast.Value {
+	switch inputMap := value.(type) {
+	case map[string]interface{}:
+		var fields []*ast.ObjectField
+		for key, inputObjectField := range ttype.fields {
+			if val := astFromValue(inputMap[key], inputObjectField.Type); val != nil {
+				fields = append(fields, ast.NewObjectField(&ast.ObjectField{
+					Name: ast.NewName(&ast.Name{
+						Value: key,
+					}),
+					Value: val,
+				}))
+			}
+		}
+		return ast.NewObjectValue(
+			&ast.ObjectValue{
+				Fields: fields,
+			})
 	}
+	return nil
+}
+
+func astFromList(value interface{}, ttype *List) ast.Value {
 	valueVal := reflect.ValueOf(value)
 	if !valueVal.IsValid() {
 		return nil
@@ -710,74 +758,53 @@ func astFromValue(value interface{}, ttype Type) ast.Value {
 	if !valueVal.IsValid() {
 		return nil
 	}
-
-	// Convert Golang slice to GraphQL list. If the Type is a list, but
-	// the value is not an array, convert the value using the list's item type.
-	if ttype, ok := ttype.(*List); ok {
-		if valueVal.Type().Kind() == reflect.Slice {
-			itemType := ttype.OfType
-			values := []ast.Value{}
-			for i := 0; i < valueVal.Len(); i++ {
-				item := valueVal.Index(i).Interface()
-				itemAST := astFromValue(item, itemType)
-				if itemAST != nil {
-					values = append(values, itemAST)
-				}
+	if valueVal.Type().Kind() == reflect.Slice {
+		itemType := ttype.OfType
+		var values []ast.Value
+		for i := 0; i < valueVal.Len(); i++ {
+			item := valueVal.Index(i).Interface()
+			itemAST := astFromValue(item, itemType)
+			if itemAST != nil {
+				values = append(values, itemAST)
 			}
-			return ast.NewListValue(&ast.ListValue{
-				Values: values,
-			})
 		}
-		// Because GraphQL will accept single values as a "list of one" when
-		// expecting a list, if there's a non-array value and an expected list type,
-		// create an AST using the list's item type.
-		val := astFromValue(value, ttype.OfType)
-		return val
-	}
-
-	if valueVal.Type().Kind() == reflect.Map {
-		// TODO: implement astFromValue from Map to Value
-	}
-
-	if value, ok := value.(bool); ok {
-		return ast.NewBooleanValue(&ast.BooleanValue{
-			Value: value,
+		return ast.NewListValue(&ast.ListValue{
+			Values: values,
 		})
 	}
-	if value, ok := value.(int); ok {
-		if ttype == Float {
-			return ast.NewIntValue(&ast.IntValue{
-				Value: fmt.Sprintf("%v.0", value),
-			})
-		}
-		return ast.NewIntValue(&ast.IntValue{
-			Value: fmt.Sprintf("%v", value),
-		})
+	// Because GraphQL will accept single values as a "list of one" when
+	// expecting a list, if there's a non-array value and an expected list type,
+	// create an AST using the list's item type.
+	val := astFromValue(value, ttype.OfType)
+	if val == nil {
+		return ast.NewListValue(&ast.ListValue{})
 	}
-	if value, ok := value.(float32); ok {
-		return ast.NewFloatValue(&ast.FloatValue{
-			Value: fmt.Sprintf("%v", value),
-		})
-	}
-	if value, ok := value.(float64); ok {
-		return ast.NewFloatValue(&ast.FloatValue{
-			Value: fmt.Sprintf("%v", value),
-		})
-	}
-
-	if value, ok := value.(string); ok {
-		if _, ok := ttype.(*Enum); ok {
-			return ast.NewEnumValue(&ast.EnumValue{
-				Value: fmt.Sprintf("%v", value),
-			})
-		}
-		return ast.NewStringValue(&ast.StringValue{
-			Value: fmt.Sprintf("%v", value),
-		})
-	}
-
-	// fallback, treat as string
-	return ast.NewStringValue(&ast.StringValue{
-		Value: fmt.Sprintf("%v", value),
+	return ast.NewListValue(&ast.ListValue{
+		Values: []ast.Value{val},
 	})
+
+}
+
+// Produces a GraphQL Value AST given a Golang value and an input type.
+
+func astFromValue(value interface{}, ttype Input) ast.Value {
+	switch t := ttype.(type) {
+	case *List:
+		return astFromList(value, t)
+	case *NonNull:
+		return astFromValue(value, t.OfType)
+	case *Scalar:
+		return astFromScalar(value, t)
+	case *Enum:
+		switch res := t.Serialize(value).(type) {
+		case string:
+			return ast.NewEnumValue(
+				&ast.EnumValue{
+					Value: res,
+				})
+		}
+	case *InputObject:
+		return astFromInputObject(value, t)
+	}
+	return nil
 }

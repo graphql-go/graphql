@@ -7,6 +7,7 @@ import (
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/location"
 	"github.com/graphql-go/graphql/testutil"
+	"encoding/json"
 )
 
 func g(t *testing.T, p graphql.Params) *graphql.Result {
@@ -834,7 +835,37 @@ func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
 }
 
 func TestIntrospection_ExecutesAnInputObject(t *testing.T) {
-
+	testEnum := graphql.NewEnum(graphql.EnumConfig{
+		Name: "TestEnum",
+		Values: map[string]*graphql.EnumValueConfig{
+			"FOO": {
+				Value: 1,
+			},
+			"BAR": {
+				Value: 2,
+			},
+		},
+	})
+	testInputObjectNested := graphql.NewInputObject(graphql.InputObjectConfig{
+		Name: "NestedInputObject",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"foo": &graphql.InputObjectFieldConfig{
+				Type: graphql.String,
+			},
+			"bar": &graphql.InputObjectFieldConfig{
+				Type: testEnum,
+			},
+		},
+	})
+	testInputObjectNestedWithDefault := graphql.NewInputObject(graphql.InputObjectConfig{
+		Name: "NestedInputObjectWithDefault",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"baz": &graphql.InputObjectFieldConfig{
+				Type:         testEnum,
+				DefaultValue: 2,
+			},
+		},
+	})
 	testInputObject := graphql.NewInputObject(graphql.InputObjectConfig{
 		Name: "TestInputObject",
 		Fields: graphql.InputObjectConfigFieldMap{
@@ -844,6 +875,70 @@ func TestIntrospection_ExecutesAnInputObject(t *testing.T) {
 			},
 			"b": &graphql.InputObjectFieldConfig{
 				Type: graphql.NewList(graphql.String),
+			},
+			"c": &graphql.InputObjectFieldConfig{
+				Type:         graphql.NewList(graphql.String),
+				DefaultValue: []interface{}{"foo", "bar"},
+			},
+			"d": &graphql.InputObjectFieldConfig{
+				Type:         graphql.NewList(graphql.String),
+				DefaultValue: "foo",
+			},
+			"e": &graphql.InputObjectFieldConfig{
+				Type:         graphql.NewNonNull(graphql.String),
+				DefaultValue: "foo",
+			},
+			"f": &graphql.InputObjectFieldConfig{
+				Type:         graphql.Int,
+				DefaultValue: 1,
+			},
+			"g": &graphql.InputObjectFieldConfig{
+				Type:         graphql.Int,
+				DefaultValue: 1.1,
+			},
+			"h": &graphql.InputObjectFieldConfig{
+				Type:         graphql.Float,
+				DefaultValue: 1,
+			},
+			"i": &graphql.InputObjectFieldConfig{
+				Type:         graphql.Float,
+				DefaultValue: 1.1,
+			},
+			"j": &graphql.InputObjectFieldConfig{
+				Type:         graphql.Int,
+				DefaultValue: float64(1.1),
+			},
+			"k": &graphql.InputObjectFieldConfig{
+				Type:         graphql.Boolean,
+				DefaultValue: false,
+			},
+			"l": &graphql.InputObjectFieldConfig{
+				Type:         testEnum,
+				DefaultValue: 1,
+			},
+			"m": &graphql.InputObjectFieldConfig{
+				Type:         testEnum,
+				DefaultValue: 2,
+			},
+			"n": &graphql.InputObjectFieldConfig{
+				Type:         testEnum,
+				DefaultValue: 3,
+			},
+			"o": &graphql.InputObjectFieldConfig{
+				Type: testInputObjectNested,
+				DefaultValue: map[string]interface{}{
+					"foo": "Foo",
+				},
+			},
+			"p": &graphql.InputObjectFieldConfig{
+				Type: testInputObjectNested,
+				DefaultValue: map[string]interface{}{
+					"bar": 2,
+				},
+			},
+			"r": &graphql.InputObjectFieldConfig{
+				Type:         testInputObjectNestedWithDefault,
+				DefaultValue: map[string]interface{}{},
 			},
 		},
 	})
@@ -930,16 +1025,166 @@ func TestIntrospection_ExecutesAnInputObject(t *testing.T) {
 							},
 							"defaultValue": nil,
 						},
+						map[string]interface{}{
+							"name": "c",
+							"type": map[string]interface{}{
+								"kind": "LIST",
+								"name": nil,
+								"ofType": map[string]interface{}{
+									"kind":   "SCALAR",
+									"name":   "String",
+									"ofType": nil,
+								},
+							},
+							"defaultValue": `["foo", "bar"]`,
+						},
+						map[string]interface{}{
+							"name": "d",
+							"type": map[string]interface{}{
+								"kind": "LIST",
+								"name": nil,
+								"ofType": map[string]interface{}{
+									"kind":   "SCALAR",
+									"name":   "String",
+									"ofType": nil,
+								},
+							},
+							"defaultValue": `["foo"]`,
+						},
+						map[string]interface{}{
+							"name": "e",
+							"type": map[string]interface{}{
+								"kind": "NON_NULL",
+								"name": nil,
+								"ofType": map[string]interface{}{
+									"kind":   "SCALAR",
+									"name":   "String",
+									"ofType": nil,
+								},
+							},
+							"defaultValue": `"foo"`,
+						},
+						map[string]interface{}{
+							"name": "f",
+							"type": map[string]interface{}{
+								"kind":   "SCALAR",
+								"name":   "Int",
+								"ofType": nil,
+							},
+							"defaultValue": "1",
+						},
+						map[string]interface{}{
+							"name": "g",
+							"type": map[string]interface{}{
+								"kind":   "SCALAR",
+								"name":   "Int",
+								"ofType": nil,
+							},
+							"defaultValue": "1",
+						},
+						map[string]interface{}{
+							"name": "h",
+							"type": map[string]interface{}{
+								"kind":   "SCALAR",
+								"name":   "Float",
+								"ofType": nil,
+							},
+							"defaultValue": "1.0",
+						},
+						map[string]interface{}{
+							"name": "i",
+							"type": map[string]interface{}{
+								"kind":   "SCALAR",
+								"name":   "Float",
+								"ofType": nil,
+							},
+							"defaultValue": "1.1",
+						},
+						map[string]interface{}{
+							"name": "j",
+							"type": map[string]interface{}{
+								"kind":   "SCALAR",
+								"name":   "Int",
+								"ofType": nil,
+							},
+							"defaultValue": "1",
+						},
+						map[string]interface{}{
+							"name": "k",
+							"type": map[string]interface{}{
+								"kind":   "SCALAR",
+								"name":   "Boolean",
+								"ofType": nil,
+							},
+							"defaultValue": "false",
+						},
+						map[string]interface{}{
+							"name": "l",
+							"type": map[string]interface{}{
+								"kind":   "ENUM",
+								"name":   "TestEnum",
+								"ofType": nil,
+							},
+							"defaultValue": "FOO",
+						},
+						map[string]interface{}{
+							"name": "m",
+							"type": map[string]interface{}{
+								"kind":   "ENUM",
+								"name":   "TestEnum",
+								"ofType": nil,
+							},
+							"defaultValue": "BAR",
+						},
+						map[string]interface{}{
+							"name": "n",
+							"type": map[string]interface{}{
+								"kind":   "ENUM",
+								"name":   "TestEnum",
+								"ofType": nil,
+							},
+							"defaultValue": nil,
+						},
+						map[string]interface{}{
+							"name": "o",
+							"type": map[string]interface{}{
+								"kind":   "INPUT_OBJECT",
+								"name":   "NestedInputObject",
+								"ofType": nil,
+							},
+							"defaultValue": `{foo: "Foo"}`,
+						},
+						map[string]interface{}{
+							"name": "p",
+							"type": map[string]interface{}{
+								"kind":   "INPUT_OBJECT",
+								"name":   "NestedInputObject",
+								"ofType": nil,
+							},
+							"defaultValue": `{bar: BAR}`,
+						},
+						map[string]interface{}{
+							"name": "r",
+							"type": map[string]interface{}{
+								"kind":   "INPUT_OBJECT",
+								"name":   "NestedInputObjectWithDefault",
+								"ofType": nil,
+							},
+							"defaultValue": `{}`,
+						},
 					},
 				},
 			},
 		},
 	}
-
 	result := g(t, graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
+	marchalled, _ := json.Marshal(result.Data)
+	println(string(marchalled))
+	marchalled2, _ := json.Marshal(expectedDataSubSet)
+	println(string(marchalled2))
 	if !testutil.ContainSubset(result.Data.(map[string]interface{}), expectedDataSubSet) {
 		t.Fatalf("unexpected, result does not contain subset of expected data")
 	}
