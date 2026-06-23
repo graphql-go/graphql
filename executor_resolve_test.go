@@ -37,7 +37,7 @@ func TestExecutesResolveFunction_DefaultFunctionAccessesProperties(t *testing.T)
 	result := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: `{ test }`,
-		RootObject:    source,
+		Root:          source,
 	})
 	if !reflect.DeepEqual(expected, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result.Data))
@@ -60,7 +60,7 @@ func TestExecutesResolveFunction_DefaultFunctionCallsMethods(t *testing.T) {
 	result := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: `{ test }`,
-		RootObject:    source,
+		Root:          source,
 	})
 	if !reflect.DeepEqual(expected, result.Data) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result.Data))
