@@ -82,3 +82,7 @@ For more complex examples, refer to the [examples/](https://github.com/graphql-g
 ### Blog Posts
 - [Golang + GraphQL + Relay](https://wehavefaces.net/learn-golang-graphql-relay-1-e59ea174a902)
 
+### Testing clients/IDEs
+ - [Firecamp](https://firecamp.io/graphql)
+ - [GraphiQL](https://github.com/graphql/graphiql)
+
