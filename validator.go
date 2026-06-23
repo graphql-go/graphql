@@ -238,9 +238,13 @@ func (ctx *ValidationContext) VariableUsages(node HasSelectionSet) []*VariableUs
 			kinds.Variable: {
 				Kind: func(p visitor.VisitFuncParams) (string, interface{}) {
 					if node, ok := p.Node.(*ast.Variable); ok && node != nil {
+						inputType := typeInfo.InputType()
+						if nonNull, ok := inputType.(*NonNull); ok && typeInfo.argument != nil && typeInfo.argument.DefaultValue != nil {
+							inputType = nonNull.OfType
+						}
 						usages = append(usages, &VariableUsage{
 							Node: node,
-							Type: typeInfo.InputType(),
+							Type: inputType,
 						})
 					}
 					return visitor.ActionNoChange, nil

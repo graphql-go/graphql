@@ -316,6 +316,15 @@ func init() {
 					},
 				},
 			},
+			"nonNullIntArgFieldWithDefault": &graphql.Field{
+				Type: graphql.String,
+				Args: graphql.FieldConfigArgument{
+					"nonNullIntArgWithDefault": &graphql.ArgumentConfig{
+						Type:         graphql.NewNonNull(graphql.Int),
+						DefaultValue: 1,
+					},
+				},
+			},
 			"stringArgField": &graphql.Field{
 				Type: graphql.String,
 				Args: graphql.FieldConfigArgument{
