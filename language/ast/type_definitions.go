@@ -11,6 +11,7 @@ type DescribableNode interface {
 
 type TypeDefinition interface {
 	DescribableNode
+	GetName() *Name
 	GetOperation() string
 	GetVariableDefinitions() []*VariableDefinition
 	GetSelectionSet() *SelectionSet
