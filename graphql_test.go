@@ -6,6 +6,9 @@ import (
 	"testing"
 
 	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/language/ast"
+	"github.com/graphql-go/graphql/language/kinds"
+	"github.com/graphql-go/graphql/language/visitor"
 	"github.com/graphql-go/graphql/testutil"
 )
 
@@ -266,5 +269,124 @@ func TestEmptyStringIsNotNull(t *testing.T) {
 	expected := map[string]interface{}{"checkEmptyArg": "yay", "checkEmptyResult": ""}
 	if !reflect.DeepEqual(result.Data, expected) {
 		t.Errorf("wrong result, query: %v, graphql result diff: %v", query, testutil.Diff(expected, result))
+	}
+}
+
+func TestQueryWithCustomRule(t *testing.T) {
+	// Test graphql.Do() with custom rule, it extracts query name from each
+	// Tests.
+	ruleN := len(graphql.SpecifiedRules)
+	rules := make([]graphql.ValidationRuleFn, ruleN+1)
+	copy(rules[:ruleN], graphql.SpecifiedRules)
+
+	var (
+		queryFound bool
+		queryName  string
+	)
+	rules[ruleN] = func(context *graphql.ValidationContext) *graphql.ValidationRuleInstance {
+		return &graphql.ValidationRuleInstance{
+			VisitorOpts: &visitor.VisitorOptions{
+				KindFuncMap: map[string]visitor.NamedVisitFuncs{
+					kinds.OperationDefinition: {
+						Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
+							od, ok := p.Node.(*ast.OperationDefinition)
+							if ok && od.Operation == "query" {
+								queryFound = true
+								if od.Name != nil {
+									queryName = od.Name.Value
+								}
+							}
+							return visitor.ActionNoChange, nil
+						},
+					},
+				},
+			},
+		}
+	}
+
+	expectedNames := []string{
+		"HeroNameQuery",
+		"HeroNameAndFriendsQuery",
+		"HumanByIdQuery",
+	}
+
+	for i, test := range Tests {
+		queryFound, queryName = false, ""
+		params := graphql.Params{
+			Schema:          test.Schema,
+			RequestString:   test.Query,
+			VariableValues:  test.Variables,
+			ValidationRules: rules,
+		}
+		testGraphql(test, params, t)
+		if !queryFound {
+			t.Fatal("can't detect \"query\" operation by validation rule")
+		}
+		if queryName != expectedNames[i] {
+			t.Fatalf("unexpected query name: want=%s got=%s", queryName, expectedNames)
+		}
+	}
+}
+
+// TestCustomRuleWithArgs tests graphql.GetArgumentValues() be able to access
+// field's argument values from custom validation rule.
+func TestCustomRuleWithArgs(t *testing.T) {
+	fieldDef, ok := testutil.StarWarsSchema.QueryType().Fields()["human"]
+	if !ok {
+		t.Fatal("can't retrieve \"human\" field definition")
+	}
+
+	// a custom validation rule to extract argument values of "human" field.
+	var actual map[string]interface{}
+	enter := func(p visitor.VisitFuncParams) (string, interface{}) {
+		// only interested in "human" field.
+		fieldNode, ok := p.Node.(*ast.Field)
+		if !ok || fieldNode.Name == nil || fieldNode.Name.Value != "human" {
+			return visitor.ActionNoChange, nil
+		}
+		// extract argument values by graphql.GetArgumentValues().
+		actual = graphql.GetArgumentValues(fieldDef.Args, fieldNode.Arguments, nil)
+		return visitor.ActionNoChange, nil
+	}
+	checkHumanArgs := func(context *graphql.ValidationContext) *graphql.ValidationRuleInstance {
+		return &graphql.ValidationRuleInstance{
+			VisitorOpts: &visitor.VisitorOptions{
+				KindFuncMap: map[string]visitor.NamedVisitFuncs{
+					kinds.Field: {Enter: enter},
+				},
+			},
+		}
+	}
+
+	for _, tc := range []struct {
+		query      string
+		expected   map[string]interface{}
+	}{
+		{
+			`query { human(id: "1000") { name } }`,
+			map[string]interface{}{"id": "1000"},
+		},
+		{
+			`query { human(id: "1002") { name } }`,
+			map[string]interface{}{"id": "1002"},
+		},
+		{
+			`query { human(id: "9999") { name } }`,
+			map[string]interface{}{"id": "9999"},
+		},
+	} {
+		actual = nil
+		params := graphql.Params{
+			Schema:          testutil.StarWarsSchema,
+			RequestString:   tc.query,
+			ValidationRules: append(graphql.SpecifiedRules, checkHumanArgs),
+		}
+		result := graphql.Do(params)
+		if len(result.Errors) > 0 {
+			t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
+		}
+		if !reflect.DeepEqual(actual, tc.expected) {
+			t.Fatalf("unexpected result: want=%+v got=%+v", tc.expected, actual)
+		}
 	}
 }
