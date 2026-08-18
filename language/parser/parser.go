@@ -51,6 +51,30 @@ type Parser struct {
 	Options  ParseOptions
 	PrevEnd  int
 	Token    lexer.Token
+	depth    int
+}
+
+// maxRecursionDepth bounds how deeply the parser will descend into nested
+// constructs (selection sets, input values, and list types). Documents that
+// nest beyond this limit are rejected with a syntax error rather than being
+// allowed to exhaust the goroutine stack. The limit is far larger than any
+// realistic GraphQL document requires.
+const maxRecursionDepth = 500
+
+// enter records descent into a nested construct and reports an error when the
+// nesting exceeds maxRecursionDepth. Every call must be paired with leave.
+func (parser *Parser) enter() error {
+	parser.depth++
+	if parser.depth > maxRecursionDepth {
+		return gqlerrors.NewSyntaxError(parser.Source, parser.Token.Start,
+			fmt.Sprintf("Syntax Error: Document nests deeper than the maximum of %d levels", maxRecursionDepth))
+	}
+	return nil
+}
+
+// leave records the end of a nested construct entered with enter.
+func (parser *Parser) leave() {
+	parser.depth--
 }
 
 func Parse(p ParseParams) (*ast.Document, error) {
@@ -315,6 +339,10 @@ func parseVariable(parser *Parser) (*ast.Variable, error) {
  * SelectionSet : { Selection+ }
  */
 func parseSelectionSet(parser *Parser) (*ast.SelectionSet, error) {
+	if err := parser.enter(); err != nil {
+		return nil, err
+	}
+	defer parser.leave()
 	start := parser.Token.Start
 	selections := []ast.Selection{}
 	if iSelections, err := reverse(parser,
@@ -569,6 +597,10 @@ func parseFragmentName(parser *Parser) (*ast.Name, error) {
  * EnumValue : Name but not `true`, `false` or `null`
  */
 func parseValueLiteral(parser *Parser, isConst bool) (ast.Value, error) {
+	if err := parser.enter(); err != nil {
+		return nil, err
+	}
+	defer parser.leave()
 	token := parser.Token
 	switch token.Kind {
 	case lexer.BRACKET_L:
@@ -771,6 +803,10 @@ func parseDirective(parser *Parser) (*ast.Directive, error) {
  *   - NonNullType
  */
 func parseType(parser *Parser) (ttype ast.Type, err error) {
+	if err = parser.enter(); err != nil {
+		return nil, err
+	}
+	defer parser.leave()
 	token := parser.Token
 	// [ String! ]!
 	switch token.Kind {
