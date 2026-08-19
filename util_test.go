@@ -180,3 +180,21 @@ func TestBindArg(t *testing.T) {
 		t.Fatalf("Unexpected result, expected address to be %s but got %s", expectedAddress, newFriend.Address)
 	}
 }
+
+type Numbers struct {
+	SmallInt int16    `json:"smallInt"`
+	Unsigned uint32   `json:"unsigned"`
+	IntList  []int16  `json:"intList"`
+	UintList []uint32 `json:"uintList"`
+}
+
+func TestBindFields_IntTypes(t *testing.T) {
+	fields := graphql.BindFields(Numbers{})
+	if fields["smallInt"].Type != graphql.Int {
+		t.Fatalf("expected smallInt to have type graphql.Int, got %v", fields["smallInt"].Type)
+	}
+	if fields["unsigned"].Type != graphql.Int {
+		t.Fatalf("expected unsigned to have type graphql.Int, got %v", fields["unsigned"].Type)
+	}
+}
+

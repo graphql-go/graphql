@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestQuotedOrList_DoesNoAcceptAnEmptyList(t *testing.T) {
+func TestQuotedOrList_DoesNotAcceptAnEmptyList(t *testing.T) {
 	expected := ""
 	result := quotedOrList([]string{})
 	if !reflect.DeepEqual(expected, result) {
