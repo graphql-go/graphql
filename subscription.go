@@ -214,7 +214,13 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 					if !more {
 						return
 					}
-					resultChannel <- mapSourceToResponse(res)
+					// observe ctx cancellation before sending so a cancelled
+					// context unblocks the producer even with no receiver.
+					select {
+					case <-p.Context.Done():
+						return
+					case resultChannel <- mapSourceToResponse(res):
+					}
 				}
 			}
 		default:
