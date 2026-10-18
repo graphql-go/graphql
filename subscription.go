@@ -214,7 +214,14 @@ func ExecuteSubscription(p ExecuteParams) chan *Result {
 					if !more {
 						return
 					}
-					resultChannel <- mapSourceToResponse(res)
+					// Select on both the send and context cancellation so the
+					// producer does not leak when the consumer stops reading
+					// resultChannel (issue #758).
+					select {
+					case <-p.Context.Done():
+						return
+					case resultChannel <- mapSourceToResponse(res):
+					}
 				}
 			}
 		default:
