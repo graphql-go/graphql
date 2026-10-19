@@ -14,12 +14,18 @@ import (
 // goroutine must exit (the result channel must close) instead of blocking
 // forever on an unbuffered send.
 func TestSubscribeProducerExitsWhenConsumerStops(t *testing.T) {
+	// secondResolved is closed once the second source value has been mapped,
+	// i.e. the producer is about to send it on resultChannel.
+	secondResolved := make(chan struct{})
 	subType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Subscription",
 		Fields: graphql.Fields{
 			"tick": &graphql.Field{
 				Type: graphql.Int,
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					if p.Source == 1 {
+						close(secondResolved)
+					}
 					return p.Source, nil
 				},
 				Subscribe: func(p graphql.ResolveParams) (interface{}, error) {
@@ -56,46 +62,32 @@ func TestSubscribeProducerExitsWhenConsumerStops(t *testing.T) {
 		RequestString: "subscription { tick }",
 	})
 
-	// Read one result so the producer has entered the send loop, then stop
-	// reading and cancel — the pre-fix producer would block forever.
+	// Read one result, then stop reading. Wait until the producer has mapped
+	// the second value, so it is about to block on the result send, and
+	// cancel. Before the fix the producer stayed blocked on that send forever.
 	select {
 	case <-resultChannel:
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for first subscription result")
 	}
+	select {
+	case <-secondResolved:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for the second value to be resolved")
+	}
 	cancel()
 
-	select {
-	case _, ok := <-resultChannel:
-		if ok {
-			// Drain any in-flight result, then wait for close.
-			select {
-			case _, ok2 := <-resultChannel:
-				if ok2 {
-					// keep draining briefly
-					deadline := time.After(2 * time.Second)
-					for ok2 {
-						select {
-						case _, ok2 = <-resultChannel:
-						case <-deadline:
-							t.Fatal("result channel did not close after cancel (#758)")
-						}
-					}
-				}
-			case <-time.After(2 * time.Second):
-				t.Fatal("result channel did not close after cancel (#758)")
-			}
+	// Do not read resultChannel here: a read would unblock a leaked send.
+	// Wait for the producer and source goroutines to exit instead.
+	deadline := time.Now().Add(2 * time.Second)
+	for runtime.NumGoroutine() > before {
+		if time.Now().After(deadline) {
+			t.Fatalf("subscription goroutines did not exit after cancel (#758): %d running, %d before", runtime.NumGoroutine(), before)
 		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("BUG: result channel NOT closed — producer goroutine leaked (#758)")
+		time.Sleep(10 * time.Millisecond)
 	}
 
-	// Best-effort: goroutine count should not keep climbing; allow a little slack.
-	deadline := time.Now().Add(2 * time.Second)
-	for time.Now().Before(deadline) {
-		if runtime.NumGoroutine() <= before+5 {
-			return
-		}
-		time.Sleep(50 * time.Millisecond)
+	if _, ok := <-resultChannel; ok {
+		t.Fatal("result channel delivered a value after cancel instead of being closed (#758)")
 	}
 }
