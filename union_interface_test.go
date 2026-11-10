@@ -3,6 +3,7 @@ package graphql_test
 import (
 	"context"
 	"reflect"
+	"sync"
 	"testing"
 
 	"github.com/graphql-go/graphql"
@@ -638,4 +639,66 @@ func TestUnionIntersectionTypes_ValueMayBeNilPointer(t *testing.T) {
 	if !reflect.DeepEqual(expected, result) {
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result))
 	}
+}
+
+func TestUnionIntersectionTypes_ConcurrentRequests(t *testing.T) {
+	named := graphql.NewInterface(graphql.InterfaceConfig{
+		Name:   "Named",
+		Fields: graphql.Fields{"name": &graphql.Field{Type: graphql.String}},
+	})
+	hasFriends := graphql.NewInterface(graphql.InterfaceConfig{
+		Name:   "HasFriends",
+		Fields: graphql.Fields{"friends": &graphql.Field{Type: graphql.NewList(named)}},
+	})
+	dog := graphql.NewObject(graphql.ObjectConfig{
+		Name:       "Dog",
+		Interfaces: []*graphql.Interface{named, hasFriends},
+		IsTypeOf:   func(p graphql.IsTypeOfParams) bool { return true },
+		Fields:     graphql.Fields{"name": &graphql.Field{Type: graphql.String}},
+	})
+	// Dog's friends field is narrower than the HasFriends interface, in that
+	// it's of type [Dog], not type [Named]. This schema pattern makes graphql-go
+	// call `Schema.IsPossibleType` to validate the interface narrowing, which
+	// *used to* populate a private mutable map of interface implementations,
+	// which would then cause crashes during concurrent calls to Execute
+	dog.AddFieldConfig("friends", &graphql.Field{Type: graphql.NewList(dog)})
+	pet := graphql.NewUnion(graphql.UnionConfig{
+		Name:  "Pet",
+		Types: []*graphql.Object{dog},
+	})
+	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				// Resolving the Pet union at request time checks that Dog is
+				// one of Pet's possible types, which must be safe to do from
+				// many concurrent requests.
+				"pet": &graphql.Field{
+					Type: pet,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return map[string]interface{}{}, nil
+					},
+				},
+			},
+		}),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			result := graphql.Do(graphql.Params{
+				Schema:        schema,
+				RequestString: `{ pet { __typename } }`,
+			})
+			if len(result.Errors) > 0 {
+				t.Errorf("unexpected errors: %v", result.Errors)
+			}
+		}()
+	}
+	wg.Wait()
 }
