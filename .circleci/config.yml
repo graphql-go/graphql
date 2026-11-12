@@ -4,50 +4,50 @@ test_with_go_modules: &test_with_go_modules
     - run: go test ./...
     - run: go vet ./...
 
-test_without_go_modules: &test_without_go_modules
-  working_directory: /go/src/github.com/graphql-go/graphql
-  steps:
-    - checkout
-    - run: go get -v -t -d ./...
-    - run: go test ./...
-    - run: go vet ./...
-
 defaults: &defaults
   <<: *test_with_go_modules
 
 version: 2
 jobs:
-  golang:1.8.7:
-    <<: *test_without_go_modules
-    docker:
-      - image: circleci/golang:1.8.7
-  golang:1.9.7:
-    <<: *test_without_go_modules
-    docker:
-      - image: circleci/golang:1.9.7
-  golang:1.11:
+  golang:1.21:
     <<: *defaults
     docker:
-      - image: circleci/golang:1.11
+      - image: cimg/go:1.21
   golang:latest:
     <<: *defaults
     docker:
-      - image: circleci/golang:latest
+      - image: cimg/go:1.26
   coveralls:
     docker:
-      - image: circleci/golang:latest
+      - image: cimg/go:1.26
     steps:
       - checkout
-      - run: go get github.com/mattn/goveralls
-      - run: go test -v -cover -race -coverprofile=coverage.out
-      - run: /go/bin/goveralls -coverprofile=coverage.out -service=circle-ci -repotoken $COVERALLS_TOKEN
+      - run: go install github.com/mattn/goveralls@latest
+      - run: |
+          # Run tests across the user-facing library packages and
+          # measure coverage against the same set, so test runs in one
+          # subpackage contribute to coverage of code in the others
+          # (e.g. root tests count toward language/parser coverage).
+          #
+          # Excluded from both the test run and the coverage profile:
+          #   - examples/*        : no tests, would land as 0%
+          #   - benchutil         : bench-only harness, only runs under
+          #                         `go test -bench=.`
+          #   - testutil          : test-helper package by design
+          #   - language/ast      : ~180 trivial GetLoc/GetSelectionSet
+          #                         interface-compliance stubs that no
+          #                         test path calls directly; including
+          #                         them measures boilerplate, not the
+          #                         library's behavior
+          PKGS=$(go list ./... | grep -vE '/examples/|/benchutil$|/testutil$|/language/ast$')
+          COVERPKG=$(echo "$PKGS" | tr '\n' ',' | sed 's/,$//')
+          go test -v -cover -race -coverpkg="$COVERPKG" -coverprofile=coverage.out $PKGS
+      - run: goveralls -coverprofile=coverage.out -service=circle-ci -repotoken $COVERALLS_TOKEN
 
 workflows:
   version: 2
   build:
     jobs:
-      - golang:1.8.7
-      - golang:1.9.7
-      - golang:1.11
+      - golang:1.21
       - golang:latest
       - coveralls

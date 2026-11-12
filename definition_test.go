@@ -728,3 +728,184 @@ func TestTypeSystem_DefinitionExample_HandlesInvalidUnionTypes(t *testing.T) {
 		t.Fatalf("Unexpected result, got: %v, want: nil", unionTypes)
 	}
 }
+
+func TestIsAbstractType(t *testing.T) {
+	tests := []struct {
+		name     string
+		ttype    interface{}
+		expected bool
+	}{
+		{
+			name:     "Interface type should return true",
+			ttype:    graphql.NewInterface(graphql.InterfaceConfig{Name: "TestInterface"}),
+			expected: true,
+		},
+		{
+			name:     "Union type should return true",
+			ttype:    graphql.NewUnion(graphql.UnionConfig{Name: "TestUnion"}),
+			expected: true,
+		},
+		{
+			name:     "Scalar type should return false",
+			ttype:    graphql.NewScalar(graphql.ScalarConfig{Name: "TestScalar", Serialize: func(v interface{}) interface{} { return v }}),
+			expected: false,
+		},
+		{
+			name:     "Object type should return false",
+			ttype:    graphql.NewObject(graphql.ObjectConfig{Name: "TestObject"}),
+			expected: false,
+		},
+		{
+			name:     "Enum type should return false",
+			ttype:    graphql.NewEnum(graphql.EnumConfig{Name: "TestEnum", Values: graphql.EnumValueConfigMap{"A": &graphql.EnumValueConfig{}}}),
+			expected: false,
+		},
+		{
+			name:     "InputObject type should return false",
+			ttype:    graphql.NewInputObject(graphql.InputObjectConfig{Name: "TestInputObject"}),
+			expected: false,
+		},
+		{
+			name:     "List type should return false",
+			ttype:    graphql.NewList(graphql.NewScalar(graphql.ScalarConfig{Name: "TestScalar", Serialize: func(v interface{}) interface{} { return v }})),
+			expected: false,
+		},
+		{
+			name:     "NonNull type should return false",
+			ttype:    graphql.NewNonNull(graphql.NewScalar(graphql.ScalarConfig{Name: "TestScalar", Serialize: func(v interface{}) interface{} { return v }})),
+			expected: false,
+		},
+		{
+			name:     "nil type should return false",
+			ttype:    nil,
+			expected: false,
+		},
+		{
+			name:     "string type should return false",
+			ttype:    "not a type",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := graphql.IsAbstractType(tt.ttype)
+			if result != tt.expected {
+				t.Errorf("IsAbstractType(%v) = %v; want %v", tt.ttype, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGetNullable(t *testing.T) {
+	scalarType := graphql.NewScalar(graphql.ScalarConfig{Name: "TestScalar", Serialize: func(v interface{}) interface{} { return v }})
+	objectType := graphql.NewObject(graphql.ObjectConfig{Name: "TestObject"})
+	listType := graphql.NewList(scalarType)
+
+	tests := []struct {
+		name     string
+		ttype    graphql.Type
+		expected graphql.Type
+	}{
+		{
+			name:     "NonNull Scalar should return Scalar",
+			ttype:    graphql.NewNonNull(scalarType),
+			expected: scalarType,
+		},
+		{
+			name:     "NonNull Object should return Object",
+			ttype:    graphql.NewNonNull(objectType),
+			expected: objectType,
+		},
+		{
+			name:     "NonNull List should return List",
+			ttype:    graphql.NewNonNull(listType),
+			expected: listType,
+		},
+		{
+			name:     "Scalar should return Scalar",
+			ttype:    scalarType,
+			expected: scalarType,
+		},
+		{
+			name:     "Object should return Object",
+			ttype:    objectType,
+			expected: objectType,
+		},
+		{
+			name:     "List should return List",
+			ttype:    listType,
+			expected: listType,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := graphql.GetNullable(tt.ttype)
+			if result != tt.expected {
+				t.Errorf("GetNullable(%v) = %v; want %v", tt.ttype, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestNewScalar(t *testing.T) {
+	tests := []struct {
+		name          string
+		config        graphql.ScalarConfig
+		expectedError bool
+	}{
+		{
+			name: "empty name should error",
+			config: graphql.ScalarConfig{
+				Name:      "",
+				Serialize: func(v interface{}) interface{} { return v },
+			},
+			expectedError: true,
+		},
+		{
+			name: "invalid name starting with number should error",
+			config: graphql.ScalarConfig{
+				Name:      "123Invalid",
+				Serialize: func(v interface{}) interface{} { return v },
+			},
+			expectedError: true,
+		},
+		{
+			name: "invalid name with special characters should error",
+			config: graphql.ScalarConfig{
+				Name:      "Invalid-Name",
+				Serialize: func(v interface{}) interface{} { return v },
+			},
+			expectedError: true,
+		},
+		{
+			name: "valid scalar with underscore should succeed",
+			config: graphql.ScalarConfig{
+				Name:      "_ValidScalar",
+				Serialize: func(v interface{}) interface{} { return v },
+			},
+			expectedError: false,
+		},
+		{
+			name: "valid scalar with alphanumeric should succeed",
+			config: graphql.ScalarConfig{
+				Name:      "ValidScalar123",
+				Serialize: func(v interface{}) interface{} { return v },
+			},
+			expectedError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scalar := graphql.NewScalar(tt.config)
+			if tt.expectedError && scalar.Error() == nil {
+				t.Errorf("NewScalar(%v) expected error but got none", tt.config.Name)
+			}
+			if !tt.expectedError && scalar.Error() != nil {
+				t.Errorf("NewScalar(%v) unexpected error: %v", tt.config.Name, scalar.Error())
+			}
+		})
+	}
+}

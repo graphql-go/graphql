@@ -50,6 +50,12 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 	// dramatically improve the performance of this validator.
 	comparedSet := newPairSet()
 
+	// Memoizes (fields, fragment, areMutuallyExclusive) triples that have
+	// been compared by collectConflictsBetweenFieldsAndFragment in this
+	// validation pass. Subsequent calls on the same triple return without
+	// re-walking the fragment.
+	comparedFieldsAndFragmentSet := newFieldsAndFragmentSet()
+
 	// A cache for the "field map" and list of fragment names found in any given
 	// selection set. Selection sets may be asked for this information multiple
 	// times, so this improves the performance of this validator.
@@ -63,9 +69,10 @@ func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRul
 						parentType, _ := context.ParentType().(Named)
 
 						rule := &overlappingFieldsCanBeMergedRule{
-							context:     context,
-							comparedSet: comparedSet,
-							cacheMap:    cacheMap,
+							context:                      context,
+							comparedSet:                  comparedSet,
+							comparedFieldsAndFragmentSet: comparedFieldsAndFragmentSet,
+							cacheMap:                     cacheMap,
 						}
 						conflicts := rule.findConflictsWithinSelectionSet(parentType, selectionSet)
 						if len(conflicts) > 0 {
@@ -154,6 +161,12 @@ type overlappingFieldsCanBeMergedRule struct {
 	// dramatically improve the performance of this validator.
 	comparedSet *pairSet
 
+	// Memoizes (fields, fragment, areMutuallyExclusive) triples that have
+	// been compared by collectConflictsBetweenFieldsAndFragment in this
+	// validation pass. Subsequent calls on the same triple return without
+	// re-walking the fragment.
+	comparedFieldsAndFragmentSet *fieldsAndFragmentSet
+
 	// A cache for the "field map" and list of fragment names found in any given
 	// selection set. Selection sets may be asked for this information multiple
 	// times, so this improves the performance of this validator.
@@ -192,12 +205,23 @@ func (rule *overlappingFieldsCanBeMergedRule) findConflictsWithinSelectionSet(pa
 // Collect all conflicts found between a set of fields and a fragment reference
 // including via spreading in any nested fragments.
 func (rule *overlappingFieldsCanBeMergedRule) collectConflictsBetweenFieldsAndFragment(conflicts []conflict, areMutuallyExclusive bool, fieldsInfo *fieldsAndFragmentNames, fragmentName string) []conflict {
+	// Skip if this fields/fragment pair has already been compared.
+	if rule.comparedFieldsAndFragmentSet.Has(fieldsInfo, fragmentName, areMutuallyExclusive) {
+		return conflicts
+	}
+	rule.comparedFieldsAndFragmentSet.Add(fieldsInfo, fragmentName, areMutuallyExclusive)
+
 	fragment := rule.context.Fragment(fragmentName)
 	if fragment == nil {
 		return conflicts
 	}
 
 	fieldsInfo2 := rule.getReferencedFieldsAndFragmentNames(fragment)
+
+	// Do not compare a fragment's fields with itself.
+	if fieldsInfo == fieldsInfo2 {
+		return conflicts
+	}
 
 	// (D) First collect any conflicts between the provided collection of fields
 	// and the collection of fields represented by the given fragment.
@@ -560,6 +584,49 @@ type fieldsAndFragmentNames struct {
 	fieldMap      astAndDefCollection
 	fieldsOrder   []string // stores the order of field names in fieldMap
 	fragmentNames []string
+}
+
+// fieldsAndFragmentSet tracks (fieldsAndFragmentNames, fragmentName,
+// areMutuallyExclusive) triples that have already been compared by
+// collectConflictsBetweenFieldsAndFragment. The pair is ordered: the
+// fields side is identified by pointer (it is always one of the values
+// produced by getFieldsAndFragmentNames or
+// getReferencedFieldsAndFragmentNames), the fragment side by name.
+type fieldsAndFragmentSet struct {
+	data map[*fieldsAndFragmentNames]map[string]bool
+}
+
+func newFieldsAndFragmentSet() *fieldsAndFragmentSet {
+	return &fieldsAndFragmentSet{
+		data: map[*fieldsAndFragmentNames]map[string]bool{},
+	}
+}
+
+func (s *fieldsAndFragmentSet) Has(fields *fieldsAndFragmentNames, fragmentName string, areMutuallyExclusive bool) bool {
+	inner, ok := s.data[fields]
+	if !ok || inner == nil {
+		return false
+	}
+	stored, ok := inner[fragmentName]
+	if !ok {
+		return false
+	}
+	// An entry stored with areMutuallyExclusive=false reflects the
+	// stricter non-exclusive comparison; it satisfies a query for either
+	// value. An entry stored with true only satisfies queries for true.
+	if !areMutuallyExclusive {
+		return stored == false
+	}
+	return true
+}
+
+func (s *fieldsAndFragmentSet) Add(fields *fieldsAndFragmentNames, fragmentName string, areMutuallyExclusive bool) {
+	inner, ok := s.data[fields]
+	if !ok || inner == nil {
+		inner = map[string]bool{}
+		s.data[fields] = inner
+	}
+	inner[fragmentName] = areMutuallyExclusive
 }
 
 // pairSet A way to keep track of pairs of things when the ordering of the pair does

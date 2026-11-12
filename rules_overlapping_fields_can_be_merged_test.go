@@ -2,6 +2,7 @@ package graphql_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/gqlerrors"
@@ -899,4 +900,38 @@ func TestValidate_OverlappingFieldsCanBeMerged_ReturnTypesMustBeUnambiguous_Igno
 
 func TestValidate_OverlappingFieldsCanBeMerged_NilCrash(t *testing.T) {
 	testutil.ExpectPassesRule(t, graphql.OverlappingFieldsCanBeMergedRule, `subscription {e}`)
+}
+
+// The overlapping-fields rule must terminate on a document with a
+// cyclic fragment spread. The cycle itself is reported separately by
+// NoFragmentCyclesRule.
+func TestValidate_OverlappingFieldsCanBeMerged_CyclicFragmentTerminates(t *testing.T) {
+	// Parse on the main goroutine so any parse error fails cleanly.
+	astDoc := testutil.TestParse(t, `
+      fragment A on Dog { ...B }
+      fragment B on Dog { ...A }
+      { ...A }
+    `)
+
+	// Run only ValidateDocument in the worker goroutine; assertions happen
+	// on the main goroutine after the result arrives, since t.Fatal is
+	// unsafe to call from a non-test goroutine.
+	done := make(chan graphql.ValidationResult, 1)
+	go func() {
+		done <- graphql.ValidateDocument(testutil.TestSchema, astDoc, []graphql.ValidationRuleFn{
+			graphql.OverlappingFieldsCanBeMergedRule,
+		})
+	}()
+
+	select {
+	case res := <-done:
+		if len(res.Errors) > 0 {
+			t.Fatalf("Should validate, got %v", res.Errors)
+		}
+		if !res.IsValid {
+			t.Fatalf("IsValid should be true, got %v", res.IsValid)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("OverlappingFieldsCanBeMergedRule did not terminate on cyclic fragment")
+	}
 }
