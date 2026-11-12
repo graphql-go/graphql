@@ -641,6 +641,7 @@ func TestUnionIntersectionTypes_ValueMayBeNilPointer(t *testing.T) {
 	}
 }
 
+// this is a regression test against schemas that can cause runtime crashes
 func TestUnionIntersectionTypes_ConcurrentRequests(t *testing.T) {
 	named := graphql.NewInterface(graphql.InterfaceConfig{
 		Name:   "Named",

@@ -237,6 +237,8 @@ func (gq *Schema) PossibleTypes(abstractType Abstract) []*Object {
 	}
 	return []*Object{}
 }
+
+// IsPossibleType tests whether a Union or Interface can have the given Object as a member.
 func (gq *Schema) IsPossibleType(abstractType Abstract, possibleType *Object) bool {
 	for _, t := range gq.PossibleTypes(abstractType) {
 		if t.Name() == possibleType.Name() {
