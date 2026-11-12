@@ -39,7 +39,6 @@ type Schema struct {
 	mutationType     *Object
 	subscriptionType *Object
 	implementations  map[string][]*Object
-	possibleTypeMap  map[string]map[string]bool
 	extensions       []Extension
 }
 
@@ -238,24 +237,13 @@ func (gq *Schema) PossibleTypes(abstractType Abstract) []*Object {
 	}
 	return []*Object{}
 }
+
+// IsPossibleType tests whether a Union or Interface can have the given Object as a member.
 func (gq *Schema) IsPossibleType(abstractType Abstract, possibleType *Object) bool {
-	possibleTypeMap := gq.possibleTypeMap
-	if possibleTypeMap == nil {
-		possibleTypeMap = map[string]map[string]bool{}
-	}
-
-	if typeMap, ok := possibleTypeMap[abstractType.Name()]; !ok {
-		typeMap = map[string]bool{}
-		for _, possibleType := range gq.PossibleTypes(abstractType) {
-			typeMap[possibleType.Name()] = true
+	for _, t := range gq.PossibleTypes(abstractType) {
+		if t.Name() == possibleType.Name() {
+			return true
 		}
-		possibleTypeMap[abstractType.Name()] = typeMap
-	}
-
-	gq.possibleTypeMap = possibleTypeMap
-	if typeMap, ok := possibleTypeMap[abstractType.Name()]; ok {
-		isPossible, _ := typeMap[possibleType.Name()]
-		return isPossible
 	}
 	return false
 }
